@@ -31,10 +31,50 @@ completed task.
 
 ---
 
+## Active task: Orchestration setup (2026-04-16)
+
+- [x] Parallel recon via Explore subagents: summarize Phase I/II/III
+      specs + fetch codex-plugin-cc docs.
+- [x] Collect architectural decisions from user: function-aligned
+      roster, phase-boundary Codex gate, worktree isolation,
+      opus-everywhere.
+- [x] Write `AGENTS.md` as authoritative orchestration protocol.
+- [x] Write 10 role subagents under `.claude/agents/` (all
+      `claude-opus-4-6`): planner, env-builder, algo-implementer,
+      operator-theorist, calibration-engineer, experiment-runner,
+      test-author, plotter-analyst, verifier, review-triage.
+- [x] Write 5 project slash commands under `.claude/commands/lse/`:
+      plan-phase, implement, verify, review, status.
+- [x] Write `.codex/config.toml` (model = gpt-5.4, reasoning high).
+- [x] Write `docs/workflow.md` (lifecycle diagram + Codex integration).
+- [x] Update `README.md` with orchestration + Codex setup sections.
+- [x] Verify frontmatter validity, cross-reference consistency, path
+      existence.
+
+### Review (2026-04-16)
+
+- Roster is function-aligned (10 agents), not phase-aligned.
+  Justification: the same role (e.g. `env-builder`) does similar work
+  across phases, so knowledge reuse happens inside the agent rather
+  than across phase-agents. One task per subagent is preserved via
+  `/lse:implement`.
+- Every agent frontmatter validated: `name`, `description`, `tools`,
+  `model: claude-opus-4-6` all present.
+- All 10 agent names referenced in `AGENTS.md` map 1:1 to files under
+  `.claude/agents/`.
+- Slash commands namespaced correctly as `.claude/commands/lse/<cmd>.md`
+  (subdirectory-based namespacing).
+- Codex gate is MANDATORY at phase boundaries but not per-commit —
+  matches the plugin README's warning that multi-file reviews are slow
+  and the review gate can drain usage quickly.
+- `mushroom-rl-dev/` remains byte-identical; no edits introduced by
+  this task.
+
+---
+
 ## Next up (pending user input)
 
-- Co-author `AGENTS.md` and the individual agent specs under
-  `.claude/agents/`.
-- First real implementation task is Phase I per
-  `docs/specs/phase_I_classical_beta0_experiments.md`. Do NOT start until
-  the agents spec is in place.
+- Review the orchestration artifacts. Adjustments welcome before the
+  first commit.
+- When approved: `/lse:plan-phase I` to decompose Phase I into
+  `tasks/todo.md` entries via the `planner` subagent.

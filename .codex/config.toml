@@ -1,0 +1,7 @@
+# .codex/config.toml — Pinned Codex configuration for LSE_RL reviews.
+#
+# Update the `model` string in a single-file PR whenever OpenAI releases
+# a stronger Codex model. See docs/workflow.md §2.2 and §5.
+
+model = "gpt-5.4"
+model_reasoning_effort = "high"

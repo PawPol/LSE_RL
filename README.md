@@ -27,10 +27,13 @@ LSE_RL/
 ├── scripts/            # One-off utilities, launchers, sweep drivers
 ├── tests/              # Unit tests for `lse_rl`
 ├── .claude/
-│   └── agents/         # Agent specifications (to be filled in)
+│   ├── agents/         # Role subagent specs (planner, env-builder, ...)
+│   └── commands/lse/   # Project slash commands (/lse:plan-phase, /lse:verify, ...)
+├── .codex/
+│   └── config.toml     # Pinned Codex model + reasoning effort for reviews
 ├── .github/
 │   └── workflows/      # CI (to be added)
-├── AGENTS.md           # Agent roster and protocols (stub — pending spec)
+├── AGENTS.md           # Orchestration protocol (authoritative)
 ├── CLAUDE.md           # Working instructions for Claude in this repo
 ├── README.md
 ├── .gitignore
@@ -74,6 +77,48 @@ See [`CLAUDE.md`](CLAUDE.md) for the full protocol. Highlights:
 - Verification before done: tests, smoke runs, metric sanity checks.
 - One bundled PR over many churny splits unless the user says otherwise.
 
+## Orchestration
+
+Claude Code is the main orchestrator. Role-specialized subagents in
+[`.claude/agents/`](.claude/agents/) do the implementation work;
+Codex (via the [codex-plugin-cc](https://github.com/openai/codex-plugin-cc))
+acts as read-only reviewer and second code tester at phase boundaries.
+
+See [`AGENTS.md`](AGENTS.md) for the authoritative protocol and
+[`docs/workflow.md`](docs/workflow.md) for the end-to-end lifecycle
+diagram.
+
+### Project slash commands (`/lse:*`)
+
+| Command                            | Purpose |
+|------------------------------------|---------|
+| `/lse:plan-phase <I\|II\|III>`     | Spawn `planner` on a phase spec; decompose into `tasks/todo.md`. |
+| `/lse:implement <task-id>`         | Route a tagged task to its role subagent per `AGENTS.md §4`. |
+| `/lse:verify [--full]`             | Run the `verifier` subagent (tests + diffs + schema checks). |
+| `/lse:review <I\|II\|III>`         | Phase-boundary Codex gate: `/codex:review` + `/codex:adversarial-review` in background, then `review-triage`. |
+| `/lse:status`                      | Read-only status: todo progress + active Codex jobs + quarantined runs. |
+
+### Codex plugin setup (once per machine)
+
+```
+/plugin marketplace add openai/codex-plugin-cc
+/plugin install codex@openai-codex
+/reload-plugins
+/codex:setup
+```
+
+The repo-scoped Codex model + reasoning effort are pinned in
+[`.codex/config.toml`](.codex/config.toml).
+
+### Model policy
+
+All Claude subagents use `claude-opus-4-6` (set in frontmatter). Codex
+uses the strongest available GPT-5 variant at
+`model_reasoning_effort = "high"`. Upgrade happens via a single-file
+PR on the pins.
+
 ## Status
 
-Project structure initialized 2026-04-16. Agent specifications pending.
+- 2026-04-16: Project structure initialized.
+- 2026-04-16: Orchestration authored — 10 role subagents, 5 `/lse:*`
+  slash commands, Codex gate at phase boundaries.
