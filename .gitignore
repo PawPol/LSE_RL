@@ -1,0 +1,96 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+.installed.cfg
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# ---------- Virtual envs ----------
+.venv/
+venv/
+env/
+.envrc
+
+# ---------- Jupyter ----------
+.ipynb_checkpoints/
+*.ipynb_meta
+
+# ---------- OS / editor ----------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ---------- LaTeX (paper/) ----------
+# Keep the compiled .pdf that ships with the manuscript; ignore build junk.
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.lof
+paper/*.lot
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz
+paper/*.bbl
+paper/*.blg
+paper/*.nav
+paper/*.snm
+paper/*.vrb
+paper/*.run.xml
+paper/*-blx.bib
+paper/auto/
+
+# ---------- Experiment outputs ----------
+# Raw run artifacts are large. Track the SCHEMA in docs/ and the
+# aggregated tables in results/processed/ via git-lfs or manual curation.
+results/raw/**
+!results/raw/.gitkeep
+# Keep processed tables; exclude ephemeral scratch files.
+results/processed/**/*.tmp
+results/processed/**/*.part
+
+# Log files from runs
+*.log
+logs/
+
+# Wandb / tensorboard / mlflow
+wandb/
+mlruns/
+tb_logs/
+events.out.tfevents.*
+
+# ---------- MushroomRL build artifacts inside the vendored fork ----------
+mushroom-rl-dev/build/
+mushroom-rl-dev/dist/
+mushroom-rl-dev/*.egg-info/
+mushroom-rl-dev/.pytest_cache/
+mushroom-rl-dev/docs/build/
+
+# ---------- Figures / binaries worth tracking selectively ----------
+# Default: track figures. Uncomment to ignore regeneratable ones.
+# figures/**/*.png
+# figures/**/*.pdf
+
+# ---------- Secrets ----------
+.env
+*.pem
+*.key
