@@ -82,10 +82,11 @@ class DiscreteTimeAugmentedEnv(Environment):
     are preserved exactly. The stage advances by one at every
     :meth:`step` call and is reset to zero by :meth:`reset`.
 
-    Terminal handling: at the final stage ``t == horizon - 1`` the
-    ``absorbing`` flag returned by :meth:`step` is forced to ``True``
-    regardless of the base env's signal, matching the finite-horizon
-    convention used by the DP planners.
+    Terminal handling: after the action taken at stage ``t == horizon - 1``
+    (the last decision stage), :meth:`step` sets ``t_next = horizon`` and
+    forces ``absorbing=True`` regardless of the base env's signal. This
+    matches the finite-horizon DP convention where Q.shape = (H, S, A)
+    for stages 0..H-1 and V[H] = 0 is the terminal boundary.
 
     Args:
         env: a MushroomRL :class:`Environment` with a
@@ -261,7 +262,8 @@ class DiscreteTimeAugmentedEnv(Environment):
         Returns:
             ``(augmented_next_state, reward, absorbing, info)``.
             ``absorbing`` is the base-env flag OR-ed with the terminal
-            stage condition ``t_next == horizon - 1``.
+            stage condition ``t_next >= horizon`` (i.e., after the last
+            decision stage H-1 has been executed).
         """
         next_base_state, reward, base_absorbing, info = self._env.step(action)
         self._t += 1
@@ -273,7 +275,7 @@ class DiscreteTimeAugmentedEnv(Environment):
         s_next = int(np.asarray(next_base_state).reshape(-1)[0])
         augmented_id = self.encode_state(t_encoded, s_next)
 
-        terminal_stage = t_next >= self._horizon - 1
+        terminal_stage = t_next >= self._horizon
         absorbing = bool(base_absorbing) or bool(terminal_stage)
 
         return (
@@ -445,14 +447,15 @@ class ContinuousTimeAugmentedEnv(Environment):
         Returns:
             ``(augmented_next_state, reward, absorbing, info)``.
             ``absorbing`` is the base-env flag OR-ed with the terminal
-            stage condition ``t_next == horizon - 1``.
+            stage condition ``t_next >= horizon`` (i.e., after the last
+            decision stage H-1 has been executed).
         """
         next_base_state, reward, base_absorbing, info = self._env.step(action)
         self._t += 1
         t_next = self._t
         augmented_next = self._augment(next_base_state, t_next)
 
-        terminal_stage = t_next >= self._horizon - 1
+        terminal_stage = t_next >= self._horizon
         absorbing = bool(base_absorbing) or bool(terminal_stage)
 
         return augmented_next, float(reward), absorbing, info

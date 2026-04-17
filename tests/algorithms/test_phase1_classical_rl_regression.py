@@ -93,8 +93,12 @@ class TestQLearningRegression:
         """Q values must differ from initial (all-zeros) after learning.
 
         # docs/specs/phase_I_*.md S8.3 -- QLearning learns a non-trivial Q
-        Invariant: after 500 training steps on chain_base, the Q table
+        Invariant: after 5000 training steps on chain_base, the Q table
         is no longer all zeros (i.e., at least one update happened).
+        5000 steps chosen because with ε=0.3 and a symmetric random walk
+        on chain_base (n=25, goal at state 24), the expected hitting time
+        from state 0 is ~576 steps; 5000 steps gives ~8 full expected
+        hitting times across ~83 episodes.
         """
         _mdp_base, mdp_rl, cfg = chain_env
         agent = _make_agent(mdp_rl, QLearning)
@@ -103,11 +107,11 @@ class TestQLearningRegression:
         assert np.all(agent.Q.table == 0.0), "Q table should start at zero"
 
         core = Core(agent, mdp_rl)
-        core.learn(n_steps=500, n_steps_per_fit=1)
+        core.learn(n_steps=5000, n_steps_per_fit=1)
 
         # After training, Q should have changed
         assert not np.all(agent.Q.table == 0.0), (
-            "After 500 steps of QLearning, Q table must not be all zeros"
+            "After 5000 steps of QLearning, Q table must not be all zeros"
         )
 
     def test_transition_logger_payload_structure(self, chain_env):
@@ -213,8 +217,10 @@ class TestExpectedSARSARegression:
         """Q values must differ from initial (all-zeros) after learning.
 
         # docs/specs/phase_I_*.md S8.3 -- ExpectedSARSA learns a non-trivial Q
-        Invariant: after 500 training steps on chain_base, the Q table
+        Invariant: after 5000 training steps on chain_base, the Q table
         is no longer all zeros.
+        5000 steps chosen for the same reason as the QLearning test above
+        (expected hitting time to goal ~576 steps; 5000 provides robust margin).
         """
         _mdp_base, mdp_rl, cfg = chain_env
         agent = _make_agent(mdp_rl, ExpectedSARSA)
@@ -222,10 +228,10 @@ class TestExpectedSARSARegression:
         assert np.all(agent.Q.table == 0.0), "Q table should start at zero"
 
         core = Core(agent, mdp_rl)
-        core.learn(n_steps=500, n_steps_per_fit=1)
+        core.learn(n_steps=5000, n_steps_per_fit=1)
 
         assert not np.all(agent.Q.table == 0.0), (
-            "After 500 steps of ExpectedSARSA, Q table must not be all zeros"
+            "After 5000 steps of ExpectedSARSA, Q table must not be all zeros"
         )
 
 

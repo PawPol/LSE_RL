@@ -6,7 +6,7 @@ Covers the five invariants mandated by docs/specs/phase_I_*.md section 8.2:
 1. Bijective (t, s) <-> augmented_id encode/decode round-trip
 2. Reset sets t=0
 3. Step increments t by 1
-4. Horizon terminal handling -- episode ends at t=H-1
+4. Horizon terminal handling -- episode ends after H steps (t_next=H)
 5. Reward and transition probs unchanged after un-augmenting
 """
 from __future__ import annotations
@@ -123,22 +123,27 @@ class TestDiscreteTimeAugmentation:
         # docs/specs/phase_I_*.md section 8.2, invariant 3
 
         This test would fail if the wrapper forgot to increment self._t.
+        For horizon=4, a full episode has 4 steps (stages 0..3), so
+        t_next goes through 1, 2, 3, 4. The encoded t is clamped to
+        horizon-1=3 for the last step.
         """
         env = aug_chain5
         np.random.seed(42)
         env.reset()
-        for expected_t in range(1, 4):
+        for expected_t in range(1, 5):
             action = np.array([0])
             next_state, _r, _abs, _info = env.step(action)
             aug_id = int(next_state[0])
             t, _s = env.decode_state(aug_id)
-            assert t == expected_t, (
-                f"After step {expected_t}: expected t={expected_t}, got t={t}"
+            # t_encoded is clamped to horizon-1 = 3
+            expected_encoded = min(expected_t, 3)
+            assert t == expected_encoded, (
+                f"After step {expected_t}: expected t={expected_encoded}, got t={t}"
             )
             assert env.current_stage == expected_t
 
     def test_terminal_at_horizon(self, aug_chain5):
-        """At t=horizon-1 the step returns absorbing=True.
+        """After H steps, t_next=horizon=4 fires absorbing=True.
         # docs/specs/phase_I_*.md section 8.2, invariant 4
 
         This test would fail if the terminal-stage OR logic were removed.
@@ -146,20 +151,20 @@ class TestDiscreteTimeAugmentation:
         env = aug_chain5  # horizon=4
         np.random.seed(42)
         env.reset()
-        absorbing = False
-        for step_i in range(4):
-            action = np.array([0])
-            _state, _r, absorbing, _info = env.step(action)
-        # After 4 steps, t=4 but t_encoded is clamped to 3 = horizon-1.
-        # The terminal condition t_next >= horizon-1 fires at step 3 (0-indexed).
-        # Actually: horizon-1 = 3; at step 3 (the 3rd step, t_next=3), absorbing should be True.
-        # Let's verify by stepping exactly horizon-1 = 3 steps.
-        env.reset()
+
+        # After 3 steps (t_next=3 < horizon=4), absorbing must be False
+        # (assuming base env does not signal absorbing).
         for step_i in range(3):
             action = np.array([0])
             _state, _r, absorbing, _info = env.step(action)
+        assert absorbing is False, (
+            "Expected absorbing=False after 3 steps (t_next=3 < horizon=4)"
+        )
+
+        # After the 4th step, t_next=horizon=4 fires absorbing=True
+        _state, _r, absorbing, _info = env.step(np.array([0]))
         assert absorbing is True, (
-            "Expected absorbing=True at t=horizon-1=3"
+            "Expected absorbing=True after H=4 steps (t_next=horizon=4)"
         )
 
     def test_not_terminal_before_horizon(self):
@@ -298,13 +303,13 @@ class TestMakeTimeAugmented:
         assert aug.info.horizon == 7
 
     def test_full_episode_rollout(self):
-        """A complete episode rollout terminates at exactly horizon-1 steps.
+        """A complete episode rollout terminates at exactly horizon steps.
         # docs/specs/phase_I_*.md section 8.2, invariants 3 and 4
 
         This is an integration test: reset, then step until absorbing.
-        The number of steps taken must equal horizon - 1 (since the
-        terminal condition fires at t_next == horizon - 1, which happens
-        after horizon - 1 step() calls starting from t=0).
+        The number of steps taken must equal horizon (since the terminal
+        condition fires at t_next >= horizon, which happens after H
+        step() calls starting from t=0).
         """
         horizon = 6
         base = make_test_chain(n=5, horizon=horizon)
@@ -321,10 +326,10 @@ class TestMakeTimeAugmented:
             if steps > horizon + 5:
                 pytest.fail("Episode did not terminate within horizon + 5 steps")
 
-        # Terminal fires when t_next >= horizon - 1, i.e. after horizon - 1 steps
+        # Terminal fires when t_next >= horizon, i.e. after H steps
         # (since t starts at 0 and increments by 1 each step).
-        assert steps == horizon - 1, (
-            f"Expected episode to terminate after {horizon - 1} steps, "
+        assert steps == horizon, (
+            f"Expected episode to terminate after {horizon} steps, "
             f"got {steps}"
         )
 
