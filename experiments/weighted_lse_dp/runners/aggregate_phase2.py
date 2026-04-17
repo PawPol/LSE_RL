@@ -283,6 +283,21 @@ def _load_calibration_safe(run_dir: Path) -> dict[str, np.ndarray] | None:
         return None
 
 
+def _load_transitions_safe(run_dir: Path) -> dict[str, np.ndarray] | None:
+    """Load transitions.npz, returning None on failure."""
+    trans_path = run_dir / "transitions.npz"
+    if not trans_path.is_file():
+        return None
+    try:
+        return load_npz(trans_path)
+    except Exception as exc:
+        print(
+            f"  [WARN] cannot load transitions.npz from {run_dir}: {exc}",
+            file=sys.stderr,
+        )
+        return None
+
+
 # ---------------------------------------------------------------------------
 # Per-group aggregation
 # ---------------------------------------------------------------------------
@@ -315,6 +330,7 @@ def aggregate_group(
     per_seed_metrics: list[dict[str, Any]] = []
     per_seed_calib: list[dict[str, np.ndarray]] = []
     per_seed_run_json: list[dict[str, Any]] = []
+    per_seed_transitions: list[dict[str, np.ndarray]] = []
 
     for rec in group:
         seeds.append(rec["seed"])
@@ -325,6 +341,9 @@ def aggregate_group(
         c = _load_calibration_safe(rec["run_dir"])
         if c is not None:
             per_seed_calib.append(c)
+        tr = _load_transitions_safe(rec["run_dir"])
+        if tr is not None:
+            per_seed_transitions.append(tr)
 
     # -- Aggregate scalar metrics ------------------------------------------
     scalar_agg: dict[str, Any] = {}
@@ -393,14 +412,110 @@ def aggregate_group(
         per_seed_calib, _CALIB_SCALAR_EVENT_KEYS,
     )
 
+    # -- Stacked per-seed margin arrays (not averaged) for quantile accuracy --
+    _MARGIN_SEED_KEYS: tuple[str, ...] = (
+        "aligned_positive_mean", "aligned_negative_mean",
+    )
+    calib_stacked: dict[str, np.ndarray] | None = None
+    if per_seed_calib:
+        _stk: dict[str, np.ndarray] = {}
+        for mk in _MARGIN_SEED_KEYS:
+            arrays = [
+                c[mk] for c in per_seed_calib
+                if mk in c and c[mk].ndim == 1
+            ]
+            if arrays:
+                try:
+                    _stk[mk] = np.stack(arrays, axis=0)  # (n_seeds, H+1)
+                except ValueError:
+                    pass
+        if _stk:
+            calib_stacked = _stk
+
+    # -- Per-stage event-conditioned margins from transitions.npz ----------
+    event_conditioned_stagewise: dict[str, Any] | None = None
+    if per_seed_transitions:
+        event_conditioned_stagewise = _compute_event_conditioned_stagewise(
+            per_seed_transitions,
+        )
+
     return {
         "n_seeds": len(seeds),
         "seeds": sorted(seeds),
         "scalar_metrics": scalar_agg,
         "calibration": calib_agg,
+        "calibration_stacked": calib_stacked,
         "tail_risk": tail_risk,
         "adaptation": adaptation,
         "event_rates": event_rates,
+        "event_conditioned_stagewise": event_conditioned_stagewise,
+    }
+
+
+def _compute_event_conditioned_stagewise(
+    per_seed_transitions: list[dict[str, np.ndarray]],
+) -> dict[str, Any] | None:
+    """Compute per-stage event-conditioned margin statistics from transitions.
+
+    For each horizon stage ``t``, computes the mean and count of
+    ``margin_beta0`` values conditioned on a stress event occurring at that
+    transition.  Aggregates across seeds before returning.
+
+    Returns ``None`` if no usable transition data is found.
+    """
+    # Determine which event key is present (only one per task family).
+    event_keys = (
+        "catastrophe_event", "jackpot_event", "hazard_cell_hit",
+        "regime_post_change", "shortcut_action_taken",
+    )
+
+    # Collect per-stage event-conditioned margin samples across all seeds.
+    # key: stage index → list of margin values (filtered by event flag)
+    stage_event_margins: dict[int, list[float]] = {}
+    found_event_key: str | None = None
+
+    for trans in per_seed_transitions:
+        margin = trans.get("margin_beta0")
+        t_arr = trans.get("t")
+        if margin is None or t_arr is None:
+            continue
+
+        # Find available event flag.
+        event_flag: np.ndarray | None = None
+        for ek in event_keys:
+            ef = trans.get(ek)
+            if ef is not None and ef.any():
+                event_flag = ef.astype(bool)
+                found_event_key = ek
+                break
+
+        if event_flag is None:
+            continue
+
+        for t_val, m_val, ev_val in zip(
+            t_arr.astype(int), margin, event_flag,
+        ):
+            if ev_val:
+                if t_val not in stage_event_margins:
+                    stage_event_margins[t_val] = []
+                stage_event_margins[t_val].append(float(m_val))
+
+    if not stage_event_margins:
+        return None
+
+    stages_sorted = sorted(stage_event_margins.keys())
+    margin_means: list[float | None] = []
+    margin_counts: list[int] = []
+    for t_val in stages_sorted:
+        vals = stage_event_margins[t_val]
+        margin_means.append(float(np.mean(vals)) if vals else None)
+        margin_counts.append(len(vals))
+
+    return {
+        "stages": stages_sorted,
+        "event_conditioned_margin_mean": margin_means,
+        "event_conditioned_margin_count": margin_counts,
+        "event_key": found_event_key,
     }
 
 
@@ -568,47 +683,61 @@ def build_calibration_json(
                     pass
 
         # -- Per-stage quantiles for pos_margin and neg_margin (spec §12) --
-        # Quantiles are computed across algorithm-group calibration dicts
-        # (each already averaged across seeds within its group).
+        # Quantiles are pooled from individual per-seed arrays across all
+        # algorithm groups to get an accurate empirical margin distribution.
+        # Fall back to algorithm-mean arrays if per-seed stacks are absent.
         for margin_key, out_key in (
             ("aligned_positive_mean", "pos_margin_quantiles"),
             ("aligned_negative_mean", "neg_margin_quantiles"),
         ):
-            margin_arrays: list[np.ndarray] = []
-            for c in calib_dicts:
-                a = c.get(margin_key)
-                if a is not None and a.ndim == 1:
-                    margin_arrays.append(a)
-            if len(margin_arrays) >= 2:
+            # Prefer per-seed stacked arrays (calibration_stacked from
+            # aggregate_group), which avoid the averaging-across-seeds bias.
+            seed_pools: list[np.ndarray] = []
+            for g in task_groups:
+                cs = g.get("calibration_stacked") or {}
+                arr = cs.get(margin_key)
+                if arr is not None and arr.ndim == 2:
+                    seed_pools.append(arr)  # (n_seeds, H+1)
+
+            if seed_pools:
+                # Pool all per-seed arrays → (total_seeds, H+1)
                 try:
-                    stacked = np.stack(margin_arrays, axis=0)  # (n_groups, H+1)
+                    pooled = np.concatenate(seed_pools, axis=0)
                     stagewise[out_key] = {
-                        "q05": _nan_safe_list(
-                            np.nanpercentile(stacked, 5, axis=0),
-                        ),
-                        "q25": _nan_safe_list(
-                            np.nanpercentile(stacked, 25, axis=0),
-                        ),
-                        "q50": _nan_safe_list(
-                            np.nanpercentile(stacked, 50, axis=0),
-                        ),
-                        "q75": _nan_safe_list(
-                            np.nanpercentile(stacked, 75, axis=0),
-                        ),
-                        "q95": _nan_safe_list(
-                            np.nanpercentile(stacked, 95, axis=0),
-                        ),
+                        "q05": _nan_safe_list(np.nanpercentile(pooled, 5, axis=0)),
+                        "q25": _nan_safe_list(np.nanpercentile(pooled, 25, axis=0)),
+                        "q50": _nan_safe_list(np.nanpercentile(pooled, 50, axis=0)),
+                        "q75": _nan_safe_list(np.nanpercentile(pooled, 75, axis=0)),
+                        "q95": _nan_safe_list(np.nanpercentile(pooled, 95, axis=0)),
                     }
                 except ValueError:
                     pass
-            elif len(margin_arrays) == 1:
-                # Single group: report the array as all quantiles (degenerate)
-                arr = margin_arrays[0]
-                safe = _nan_safe_list(arr)
-                stagewise[out_key] = {
-                    "q05": safe, "q25": safe, "q50": safe,
-                    "q75": safe, "q95": safe,
-                }
+            else:
+                # Fallback: use algorithm-group mean arrays (fewer data points).
+                margin_arrays: list[np.ndarray] = []
+                for c in calib_dicts:
+                    a = c.get(margin_key)
+                    if a is not None and a.ndim == 1:
+                        margin_arrays.append(a)
+                if len(margin_arrays) >= 2:
+                    try:
+                        stacked = np.stack(margin_arrays, axis=0)
+                        stagewise[out_key] = {
+                            "q05": _nan_safe_list(np.nanpercentile(stacked, 5, axis=0)),
+                            "q25": _nan_safe_list(np.nanpercentile(stacked, 25, axis=0)),
+                            "q50": _nan_safe_list(np.nanpercentile(stacked, 50, axis=0)),
+                            "q75": _nan_safe_list(np.nanpercentile(stacked, 75, axis=0)),
+                            "q95": _nan_safe_list(np.nanpercentile(stacked, 95, axis=0)),
+                        }
+                    except ValueError:
+                        pass
+                elif len(margin_arrays) == 1:
+                    arr = margin_arrays[0]
+                    safe = _nan_safe_list(arr)
+                    stagewise[out_key] = {
+                        "q05": safe, "q25": safe, "q50": safe,
+                        "q75": safe, "q95": safe,
+                    }
 
         # Compute empirical_r_max from reward_mean across stages
         for c in calib_dicts:
@@ -645,20 +774,92 @@ def build_calibration_json(
     recommended_task_sign = _determine_task_sign(stagewise)
 
     # -- Event-conditioned margin block (spec §12) --------------------------
+    # Pool per-stage event-conditioned margin stats from all algorithm groups.
     event_cond_return: float | None = None
     if tail_risk is not None:
         event_cond_return = tail_risk.get("event_conditioned_return_mean")
 
+    # Collect per-stage data from groups (computed in aggregate_group via
+    # transitions.npz loading).
+    ecs_list: list[dict[str, Any]] = [
+        g["event_conditioned_stagewise"]
+        for g in task_groups
+        if g.get("event_conditioned_stagewise") is not None
+    ]
+    ecs_merged: dict[str, Any] | None = None
+    if ecs_list:
+        # Use first available (all task groups share the same task so event
+        # keys match); merge by averaging margin means per stage.
+        all_stages: set[int] = set()
+        for ecs in ecs_list:
+            all_stages.update(ecs["stages"])
+        stages_sorted = sorted(all_stages)
+
+        merged_means: list[float | None] = []
+        merged_counts: list[int] = []
+        for t_val in stages_sorted:
+            vals: list[float] = []
+            cnt: int = 0
+            for ecs in ecs_list:
+                try:
+                    idx = ecs["stages"].index(t_val)
+                    m = ecs["event_conditioned_margin_mean"][idx]
+                    c_ = ecs["event_conditioned_margin_count"][idx]
+                    if m is not None:
+                        vals.append(float(m))
+                        cnt += c_
+                except (ValueError, IndexError):
+                    pass
+            merged_means.append(float(np.mean(vals)) if vals else None)
+            merged_counts.append(cnt)
+
+        ecs_merged = {
+            "stages": stages_sorted,
+            "event_conditioned_margin_mean": merged_means,
+            "event_conditioned_margin_count": merged_counts,
+            "event_key": ecs_list[0].get("event_key"),
+        }
+
     event_conditioned_margins: dict[str, Any] = {
         "event_conditioned_return": event_cond_return,
-        "note": (
-            "event_conditioned_return is the mean episode return "
-            "conditioned on at least one stress event occurring. "
-            "Per-stage event-conditioned margin arrays require "
-            "event-flagged transitions logged per stage, which "
-            "is available in transitions.npz for future processing."
-        ),
     }
+    if ecs_merged is not None:
+        event_conditioned_margins["stagewise"] = ecs_merged
+    else:
+        event_conditioned_margins["stagewise"] = None
+
+    # -- Figure-compat top-level keys (BLOCKER-2 fix) ----------------------
+    # These allow make_phase2_figures.py to load return and margin data
+    # without re-reading nested stagewise structures.
+
+    # base_returns: per-stage mean reward profile (proxy for return distribution)
+    base_returns_list: list[float | None] = []
+    if stagewise is not None:
+        bret = stagewise.get("reward_mean_mean")
+        if bret is not None:
+            base_returns_list = bret if isinstance(bret, list) else list(bret)
+
+    # stress_returns: event-conditioned return scalar (single-point summary)
+    stress_returns_list: list[float | None] = []
+    if event_cond_return is not None:
+        stress_returns_list = [float(event_cond_return)]
+
+    # margin_quantiles: top-level alias for pos_margin_quantiles with stage index
+    margin_quantiles_top: dict[str, Any] | None = None
+    if stagewise is not None:
+        pos_q = stagewise.get("pos_margin_quantiles")
+        stage_vals = stagewise.get("stage")
+        if pos_q is not None:
+            stages_for_q = (
+                stage_vals if isinstance(stage_vals, list)
+                else list(range(len(pos_q.get("q50", []))))
+            )
+            margin_quantiles_top = {
+                "stages": stages_for_q,
+                "q05": pos_q.get("q05", []),
+                "q50": pos_q.get("q50", []),
+                "q95": pos_q.get("q95", []),
+            }
 
     doc: dict[str, Any] = {
         "task_family": task_family,
@@ -673,6 +874,10 @@ def build_calibration_json(
         "event_rates": event_rates,
         "event_conditioned_margins": event_conditioned_margins,
         "recommended_task_sign": recommended_task_sign,
+        # Figure-compat keys (loaded by make_phase2_figures.py):
+        "base_returns": base_returns_list,
+        "stress_returns": stress_returns_list,
+        "margin_quantiles": margin_quantiles_top,
     }
 
     return doc
@@ -853,6 +1058,32 @@ def write_outputs(
         summary_dir = aggregated_root / safe_task / safe_algo
         summary_dir.mkdir(parents=True, exist_ok=True)
 
+        # Build proxy learning curves from stagewise calibration arrays
+        # (stage index normalised to [0, 1] as a step proxy).
+        curves: dict[str, Any] = {}
+        calib = agg.get("calibration")
+        if calib is not None:
+            stage_arr = calib.get("stage")
+            reward_arr = calib.get("reward_mean")
+            if (
+                stage_arr is not None
+                and reward_arr is not None
+                and len(stage_arr) > 0
+            ):
+                max_stage = float(np.nanmax(np.abs(stage_arr))) or 1.0
+                curves = {
+                    "steps": (stage_arr / max_stage).tolist(),
+                    "mean_return": _nan_safe_list(reward_arr),
+                    "std_return": [],
+                    # alias used by fig_adaptation_plots
+                    "episode_returns": _nan_safe_list(reward_arr),
+                }
+                adapt = agg.get("adaptation")
+                if adapt is not None:
+                    cp = adapt.get("regime_shift_episode_mean")
+                    if cp is not None:
+                        curves["change_point"] = float(cp)
+
         entry = {
             "suite": suite,
             "task": task,
@@ -863,6 +1094,7 @@ def write_outputs(
             "tail_risk": agg.get("tail_risk"),
             "adaptation": agg.get("adaptation"),
             "event_rates": agg.get("event_rates"),
+            "curves": curves,
         }
         summary_path = summary_dir / "summary.json"
         save_json(summary_path, _make_json_safe(entry))

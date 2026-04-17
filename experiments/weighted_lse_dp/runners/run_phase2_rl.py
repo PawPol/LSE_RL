@@ -188,6 +188,7 @@ class _AutoEventLogger(EventTransitionLogger):
         hazard_reward_threshold: float = -4.0,
         jackpot_reward_threshold: float = 2.0,
         catastrophe_reward_threshold: float = -2.0,
+        risky_state: int | None = None,
     ) -> None:
         super().__init__(agent, n_base=n_base, gamma=gamma)
         self._stress_type = stress_type
@@ -195,6 +196,7 @@ class _AutoEventLogger(EventTransitionLogger):
         self._hazard_thr = hazard_reward_threshold
         self._jackpot_thr = jackpot_reward_threshold
         self._catastrophe_thr = catastrophe_reward_threshold
+        self._risky_state = risky_state
 
     def __call__(self, sample: tuple) -> None:
         """Detect events from sample, set flags, then delegate to parent."""
@@ -210,6 +212,13 @@ class _AutoEventLogger(EventTransitionLogger):
             # Catastrophe: large negative reward and absorbing.
             if reward < self._catastrophe_thr and absorbing:
                 self.mark_catastrophe()
+            # Shortcut action taken: action 0 at the designated risky state.
+            # sample[0][0] is the augmented state id; base_state = id % n_base.
+            if self._risky_state is not None:
+                base_state = int(sample[0][0]) % self._n_base
+                action = int(sample[1][0])
+                if base_state == self._risky_state and action == 0:
+                    self.mark_shortcut_taken()
 
         elif self._stress_type == "regime_shift":
             # Regime shift: check wrapper's post_change attribute.
@@ -600,6 +609,12 @@ def run_single(
     jackpot_reward_thr = float(task_config.get("jackpot_reward", 10.0)) * 0.5
     catastrophe_reward_thr = float(task_config.get("catastrophe_reward", -10.0)) * 0.5
 
+    # For catastrophe tasks, pass the risky state so shortcut_action_taken
+    # can be flagged whenever action 0 is selected at that state.
+    risky_state_for_logger: int | None = None
+    if stress_type == "catastrophe":
+        risky_state_for_logger = int(task_config.get("risky_state", 15))
+
     if stress_type is not None:
         logger: TransitionLogger = _AutoEventLogger(
             agent,
@@ -610,6 +625,7 @@ def run_single(
             hazard_reward_threshold=hazard_reward_thr,
             jackpot_reward_threshold=jackpot_reward_thr,
             catastrophe_reward_threshold=catastrophe_reward_thr,
+            risky_state=risky_state_for_logger,
         )
     else:
         logger = TransitionLogger(agent, n_base=n_base, gamma=gamma)

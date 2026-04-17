@@ -811,3 +811,138 @@ MINOR:   0
 NIT:     0
 DISPUTE: 0
 ```
+
+---
+
+## Phase II Review R2 — Triage (2026-04-17)
+
+Source: Codex standard review R2 `b0nweghxr` + adversarial review R2 `bewezccsc`.
+Triaged by: `review-triage` subagent.
+Prior round: R1 had 2 BLOCKERs + 2 MAJORs, all resolved before R2 submission.
+
+### Finding classification
+
+**Finding 1 — summary.json missing `curves` block; figure script reads empty data**
+Standard review [P1], `make_phase2_figures.py:299-305`.
+
+Verified in code. `write_outputs()` at `aggregate_phase2.py:856-866` emits `scalar_metrics`, `tail_risk`, `adaptation`, `event_rates` only. No `curves` key. The figure script at line 302 does `summary.get("curves", {})` and reads `steps`, `mean_return`, `std_return` from that empty dict -- producing blank learning-curve panels in production. The `--demo` path works because it synthesizes data, masking the schema mismatch.
+
+Spec cross-ref: Phase II spec section 3 ("result schema ... `curves.npz`") and section 11 ("figures must be regeneratable"). The summary.json must either embed curves data or the figure script must load `curves.npz` directly. Either way, production figures are currently blank.
+
+Severity: **BLOCKER**. Phase II exit criterion 5 ("Phase II tables and figures were generated") is not met if figures cannot be regenerated from real run outputs. Blank learning-curve panels in production mode mean the main Phase II deliverable (visual evidence of classical degradation) does not exist.
+
+**Finding 2 — calibration JSON keys do not match figure script expectations**
+Standard review [P1], `make_phase2_figures.py:373-374`.
+
+Verified in code. The figure script reads `cal.get("base_returns", [])` and `cal.get("stress_returns", [])` at line 373-374. The calibration JSON (produced by `build_calibration_json`) contains `stagewise`, `tail_risk`, `adaptation`, `event_rates`, `event_conditioned_margins` -- no `base_returns` or `stress_returns` keys. Two of five Phase II figures (return distribution plots and margin quantile panels) display "No return arrays" / "Empty margin data" in production mode.
+
+Spec cross-ref: Phase II spec section 11.1 items 2 and 5 (return distribution plots, per-stage margin quantile plots). These figures are mandatory internal figures.
+
+Severity: **BLOCKER**. Same rationale as Finding 1: two more mandatory figures are broken in production mode. Exit criterion 5 is violated.
+
+**Finding 3 — warmstart_dp=False crashes for regime-shift DP tasks**
+Standard review [P2], `run_phase2_dp.py:224-225`.
+
+Verified in code. When `is_regime_shift=True` and `warmstart=False`, the `else` branch at line 636-653 calls `_get_base_mdp(task_name, mdp_or_wrapper)` which returns `mdp_or_wrapper` unchanged (the wrapper). Then `_build_ref_pi` at line 339 calls `extract_mdp_arrays(mdp)` on the wrapper, which lacks `.p`/`.r` attributes, causing an `AttributeError`.
+
+However, verified in config: `paper_suite.json` sets `warmstart_dp: true` for both `chain_regime_shift` (line 86) and `grid_regime_shift` (line 149). No actual run hits this path.
+
+Spec cross-ref: No spec requirement for `warmstart_dp=False` to work; the spec only requires warm-started re-planning (section 5.1.D, section 6.1).
+
+Severity: **MINOR**. The code path is dead under the current paper suite config. If a user manually sets `warmstart_dp=false`, they hit a crash rather than silent wrong results, which is fail-loud behavior. Low priority to fix but should be guarded with a clear error message.
+
+**Finding 4 — margin "quantiles" computed from algorithm-level means, not per-transition data**
+Adversarial review [high], `aggregate_phase2.py:537-611`.
+
+Verified in code. At lines 573-611, `pos_margin_quantiles` and `neg_margin_quantiles` are computed by stacking per-algorithm calibration arrays (each already averaged across seeds within that algorithm group) and taking `np.nanpercentile` across the algorithm axis. For a typical run with 2 algorithms (QLearning, ExpectedSARSA), this computes percentiles over 2 values per stage -- statistically meaningless. The spec (section 12) requires "per-stage quantiles of positive aligned margins" which means quantiles from the empirical distribution of per-transition margins across all classical runs, not percentiles of algorithm-level means.
+
+Spec cross-ref: Phase II spec section 12 ("per-stage quantiles of positive aligned margins, per-stage quantiles of negative aligned margins"). The intent is clear: the quantiles should characterize the margin distribution, not the distribution of algorithm averages.
+
+Severity: **MAJOR**. The calibration JSON's margin quantiles will be consumed by Phase III for schedule calibration. Wrong quantiles mean wrong beta schedules, but the core Phase II science (demonstrating classical weaknesses) is not invalidated -- tables P2-A through P2-D use scalar metrics, not these quantiles. The data to compute correct quantiles exists in `calibration_stats.npz` and `transitions.npz`; the aggregator just needs to be reworked.
+
+**Finding 5 — event-conditioned margin block is a placeholder**
+Adversarial review [high], `aggregate_phase2.py:647-675`.
+
+Verified in code. The `event_conditioned_margins` block at lines 652-661 contains only `event_conditioned_return` (a scalar) plus a `note` string saying per-stage arrays are deferred. Spec section 12 requires "event-conditioned margin statistics" -- plural, per-stage.
+
+Spec cross-ref: Phase II spec section 12 explicitly lists "event-conditioned margin statistics" as a required calibration JSON field. The current placeholder does not satisfy this.
+
+Severity: **MAJOR**. The data to compute these statistics exists (event flags in `transitions.npz`, margins in `calibration_stats.npz`), but the aggregation code does not join them. Phase III schedule calibration needs event-conditioned margin structure to set sign-specific beta adjustments. Without it, Phase III must either ignore event conditioning or implement its own aggregation from raw data, breaking the clean pipeline contract.
+
+**Finding 6 — `_AutoEventLogger` never sets `shortcut_action_taken` for catastrophe tasks**
+Adversarial review [medium], `run_phase2_rl.py:199-225`.
+
+Verified in code. The `catastrophe` branch at lines 209-211 only fires `mark_catastrophe()` on large negative reward + absorbing. There is no detection of successful risky-shortcut usage (shortcut taken but no catastrophe occurred). The `shortcut_action_taken` flag specified in section 8.1 is never set.
+
+Spec cross-ref: Phase II spec section 8.1 lists `shortcut_action_taken` as a required binary event array. The catastrophe family's purpose (section 5.1.C) is the safe-vs-risky tradeoff; measuring risky-path selection frequency is listed under "What to measure."
+
+Severity: **MINOR**. The missing flag does not invalidate existing metrics (return, CVaR, catastrophe rate are all correct). It blocks one diagnostic ("fraction of episodes using the risky path") but that diagnostic is not consumed by Phase III calibration. The fix requires either teaching the environment to expose shortcut-action identity or teaching the logger to detect it from (state, action) pairs, which is non-trivial but not blocking.
+
+### Actionable items
+
+- [ ] [BLOCKER] [plot] `make_phase2_figures.py` production learning-curve path reads `summary["curves"]` which does not exist in `summary.json` emitted by `aggregate_phase2.write_outputs()`. All learning-curve panels are blank in production mode. | Fix: either (a) add a `curves` block to `write_outputs()` that includes `steps`, `mean_return`, `std_return` arrays (sourced from `curves.npz` per-seed files, aggregated across seeds), or (b) rewrite the figure script to load `curves.npz` directly from run directories and aggregate at plot time. Option (a) is cleaner. -> plotter-analyst
+      (codex-session: b0nweghxr, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#3, #11)
+      Acceptance criterion: Running `python make_phase2_figures.py` (without `--demo`) against a completed Phase II result tree produces Figure 1 (learning curves) with non-empty line plots for every mandatory task family. The `summary.json` for at least one (task, algorithm) pair contains a `curves` key with non-empty `steps` and `mean_return` arrays.
+
+- [ ] [BLOCKER] [plot] `make_phase2_figures.py` production return-distribution and margin-quantile panels read `cal["base_returns"]`, `cal["stress_returns"]`, `cal["margin_quantiles"]` which do not exist in the calibration JSON. Two of five figures show placeholder text. | Fix: rewrite the figure script to consume the actual calibration JSON keys (`stagewise.pos_margin_quantiles`, `tail_risk`, etc.) or add the missing keys to `build_calibration_json()`. The return distribution data can be sourced from per-seed `metrics.json` return arrays loaded at plot time. -> plotter-analyst
+      (codex-session: b0nweghxr, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#11)
+      Acceptance criterion: Running `python make_phase2_figures.py` (without `--demo`) produces Figures 2 and 5 (return distributions and margin quantile panels) with actual plotted data for every mandatory stress task family. No "No return arrays" or "Empty margin data" text appears.
+
+- [ ] [MAJOR] [calibration-prep] `aggregate_phase2.py:573-611` computes `pos_margin_quantiles` / `neg_margin_quantiles` as percentiles of per-algorithm mean arrays (axis=0 over n_algorithms values), not as empirical quantiles from per-transition margin data. For a 2-algorithm suite this yields percentiles over 2 values -- statistically meaningless. | Fix: load per-transition aligned margin data from `calibration_stats.npz` (or `transitions.npz`) for each (task, seed, algorithm) run, concatenate all per-stage margin values across seeds and algorithms, then compute conditional quantiles (q05, q25, q50, q75, q95) of the positive and negative aligned margins at each stage. This gives the per-stage margin distribution that Phase III needs for schedule calibration. -> calibration-engineer
+      (codex-session: bewezccsc, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#12)
+
+- [ ] [MAJOR] [calibration-prep] `aggregate_phase2.py:647-661` emits a placeholder `event_conditioned_margins` block with only a scalar `event_conditioned_return` and a `note` string. Spec section 12 requires per-stage event-conditioned margin statistics. | Fix: join event flags from `transitions.npz` with per-transition margin data from `calibration_stats.npz`, filter margins to transitions where the relevant event flag is True, and compute per-stage conditional statistics (mean, std, quantiles) of margins given event occurrence. Emit these as arrays in the calibration JSON under `event_conditioned_margins`. -> calibration-engineer
+      (codex-session: bewezccsc, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#12)
+
+- [ ] [MINOR] [infra] `run_phase2_dp.py:636-638` -- when `warmstart_dp=False` for regime-shift tasks, `_get_base_mdp()` returns the wrapper unchanged and `extract_mdp_arrays()` crashes on the wrapper object. Dead code path under current `paper_suite.json` config but would fail for any user who sets `warmstart_dp=false`. | Fix: add a guard in the `else` branch: if `is_regime_shift`, either raise a clear error ("regime-shift tasks require warmstart_dp=True for DP") or extract `._post` MDP for cold-start planning. -> experiment-runner
+      (codex-session: b0nweghxr, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#5.1.D)
+
+- [ ] [MINOR] [logging] `_AutoEventLogger` catastrophe branch (lines 209-211) never sets `shortcut_action_taken`. The risky-path selection mechanism is invisible in RL logs. | Fix: detect shortcut action usage from (state, action) pairs by checking if the current state is a shortcut-eligible state and the chosen action is the risky shortcut. Requires either (a) passing shortcut state/action identifiers to the logger via config, or (b) teaching the catastrophe wrapper to expose a `was_shortcut_action(state, action)` method. -> experiment-runner
+      (codex-session: bewezccsc, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#8.1)
+
+### Patterns promoted to lessons.md
+
+**Pattern: Figure scripts written against assumed JSON schema without contract testing.**
+
+The figure script was developed alongside `--demo` mode (synthetic data) and never tested against the actual JSON output from the aggregator. The `--demo` path bypasses all schema reads, so it passed all manual checks while the production path silently produced blank figures. Two distinct schema mismatches existed: (1) `summary.json` missing `curves`, (2) calibration JSON keys not matching figure script expectations.
+
+Prevention rule: Every figure script that reads structured data must have at least one integration test that runs it against a minimal but structurally correct data fixture (not `--demo` synthetic data). The test asserts non-empty figure output and zero "No data" / "Empty" text annotations. Alternatively, define the output schema as a shared constant between the aggregator and the figure script, and validate at write time.
+
+### Open questions (SPEC-GAP)
+
+**SPEC-GAP: Phase II summary.json schema does not specify `curves` block.**
+
+Phase II spec section 3 lists `curves.npz` as part of the per-run result schema, but does not explicitly specify whether aggregated summaries should embed curve data or whether figure scripts should load raw per-run `curves.npz` files directly. The Phase I spec's aggregation contract (if one exists) should be consulted. The current aggregator omits curves from summary.json, while the figure script expects them there. One approach must be chosen and documented.
+
+**SPEC-GAP: Per-transition margin data source for calibration quantiles.**
+
+Phase II spec section 12 says "per-stage quantiles of positive aligned margins" but does not specify whether these should come from (a) the per-transition margins logged in `calibration_stats.npz` (which are already stage-averaged within each run), or (b) raw per-transition margin data from `transitions.npz` (which preserves the full distribution). Option (b) is statistically correct but requires loading potentially large transition logs. The current code uses option (a) further averaged across algorithms, which is clearly wrong. Recommend option (b) with the clarification that "per-stage quantiles" means: at each stage t, collect all margin values from all transitions at that stage across all seeds and algorithms, then take quantiles of that collection.
+
+### Summary
+
+```
+BLOCKER: 2  (Findings 1, 2 -- figure schema mismatches producing blank production figures)
+MAJOR:   2  (Findings 4, 5 -- wrong margin quantile computation + missing event-conditioned margins)
+MINOR:   2  (Findings 3, 6 -- dead warmstart code path + missing shortcut_action_taken flag)
+NIT:     0
+DISPUTE: 0
+```
+
+Note: R1 BLOCKERs A+B and MAJORs C+D from the previous triage are confirmed resolved and not re-raised by R2 reviewers. The R2 findings are all new issues.
+
+---
+
+## Phase II R2 Fix Cycle (2026-04-17)
+
+All R2 findings addressed in the current commit. Status:
+
+| Finding | Severity | File(s) | Fix |
+|---------|----------|---------|-----|
+| BLOCKER 1 — `curves` missing from summary.json | FIXED | `aggregate_phase2.py:write_outputs()` | Added `curves` block (steps/mean_return/episode_returns) from stagewise calibration data |
+| BLOCKER 2 — Wrong calibration JSON keys in figure script | FIXED | `aggregate_phase2.py:build_calibration_json()`, `make_phase2_figures.py` | Added `base_returns`, `stress_returns`, `margin_quantiles` top-level keys; updated `fig_return_distributions` and `fig_margin_quantiles` to use them |
+| MAJOR 1 — Margin quantiles from algorithm means | FIXED | `aggregate_phase2.py` | `aggregate_group()` now returns `calibration_stacked` (per-seed arrays); `build_calibration_json()` pools seeds across algorithms before computing quantiles |
+| MAJOR 2 — Event-conditioned margins placeholder | FIXED | `aggregate_phase2.py` | Added `_compute_event_conditioned_stagewise()` loading `transitions.npz` per seed; per-stage event-conditioned margin means now in `event_conditioned_margins.stagewise` |
+| MINOR 1 — `warmstart_dp=False` crash for regime-shift | FIXED | `run_phase2_dp.py` | Added `elif is_regime_shift:` branch that runs DP on `._pre` MDP when warmstart disabled |
+| MINOR 2 — `shortcut_action_taken` never flagged | FIXED | `run_phase2_rl.py` | `_AutoEventLogger` now accepts `risky_state` param; flags `mark_shortcut_taken()` when action 0 is taken at `risky_state` during catastrophe runs |
+
+Next: run `/lse:verify --full` then `/lse:review II` for R3.

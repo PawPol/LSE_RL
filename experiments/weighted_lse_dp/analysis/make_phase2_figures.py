@@ -370,11 +370,21 @@ def fig_return_distributions(
                 )
                 ax.set_title(task.replace("_", " "))
                 continue
+            # base_returns: per-stage reward mean profile (proxy distribution)
             base_returns = np.array(cal.get("base_returns", []))
+            # stress_returns: event-conditioned return summary
             stress_returns = np.array(cal.get("stress_returns", []))
             if len(base_returns) == 0 and len(stress_returns) == 0:
+                # Also try nested stagewise as fallback
+                sw = cal.get("stagewise") or {}
+                base_returns = np.array(sw.get("reward_mean_mean", []))
+                tr = cal.get("tail_risk") or {}
+                ecr = tr.get("event_conditioned_return_mean")
+                if ecr is not None:
+                    stress_returns = np.array([ecr])
+            if len(base_returns) == 0 and len(stress_returns) == 0:
                 ax.text(
-                    0.5, 0.5, "No return arrays",
+                    0.5, 0.5, "No return data",
                     ha="center", va="center", transform=ax.transAxes,
                     fontsize=9, color="gray",
                 )
@@ -585,12 +595,27 @@ def fig_margin_quantiles(
                 )
                 ax.set_title(task.replace("_", " "))
                 continue
-            margin_data = cal.get("margin_quantiles", {})
+            # Top-level margin_quantiles key added by build_calibration_json.
+            # Falls back to nested stagewise.pos_margin_quantiles if absent.
+            margin_data = cal.get("margin_quantiles") or {}
+            if not margin_data:
+                sw = cal.get("stagewise") or {}
+                pos_q = sw.get("pos_margin_quantiles") or {}
+                stage_v = sw.get("stage")
+                if pos_q:
+                    n_stages = len(pos_q.get("q50", []))
+                    margin_data = {
+                        "stages": stage_v if stage_v is not None
+                                  else list(range(n_stages)),
+                        "q05": pos_q.get("q05", []),
+                        "q50": pos_q.get("q50", []),
+                        "q95": pos_q.get("q95", []),
+                    }
             stages = np.array(margin_data.get("stages", []))
             q05 = np.array(margin_data.get("q05", []))
             q50 = np.array(margin_data.get("q50", []))
             q95 = np.array(margin_data.get("q95", []))
-            if len(stages) == 0:
+            if len(stages) == 0 or len(q50) == 0:
                 ax.text(
                     0.5, 0.5, "Empty margin data",
                     ha="center", va="center", transform=ax.transAxes,

@@ -633,6 +633,28 @@ def _run_single(
             resolved_cfg=resolved_cfg,
             full_config=full_config,
         )
+    elif is_regime_shift:
+        # --- Regime-shift without warmstart: run on the pre-shift MDP ---
+        # The regime-shift wrapper exposes ._pre and ._post sub-MDPs.
+        # Without warmstart we simply run on the pre-shift MDP (the baseline
+        # regime); this is well-defined and avoids calling extract_mdp_arrays
+        # on the wrapper itself (which does not expose p/r directly).
+        pre_mdp = mdp_or_wrapper._pre
+        ref_pi = _build_ref_pi(task_name, pre_mdp)
+
+        _run_dp_on_mdp(
+            mdp=pre_mdp,
+            algo_name=algo_name,
+            ref_pi=ref_pi,
+            v_exact=None,
+            task_label=f"{task_name}_pre_shift",
+            seed=seed,
+            task_cfg=task_cfg,
+            out_root=out_root,
+            suite=suite,
+            resolved_cfg=resolved_cfg,
+            full_config=full_config,
+        )
     else:
         # --- Standard (non-regime-shift) run ---
         mdp = _get_base_mdp(task_name, mdp_or_wrapper)
