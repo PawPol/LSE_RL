@@ -72,7 +72,8 @@ _DEFAULT_CONFIG = (
 )
 
 #: Default output root (relative to repo root).
-_DEFAULT_OUT_ROOT = "results/weighted_lse_dp/phase1/paper_suite"
+#: RunWriter.create appends phase/suite, so this must NOT pre-include them.
+_DEFAULT_OUT_ROOT = "results/weighted_lse_dp"
 
 #: Map task name -> factory function.
 _TASK_FACTORIES: dict[str, Any] = {
@@ -211,6 +212,7 @@ def run_single(
     task_config: dict[str, Any],
     *,
     out_root: Path,
+    suite: str = "paper_suite",
     gamma_prime: float | None = None,
 ) -> dict[str, Any]:
     """Execute one (task, algorithm, seed) run.
@@ -226,8 +228,10 @@ def run_single(
     task_config:
         Per-task config block from the suite JSON.
     out_root:
-        Base output directory. Run artifacts are written to
-        ``<out_root>/<task>/<algorithm>/seed_<seed>/``.
+        Base output directory. RunWriter appends ``/<phase>/<suite>/…``.
+    suite:
+        Suite name for RunWriter path construction (default ``"paper_suite"``).
+        Pass e.g. ``"ablation/gamma090"`` for gamma-ablation runs.
     gamma_prime:
         Optional gamma override for ablation mode. When ``None``,
         uses the task's native gamma.
@@ -272,6 +276,10 @@ def run_single(
         "learning_rate": _LEARNING_RATE,
         "task_config": task_config,
     }
+    # Store gamma_prime_override so aggregate_phase1.discover_runs() can
+    # group ablation runs by their effective discount (mirrors DP runner).
+    if gamma_prime is not None:
+        resolved_config["gamma_prime_override"] = gamma_prime
 
     # -- Seed everything ----------------------------------------------------
     seed_everything(seed)
@@ -292,7 +300,7 @@ def run_single(
     rw = RunWriter.create(
         base=out_root,
         phase="phase1",
-        suite="paper_suite",
+        suite=suite,
         task=task,
         algorithm=algorithm,
         seed=seed,

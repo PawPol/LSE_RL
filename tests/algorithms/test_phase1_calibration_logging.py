@@ -10,7 +10,7 @@ Invariants guarded
 - ``margin_beta0 == reward - v_next_beta0`` (NO gamma factor) -- exact.
 - ``td_target_beta0 == reward + gamma * v_next_beta0`` -- exact.
 - ``td_error_beta0 == td_target_beta0 - q_current_beta0`` -- exact.
-- Aggregated calibration stats (17 keys) match raw-transition reductions.
+- Aggregated calibration stats (18 keys) match raw-transition reductions.
 - ``RunWriter`` round-trips transitions and calibration through disk.
 - The ``margin_beta0_formula`` string is stamped in the schema header.
 """
@@ -203,7 +203,7 @@ class TestCalibrationStatsAggregation:
     def test_all_mandatory_keys_present(
         self, calibration_stats: dict[str, np.ndarray]
     ) -> None:
-        """Calibration stats must contain all 17 CALIBRATION_ARRAYS keys.
+        """Calibration stats must contain all 18 CALIBRATION_ARRAYS keys.
         # docs/specs/phase_I_*.md S7.2
         """
         missing = [k for k in CALIBRATION_ARRAYS if k not in calibration_stats]

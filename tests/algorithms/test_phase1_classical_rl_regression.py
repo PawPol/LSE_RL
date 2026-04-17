@@ -304,7 +304,7 @@ class TestRLEvaluatorRegression:
 
         # docs/specs/phase_I_*.md S9.3 -- summary stat keys
         Invariant: summary dict has keys steps_to_threshold,
-        auc_disc_return, final_10pct_disc_return, final_10pct_success_rate.
+        auc_disc_return, final_disc_return_mean, final_10pct_success_rate.
         """
         _mdp_base, mdp_rl, cfg = chain_env
         agent = _make_agent(mdp_rl, QLearning, epsilon=0.1)
@@ -333,7 +333,7 @@ class TestRLEvaluatorRegression:
         expected_keys = {
             "steps_to_threshold",
             "auc_disc_return",
-            "final_10pct_disc_return",
+            "final_disc_return_mean",
             "final_10pct_success_rate",
         }
         assert set(summary.keys()) == expected_keys, (

@@ -48,7 +48,7 @@ sys.path.insert(0, str(_REPO_ROOT / "mushroom-rl-dev"))
 _DEFAULT_CONFIG = (
     "experiments/weighted_lse_dp/configs/phase1/paper_suite.json"
 )
-_DEFAULT_OUT_ROOT = "results/weighted_lse_dp/phase1/ablation"
+_DEFAULT_OUT_ROOT = "results/weighted_lse_dp"
 
 #: Algorithms dispatched to the DP runner.
 DP_ALGORITHMS = {"PE", "VI", "PI", "MPI", "AsyncVI"}
@@ -192,7 +192,7 @@ def _run_one(
             seed=seed,
             task_cfg=task_cfg,
             out_root=out_root,
-            suite=gamma_dir,
+            suite=f"ablation/{gamma_dir}",
             gamma_prime=gp,
             full_config=full_config,
         )
@@ -223,15 +223,13 @@ def _run_one(
         # results/weighted_lse_dp/phase1/ablation), keeping them separate
         # from the main paper_suite results.
         #
-        # For gamma isolation, we embed gamma_dir in out_root:
-        rl_out = out_root / gamma_dir
-
         result = rl_run_single(
             task=task,
             algorithm=algo,
             seed=seed,
             task_config=task_cfg,
-            out_root=rl_out,
+            out_root=out_root,
+            suite=f"ablation/{gamma_dir}",
             gamma_prime=gp,
         )
         return {

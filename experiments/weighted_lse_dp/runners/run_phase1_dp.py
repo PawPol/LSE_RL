@@ -291,7 +291,8 @@ def _run_single(
     # 6. Record per-sweep curves via DPCurvesLogger
     #    The planners run internally and store residuals/sweep_times.
     #    We replay them into DPCurvesLogger after the fact.
-    dp_logger = DPCurvesLogger(run_writer=rw, v_exact=None, task=task_name)
+    #    Pass planner.V as the exact reference so supnorm_to_exact is populated.
+    dp_logger = DPCurvesLogger(run_writer=rw, v_exact=planner.V, task=task_name)
 
     sweep_times = _get_sweep_times(planner)
     residuals = list(planner.residuals)

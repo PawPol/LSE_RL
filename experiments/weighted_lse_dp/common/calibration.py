@@ -225,7 +225,7 @@ def aggregate_calibration_stats(
     Returns
     -------
     dict[str, np.ndarray]
-        Dict with all 17 keys from :data:`~schemas.CALIBRATION_ARRAYS`,
+        Dict with all 18 keys from :data:`~schemas.CALIBRATION_ARRAYS`,
         each of shape ``(H+1,)`` and the dtypes documented in S7.2.
     """
     # -- validate required transition keys ---------------------------------
@@ -261,6 +261,7 @@ def aggregate_calibration_stats(
     max_abs_q_current = np.full(n_stages, np.nan, dtype=np.float64)
     bellman_residual_mean = np.full(n_stages, np.nan, dtype=np.float64)
     bellman_residual_std = np.full(n_stages, np.nan, dtype=np.float64)
+    aligned_margin_freq = np.full(n_stages, np.nan, dtype=np.float64)
 
     # -- per-stage aggregation ---------------------------------------------
     for t in range(n_stages):
@@ -292,6 +293,9 @@ def aggregate_calibration_stats(
         max_abs_v_next[t] = np.max(np.abs(v_t))
         max_abs_q_current[t] = np.max(np.abs(q_t))
 
+        # Aligned-margin frequency: fraction of transitions with margin_beta0 > 0
+        aligned_margin_freq[t] = np.mean(m_t > 0.0)
+
         # Bellman residuals (optional, per-stage)
         if bellman_residuals is not None and t in bellman_residuals:
             br = np.asarray(bellman_residuals[t], dtype=np.float64)
@@ -317,6 +321,7 @@ def aggregate_calibration_stats(
         "max_abs_q_current": max_abs_q_current,
         "bellman_residual_mean": bellman_residual_mean,
         "bellman_residual_std": bellman_residual_std,
+        "aligned_margin_freq": aligned_margin_freq,
     }
 
 
@@ -338,7 +343,7 @@ def build_calibration_stats_from_dp_tables(
 
     For exact DP runs the Q/V tables are already available in closed form,
     so we can bypass per-transition logging and compute the calibration
-    statistics analytically.  The returned dict has the same 17 keys as
+    statistics analytically.  The returned dict has the same 18 keys as
     :func:`aggregate_calibration_stats` (matching
     :data:`~schemas.CALIBRATION_ARRAYS`).
 
@@ -413,6 +418,7 @@ def build_calibration_stats_from_dp_tables(
     max_abs_q_current = np.full(n_stages, np.nan, dtype=np.float64)
     bellman_residual_mean = np.full(n_stages, np.nan, dtype=np.float64)
     bellman_residual_std = np.full(n_stages, np.nan, dtype=np.float64)
+    aligned_margin_freq = np.full(n_stages, np.nan, dtype=np.float64)
 
     for t in range(H):
         # v_next_sa[s, a] = sum_{s'} P[s,a,s'] * V[t+1, s']
@@ -452,6 +458,9 @@ def build_calibration_stats_from_dp_tables(
         max_abs_v_next[t] = np.max(np.abs(v_flat))
         max_abs_q_current[t] = np.max(np.abs(q_flat))
 
+        # Aligned-margin frequency: fraction of (s,a) pairs with margin_beta0 > 0
+        aligned_margin_freq[t] = np.mean(margin_flat > 0.0)
+
         bellman_residual_mean[t] = np.mean(td_error_flat)
         bellman_residual_std[t] = np.std(td_error_flat)
 
@@ -475,6 +484,7 @@ def build_calibration_stats_from_dp_tables(
         "max_abs_q_current": max_abs_q_current,
         "bellman_residual_mean": bellman_residual_mean,
         "bellman_residual_std": bellman_residual_std,
+        "aligned_margin_freq": aligned_margin_freq,
     }
 
 

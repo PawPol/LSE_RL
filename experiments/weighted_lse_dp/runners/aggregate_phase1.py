@@ -96,11 +96,22 @@ def discover_runs(
     records: list[dict[str, Any]] = []
 
     suites_to_scan = list(_SUITES)
-    if include_ablation:
-        suites_to_scan.append(_ABLATION_SUITE)
 
-    for suite in suites_to_scan:
-        dirs = find_run_dirs(run_root, phase="phase1", suite=suite)
+    def _iter_suite_dir_pairs() -> list[tuple[str, list[Path]]]:
+        """Yield (suite_label, run_dirs) for all suites to scan."""
+        pairs: list[tuple[str, list[Path]]] = []
+        for suite in suites_to_scan:
+            pairs.append((suite, find_run_dirs(run_root, phase="phase1", suite=suite)))
+        if include_ablation:
+            # Ablation runs live under phase1/ablation/gamma<gp>/<task>/<algo>/seed_*
+            # (one extra gamma level compared to the standard suite layout).
+            for gd in sorted(run_root.glob("phase1/ablation/gamma*")):
+                if gd.is_dir():
+                    gd_suite = f"{_ABLATION_SUITE}/{gd.name}"
+                    pairs.append((gd_suite, find_run_dirs(run_root, phase="phase1", suite=gd_suite)))
+        return pairs
+
+    for suite, dirs in _iter_suite_dir_pairs():
         for run_dir in dirs:
             try:
                 rj = load_run_json(run_dir)

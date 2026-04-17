@@ -135,6 +135,7 @@ CALIBRATION_ARRAYS: tuple[str, ...] = (
     "max_abs_q_current",    # (H+1,) float64
     "bellman_residual_mean",# (H+1,) float64  - NaN if exact DP not available
     "bellman_residual_std", # (H+1,) float64
+    "aligned_margin_freq",  # (H+1,) float64  - fraction of transitions with margin_beta0 > 0
 )
 """Array names in ``calibration_stats.npz`` (aggregated per-stage stats)."""
 

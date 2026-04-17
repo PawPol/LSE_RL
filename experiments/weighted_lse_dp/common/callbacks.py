@@ -559,6 +559,6 @@ class RLEvaluator:
         return {
             "steps_to_threshold": stt,
             "auc_disc_return": auc_val,
-            "final_10pct_disc_return": f10_dr,
+            "final_disc_return_mean": f10_dr,
             "final_10pct_success_rate": f10_sr,
         }
