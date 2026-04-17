@@ -41,7 +41,7 @@ from typing import Dict, List
 
 import numpy as np
 
-from mushroom_rl.algorithms/value.dp.finite_horizon_dp_utils import (
+from mushroom_rl.algorithms.value.dp.finite_horizon_dp_utils import (
     allocate_value_tables,
     bellman_q_backup,
     bellman_v_from_q,

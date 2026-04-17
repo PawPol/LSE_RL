@@ -141,3 +141,13 @@ citing rho*(r,v) = sigma(beta*(r-v) + log(1/gamma)) from the paper.
 **Prevention rule**: Finite-horizon DP planners that log **`residuals[i]`** per sweep/iteration should also populate **`V_sweep_history[i]`** = copy of `V` **after** that sweep (same length as `residuals`). Runners must pass **`V_sweep_history[i]`** into curve loggers when `i < len(V_sweep_history)`, else fall back to `planner.V`. Document this in any callback that takes “current V” per sweep.
 
 **Source incident**: Phase I review — `mushroom_rl/.../dp/*.py` (`V_sweep_history` on PE, VI, PI, MPI, AsyncVI); `run_phase1_dp._v_for_sweep_index`; `experiments/weighted_lse_dp/common/callbacks.py` (`DPCurvesLogger` docstring); tests `TestVSweepHistory` in `tests/algorithms/test_classical_finite_horizon_dp.py`.
+
+---
+
+### 2026-04-16 — Import path typo: slash instead of dot in MushroomRL DP subpackage
+
+**Pattern**: A subagent wrote `from mushroom_rl.algorithms/value.dp.finite_horizon_dp_utils import ...` (forward slash instead of dot) in `classical_value_iteration.py`. Python accepted this silently at write time but raises `SyntaxError` at import, blocking the entire DP subpackage and all downstream tests.
+
+**Prevention rule**: After any agent writes or edits a `from X import Y` statement in `mushroom-rl-dev/`, verify the import path uses only dots as separators. Run `.venv/bin/python -c "import mushroom_rl.algorithms.value.dp"` as a quick sanity check before committing. Edit justified under CLAUDE.md §4: single-character typo fix in vendored code, isolated to one line.
+
+**Source incident**: Phase I closing branch — `mushroom-rl-dev/mushroom_rl/algorithms/value/dp/classical_value_iteration.py` line 44; caught by verifier on `phase-I/closing`; fixed 2026-04-16.
