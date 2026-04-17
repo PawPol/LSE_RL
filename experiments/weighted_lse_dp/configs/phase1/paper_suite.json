@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "I",
+  "suite": "paper_suite",
+  "seeds": [11, 29, 47],
+  "gamma_prime_values": [0.90, 0.95, 0.99],
+  "tasks": {
+    "chain_base": {
+      "state_n": 25,
+      "goal": 24,
+      "prob": 0.9,
+      "rew": 1.0,
+      "gamma": 0.99,
+      "horizon": 60,
+      "train_steps": 120000,
+      "checkpoint_every": 4000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 200,
+      "success_threshold": 0.90,
+      "dp_algorithms": ["PE", "VI", "PI", "MPI", "AsyncVI"],
+      "rl_algorithms": ["QLearning", "ExpectedSARSA"],
+      "ablation_algorithms": ["PE", "VI", "PI", "MPI", "AsyncVI", "QLearning", "ExpectedSARSA"],
+      "ref_policy": "always_right"
+    },
+    "grid_base": {
+      "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_base_grid.txt",
+      "prob": 0.9,
+      "goal_reward": 1.0,
+      "step_reward": 0.0,
+      "gamma": 0.99,
+      "horizon": 80,
+      "n_states": 25,
+      "n_actions": 4,
+      "train_steps": 200000,
+      "checkpoint_every": 5000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 200,
+      "success_threshold": 0.90,
+      "dp_algorithms": ["PE", "VI", "PI", "MPI", "AsyncVI"],
+      "rl_algorithms": ["QLearning", "ExpectedSARSA"],
+      "ablation_algorithms": ["PE", "VI", "PI", "MPI", "AsyncVI", "QLearning", "ExpectedSARSA"],
+      "ref_policy": "shortest_path"
+    },
+    "taxi_base": {
+      "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_taxi_grid.txt",
+      "prob": 0.9,
+      "rew": [0, 1],
+      "gamma": 0.99,
+      "horizon": 120,
+      "n_states": 44,
+      "n_actions": 4,
+      "train_steps": 300000,
+      "checkpoint_every": 10000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 200,
+      "success_threshold": 0.80,
+      "dp_algorithms": ["PE", "VI", "PI", "MPI", "AsyncVI"],
+      "rl_algorithms": ["QLearning", "ExpectedSARSA"],
+      "ablation_algorithms": ["PE", "VI", "PI", "MPI", "AsyncVI", "QLearning", "ExpectedSARSA"],
+      "ref_policy": "pickup_then_deliver"
+    }
+  },
+  "notes": {
+    "sarsa_scope": "smoke/regression only -- not in paper suite",
+    "mountaincar": "deferred -- not part of Phase I closure",
+    "audit_seeds": {
+      "tasks": ["chain_base"],
+      "algorithms": ["QLearning", "ExpectedSARSA"],
+      "note": "10-seed audit mandatory after 3-seed suite passes"
+    }
+  }
+}

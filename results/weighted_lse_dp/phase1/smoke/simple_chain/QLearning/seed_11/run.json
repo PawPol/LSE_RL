@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-16T21:15:57Z",
+  "phase": "phase1",
+  "task": "simple_chain",
+  "algorithm": "QLearning",
+  "seed": 11,
+  "git_sha": "3cb556df921a97676c8199d65daa406dca6115c1",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "source": "mushroom-rl-dev/examples/simple_chain_qlearning.py",
+    "seed": 11,
+    "n_steps": 2000,
+    "n_steps_per_fit": 1,
+    "n_steps_eval": 500,
+    "mdp": {
+      "state_n": 5,
+      "goal_states": [
+        2
+      ],
+      "prob": 0.8,
+      "rew": 1.0,
+      "gamma": 0.9
+    },
+    "policy": {
+      "kind": "EpsGreedy",
+      "epsilon": 0.15
+    },
+    "agent": {
+      "algorithm": "QLearning",
+      "learning_rate": 0.2
+    }
+  },
+  "suite": "smoke",
+  "non_degenerate": true,
+  "J_start": 1.775270220060353,
+  "J_final": 3.6949353988392994,
+  "q_table_shape": [
+    5,
+    2
+  ],
+  "q_table_min": 0.72241064039127,
+  "q_table_max": 4.421571118519091,
+  "q_table_nnz": 10,
+  "timings": {
+    "total_s": 0.063098375001573,
+    "step_s": 0.0,
+    "fit_s": 0.040969582994875964,
+    "eval_s": 0.021841167006641626,
+    "plot_s": 0.0,
+    "other_s": 0.0,
+    "steps_per_s": null,
+    "updates_per_s": null
+  },
+  "total_wall_s": 1.1358053329968243,
+  "stdout_log": "stdout.log"
+}

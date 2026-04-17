@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-16T21:16:10Z",
+  "phase": "phase1",
+  "task": "puddle_world",
+  "algorithm": "TrueOnlineSARSALambda",
+  "seed": 11,
+  "git_sha": "3cb556df921a97676c8199d65daa406dca6115c1",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "source": "mushroom-rl-dev/examples/puddle_world_sarsa.py",
+    "seed": 11,
+    "n_steps": 3000,
+    "n_steps_per_fit": 1,
+    "eval_n_episodes": 2,
+    "mdp": {
+      "kind": "PuddleWorld",
+      "horizon": 500,
+      "gamma": 0.99,
+      "start": [
+        0.2,
+        0.4
+      ],
+      "goal": [
+        1.0,
+        1.0
+      ],
+      "goal_threshold": 0.1,
+      "noise_step": 0.025,
+      "noise_reward": 0.0,
+      "reward_goal": 0.0,
+      "thrust": 0.05
+    },
+    "features": {
+      "kind": "Tiles",
+      "n_tilings": 10,
+      "per_tiling_shape": [
+        10,
+        10
+      ]
+    },
+    "agent": {
+      "algorithm": "TrueOnlineSARSALambda",
+      "approximator": "LinearApproximator",
+      "lambda_coeff": 0.9,
+      "alpha": 0.1,
+      "learning_rate_formula": "alpha / n_tilings",
+      "epsilon": 0.1
+    }
+  },
+  "suite": "smoke",
+  "non_degenerate": true,
+  "metrics": {
+    "train_n_steps": 3000,
+    "train_wall_s": 0.5704696249958943,
+    "baseline_eval_n_episodes": 2,
+    "baseline_eval_wall_s": 0.11242050000146264,
+    "J_baseline_discounted_per_episode": [
+      -104.00611953105928,
+      -1336.7550169381966
+    ],
+    "J_baseline_discounted_mean": -720.380568234628,
+    "eval_n_episodes": 2,
+    "eval_horizon": 500,
+    "eval_wall_s": 0.11613445900002262,
+    "J_discounted_per_episode": [
+      -955.2408810460348,
+      -697.4961648122347
+    ],
+    "J_discounted_mean": -826.3685229291348,
+    "J_discounted_min": -955.2408810460348,
+    "J_discounted_max": -697.4961648122347,
+    "J_undiscounted_per_episode": [
+      -2547.932305623049,
+      -1915.009181258882
+    ],
+    "J_undiscounted_mean": -2231.4707434409656,
+    "J_undiscounted_min": -2547.932305623049,
+    "J_undiscounted_max": -1915.009181258882,
+    "returns_finite": true,
+    "weights_shape": [
+      5000
+    ],
+    "weights_size": 5000,
+    "weights_nnz": 4526,
+    "weights_min": -8.371970368492788,
+    "weights_max": 0.000612952109782302,
+    "weights_mean": -0.8403290865416504,
+    "weights_l2_norm": 82.33229639166257,
+    "weights_nonzero": true,
+    "weights_has_nan": false,
+    "weights_has_inf": false,
+    "non_degenerate": true
+  },
+  "timings": {
+    "total_s": 0.7994393330009189,
+    "step_s": 0.0,
+    "fit_s": 0.5704711660000612,
+    "eval_s": 0.2285579159943154,
+    "plot_s": 0.0,
+    "other_s": 0.0,
+    "steps_per_s": null,
+    "updates_per_s": null
+  },
+  "total_wall_s": 0.8009517079990474,
+  "stdout_log": "stdout.log"
+}

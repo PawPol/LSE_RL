@@ -2,7 +2,7 @@
 name: test-author
 description: Use for tasks tagged [test]. Writes unit, integration, and smoke tests per spec. Tests go under tests/ mirroring src/ structure. Does NOT modify source code; if source must change to be testable, file an Open question back to the orchestrator.
 tools: Read, Write, Edit, Bash, Grep, Glob
-model: claude-opus-4-6
+model: claude-opus-4-7
 ---
 
 # test-author

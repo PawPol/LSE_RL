@@ -2,7 +2,7 @@
 name: operator-theorist
 description: Use for tasks tagged [operator] or [safety]. Owns the safe weighted log-sum-exp Bellman operator, its certification machinery (κ_t, B̂_t, β_cap), numerical stability, and monotonicity / contraction guarantees. Mathematical correctness is your single point of responsibility.
 tools: Read, Write, Edit, Bash, Grep, Glob
-model: claude-opus-4-6
+model: claude-opus-4-7
 ---
 
 # operator-theorist

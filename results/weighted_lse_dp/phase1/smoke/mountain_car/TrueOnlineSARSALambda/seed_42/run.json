@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-16T22:42:45Z",
+  "phase": "phase1",
+  "task": "mountain_car",
+  "algorithm": "TrueOnlineSARSALambda",
+  "seed": 42,
+  "git_sha": "3cb556df921a97676c8199d65daa406dca6115c1",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "source": "mushroom-rl-dev/examples/mountain_car_sarsa.py",
+    "seed": 42,
+    "n_steps": 3000,
+    "n_steps_per_fit": 1,
+    "eval_n_episodes": 2,
+    "mdp": {
+      "kind": "Gymnasium",
+      "name": "MountainCar-v0",
+      "horizon": 500,
+      "gamma": 1.0,
+      "headless": true
+    },
+    "features": {
+      "kind": "Tiles",
+      "n_tilings": 10,
+      "per_tiling_shape": [
+        10,
+        10
+      ]
+    },
+    "agent": {
+      "algorithm": "TrueOnlineSARSALambda",
+      "approximator": "LinearApproximator",
+      "lambda_coeff": 0.9,
+      "alpha": 0.1,
+      "learning_rate_formula": "alpha / n_tilings",
+      "epsilon": 0.0
+    }
+  },
+  "suite": "smoke",
+  "non_degenerate": true,
+  "metrics": {
+    "train_n_steps": 3000,
+    "train_wall_s": 0.2529985000001034,
+    "eval_n_episodes": 2,
+    "eval_horizon": 500,
+    "eval_wall_s": 0.028616040995984804,
+    "J_per_episode": [
+      -500.0,
+      -500.0
+    ],
+    "J_mean": -500.0,
+    "J_min": -500.0,
+    "J_max": -500.0,
+    "returns_finite": true,
+    "weights_shape": [
+      3000
+    ],
+    "weights_size": 3000,
+    "weights_nnz": 1587,
+    "weights_min": -6.931619526891341,
+    "weights_max": 0.0,
+    "weights_mean": -0.8137440341051291,
+    "weights_l2_norm": 77.70466202021319,
+    "weights_nonzero": true,
+    "weights_has_nan": false,
+    "weights_has_inf": false,
+    "non_degenerate": true
+  },
+  "timings": {
+    "total_s": 0.2816604580002604,
+    "step_s": 0.0,
+    "fit_s": 0.25300058299762895,
+    "eval_s": 0.02861737499915762,
+    "plot_s": 0.0,
+    "other_s": 0.0,
+    "steps_per_s": null,
+    "updates_per_s": null
+  },
+  "total_wall_s": 0.2865717919994495,
+  "stdout_log": "stdout.log"
+}

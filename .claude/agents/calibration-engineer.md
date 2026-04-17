@@ -2,7 +2,7 @@
 name: calibration-engineer
 description: Use for tasks tagged [calibration] or [calibration-prep]. Owns Phase I/II emission of calibration_stats.npz and the Phase III schedule builder (aligned margins → informativeness → raw β → clip cap → schedule JSON). The bridge between classical logs and the safe operator.
 tools: Read, Write, Edit, Bash, Grep, Glob
-model: claude-opus-4-6
+model: claude-opus-4-7
 ---
 
 # calibration-engineer

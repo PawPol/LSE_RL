@@ -2,7 +2,7 @@
 name: plotter-analyst
 description: Use for tasks tagged [plot] or [analysis]. Produces paper figures, paper tables, and analysis notebooks from results/processed/. Does NOT read from results/raw/; if a field is missing from processed/, file an Open question back to experiment-runner.
 tools: Read, Write, Edit, Bash, Grep, Glob
-model: claude-opus-4-6
+model: claude-opus-4-7
 ---
 
 # plotter-analyst

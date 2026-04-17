@@ -2,7 +2,7 @@
 name: verifier
 description: Final local gate before any task is marked done. Runs the full test suite, diffs behavior between main and the working branch on sentinel workloads, validates result-schema integrity, and produces a pass/fail verdict. Read-only on source code; does NOT write or edit implementation files.
 tools: Read, Bash, Grep, Glob
-model: claude-opus-4-6
+model: claude-opus-4-7
 ---
 
 # verifier
