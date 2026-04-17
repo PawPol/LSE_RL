@@ -508,7 +508,7 @@ class RLEvaluator:
             ``max_steps - min_steps``). If fewer than 2 checkpoints were
             recorded, returns ``0.0``.
 
-            ``final_10pct_disc_return``: mean discounted return over the
+            ``final_disc_return_mean``: mean discounted return over the
             last 10% of checkpoints.
 
             ``final_10pct_success_rate``: mean success rate over the last
