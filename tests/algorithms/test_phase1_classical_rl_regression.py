@@ -199,6 +199,31 @@ class TestQLearningRegression:
             f"Expected agent.mdp_info.gamma == 0.90, got {agent.mdp_info.gamma}"
         )
 
+    def test_terminal_v_next_is_zero(self, chain_env):
+        """On absorbing transitions, TransitionLogger must log v_next_beta0=0.
+
+        # Finite-horizon contract: V[H]=0, no continuation from terminal state.
+        Invariant: for all rows where absorbing=True or last=True,
+        v_next_beta0 must equal 0.0.
+        """
+        _mdp_base, mdp_rl, cfg = chain_env
+        agent = _make_agent(mdp_rl, QLearning)
+        n_base = cfg["state_n"]
+        gamma = cfg["gamma"]
+        logger = TransitionLogger(agent, n_base=n_base, gamma=gamma)
+        core = Core(agent, mdp_rl, callback_step=logger)
+        core.learn(n_steps=500, n_steps_per_fit=1)
+
+        payload = logger.build_payload()
+        absorbing = payload["absorbing"]
+        last = payload["last"]
+        v_next = payload["v_next_beta0"]
+        terminal = absorbing | last
+        if terminal.any():
+            assert np.all(v_next[terminal] == 0.0), (
+                "v_next_beta0 must be 0.0 on all absorbing/last transitions"
+            )
+
     def test_margin_formula_no_gamma(self, chain_env):
         """margin_beta0 = reward - v_next_beta0 (no gamma).
 

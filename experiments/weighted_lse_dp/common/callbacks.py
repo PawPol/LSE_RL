@@ -112,6 +112,9 @@ class TransitionLogger:
         # Q-value extraction
         q_current = float(self._agent.Q[aug_id, action])
         v_next = float(np.max(self._agent.Q.table[next_aug_id, :]))
+        # Finite-horizon contract: V[H]=0 — no continuation from terminal state.
+        if absorbing or last:
+            v_next = 0.0
 
         # Append row
         self._episode_index.append(self._episode)
@@ -415,7 +418,12 @@ class RLEvaluator:
     # ------------------------------------------------------------------
 
     def evaluate(self, steps: int) -> dict[str, float]:
-        """Run ``n_eval_episodes`` greedy rollouts and record via RunWriter.
+        """Run ``n_eval_episodes`` greedy rollouts (argmax Q-table, bypasses EpsGreedy policy) and record via RunWriter.
+
+        ``episode_success`` is True only when the base environment signals
+        ``absorbing=True`` before the horizon is exhausted (i.e.
+        ``t < horizon``).  A horizon-timeout (``absorbing`` at
+        ``t == horizon``) does NOT count as success.
 
         Parameters
         ----------
@@ -441,7 +449,9 @@ class RLEvaluator:
             t = 0
 
             while True:
-                action, _ = self._agent.draw_action(state, None)  # type: ignore[union-attr]
+                # Greedy action: argmax over Q-table, bypassing EpsGreedy policy.
+                _q_vals = self._agent.Q.table[int(state[0]), :]  # type: ignore[union-attr]
+                action = np.array([int(np.argmax(_q_vals))], dtype=np.int64)
                 next_state, reward, absorbing, _ = self._env.step(action)  # type: ignore[union-attr]
 
                 episode_disc_return += (self._gamma ** t) * float(reward)
@@ -449,7 +459,10 @@ class RLEvaluator:
                 t += 1
 
                 if absorbing:
-                    episode_success = True
+                    # absorbing at t < horizon means the base env signalled a
+                    # real task goal; absorbing at t == horizon is the wrapper's
+                    # horizon-timeout signal.  Only the former counts as success.
+                    episode_success = (t < self._horizon)
                     break
                 if t >= self._horizon:
                     break
