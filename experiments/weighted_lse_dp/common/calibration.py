@@ -368,9 +368,22 @@ def build_calibration_stats_from_dp_tables(
     Returns
     -------
     dict[str, np.ndarray]
-        All 17 keys from :data:`~schemas.CALIBRATION_ARRAYS`, each of
+        All 18 keys from :data:`~schemas.CALIBRATION_ARRAYS`, each of
         shape ``(H+1,)``.  Stage *H* (terminal) has ``count=0`` and
         ``NaN`` for all float fields.
+
+    Notes
+    -----
+    **Provenance vs. RL empirical stats**: this function computes statistics
+    over the analytic uniform distribution on ``(state, action)`` pairs (i.e.
+    ``count[t] = S * A`` and quantiles are over the full model table).  RL
+    runs instead compute empirical statistics from actual transition logs.
+    The two modes share the same :data:`~schemas.CALIBRATION_ARRAYS` schema
+    but differ in semantics.  The NPZ schema header written by
+    :class:`~schemas.RunWriter` distinguishes them via the ``storage_mode``
+    key: ``"dp_stagewise"`` for DP runs, ``"rl_online"`` for RL runs.
+    Downstream consumers **must** check ``storage_mode`` before comparing
+    ``count`` or margin statistics across run types.
     """
     Q = np.asarray(Q, dtype=np.float64)
     V = np.asarray(V, dtype=np.float64)

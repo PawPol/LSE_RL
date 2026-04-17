@@ -490,6 +490,14 @@ def main(argv: list[str] | None = None) -> int:
 
     out_root = Path(args.out_root)
 
+    # Determine the suite: ablation runs (--gamma-prime) route to
+    # ablation/gamma<gp> so they land in the layout the aggregator scans.
+    if args.gamma_prime is not None:
+        gp_str = f"gamma{args.gamma_prime:.2f}".replace(".", "")
+        suite = f"ablation/{gp_str}"
+    else:
+        suite = config.get("suite", "paper_suite")
+
     # -- Dry run: print plan and exit --------------------------------------
     if args.dry_run:
         print(f"[phase1_rl] DRY RUN -- {len(plan)} run(s) planned:")
@@ -530,6 +538,7 @@ def main(argv: list[str] | None = None) -> int:
                 seed=entry["seed"],
                 task_config=entry["task_config"],
                 out_root=out_root,
+                suite=suite,
                 gamma_prime=args.gamma_prime,
             )
         except Exception as exc:

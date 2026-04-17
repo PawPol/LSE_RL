@@ -413,7 +413,13 @@ def main(argv: list[str] | None = None) -> None:
         sys.exit(1)
 
     config = _load_config(config_path)
-    suite = config.get("suite", "paper_suite")
+    # Ablation runs (--gamma-prime) must go to the ablation suite layout so
+    # aggregate_phase1 can discover them under phase1/ablation/gamma*/<task>/...
+    if args.gamma_prime is not None:
+        gp_str = f"gamma{args.gamma_prime:.2f}".replace(".", "")
+        suite = f"ablation/{gp_str}"
+    else:
+        suite = config.get("suite", "paper_suite")
 
     # Build run list
     runs = _build_run_list(
