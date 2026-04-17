@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\caption{Phase I classical RL returns and sample complexity. Percentile bootstrap 95\% CI over seeds.}
+\label{tab:p1c}
+\begin{tabular}{llccc}
+\toprule
+Task & Algorithm & Disc.\ Return & AUC & Steps to Threshold \\
+\midrule
+  chain\_base & Q-Learning & 0.870 $\pm$ 0.087 & 101394 $\pm$ 10139 & 49663 \\
+   & Exp. SARSA & 0.602 $\pm$ 0.060 & 80213 $\pm$ 8021 & 91031 \\
+\midrule
+  grid\_base & Q-Learning & 0.835 $\pm$ 0.084 & 162958 $\pm$ 16296 & 52868 \\
+   & Exp. SARSA & 0.667 $\pm$ 0.067 & 80294 $\pm$ 8029 & 46066 \\
+\midrule
+  taxi\_base & Q-Learning & 0.807 $\pm$ 0.081 & 57276 $\pm$ 5728 & 84381 \\
+   & Exp. SARSA & 0.590 $\pm$ 0.059 & 30149 $\pm$ 3015 & 83747 \\
+\bottomrule
+\end{tabular}
+\end{table}

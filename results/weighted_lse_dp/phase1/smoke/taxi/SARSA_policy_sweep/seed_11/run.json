@@ -1,0 +1,130 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-16T21:16:09Z",
+  "phase": "phase1",
+  "task": "taxi",
+  "algorithm": "SARSA_policy_sweep",
+  "seed": 11,
+  "git_sha": "3cb556df921a97676c8199d65daa406dca6115c1",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "source": "mushroom-rl-dev/examples/taxi_mellow_sarsa/taxi_mellow.py",
+    "seed": 11,
+    "n_steps": 20000,
+    "n_steps_per_fit": 1,
+    "n_experiment": 2,
+    "mdp": {
+      "kind": "FiniteMDP",
+      "generator": "generate_taxi",
+      "grid": "/Users/liq/Documents/Claude/Projects/LSE_RL/mushroom-rl-dev/examples/taxi_mellow_sarsa/grid.txt",
+      "prob": 0.9,
+      "rew": [
+        0,
+        1,
+        3,
+        15
+      ],
+      "gamma": 0.99,
+      "horizon": "inf"
+    },
+    "policy_values": {
+      "epsilon": 0.05,
+      "boltzmann": 0.5,
+      "mellow": 0.5
+    },
+    "agent": {
+      "algorithm": "SARSA",
+      "learning_rate": "Parameter(value=0.15)"
+    }
+  },
+  "suite": "smoke",
+  "non_degenerate": true,
+  "policies_sweep": [
+    "boltzmann",
+    "epsilon",
+    "mellow"
+  ],
+  "per_policy": {
+    "epsilon": {
+      "policy_class": "EpsGreedy",
+      "param_value": 0.05,
+      "per_rep_mean_reward": [
+        0.03905,
+        0.0346
+      ],
+      "mean_J": 0.036825,
+      "q_table_shape": [
+        264,
+        4
+      ],
+      "q_table_nnz": 126,
+      "q_table_min": 0.0,
+      "q_table_max": 13.186417596513804,
+      "q_table_mean": 0.06784850672823228,
+      "q_has_nan": false,
+      "q_has_inf": false,
+      "reward_nonzero": true,
+      "reward_finite": true,
+      "wall_s": 2.5644279999978608,
+      "non_degenerate": true
+    },
+    "boltzmann": {
+      "policy_class": "Boltzmann",
+      "param_value": 0.5,
+      "per_rep_mean_reward": [
+        0.0209,
+        0.023
+      ],
+      "mean_J": 0.021949999999999997,
+      "q_table_shape": [
+        264,
+        4
+      ],
+      "q_table_nnz": 327,
+      "q_table_min": 0.0,
+      "q_table_max": 14.504534956142235,
+      "q_table_mean": 0.06429498286514611,
+      "q_has_nan": false,
+      "q_has_inf": false,
+      "reward_nonzero": true,
+      "reward_finite": true,
+      "wall_s": 2.62042074999772,
+      "non_degenerate": true
+    },
+    "mellow": {
+      "policy_class": "Mellowmax",
+      "param_value": 0.5,
+      "per_rep_mean_reward": [
+        0.0183,
+        0.02215
+      ],
+      "mean_J": 0.020225,
+      "q_table_shape": [
+        264,
+        4
+      ],
+      "q_table_nnz": 314,
+      "q_table_min": 0.0,
+      "q_table_max": 13.298707906554787,
+      "q_table_mean": 0.06226633285881735,
+      "q_has_nan": false,
+      "q_has_inf": false,
+      "reward_nonzero": true,
+      "reward_finite": true,
+      "wall_s": 4.9372648329954245,
+      "non_degenerate": true
+    }
+  },
+  "timings": {
+    "total_s": 10.122418958002527,
+    "step_s": 0.0,
+    "fit_s": 10.122099917003652,
+    "eval_s": 0.0,
+    "plot_s": 0.0,
+    "other_s": 0.0,
+    "steps_per_s": null,
+    "updates_per_s": null
+  },
+  "total_wall_s": 10.122991583994008,
+  "stdout_log": "stdout.log"
+}

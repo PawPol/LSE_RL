@@ -2,7 +2,7 @@
 name: planner
 description: Use to decompose a phase spec (docs/specs/phase_*.md) or a coarse user request into an ordered, tagged checklist in tasks/todo.md. Call at the start of each phase, and whenever a new sub-spec section is entered. Does NOT write code.
 tools: Read, Write, Edit, Grep, Glob
-model: claude-opus-4-6
+model: claude-opus-4-7
 ---
 
 # planner

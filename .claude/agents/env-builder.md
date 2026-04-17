@@ -2,7 +2,7 @@
 name: env-builder
 description: Use for tasks tagged [env] or [stress-design]. Builds environments, environment wrappers (time-augmentation, hazards, regime-shift, jackpot/catastrophe), and task factories. Reuses MushroomRL env classes; does NOT edit stable MushroomRL code unless explicitly justified.
 tools: Read, Write, Edit, Bash, Grep, Glob
-model: claude-opus-4-6
+model: claude-opus-4-7
 ---
 
 # env-builder

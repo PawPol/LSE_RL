@@ -2,7 +2,7 @@
 name: experiment-runner
 description: Use for tasks tagged [infra] (runtime portion), [logging] (callbacks/schemas), and [ablation]. Owns run dispatch, config plumbing, logging callbacks, and result aggregation. Writes to results/raw/ and results/processed/ with strict schema headers. Does NOT implement algorithms or operators.
 tools: Read, Write, Edit, Bash, Grep, Glob
-model: claude-opus-4-6
+model: claude-opus-4-7
 ---
 
 # experiment-runner

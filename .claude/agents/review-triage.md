@@ -2,7 +2,7 @@
 name: review-triage
 description: Use after a Codex review (`/codex:review` or `/codex:adversarial-review`) returns. Consumes the Codex output, cross-references against docs/specs/ and tasks/todo.md, and produces a severity-tagged actionable list in tasks/todo.md. Does NOT modify source code.
 tools: Read, Write, Edit, Bash, Grep, Glob
-model: claude-opus-4-6
+model: claude-opus-4-7
 ---
 
 # review-triage

@@ -2,7 +2,7 @@
 name: algo-implementer
 description: Use for tasks tagged [algo] or [algo-integration]. Implements classical DP/TD (Phase I) and the safe DP/TD variants (Phase III). Delegates operator internals to operator-theorist and schedule plumbing to calibration-engineer. Does NOT touch env code or tests.
 tools: Read, Write, Edit, Bash, Grep, Glob
-model: claude-opus-4-6
+model: claude-opus-4-7
 ---
 
 # algo-implementer

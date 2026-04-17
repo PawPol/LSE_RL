@@ -1,0 +1,163 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-16T20:55:52Z",
+  "phase": "phase1",
+  "task": "grid_world_td",
+  "algorithm": "TD_sweep",
+  "seed": 11,
+  "git_sha": "3cb556df921a97676c8199d65daa406dca6115c1",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "source": "mushroom-rl-dev/examples/grid_world_td.py",
+    "seed": 11,
+    "n_steps": 2000,
+    "n_steps_per_fit": 1,
+    "n_experiment": 3,
+    "exp": 0.8,
+    "mdp": {
+      "height": 3,
+      "width": 3,
+      "goal": [
+        0,
+        2
+      ],
+      "start": [
+        2,
+        0
+      ],
+      "gamma": 0.95,
+      "horizon": "inf"
+    },
+    "policy": {
+      "kind": "EpsGreedy",
+      "epsilon_schedule": "DecayParameter(value=1.0, exp=0.5, size=obs_space.size)"
+    },
+    "agent": {
+      "algorithms": [
+        "QLearning",
+        "DoubleQLearning",
+        "WeightedQLearning",
+        "SpeedyQLearning",
+        "SARSA"
+      ],
+      "learning_rate_schedule": "DecayParameter(value=1.0, exp=exp, size=mdp.info.size)"
+    }
+  },
+  "suite": "smoke",
+  "non_degenerate": true,
+  "algorithms_sweep": [
+    "DoubleQLearning",
+    "QLearning",
+    "SARSA",
+    "SpeedyQLearning",
+    "WeightedQLearning"
+  ],
+  "per_algorithm": {
+    "QLearning": {
+      "reward_sum_mean": -2098.3333333333335,
+      "reward_mean_over_reps_shape": [
+        3,
+        2000
+      ],
+      "max_Q_at_start_final": 8.000136825190108,
+      "max_Q_at_start_initial": 3.3333333333333335,
+      "q_table_shape": [
+        9,
+        4
+      ],
+      "q_table_nnz": 33,
+      "q_table_min": -12.0,
+      "q_table_max": 22.26848572299434,
+      "q_table_mean": 2.0998019071709746,
+      "q_has_nan": false,
+      "q_has_inf": false,
+      "reward_nonzero": true,
+      "non_degenerate": true
+    },
+    "DoubleQLearning": {
+      "reward_sum_mean": -539.0,
+      "reward_mean_over_reps_shape": [
+        3,
+        2000
+      ],
+      "max_Q_at_start_final": -9.48213233646956,
+      "max_Q_at_start_initial": 1.6666666666666667,
+      "q_table_shape": [
+        9,
+        4
+      ],
+      "q_table_nnz": 36,
+      "q_table_min": -23.93105757644539,
+      "q_table_max": 5.0,
+      "q_table_mean": -8.228310407895801,
+      "q_has_nan": false,
+      "q_has_inf": false,
+      "reward_nonzero": true,
+      "non_degenerate": true
+    },
+    "WeightedQLearning": {
+      "reward_sum_mean": -1691.0000000000002,
+      "reward_mean_over_reps_shape": [
+        3,
+        2000
+      ],
+      "max_Q_at_start_final": -2.556447246796548,
+      "max_Q_at_start_initial": 3.3333333333333335,
+      "q_table_shape": [
+        9,
+        4
+      ],
+      "q_table_nnz": 36,
+      "q_table_min": -12.969975872914354,
+      "q_table_max": 5.0,
+      "q_table_mean": -4.330280144800727,
+      "q_has_nan": false,
+      "q_has_inf": false,
+      "reward_nonzero": true,
+      "non_degenerate": true
+    },
+    "SpeedyQLearning": {
+      "reward_sum_mean": -1924.0,
+      "reward_mean_over_reps_shape": [
+        3,
+        2000
+      ],
+      "max_Q_at_start_final": 7.140616920916752,
+      "max_Q_at_start_initial": 3.3333333333333335,
+      "q_table_shape": [
+        9,
+        4
+      ],
+      "q_table_nnz": 34,
+      "q_table_min": -2.7116508309135248,
+      "q_table_max": 13.261090801722336,
+      "q_table_mean": 4.593051718607223,
+      "q_has_nan": false,
+      "q_has_inf": false,
+      "reward_nonzero": true,
+      "non_degenerate": true
+    },
+    "SARSA": {
+      "reward_sum_mean": -1943.3333333333337,
+      "reward_mean_over_reps_shape": [
+        3,
+        2000
+      ],
+      "max_Q_at_start_final": 1.2711096036652616,
+      "max_Q_at_start_initial": 3.3333333333333335,
+      "q_table_shape": [
+        9,
+        4
+      ],
+      "q_table_nnz": 34,
+      "q_table_min": -12.0,
+      "q_table_max": 7.685292310967694,
+      "q_table_mean": -0.5274034476620826,
+      "q_has_nan": false,
+      "q_has_inf": false,
+      "reward_nonzero": true,
+      "non_degenerate": true
+    }
+  },
+  "stdout_log": "stdout.log"
+}

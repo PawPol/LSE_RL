@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "I",
+  "suite": "smoke",
+  "description": "Minimal smoke configs for Phase I example reproductions",
+  "examples": [
+    {
+      "name": "simple_chain",
+      "n_steps": 1000,
+      "n_episodes_per_fit": 1,
+      "seed": 42
+    },
+    {
+      "name": "grid_world",
+      "n_steps": 1000,
+      "n_episodes_per_fit": 1,
+      "seed": 42
+    },
+    {
+      "name": "double_chain",
+      "n_steps": 500,
+      "n_episodes_per_fit": 1,
+      "seed": 42
+    },
+    {
+      "name": "taxi",
+      "n_steps": 500,
+      "n_episodes_per_fit": 1,
+      "seed": 42
+    },
+    {
+      "name": "mountain_car",
+      "n_steps": 500,
+      "n_episodes_per_fit": 1,
+      "seed": 42
+    },
+    {
+      "name": "puddle_world",
+      "n_steps": 500,
+      "n_episodes_per_fit": 1,
+      "seed": 42
+    }
+  ]
+}

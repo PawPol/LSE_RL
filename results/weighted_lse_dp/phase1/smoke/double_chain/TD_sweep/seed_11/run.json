@@ -1,0 +1,129 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-16T21:15:59Z",
+  "phase": "phase1",
+  "task": "double_chain",
+  "algorithm": "TD_sweep",
+  "seed": 11,
+  "git_sha": "3cb556df921a97676c8199d65daa406dca6115c1",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "source": "mushroom-rl-dev/examples/double_chain_q_learning/double_chain.py",
+    "seed": 11,
+    "n_steps": 2000,
+    "n_steps_per_fit": 1,
+    "n_experiment": 2,
+    "exp": 1.0,
+    "mdp": {
+      "kind": "FiniteMDP",
+      "asset": "/Users/liq/Documents/Claude/Projects/LSE_RL/mushroom-rl-dev/examples/double_chain_q_learning/chain_structure",
+      "n_states": 9,
+      "n_actions": 2,
+      "gamma": 0.9,
+      "horizon": "inf"
+    },
+    "policy": {
+      "kind": "EpsGreedy",
+      "epsilon_schedule": "Parameter(value=1.0)"
+    },
+    "agent": {
+      "algorithms": [
+        "QLearning",
+        "DoubleQLearning",
+        "WeightedQLearning",
+        "SpeedyQLearning"
+      ],
+      "learning_rate_schedule": "DecayParameter(value=1.0, exp=exp, size=mdp.info.size)"
+    }
+  },
+  "suite": "smoke",
+  "non_degenerate": true,
+  "algorithms_sweep": [
+    "DoubleQLearning",
+    "QLearning",
+    "SpeedyQLearning",
+    "WeightedQLearning"
+  ],
+  "per_algorithm": {
+    "QLearning": {
+      "q_s0a0_initial": 0.0,
+      "q_s0a0_final": 5.817378770054658,
+      "q_trajectory_abs_max": 36.763044378461586,
+      "q_table_shape": [
+        9,
+        2
+      ],
+      "q_table_nnz": 18,
+      "q_table_min": 5.86771175539654,
+      "q_table_max": 37.13950922784913,
+      "q_table_mean": 11.821733745088958,
+      "q_has_nan": false,
+      "q_has_inf": false,
+      "trajectory_nonzero": true,
+      "non_degenerate": true
+    },
+    "DoubleQLearning": {
+      "q_s0a0_initial": 0.0,
+      "q_s0a0_final": 4.628231764330127,
+      "q_trajectory_abs_max": 28.889588248141045,
+      "q_table_shape": [
+        9,
+        2
+      ],
+      "q_table_nnz": 18,
+      "q_table_min": 3.7757325989139234,
+      "q_table_max": 27.538897198571256,
+      "q_table_mean": 8.905782736030927,
+      "q_has_nan": false,
+      "q_has_inf": false,
+      "trajectory_nonzero": true,
+      "non_degenerate": true
+    },
+    "WeightedQLearning": {
+      "q_s0a0_initial": 0.0,
+      "q_s0a0_final": 5.881713058953759,
+      "q_trajectory_abs_max": 33.970084175548706,
+      "q_table_shape": [
+        9,
+        2
+      ],
+      "q_table_nnz": 18,
+      "q_table_min": 5.750091812352725,
+      "q_table_max": 37.10852519724748,
+      "q_table_mean": 11.37237135558277,
+      "q_has_nan": false,
+      "q_has_inf": false,
+      "trajectory_nonzero": true,
+      "non_degenerate": true
+    },
+    "SpeedyQLearning": {
+      "q_s0a0_initial": 0.0,
+      "q_s0a0_final": 6.778633255420951,
+      "q_trajectory_abs_max": 48.69262961874901,
+      "q_table_shape": [
+        9,
+        2
+      ],
+      "q_table_nnz": 18,
+      "q_table_min": 6.408109611809101,
+      "q_table_max": 48.667363106536406,
+      "q_table_mean": 14.40897468074355,
+      "q_has_nan": false,
+      "q_has_inf": false,
+      "trajectory_nonzero": true,
+      "non_degenerate": true
+    }
+  },
+  "timings": {
+    "total_s": 0.5883885840012226,
+    "step_s": 0.0,
+    "fit_s": 0.5875685430073645,
+    "eval_s": 0.0,
+    "plot_s": 0.0,
+    "other_s": 0.0,
+    "steps_per_s": null,
+    "updates_per_s": null
+  },
+  "total_wall_s": 0.5892053329953342,
+  "stdout_log": "stdout.log"
+}

@@ -1,0 +1,72 @@
+{
+  "seed": 42,
+  "out_root": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp",
+  "examples_selected": [
+    "simple_chain",
+    "grid_world",
+    "double_chain",
+    "taxi",
+    "mountain_car",
+    "puddle_world"
+  ],
+  "n_examples": 6,
+  "n_passed": 6,
+  "all_passed": true,
+  "total_wall_s": 14.066588459005288,
+  "results": [
+    {
+      "name": "simple_chain",
+      "seed": 42,
+      "passed": true,
+      "J_final": 3.4113309124915574,
+      "wall_s": 1.1302495000054478,
+      "run_dir": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase1/smoke/simple_chain/QLearning/seed_42",
+      "summary": "J_final=3.41"
+    },
+    {
+      "name": "grid_world",
+      "seed": 42,
+      "passed": true,
+      "J_final": null,
+      "wall_s": 1.1595470000029309,
+      "run_dir": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase1/smoke/grid_world/TD_sweep/seed_42",
+      "summary": "(5 algos)"
+    },
+    {
+      "name": "double_chain",
+      "seed": 42,
+      "passed": true,
+      "J_final": null,
+      "wall_s": 0.593479709001258,
+      "run_dir": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase1/smoke/double_chain/TD_sweep/seed_42",
+      "summary": "(4 algos)"
+    },
+    {
+      "name": "taxi",
+      "seed": 42,
+      "passed": true,
+      "J_final": null,
+      "wall_s": 10.079678374997457,
+      "run_dir": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase1/smoke/taxi/SARSA_policy_sweep/seed_42",
+      "summary": "(3 policies)"
+    },
+    {
+      "name": "mountain_car",
+      "seed": 42,
+      "passed": true,
+      "J_final": -500.0,
+      "wall_s": 0.2865717919994495,
+      "run_dir": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase1/smoke/mountain_car/TrueOnlineSARSALambda/seed_42",
+      "summary": "J_final=-500.0"
+    },
+    {
+      "name": "puddle_world",
+      "seed": 42,
+      "passed": true,
+      "J_final": -117.34889725919942,
+      "wall_s": 0.8170620829987456,
+      "run_dir": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase1/smoke/puddle_world/TrueOnlineSARSALambda/seed_42",
+      "summary": "J_final=-117.3"
+    }
+  ]
+}
