@@ -118,6 +118,7 @@ TRANSITIONS_ARRAYS: tuple[str, ...] = (
 
 
 CALIBRATION_ARRAYS: tuple[str, ...] = (
+    # -- Phase I per-stage fields (18), shape (H+1,) --------------------------
     "stage",                # (H+1,) int64  - stage indices 0..H
     "count",                # (H+1,) int64  - samples at each stage
     "reward_mean",          # (H+1,) float64
@@ -136,8 +137,36 @@ CALIBRATION_ARRAYS: tuple[str, ...] = (
     "bellman_residual_mean",# (H+1,) float64  - NaN if exact DP not available
     "bellman_residual_std", # (H+1,) float64
     "aligned_margin_freq",  # (H+1,) float64  - fraction of transitions with margin_beta0 > 0
+    # -- Phase II per-stage fields (4), shape (H+1,) --------------------------
+    "aligned_positive_mean",  # (H+1,) float64 - per-stage mean of max(margin_beta0, 0)
+    "aligned_negative_mean",  # (H+1,) float64 - per-stage mean of max(-margin_beta0, 0)
+    "td_target_std",          # (H+1,) float64 - per-stage std of td_target_beta0
+    "td_error_std",           # (H+1,) float64 - per-stage std of td_error_beta0
+    # -- Phase II event-level scalars (4), shape (1,) -------------------------
+    "jackpot_event_rate",     # (1,) float64 - fraction of transitions with jackpot_event=True; NaN if N/A
+    "catastrophe_event_rate", # (1,) float64 - fraction of transitions with catastrophe_event=True; NaN if N/A
+    "regime_shift_episode",   # (1,) float64 - episode at which regime shift triggered; -1 if N/A
+    "hazard_hit_rate",        # (1,) float64 - fraction of transitions with hazard_cell_hit=True; NaN if N/A
+    # -- Phase II tail-risk scalars (5), shape (1,) ---------------------------
+    "return_cvar_5pct",       # (1,) float64 - CVaR at 5% across episodes; NaN if N/A
+    "return_cvar_10pct",      # (1,) float64 - CVaR at 10% across episodes
+    "return_top5pct_mean",    # (1,) float64 - mean return in top 5% of episodes
+    "event_rate",             # (1,) float64 - fraction of episodes with any stress event
+    "event_conditioned_return",  # (1,) float64 - mean return conditioned on event occurring
+    # -- Phase II adaptation scalars (5), shape (1,) --------------------------
+    "adaptation_pre_change_auc",  # (1,) float64 - pre-change AUC of returns
+    "adaptation_post_change_auc", # (1,) float64 - post-change AUC of returns
+    "adaptation_lag_50pct",       # (1,) float64 - lag to 50% recovery; -1 if N/A
+    "adaptation_lag_75pct",       # (1,) float64 - lag to 75% recovery
+    "adaptation_lag_90pct",       # (1,) float64 - lag to 90% recovery
 )
-"""Array names in ``calibration_stats.npz`` (aggregated per-stage stats)."""
+"""Array names in ``calibration_stats.npz`` (36 fields total).
+
+Phase I per-stage fields (18): shape ``(H+1,)`` each.
+Phase II per-stage fields (4): shape ``(H+1,)`` each.
+Phase II scalar fields (14): shape ``(1,)`` each, default ``NaN`` for
+stress types not applicable to a given task family.
+"""
 
 
 MARGIN_BETA0_FORMULA: str = "reward - v_next_beta0"

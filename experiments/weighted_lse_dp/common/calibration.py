@@ -225,8 +225,11 @@ def aggregate_calibration_stats(
     Returns
     -------
     dict[str, np.ndarray]
-        Dict with all 18 keys from :data:`~schemas.CALIBRATION_ARRAYS`,
-        each of shape ``(H+1,)`` and the dtypes documented in S7.2.
+        Dict with all 36 keys from :data:`~schemas.CALIBRATION_ARRAYS`.
+        Phase I per-stage fields have shape ``(H+1,)``; Phase II
+        per-stage fields have shape ``(H+1,)`` (populated from
+        transitions); Phase II scalar fields have shape ``(1,)`` and
+        default to ``NaN`` (to be filled by Phase II runners).
     """
     # -- validate required transition keys ---------------------------------
     missing = [k for k in TRANSITIONS_ARRAYS if k not in transitions]
@@ -263,7 +266,22 @@ def aggregate_calibration_stats(
     bellman_residual_std = np.full(n_stages, np.nan, dtype=np.float64)
     aligned_margin_freq = np.full(n_stages, np.nan, dtype=np.float64)
 
+    # Phase II per-stage fields (default NaN, populated from transitions)
+    aligned_positive_mean = np.full(n_stages, np.nan, dtype=np.float64)
+    aligned_negative_mean = np.full(n_stages, np.nan, dtype=np.float64)
+    td_target_std = np.full(n_stages, np.nan, dtype=np.float64)
+    td_error_std = np.full(n_stages, np.nan, dtype=np.float64)
+
     # -- per-stage aggregation ---------------------------------------------
+    # Pre-extract td_target and td_error if available (may not be present
+    # in older Phase I transition files, so guard with .get).
+    _td_target_arr = transitions.get("td_target_beta0")
+    _td_error_arr = transitions.get("td_error_beta0")
+    if _td_target_arr is not None:
+        _td_target_arr = np.asarray(_td_target_arr, dtype=np.float64)
+    if _td_error_arr is not None:
+        _td_error_arr = np.asarray(_td_error_arr, dtype=np.float64)
+
     for t in range(n_stages):
         mask = t_arr == t
         n_t = int(mask.sum())
@@ -296,12 +314,23 @@ def aggregate_calibration_stats(
         # Aligned-margin frequency: fraction of transitions with margin_beta0 > 0
         aligned_margin_freq[t] = np.mean(m_t > 0.0)
 
+        # Phase II per-stage fields
+        aligned_positive_mean[t] = np.mean(np.maximum(m_t, 0.0))
+        aligned_negative_mean[t] = np.mean(np.maximum(-m_t, 0.0))
+        if _td_target_arr is not None:
+            td_target_std[t] = np.std(_td_target_arr[mask])
+        if _td_error_arr is not None:
+            td_error_std[t] = np.std(_td_error_arr[mask])
+
         # Bellman residuals (optional, per-stage)
         if bellman_residuals is not None and t in bellman_residuals:
             br = np.asarray(bellman_residuals[t], dtype=np.float64)
             if br.size > 0:
                 bellman_residual_mean[t] = np.mean(br)
                 bellman_residual_std[t] = np.std(br)
+
+    # -- Phase II scalar fields (shape (1,), default NaN) --------------------
+    _nan1 = np.array([np.nan], dtype=np.float64)
 
     return {
         "stage": stage,
@@ -322,6 +351,28 @@ def aggregate_calibration_stats(
         "bellman_residual_mean": bellman_residual_mean,
         "bellman_residual_std": bellman_residual_std,
         "aligned_margin_freq": aligned_margin_freq,
+        # Phase II per-stage
+        "aligned_positive_mean": aligned_positive_mean,
+        "aligned_negative_mean": aligned_negative_mean,
+        "td_target_std": td_target_std,
+        "td_error_std": td_error_std,
+        # Phase II event-level scalars
+        "jackpot_event_rate": _nan1.copy(),
+        "catastrophe_event_rate": _nan1.copy(),
+        "regime_shift_episode": _nan1.copy(),
+        "hazard_hit_rate": _nan1.copy(),
+        # Phase II tail-risk scalars
+        "return_cvar_5pct": _nan1.copy(),
+        "return_cvar_10pct": _nan1.copy(),
+        "return_top5pct_mean": _nan1.copy(),
+        "event_rate": _nan1.copy(),
+        "event_conditioned_return": _nan1.copy(),
+        # Phase II adaptation scalars
+        "adaptation_pre_change_auc": _nan1.copy(),
+        "adaptation_post_change_auc": _nan1.copy(),
+        "adaptation_lag_50pct": _nan1.copy(),
+        "adaptation_lag_75pct": _nan1.copy(),
+        "adaptation_lag_90pct": _nan1.copy(),
     }
 
 
@@ -368,8 +419,10 @@ def build_calibration_stats_from_dp_tables(
     Returns
     -------
     dict[str, np.ndarray]
-        All 18 keys from :data:`~schemas.CALIBRATION_ARRAYS`, each of
-        shape ``(H+1,)``.  Stage *H* (terminal) has ``count=0`` and
+        All 36 keys from :data:`~schemas.CALIBRATION_ARRAYS`.  Phase I
+        per-stage fields have shape ``(H+1,)``; Phase II per-stage fields
+        have shape ``(H+1,)``; Phase II scalar fields have shape ``(1,)``
+        and default to ``NaN``.  Stage *H* (terminal) has ``count=0`` and
         ``NaN`` for all float fields.
 
     Notes
@@ -433,6 +486,12 @@ def build_calibration_stats_from_dp_tables(
     bellman_residual_std = np.full(n_stages, np.nan, dtype=np.float64)
     aligned_margin_freq = np.full(n_stages, np.nan, dtype=np.float64)
 
+    # Phase II per-stage fields
+    aligned_positive_mean = np.full(n_stages, np.nan, dtype=np.float64)
+    aligned_negative_mean = np.full(n_stages, np.nan, dtype=np.float64)
+    td_target_std = np.full(n_stages, np.nan, dtype=np.float64)
+    td_error_std = np.full(n_stages, np.nan, dtype=np.float64)
+
     for t in range(H):
         # v_next_sa[s, a] = sum_{s'} P[s,a,s'] * V[t+1, s']
         v_next_sa = P @ V[t + 1]  # (S, A, S) @ (S,) -> (S, A)
@@ -477,7 +536,16 @@ def build_calibration_stats_from_dp_tables(
         bellman_residual_mean[t] = np.mean(td_error_flat)
         bellman_residual_std[t] = np.std(td_error_flat)
 
+        # Phase II per-stage fields
+        aligned_positive_mean[t] = np.mean(np.maximum(margin_flat, 0.0))
+        aligned_negative_mean[t] = np.mean(np.maximum(-margin_flat, 0.0))
+        td_target_std[t] = np.std(td_target_flat)
+        td_error_std[t] = np.std(td_error_flat)
+
     # Stage H: count=0, all float fields remain NaN (terminal).
+
+    # -- Phase II scalar fields (shape (1,), default NaN) --------------------
+    _nan1 = np.array([np.nan], dtype=np.float64)
 
     return {
         "stage": stage,
@@ -498,6 +566,28 @@ def build_calibration_stats_from_dp_tables(
         "bellman_residual_mean": bellman_residual_mean,
         "bellman_residual_std": bellman_residual_std,
         "aligned_margin_freq": aligned_margin_freq,
+        # Phase II per-stage
+        "aligned_positive_mean": aligned_positive_mean,
+        "aligned_negative_mean": aligned_negative_mean,
+        "td_target_std": td_target_std,
+        "td_error_std": td_error_std,
+        # Phase II event-level scalars
+        "jackpot_event_rate": _nan1.copy(),
+        "catastrophe_event_rate": _nan1.copy(),
+        "regime_shift_episode": _nan1.copy(),
+        "hazard_hit_rate": _nan1.copy(),
+        # Phase II tail-risk scalars
+        "return_cvar_5pct": _nan1.copy(),
+        "return_cvar_10pct": _nan1.copy(),
+        "return_top5pct_mean": _nan1.copy(),
+        "event_rate": _nan1.copy(),
+        "event_conditioned_return": _nan1.copy(),
+        # Phase II adaptation scalars
+        "adaptation_pre_change_auc": _nan1.copy(),
+        "adaptation_post_change_auc": _nan1.copy(),
+        "adaptation_lag_50pct": _nan1.copy(),
+        "adaptation_lag_75pct": _nan1.copy(),
+        "adaptation_lag_90pct": _nan1.copy(),
     }
 
 
