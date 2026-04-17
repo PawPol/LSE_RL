@@ -567,6 +567,49 @@ def build_calibration_json(
                 except ValueError:
                     pass
 
+        # -- Per-stage quantiles for pos_margin and neg_margin (spec §12) --
+        # Quantiles are computed across algorithm-group calibration dicts
+        # (each already averaged across seeds within its group).
+        for margin_key, out_key in (
+            ("aligned_positive_mean", "pos_margin_quantiles"),
+            ("aligned_negative_mean", "neg_margin_quantiles"),
+        ):
+            margin_arrays: list[np.ndarray] = []
+            for c in calib_dicts:
+                a = c.get(margin_key)
+                if a is not None and a.ndim == 1:
+                    margin_arrays.append(a)
+            if len(margin_arrays) >= 2:
+                try:
+                    stacked = np.stack(margin_arrays, axis=0)  # (n_groups, H+1)
+                    stagewise[out_key] = {
+                        "q05": _nan_safe_list(
+                            np.nanpercentile(stacked, 5, axis=0),
+                        ),
+                        "q25": _nan_safe_list(
+                            np.nanpercentile(stacked, 25, axis=0),
+                        ),
+                        "q50": _nan_safe_list(
+                            np.nanpercentile(stacked, 50, axis=0),
+                        ),
+                        "q75": _nan_safe_list(
+                            np.nanpercentile(stacked, 75, axis=0),
+                        ),
+                        "q95": _nan_safe_list(
+                            np.nanpercentile(stacked, 95, axis=0),
+                        ),
+                    }
+                except ValueError:
+                    pass
+            elif len(margin_arrays) == 1:
+                # Single group: report the array as all quantiles (degenerate)
+                arr = margin_arrays[0]
+                safe = _nan_safe_list(arr)
+                stagewise[out_key] = {
+                    "q05": safe, "q25": safe, "q50": safe,
+                    "q75": safe, "q95": safe,
+                }
+
         # Compute empirical_r_max from reward_mean across stages
         for c in calib_dicts:
             r_mean = c.get("reward_mean")
@@ -601,6 +644,22 @@ def build_calibration_json(
     # Determine recommended_task_sign
     recommended_task_sign = _determine_task_sign(stagewise)
 
+    # -- Event-conditioned margin block (spec §12) --------------------------
+    event_cond_return: float | None = None
+    if tail_risk is not None:
+        event_cond_return = tail_risk.get("event_conditioned_return_mean")
+
+    event_conditioned_margins: dict[str, Any] = {
+        "event_conditioned_return": event_cond_return,
+        "note": (
+            "event_conditioned_return is the mean episode return "
+            "conditioned on at least one stress event occurring. "
+            "Per-stage event-conditioned margin arrays require "
+            "event-flagged transitions logged per stage, which "
+            "is available in transitions.npz for future processing."
+        ),
+    }
+
     doc: dict[str, Any] = {
         "task_family": task_family,
         "schema_version": _CALIBRATION_SCHEMA_VERSION,
@@ -612,6 +671,7 @@ def build_calibration_json(
         "tail_risk": tail_risk,
         "adaptation": adaptation,
         "event_rates": event_rates,
+        "event_conditioned_margins": event_conditioned_margins,
         "recommended_task_sign": recommended_task_sign,
     }
 
@@ -668,39 +728,65 @@ def _merge_algo_scalar_blocks(
 
 def _determine_task_sign(
     stagewise: dict[str, Any] | None,
-) -> str:
+) -> int:
     """Determine recommended task sign from stage-0 margin statistics.
 
-    Returns "positive" if pos_margin_mean > neg_margin_mean at stage 0,
-    "negative" if neg_margin_mean > pos_margin_mean, else "mixed".
+    Returns +1 if pos_margin_mean >= neg_margin_mean at stage 0,
+    -1 if neg_margin_mean > pos_margin_mean.  If the sign is ambiguous
+    (no data available), defaults to +1 with a warning.
+
+    Per spec section 12: one integer sign per experiment family.
     """
     if stagewise is None:
-        return "mixed"
+        print(
+            "  [WARN] _determine_task_sign: no stagewise data; "
+            "defaulting to +1",
+            file=sys.stderr,
+        )
+        return 1
 
     pos = stagewise.get("pos_margin_mean_mean")
     neg = stagewise.get("neg_margin_mean_mean")
 
     if pos is None or neg is None:
-        return "mixed"
+        print(
+            "  [WARN] _determine_task_sign: missing pos/neg margin means; "
+            "defaulting to +1",
+            file=sys.stderr,
+        )
+        return 1
 
     # Use stage 0 values
     if not isinstance(pos, list) or not isinstance(neg, list):
-        return "mixed"
+        print(
+            "  [WARN] _determine_task_sign: margin data not list; "
+            "defaulting to +1",
+            file=sys.stderr,
+        )
+        return 1
     if len(pos) == 0 or len(neg) == 0:
-        return "mixed"
+        print(
+            "  [WARN] _determine_task_sign: empty margin arrays; "
+            "defaulting to +1",
+            file=sys.stderr,
+        )
+        return 1
 
     pos_0 = pos[0]
     neg_0 = neg[0]
 
     if pos_0 is None or neg_0 is None:
-        return "mixed"
+        print(
+            "  [WARN] _determine_task_sign: stage-0 margin is None; "
+            "defaulting to +1",
+            file=sys.stderr,
+        )
+        return 1
 
-    if pos_0 > neg_0:
-        return "positive"
-    elif neg_0 > pos_0:
-        return "negative"
+    if neg_0 > pos_0:
+        return -1
     else:
-        return "mixed"
+        return 1
 
 
 # ---------------------------------------------------------------------------

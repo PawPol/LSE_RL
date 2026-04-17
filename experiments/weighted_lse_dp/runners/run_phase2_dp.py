@@ -96,10 +96,10 @@ _REGIME_SHIFT_TASKS: frozenset[str] = frozenset({
     "grid_regime_shift",
 })
 
-#: Tasks whose factories return (wrapper, mdp_rl, cfg) but are NOT
-#: regime-shift (hazard wrapper, bonus-shock wrapper).  For DP purposes
-#: we plan on the underlying base MDP accessed via ``wrapper._base``.
-_WRAPPER_TASKS: frozenset[str] = frozenset({
+#: Tasks excluded from DP because their stress dynamics are injected at
+#: runtime via wrapper.step() and cannot be encoded in the P/R kernel
+#: without redesigning the factory.  These tasks are RL-only.
+_RL_ONLY_TASKS: frozenset[str] = frozenset({
     "grid_hazard",
     "taxi_bonus_shock",
 })
@@ -216,13 +216,11 @@ def _call_factory(
 def _get_base_mdp(task_name: str, mdp_or_wrapper: Any) -> Any:
     """Extract the FiniteMDP used for DP planning from the factory output.
 
-    For bare MDPs this is the identity; for wrapper tasks we reach through
-    to the underlying base MDP (whose ``p`` and ``r`` arrays the planners
-    need).
+    For bare MDPs this is the identity.  Regime-shift wrappers are handled
+    by the caller (pre/post split).  RL-only tasks (grid_hazard,
+    taxi_bonus_shock) never reach this function -- they are filtered out
+    before dispatch.
     """
-    if task_name in _WRAPPER_TASKS:
-        return mdp_or_wrapper._base
-    # For regime-shift wrappers, callers handle pre/post separately.
     # For bare MDPs, return as-is.
     return mdp_or_wrapper
 
@@ -294,6 +292,9 @@ def _build_run_list(
         if task_filter is not None and task_filter != "all" and task_name != task_filter:
             continue
         if task_name not in TASK_NAMES:
+            continue
+        # Skip RL-only tasks (runtime-injected stress, no DP encoding).
+        if task_name in _RL_ONLY_TASKS:
             continue
 
         # Chain tasks use the extended seed list if available.
@@ -545,7 +546,26 @@ def _run_single(
     For regime-shift tasks with ``warmstart_dp=True``, this runs the planner
     twice: once on the pre-shift MDP, once on the post-shift MDP with
     ``v_init`` from the pre-shift solution.
+
+    Returns
+    -------
+    dict
+        Summary dict with ``task``, ``algorithm``, ``seed``, ``passed``,
+        and optionally ``skipped`` / ``wall_s``.
     """
+    # BLOCKER B fix: RL-only tasks have runtime-injected stress that
+    # cannot be represented in the P/R kernel; skip them for DP.
+    if task_name in _RL_ONLY_TASKS:
+        print(f"[phase2_dp] {task_name}: RL-only task (runtime-injected stress; no DP run).")
+        return {
+            "task": task_name,
+            "algorithm": algo_name,
+            "seed": seed,
+            "passed": True,
+            "skipped": "RL-only task",
+            "wall_s": 0.0,
+        }
+
     seed_everything(seed)
 
     mdp_or_wrapper, _mdp_rl, resolved_cfg = _call_factory(
@@ -775,6 +795,10 @@ def main(argv: list[str] | None = None) -> None:
 
     elapsed = time.perf_counter() - t_start
     print(f"\nDone: {n_ok} succeeded, {n_fail} failed, {elapsed:.1f}s total.")
+
+
+# Public alias expected by callers and import checks.
+run_single = _run_single
 
 
 if __name__ == "__main__":

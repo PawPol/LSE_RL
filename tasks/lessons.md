@@ -151,3 +151,43 @@ citing rho*(r,v) = sigma(beta*(r-v) + log(1/gamma)) from the paper.
 **Prevention rule**: After any agent writes or edits a `from X import Y` statement in `mushroom-rl-dev/`, verify the import path uses only dots as separators. Run `.venv/bin/python -c "import mushroom_rl.algorithms.value.dp"` as a quick sanity check before committing. Edit justified under CLAUDE.md §4: single-character typo fix in vendored code, isolated to one line.
 
 **Source incident**: Phase I closing branch — `mushroom-rl-dev/mushroom_rl/algorithms/value/dp/classical_value_iteration.py` line 44; caught by verifier on `phase-I/closing`; fixed 2026-04-16.
+
+---
+
+### 2026-04-17 — Default out-root constants that duplicate RunWriter's path structure
+
+**Pattern**: Runner scripts set `_DEFAULT_OUT_ROOT` to a path that already includes the `phase/suite` directory levels (e.g. `results/weighted_lse_dp/phase1/paper_suite`). RunWriter.create then appends `phase/suite/task/algo/seed_*` again, producing a double-nested path that no aggregator or validator discovers. The same pattern appeared in both the RL runner (double-nesting `phase1/paper_suite`) and the ablation runner (double-nesting `phase1/<gamma_dir>`).
+
+**Prevention rule**: Default out-root in any runner must be the bare results root (e.g. `results/weighted_lse_dp`). Let RunWriter (or whatever path-constructing helper the runner uses) be the single source of truth for the `phase/suite/task/algo/seed_*` hierarchy. Never embed phase or suite segments in the default out-root constant. When adding a new runner, verify the produced path by printing `rw.run_dir` in dry-run mode and confirming it matches the glob pattern in `find_run_dirs`.
+
+**Source incident**: Phase I R2 Codex review — `run_phase1_rl.py:75` (`_DEFAULT_OUT_ROOT`), `run_phase1_ablation.py:189-227` (ablation path construction); both caused BLOCKERs in triage 2026-04-17.
+
+---
+
+### 2026-04-17 — FiniteMDP absorbing state with mu=None causes uniform init crash
+
+**Pattern**: When a task factory adds an extra absorbing terminal state (e.g., jackpot or catastrophe terminus at `state_n + 1`), the resulting `P` array has shape `(state_n+1, A, state_n+1)` with an all-zero row for the absorbing state. Passing `mu=None` to `FiniteMDP` triggers uniform initialization over all states including the zero-P absorbing row. On the next `env.reset()`, MushroomRL samples a state from the discrete distribution defined by `mu`, which may draw the absorbing state, and then attempts a step from a state with zero transition probability — crashing with `ValueError: probabilities do not sum to 1`. This manifests only when `severity > 0` (absorbing state added); `severity=0` avoids the extra state and passes silently.
+
+**Prevention rule**: Whenever a task factory adds absorbing states that are unreachable from the initial distribution, always compute `mu` explicitly: `mu = np.zeros(P.shape[0]); mu[initial_state] = 1.0`. Never pass `mu=None` to `FiniteMDP` when the state space has been extended beyond the base MDP. The guard is: `if P.shape[0] > base_state_n: mu = ...; else: mu = None`.
+
+**Source incident**: Phase II task 20 degradation tests — `make_chain_jackpot` and `make_chain_catastrophe` both passed `mu=None` with the absorbing state present; crash caught by `test_phase2_classical_degradation.py`; fixed 2026-04-17 in `stress_families.py`.
+
+---
+
+### 2026-04-17 — Ablation runner must delegate to same-phase runners, not Phase I runners
+
+**Pattern**: A phase-N ablation runner was written to delegate to Phase I task factory runners (`run_phase1_dp._run_single`, `run_phase1_rl.run_single`). Those runners only know Phase I task names (`chain_base`, `grid_base`, `taxi_base`). Phase II task names (`chain_jackpot`, `grid_hazard`, etc.) are unknown to Phase I dispatch tables, so any Phase II ablation run fails at task-factory lookup with a `KeyError` or dispatches to the wrong factory. The bug is silent at import time — it only surfaces when a Phase II task name is passed.
+
+**Prevention rule**: Every phase-N ablation runner must import and delegate to the phase-N DP and RL runners, not earlier-phase runners. When writing `run_phase{N}_ablation.py`, immediately verify the import statement reads `from run_phase{N}_dp import _run_single as dp_run_single` (not `run_phase{N-1}_dp`). Gamma injection in ablation must use `task_cfg_gp = dict(task_cfg); task_cfg_gp["gamma"] = gp` rather than a separate kwarg, since the phase-N runner signature may differ from phase N-1.
+
+**Source incident**: Phase II task 24 — initial `run_phase2_ablation.py` imported `run_phase1_dp._run_single`; caught during implementation review; corrected 2026-04-17 to import from `run_phase2_dp`.
+
+---
+
+### 2026-04-17 — Wrapper-based stress environments not wired through the training loop
+
+**Pattern**: Task factories that return `(wrapper, mdp_rl, cfg)` build `mdp_rl` from `mdp_base` (the unwrapped MDP), not from the wrapper. When the runner passes `mdp_rl` to `Core` for RL training or strips the wrapper via `._base` for DP planning, the stress dynamics (hazard penalties, regime shifts, bonus shocks) never fire. The agent trains on the base task under the stress task's name. This affected 4 of 8 RL task families and 2 of 8 DP task families in Phase II, producing invalid results that passed all structural/schema validators because the output format was correct -- only the content was wrong.
+
+**Prevention rule**: (1) For RL: when a stress task uses a wrapper, the factory must time-augment the wrapper itself (not `mdp_base`) and the runner must pass the augmented wrapper to `Core`. (2) For DP: if the wrapper's stress cannot be encoded in `(P, R)`, the task must not appear in the DP suite. If it can be encoded, build a stressed `(P, R)` model directly rather than wrapping and then unwrapping. (3) Add a per-wrapper integration test that runs a short episode and asserts the stress event fires at least once (non-zero event count in transitions). This catches the "wrapper never stepped" failure mode that structural validators miss.
+
+**Source incident**: Phase II Codex reviews (byl14ca5j + bqm6fkd15) — `run_phase2_rl.py:607` passes `mdp_rl` (base) to Core; `run_phase2_dp.py:223-224` strips wrapper via `._base`; triaged 2026-04-17.

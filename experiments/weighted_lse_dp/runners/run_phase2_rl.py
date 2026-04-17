@@ -79,6 +79,9 @@ from experiments.weighted_lse_dp.tasks.nonstationary_wrappers import (  # noqa: 
 from experiments.weighted_lse_dp.tasks.hazard_wrappers import (  # noqa: E402
     make_grid_hazard,
 )
+from mushroom_rl.environments.time_augmented_env import (  # noqa: E402
+    DiscreteTimeAugmentedEnv,
+)
 
 __all__ = ["main", "run_single", "build_plan"]
 
@@ -127,6 +130,16 @@ _ALGORITHMS: dict[str, str] = {
     "QLearning": "QLearning",
     "ExpectedSARSA": "ExpectedSARSA",
 }
+
+#: Tasks whose factories return a stress wrapper (not a bare MDP).
+#: For these tasks, RL training/eval must use the wrapper so that
+#: hazard penalties, regime shifts, and bonus shocks fire during step().
+_WRAPPER_TASKS_RL: frozenset[str] = frozenset({
+    "chain_regime_shift",
+    "grid_regime_shift",
+    "grid_hazard",
+    "taxi_bonus_shock",
+})
 
 #: Fixed training hyperparameters.
 _EPSILON = 0.1
@@ -556,6 +569,13 @@ def run_single(
     # Merge factory resolved config into our resolved config.
     resolved_config["factory_config"] = factory_cfg
 
+    # BLOCKER A fix: for wrapper-backed tasks, train/eval on the stressed
+    # wrapper.  The base mdp_rl only reflects pre-shift/base dynamics;
+    # the wrapper's step() injects hazard penalties, regime shifts, and
+    # bonus shocks.
+    if task in _WRAPPER_TASKS_RL:
+        mdp_rl = DiscreteTimeAugmentedEnv(wrapper_or_mdp, horizon=horizon)
+
     # Propagate gamma into the RL env.
     mdp_rl.info.gamma = gamma
 
@@ -646,6 +666,81 @@ def run_single(
         calibration_stats = aggregate_calibration_stats(
             transitions_payload, horizon=horizon
         )
+
+        # -- Per-episode returns (needed for tail-risk / adaptation) --------
+        episode_returns = _compute_episode_returns(transitions_payload, gamma)
+
+        # -- Phase II event-level scalars ----------------------------------
+        if "jackpot_event" in transitions_payload:
+            calibration_stats["jackpot_event_rate"] = np.array(
+                [float(np.mean(transitions_payload["jackpot_event"]))],
+            )
+        if "catastrophe_event" in transitions_payload:
+            calibration_stats["catastrophe_event_rate"] = np.array(
+                [float(np.mean(transitions_payload["catastrophe_event"]))],
+            )
+        if "hazard_cell_hit" in transitions_payload:
+            calibration_stats["hazard_hit_rate"] = np.array(
+                [float(np.mean(transitions_payload["hazard_cell_hit"]))],
+            )
+        if stress_type == "regime_shift":
+            calibration_stats["regime_shift_episode"] = np.array(
+                [float(task_config.get("change_at_episode", -1))],
+            )
+        else:
+            calibration_stats["regime_shift_episode"] = np.array([-1.0])
+
+        # -- Phase II tail-risk scalars ------------------------------------
+        tail_risk: dict[str, float] | None = None
+        if stress_type in ("jackpot", "catastrophe", "hazard"):
+            event_key_map = {
+                "jackpot": "jackpot_event",
+                "catastrophe": "catastrophe_event",
+                "hazard": "hazard_cell_hit",
+            }
+            event_key = event_key_map[stress_type]
+            episode_event_flags = _compute_episode_event_flags(
+                transitions_payload, event_key
+            )
+
+            tail_risk_logger = TailRiskLogger()
+            tail_risk = tail_risk_logger.compute(episode_returns, episode_event_flags)
+
+            calibration_stats["return_cvar_5pct"] = np.array([tail_risk["cvar_5pct"]])
+            calibration_stats["return_cvar_10pct"] = np.array([tail_risk["cvar_10pct"]])
+            calibration_stats["return_top5pct_mean"] = np.array([tail_risk["top5pct_mean"]])
+            calibration_stats["event_rate"] = np.array([tail_risk["event_rate"]])
+            calibration_stats["event_conditioned_return"] = np.array(
+                [tail_risk["event_conditioned_return"]],
+            )
+
+        # -- Phase II adaptation scalars -----------------------------------
+        adaptation: dict[str, Any] | None = None
+        if stress_type == "regime_shift":
+            change_at_episode = int(task_config.get("change_at_episode", 300))
+            adaptation_logger = AdaptationMetricsLogger()
+            adaptation = adaptation_logger.compute(episode_returns, change_at_episode)
+
+            calibration_stats["adaptation_pre_change_auc"] = np.array(
+                [float(adaptation["pre_change_auc"])],
+            )
+            calibration_stats["adaptation_post_change_auc"] = np.array(
+                [float(adaptation["post_change_auc"])],
+            )
+            _lag50 = adaptation.get("lag_to_50pct_recovery")
+            _lag75 = adaptation.get("lag_to_75pct_recovery")
+            _lag90 = adaptation.get("lag_to_90pct_recovery")
+            calibration_stats["adaptation_lag_50pct"] = np.array(
+                [float(_lag50) if _lag50 is not None else np.nan],
+            )
+            calibration_stats["adaptation_lag_75pct"] = np.array(
+                [float(_lag75) if _lag75 is not None else np.nan],
+            )
+            calibration_stats["adaptation_lag_90pct"] = np.array(
+                [float(_lag90) if _lag90 is not None else np.nan],
+            )
+
+        # Stage calibration stats (now with all scalars populated).
         rw.set_calibration_stats(calibration_stats)
 
         # -- Target statistics (spec S8.4) ---------------------------------
@@ -668,9 +763,6 @@ def run_single(
             {k: np.asarray(v) for k, v in target_stats.items()},
         )
 
-        # -- Per-episode returns for tail-risk / adaptation -----------------
-        episode_returns = _compute_episode_returns(transitions_payload, gamma)
-
     # -- Compute summary metrics --------------------------------------------
     eval_summary = evaluator.summary()
 
@@ -680,29 +772,12 @@ def run_single(
         **{k: v for k, v in eval_summary.items()},
     }
 
-    # -- Tail-risk metrics (spec S8.3) for jackpot/catastrophe/hazard ------
-    if stress_type in ("jackpot", "catastrophe", "hazard"):
-        # Determine the event key in the transitions payload.
-        event_key_map = {
-            "jackpot": "jackpot_event",
-            "catastrophe": "catastrophe_event",
-            "hazard": "hazard_cell_hit",
-        }
-        event_key = event_key_map[stress_type]
-        episode_event_flags = _compute_episode_event_flags(
-            transitions_payload, event_key
-        )
-
-        tail_risk_logger = TailRiskLogger()
-        tail_risk = tail_risk_logger.compute(episode_returns, episode_event_flags)
+    # Merge tail-risk and adaptation into metrics/resolved_config.
+    if tail_risk is not None:
         metrics["tail_risk_metrics"] = tail_risk
         resolved_config["tail_risk_metrics"] = tail_risk
 
-    # -- Adaptation metrics (spec S8.2) for regime-shift tasks --------------
-    if stress_type == "regime_shift":
-        change_at_episode = int(task_config.get("change_at_episode", 300))
-        adaptation_logger = AdaptationMetricsLogger()
-        adaptation = adaptation_logger.compute(episode_returns, change_at_episode)
+    if adaptation is not None:
         metrics["adaptation_metrics"] = adaptation
         resolved_config["adaptation_metrics"] = adaptation
 
