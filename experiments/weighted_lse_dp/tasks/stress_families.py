@@ -182,17 +182,29 @@ def make_chain_jackpot(
 
             p = p_ext
             r = r_ext
-        else:
-            # Jackpot self-loops at jackpot_state (no termination).
-            normal_row = p[jackpot_state, 0, :].copy()
 
-            p[jackpot_state, 0, :] = (1.0 - jackpot_prob) * normal_row
-            p[jackpot_state, 0, jackpot_state] += jackpot_prob
+    # Build initial-state distribution.  When an absorbing terminal state
+    # was added (S_total = state_n + 1), mu=None would cause MushroomRL to
+    # sample uniformly over *all* states including the absorbing one, leading
+    # to a crash (all-zero P row → probabilities do not sum to 1).  Fix: always
+    # start from state 0 when extra states are present.
+    if p.shape[0] > state_n:
+        mu = np.zeros(p.shape[0], dtype=np.float64)
+        mu[0] = 1.0
+    else:
+        mu = None  # standard FiniteMDP uniform init over real states
 
-            # Jackpot reward on the self-loop transition.
-            r[jackpot_state, 0, jackpot_state] = jackpot_reward
+    if jackpot_prob > 0.0 and not jackpot_terminates:
+        # Jackpot self-loops at jackpot_state (no termination).
+        normal_row = p[jackpot_state, 0, :].copy()
 
-    mdp_base = FiniteMDP(p, r, mu=None, gamma=gamma, horizon=horizon)
+        p[jackpot_state, 0, :] = (1.0 - jackpot_prob) * normal_row
+        p[jackpot_state, 0, jackpot_state] += jackpot_prob
+
+        # Jackpot reward on the self-loop transition.
+        r[jackpot_state, 0, jackpot_state] = jackpot_reward
+
+    mdp_base = FiniteMDP(p, r, mu=mu, gamma=gamma, horizon=horizon)
     mdp_rl = make_time_augmented(mdp_base, horizon=horizon)
 
     resolved_cfg = {
@@ -419,7 +431,16 @@ def make_chain_catastrophe(
     # else: risky_prob == 0.0 => keep standard chain P/R unchanged
     # (severity=0 identity recovery).
 
-    mdp_base = FiniteMDP(p, r, mu=None, gamma=gamma, horizon=horizon)
+    # Build initial-state distribution.  When an absorbing terminal state
+    # was added, mu=None causes MushroomRL to sample uniformly over all states
+    # including the absorbing one (zero P row → crash).  Fix: start from state 0.
+    if p.shape[0] > state_n:
+        mu = np.zeros(p.shape[0], dtype=np.float64)
+        mu[0] = 1.0
+    else:
+        mu = None
+
+    mdp_base = FiniteMDP(p, r, mu=mu, gamma=gamma, horizon=horizon)
     mdp_rl = make_time_augmented(mdp_base, horizon=horizon)
 
     resolved_cfg = {
