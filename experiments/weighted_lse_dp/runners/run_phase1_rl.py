@@ -280,6 +280,11 @@ def run_single(
     factory = _TASK_FACTORIES[task]
     _mdp_base, mdp_rl, cfg, _ref_pi = factory(seed=seed)
 
+    # Propagate gamma (possibly overridden by gamma_prime) into the RL env
+    # so that agent training, the Q-update TD target, and metadata all use
+    # the same effective discount.
+    mdp_rl.info.gamma = gamma
+
     # -- Create agent -------------------------------------------------------
     agent = _make_agent(algorithm, mdp_rl.info)
 

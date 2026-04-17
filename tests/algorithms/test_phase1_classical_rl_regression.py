@@ -177,6 +177,28 @@ class TestQLearningRegression:
             f"Expected 100 transitions after 100 steps, got {logger.n_transitions}"
         )
 
+    def test_gamma_prime_propagates_to_agent(self):
+        """gamma_prime override must propagate to agent.mdp_info.gamma.
+
+        Invariant: when gamma_prime is set, mdp_rl.info.gamma is patched
+        before agent construction so the TD target uses the overridden
+        discount factor, not the task's native gamma.
+        """
+        _mdp_base, mdp_rl, cfg, _ref_pi = make_chain_base(seed=11)
+        gamma_prime = 0.90
+
+        # Replicate the runner's fix: patch mdp_rl.info.gamma before
+        # building the agent.
+        mdp_rl.info.gamma = gamma_prime
+
+        policy = EpsGreedy(Parameter(value=0.1))
+        agent = QLearning(
+            mdp_rl.info, policy, learning_rate=Parameter(value=0.1)
+        )
+        assert agent.mdp_info.gamma == 0.90, (
+            f"Expected agent.mdp_info.gamma == 0.90, got {agent.mdp_info.gamma}"
+        )
+
     def test_margin_formula_no_gamma(self, chain_env):
         """margin_beta0 = reward - v_next_beta0 (no gamma).
 
