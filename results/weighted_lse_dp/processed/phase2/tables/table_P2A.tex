@@ -1,0 +1,20 @@
+\begin{table}[t]
+\centering
+\caption{Phase II stress-task modifications.  Severity $= 0$ reduces each task to its Phase I base.}
+\label{tab:p2a}
+\small
+\begin{tabular}{llcccp{3.5cm}}
+\toprule
+Task family & Stress type & Severity param & States & Horizon & Reduces to \\
+\midrule
+  chain\_sparse\_long & Sparse reward & sparse\_reward & 60 & 120 & chain\_base (longer horizon) \\
+  chain\_jackpot & Rare jackpot & jackpot\_prob=0.05; jackpot\_reward=10.0 & 25 & 60 & chain\_base \\
+  chain\_catastrophe & Rare catastrophe & risky\_prob=0.05; catastrophe\_reward=-10.0 & 25 & 60 & chain\_base \\
+  chain\_regime\_shift & Regime shift & change\_at\_episode=300 & 25 & 60 & chain\_base (no shift) \\
+  grid\_sparse\_goal & Sparse reward & sparse\_reward & 25 & 80 & grid\_base (goal-only reward) \\
+  grid\_hazard & Stochastic hazard & hazard\_prob=0.1; hazard\_reward=-5.0 & 25 & 80 & grid\_base \\
+  grid\_regime\_shift & Regime shift & change\_at\_episode=200 & 25 & 80 & grid\_base (no shift) \\
+  taxi\_bonus\_shock & Rare jackpot & bonus\_prob=0.05; bonus\_reward=5.0 & 44 & 120 & taxi\_base \\
+\bottomrule
+\end{tabular}
+\end{table}

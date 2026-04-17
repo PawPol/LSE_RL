@@ -1,0 +1,67 @@
+{
+  "generator": "make_phase2_figures.py",
+  "n_figures": 5,
+  "n_files": 10,
+  "files": [
+    {
+      "figure": "learning_curves",
+      "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_base_vs_modified_curves.pdf",
+      "sha256": "8ca57364263c0bcc0e8ece2f70009a5981fa65a4e1860b7193c4bd9bfe50707a",
+      "timestamp": "2026-04-17T10:16:35Z"
+    },
+    {
+      "figure": "learning_curves",
+      "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_base_vs_modified_curves.png",
+      "sha256": "09d319c0943d9bf6733fa05118f2d2aa06ff72c9a0f3562a6269e66edd376581",
+      "timestamp": "2026-04-17T10:16:35Z"
+    },
+    {
+      "figure": "return_distributions",
+      "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_return_distributions.pdf",
+      "sha256": "e31077afb6fd99795a24f00b833070a044b48a51c828710fec14ab57c9353650",
+      "timestamp": "2026-04-17T10:16:35Z"
+    },
+    {
+      "figure": "return_distributions",
+      "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_return_distributions.png",
+      "sha256": "1184310172be0de954190651cd85d03643a23027a20a2e2d46f664dcd47b7386",
+      "timestamp": "2026-04-17T10:16:35Z"
+    },
+    {
+      "figure": "adaptation_plots",
+      "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_adaptation_plots.pdf",
+      "sha256": "5c72805f5017f6a210cb86e0e7eac5e2cfba67144a1920e5f8153c8d3f7bd1ed",
+      "timestamp": "2026-04-17T10:16:35Z"
+    },
+    {
+      "figure": "adaptation_plots",
+      "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_adaptation_plots.png",
+      "sha256": "cbbcee760d7094debc653c583110a60efd4fb29dded9dcf6bda63b6d2f3ba49a",
+      "timestamp": "2026-04-17T10:16:35Z"
+    },
+    {
+      "figure": "visitation_heatmaps",
+      "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_visitation_heatmaps.pdf",
+      "sha256": "9743a291362d5dac118da97be5e03bbf5d60049412e39cd16c5205d72ba5183a",
+      "timestamp": "2026-04-17T10:16:35Z"
+    },
+    {
+      "figure": "visitation_heatmaps",
+      "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_visitation_heatmaps.png",
+      "sha256": "b069763ad6985bb83958d0fc7b973b1a19a56e64f455cb0ee38c62ec0d8bd6e0",
+      "timestamp": "2026-04-17T10:16:35Z"
+    },
+    {
+      "figure": "margin_quantiles",
+      "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_margin_quantiles.pdf",
+      "sha256": "931275c43262b2f7762024ceb4a648be179b7e29d9a18cdaab009aec282ea0bf",
+      "timestamp": "2026-04-17T10:16:35Z"
+    },
+    {
+      "figure": "margin_quantiles",
+      "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_margin_quantiles.png",
+      "sha256": "235a60f6db463b2e9438c494ba3208a34fb27dd36e77d0755b426feb9260babd",
+      "timestamp": "2026-04-17T10:16:35Z"
+    }
+  ]
+}
