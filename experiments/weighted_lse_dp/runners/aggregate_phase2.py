@@ -495,15 +495,21 @@ def aggregate_group(
     # -- Pool episode returns split by event flag (MAJOR R3-3) --------------
     # run_phase2_rl writes episode_returns_noevent / episode_returns_event to
     # metrics.json for RL runs.  Pool across seeds for the calibration JSON.
+    # Also pool ALL eval episode returns (regardless of event) so the calibration
+    # JSON can expose the full return distribution for figure 11.1.2.
     pooled_returns_noevent: list[float] = []
     pooled_returns_event: list[float] = []
+    pooled_all_episode_returns: list[float] = []
     for m in per_seed_metrics:
         ne = m.get("episode_returns_noevent")
         ev = m.get("episode_returns_event")
+        er = m.get("episode_returns")
         if isinstance(ne, list):
             pooled_returns_noevent.extend(ne)
         if isinstance(ev, list):
             pooled_returns_event.extend(ev)
+        if isinstance(er, list):
+            pooled_all_episode_returns.extend(er)
 
     # -- Aggregate learning curves from curves.npz (R4-5) -------------------
     # Pool actual checkpoint returns across seeds instead of synthesising them
@@ -608,6 +614,7 @@ def aggregate_group(
         "event_conditioned_stagewise": event_conditioned_stagewise,
         "episode_returns_noevent": pooled_returns_noevent,
         "episode_returns_event": pooled_returns_event,
+        "all_episode_returns": pooled_all_episode_returns,
         "margin_quantiles_from_transitions": margin_quantiles_from_transitions,
         "empirical_r_max_from_transitions": empirical_r_max_from_transitions,
         "curves_from_checkpoints": curves_agg,
@@ -1176,37 +1183,30 @@ def build_calibration_json(
     # These allow make_phase2_figures.py to load return and margin data
     # without re-reading nested stagewise structures.
 
-    # base_returns / stress_returns: actual episode-return samples split by
-    # whether a stress event fired during that episode.  Pooled across all
-    # task groups (RL groups carry this data via episode_returns_noevent /
-    # episode_returns_event written by run_phase2_rl.py).
+    # base_returns / stress_returns: per-episode eval returns from the same
+    # eval protocol, pooled across seeds.
+    #
+    # base_returns  = episodes where NO stress event fired (noevent split).
+    #                 Represents the "normal" return distribution.
+    # stress_returns = ALL eval episode returns from the stress task.
+    #                 Using all returns (not just event-conditioned ones)
+    #                 shows the full distribution — rare jackpot / catastrophe
+    #                 returns appear as a visible tail rather than being
+    #                 absent because event_returns_event is near-empty when
+    #                 events are rare (e.g., jackpot_prob=0.05 over 500 eval
+    #                 episodes gives ~25 events vs 5036 base episodes).
     base_returns_pool: list[float] = []
     stress_returns_pool: list[float] = []
     for g in task_groups:
         ne = g.get("episode_returns_noevent")
-        ev = g.get("episode_returns_event")
+        er = g.get("all_episode_returns")
         if isinstance(ne, list):
             base_returns_pool.extend(ne)
-        if isinstance(ev, list):
-            stress_returns_pool.extend(ev)
+        if isinstance(er, list):
+            stress_returns_pool.extend(er)
 
-    # Fallback: if no per-episode splits available, use stagewise reward mean
-    # as a proxy (per-stage scalar, not episodes — labelled accordingly).
-    base_returns_list: list[float | None]
-    stress_returns_list: list[float | None]
-    if base_returns_pool or stress_returns_pool:
-        base_returns_list = [float(v) for v in base_returns_pool]
-        stress_returns_list = [float(v) for v in stress_returns_pool]
-    else:
-        # Legacy fallback: per-stage mean (not true episode distribution).
-        base_returns_list = []
-        if stagewise is not None:
-            bret = stagewise.get("reward_mean_mean")
-            if bret is not None:
-                base_returns_list = bret if isinstance(bret, list) else list(bret)
-        stress_returns_list = (
-            [float(event_cond_return)] if event_cond_return is not None else []
-        )
+    base_returns_list: list[float] = [float(v) for v in base_returns_pool]
+    stress_returns_list: list[float] = [float(v) for v in stress_returns_pool]
 
     # margin_quantiles: top-level alias for the RAW margin distribution (R6-2).
     # Must use the full margin_beta0 quantiles — NOT pos_margin_quantiles —
@@ -1427,8 +1427,24 @@ def write_outputs(
     aggregated_root = out_root / "phase2" / "aggregated"
     calibration_root = out_root / "phase2" / "calibration"
 
-    # 1. Write per-(task, algorithm) summary.json files
+    # 1. Write per-(task, algorithm) summary.json files.
+    # Suite priority: paper_suite wins over smoke.  Pre-compute which
+    # (task, algo) pairs are covered by the highest-priority suite so
+    # lower-priority suites don't overwrite their summary.json files.
+    _top_suite = _SUITES[0]  # "paper_suite"
+    _top_suite_pairs: set[tuple[str, str]] = {
+        (task, algo)
+        for (suite, task, algo) in groups
+        if suite == _top_suite
+    }
+
     for (suite, task, algorithm), agg in sorted(groups.items()):
+        # Skip smoke (or any lower-priority suite) when paper_suite data
+        # exists for this (task, algo) pair — prevents smoke runs from
+        # silently overwriting full paper-suite aggregates.
+        if suite != _top_suite and (task, algorithm) in _top_suite_pairs:
+            continue
+
         safe_task = task.replace("/", "_").replace(" ", "_")
         safe_algo = algorithm.replace("/", "_").replace(" ", "_")
 
@@ -1510,8 +1526,16 @@ def write_outputs(
     # Group raw task labels by canonical family name so that regime-shift
     # *_pre_shift / *_post_shift DP groups merge into one family-level JSON
     # (spec §12: one calibration file per stress-task family).
+    #
+    # Use only the highest-priority suite's groups for calibration so smoke
+    # runs don't contaminate the paper-suite statistics.
+    priority_groups: dict[GroupKey, list[dict[str, Any]]] = {
+        k: v for k, v in groups.items()
+        if k[0] == _top_suite or (k[1], k[2]) not in _top_suite_pairs
+    }
+
     family_to_raw_tasks: dict[str, set[str]] = {}
-    for (suite, task, algo) in groups:
+    for (suite, task, algo) in priority_groups:
         canonical = _canonical_family_from_task(task)
         family_to_raw_tasks.setdefault(canonical, set()).add(task)
 
@@ -1527,7 +1551,7 @@ def write_outputs(
                     if tc is not None:
                         break
 
-        calib_doc = build_calibration_json(canonical_family, groups, tc, raw_tasks)
+        calib_doc = build_calibration_json(canonical_family, priority_groups, tc, raw_tasks)
         calib_doc_safe = _make_json_safe(calib_doc)
 
         calibration_root.mkdir(parents=True, exist_ok=True)

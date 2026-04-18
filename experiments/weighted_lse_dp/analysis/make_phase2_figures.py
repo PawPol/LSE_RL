@@ -146,6 +146,25 @@ _TASK_FAMILIES = {
     ],
 }
 
+# Learning-curve figure: Phase I base task paired with Phase II stress tasks.
+# Each entry is (family_display_name, phase1_base_task, [phase2_stress_tasks]).
+# phase1_base_task is the task name used in phase1/aggregated/; if that
+# directory is absent the panel falls back to "No Phase I base data" text.
+_LC_FAMILIES: list[tuple[str, str, list[str]]] = [
+    ("Chain", "chain_base", [
+        "chain_sparse_long", "chain_jackpot",
+        "chain_catastrophe", "chain_regime_shift",
+    ]),
+    ("Grid", "grid_base", [
+        "grid_sparse_goal", "grid_hazard", "grid_regime_shift",
+    ]),
+    ("Taxi", "taxi_base", [
+        "taxi_bonus_shock",
+    ]),
+]
+
+_STRESS_COLORS: list[str] = ["#d62728", "#ff7f0e", "#2ca02c", "#9467bd"]
+
 _REGIME_SHIFT_TASKS = ("chain_regime_shift", "grid_regime_shift")
 _TAIL_TASKS = (
     "chain_jackpot", "chain_catastrophe", "grid_hazard", "taxi_bonus_shock",
@@ -178,6 +197,48 @@ def _load_summary_curves(
 ) -> dict[str, Any] | None:
     """Load summary.json which may contain curve arrays."""
     return _load_json(aggregated_root / task / algorithm / "summary.json")
+
+
+def _extract_curves(
+    summary: dict[str, Any],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+    """Extract (checkpoints, mean_return, std_return) from a summary dict.
+
+    Reads from the nested ``curves`` dict first, falls back to legacy
+    top-level ``checkpoints`` / ``disc_return_mean_per_seed``.
+    Returns None when no usable data is present.
+    """
+    curves = summary.get("curves", {})
+    ckpts_raw = curves.get("steps") or summary.get("checkpoints")
+    mean_raw = curves.get("mean_return")
+    std_raw = curves.get("std_return")
+
+    if ckpts_raw is not None and mean_raw is not None:
+        ckpts = np.asarray(ckpts_raw, dtype=float)
+        mean = np.asarray(mean_raw, dtype=float)
+        std = (
+            np.asarray(std_raw, dtype=float)
+            if std_raw and len(std_raw) == len(mean_raw)
+            else np.zeros_like(mean)
+        )
+        if len(ckpts) == len(mean) and len(ckpts) > 0:
+            return ckpts, mean, std
+
+    # Legacy: per-seed dict at top level.
+    per_seed = summary.get("disc_return_mean_per_seed")
+    if ckpts_raw is not None and per_seed is not None:
+        ckpts = np.asarray(ckpts_raw, dtype=float)
+        seeds_arr = np.array(list(per_seed.values()), dtype=float)
+        if seeds_arr.ndim == 2 and seeds_arr.shape[1] == len(ckpts):
+            mean = seeds_arr.mean(axis=0)
+            std = (
+                seeds_arr.std(axis=0, ddof=1)
+                if seeds_arr.shape[0] > 1
+                else np.zeros_like(mean)
+            )
+            return ckpts, mean, std
+
+    return None
 
 
 def _load_calibration(calibration_root: Path, task: str) -> dict[str, Any] | None:
@@ -277,55 +338,87 @@ def fig_learning_curves(
     *,
     demo: bool = False,
 ) -> list[Path]:
-    """Figure 11.1.1: base vs modified learning curves per task family.
+    """Figure 11.1.1: Phase I base vs Phase II stress learning curves.
 
-    Confidence intervals: percentile bootstrap 95% CI over seeds
-    (shaded band = mean +/- 1 std across seeds).
+    Each panel covers one task family (chain / grid / taxi).
+    Solid blue  = Phase I base task.
+    Dashed lines = Phase II stress variants (one colour per variant).
+    Shaded band  = mean +/- 1 std across seeds.
+
+    Phase I data is read from ``phase1/aggregated/<base_task>/QLearning/summary.json``.
+    If absent a "No Phase I base data" annotation is shown instead of crashing.
     """
     _apply_style()
-    families = list(_TASK_FAMILIES.keys())
-    fig, axes = plt.subplots(1, len(families), figsize=(4.0 * len(families), 3.0))
-    if len(families) == 1:
+    n_families = len(_LC_FAMILIES)
+    fig, axes = plt.subplots(1, n_families, figsize=(4.5 * n_families, 3.2))
+    if n_families == 1:
         axes = [axes]
 
-    rng = np.random.default_rng(42)
-    aggregated_root = results_root / "phase2" / "aggregated"
+    phase1_agg = results_root / "phase1" / "aggregated"
+    phase2_agg = results_root / "phase2" / "aggregated"
 
-    for ax, family in zip(axes, families):
-        tasks = _TASK_FAMILIES[family]
+    for ax, (family_name, base_task, stress_tasks) in zip(axes, _LC_FAMILIES):
+        ax.set_title(f"{family_name} family")
+        ax.set_xlabel("Training step")
+        if ax == axes[0]:
+            ax.set_ylabel("Mean discounted return")
+
         plotted = False
 
-        for i, task in enumerate(tasks):
-            if demo:
-                final = 0.8 - 0.1 * i
-                steps, mean, std = _demo_learning_curve(
-                    final_mean=final, rng=np.random.default_rng(42 + i),
+        if demo:
+            # Demo mode: synthetic base + stress curves.
+            steps, mean, std = _demo_learning_curve(
+                final_mean=0.85, rng=np.random.default_rng(0),
+            )
+            ax.plot(steps, mean, color=_COLORS["base"], ls="-",
+                    label=f"{base_task} (base)", linewidth=1.2)
+            ax.fill_between(steps, mean - std, mean + std,
+                            alpha=0.2, color=_COLORS["base"])
+            for si, stress_task in enumerate(stress_tasks):
+                color = _STRESS_COLORS[si % len(_STRESS_COLORS)]
+                steps_s, mean_s, std_s = _demo_learning_curve(
+                    final_mean=0.85 - 0.1 * (si + 1),
+                    rng=np.random.default_rng(10 + si),
                 )
-            else:
-                summary = _load_summary_curves(aggregated_root, task, "QLearning")
+                ax.plot(steps_s, mean_s, color=color, ls="--",
+                        label=stress_task.replace("_", " "), linewidth=1.0)
+                ax.fill_between(steps_s, mean_s - std_s, mean_s + std_s,
+                                alpha=0.15, color=color)
+            plotted = True
+        else:
+            # Phase I base.
+            base_summary = _load_summary_curves(phase1_agg, base_task, "QLearning")
+            if base_summary is not None:
+                result = _extract_curves(base_summary)
+                if result is not None:
+                    steps, mean, std = result
+                    ax.plot(steps, mean, color=_COLORS["base"], ls="-",
+                            label=f"{base_task.replace('_', ' ')} (Phase I base)",
+                            linewidth=1.2)
+                    ax.fill_between(steps, mean - std, mean + std,
+                                    alpha=0.2, color=_COLORS["base"])
+                    plotted = True
+            if not plotted:
+                ax.text(0.05, 0.92, "No Phase I base data",
+                        transform=ax.transAxes, fontsize=7, color="gray",
+                        va="top")
+
+            # Phase II stress variants.
+            for si, stress_task in enumerate(stress_tasks):
+                color = _STRESS_COLORS[si % len(_STRESS_COLORS)]
+                summary = _load_summary_curves(phase2_agg, stress_task, "QLearning")
                 if summary is None:
                     continue
-                curves = summary.get("curves", {})
-                steps = np.array(curves.get("steps", []))
-                mean = np.array(curves.get("mean_return", []))
-                std = np.array(curves.get("std_return", []))
-                if len(steps) == 0 or len(mean) == 0:
+                result = _extract_curves(summary)
+                if result is None:
                     continue
+                steps, mean, std = result
+                ax.plot(steps, mean, color=color, ls="--",
+                        label=stress_task.replace("_", " "), linewidth=1.0)
+                ax.fill_between(steps, mean - std, mean + std,
+                                alpha=0.15, color=color)
+                plotted = True
 
-            color = _COLORS.get("base") if i == 0 else _COLORS.get("stress")
-            label = task.replace("_", " ")
-            ax.plot(steps, mean, color=color, label=label, linewidth=1.2)
-            if len(std) == len(mean):
-                ax.fill_between(
-                    steps, mean - std, mean + std,
-                    alpha=0.2, color=color,
-                )
-            plotted = True
-
-        ax.set_title(f"{family.capitalize()} family")
-        ax.set_xlabel("Training step (normalised)")
-        if ax == axes[0]:
-            ax.set_ylabel("Mean episodic return")
         if plotted:
             ax.legend(fontsize=6, loc="lower right")
 
@@ -376,18 +469,12 @@ def fig_return_distributions(
                 )
                 ax.set_title(task.replace("_", " "))
                 continue
-            # base_returns: per-stage reward mean profile (proxy distribution)
-            base_returns = np.array(cal.get("base_returns", []))
-            # stress_returns: event-conditioned return summary
-            stress_returns = np.array(cal.get("stress_returns", []))
-            if len(base_returns) == 0 and len(stress_returns) == 0:
-                # Also try nested stagewise as fallback
-                sw = cal.get("stagewise") or {}
-                base_returns = np.array(sw.get("reward_mean_mean", []))
-                tr = cal.get("tail_risk") or {}
-                ecr = tr.get("event_conditioned_return_mean")
-                if ecr is not None:
-                    stress_returns = np.array([ecr])
+            # base_returns: eval episodes where NO stress event fired.
+            # stress_returns: ALL eval episode returns from the stress task.
+            # Both are per-episode floats from the same eval protocol — NOT
+            # stagewise means or event-conditioned scalars.
+            base_returns = np.array(cal.get("base_returns", []), dtype=float)
+            stress_returns = np.array(cal.get("stress_returns", []), dtype=float)
             if len(base_returns) == 0 and len(stress_returns) == 0:
                 ax.text(
                     0.5, 0.5, "No return data",
