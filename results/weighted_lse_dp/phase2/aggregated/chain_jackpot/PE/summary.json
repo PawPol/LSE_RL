@@ -1,0 +1,71 @@
+{
+  "suite": "paper_suite",
+  "task": "chain_jackpot",
+  "algorithm": "PE",
+  "n_seeds": 5,
+  "seeds": [
+    11,
+    29,
+    47,
+    67,
+    83
+  ],
+  "scalar_metrics": {
+    "final_bellman_residual": {
+      "mean": 1.464591232094362,
+      "std": 0.0,
+      "median": 1.464591232094362,
+      "q25": 1.464591232094362,
+      "q75": 1.464591232094362,
+      "iqr": 0.0,
+      "ci_low": 1.464591232094362,
+      "ci_high": 1.464591232094362
+    },
+    "n_sweeps": {
+      "mean": 1.0,
+      "std": 0.0,
+      "median": 1.0,
+      "q25": 1.0,
+      "q75": 1.0,
+      "iqr": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0
+    },
+    "wall_clock_s": {
+      "mean": 0.000643275200854987,
+      "std": 2.1130766872806054e-05,
+      "median": 0.0006354170036502182,
+      "q25": 0.0006342499982565641,
+      "q75": 0.0006398340046871454,
+      "iqr": 5.584006430581212e-06,
+      "ci_low": 0.0006311002012807876,
+      "ci_high": 0.0006628917995840311
+    }
+  },
+  "tail_risk": null,
+  "adaptation": null,
+  "event_rates": null,
+  "curves": {
+    "steps": [
+      0
+    ],
+    "bellman_residual": [
+      1.464591232094362
+    ],
+    "supnorm_to_exact": [
+      20.12683523155178
+    ],
+    "mean_return": [
+      -1.464591232094362
+    ],
+    "episode_returns": [
+      -1.464591232094362
+    ]
+  },
+  "checkpoints": [
+    0
+  ],
+  "episode_returns": {},
+  "change_at_episode": null,
+  "visitation_counts": null
+}

@@ -138,6 +138,7 @@ _CALIB_SCALAR_TAIL_KEYS: tuple[str, ...] = (
     "return_cvar_10pct",
     "event_rate",
     "event_conditioned_return",
+    "top10pct",
 )
 _CALIB_SCALAR_ADAPTATION_KEYS: tuple[str, ...] = (
     "adaptation_pre_change_auc",
@@ -431,6 +432,21 @@ def aggregate_group(
         tail_risk, per_seed_run_json, "tail_risk_metrics",
         _CALIB_SCALAR_TAIL_KEYS,
     )
+
+    # -- top10pct_mean from metrics.json (not in calibration npz) ----------
+    # metrics.json["tail_risk_metrics"]["top10pct_mean"] is the fraction of
+    # all eval episode returns in the top 10%.  Aggregate across seeds.
+    top10_values: list[float] = []
+    for m in per_seed_metrics:
+        trm = m.get("tail_risk_metrics", {})
+        v = trm.get("top10pct_mean")
+        if v is not None and isinstance(v, (int, float)) and not np.isnan(v):
+            top10_values.append(float(v))
+    if top10_values:
+        if tail_risk is None:
+            tail_risk = {}
+        if tail_risk.get("top10pct_mean") is None:
+            tail_risk["top10pct_mean"] = float(np.mean(top10_values))
 
     # -- Aggregate adaptation scalars from calibration npz -----------------
     adaptation = _aggregate_scalar_block(

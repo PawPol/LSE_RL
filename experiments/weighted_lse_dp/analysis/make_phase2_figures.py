@@ -358,7 +358,7 @@ def fig_learning_curves(
     phase2_agg = results_root / "phase2" / "aggregated"
 
     for ax, (family_name, base_task, stress_tasks) in zip(axes, _LC_FAMILIES):
-        ax.set_title(f"{family_name} family")
+        ax.set_title(f"{family_name} — Phase II stress tasks")
         ax.set_xlabel("Training step")
         if ax == axes[0]:
             ax.set_ylabel("Mean discounted return")
@@ -398,10 +398,7 @@ def fig_learning_curves(
                     ax.fill_between(steps, mean - std, mean + std,
                                     alpha=0.2, color=_COLORS["base"])
                     plotted = True
-            if not plotted:
-                ax.text(0.05, 0.92, "No Phase I base data",
-                        transform=ax.transAxes, fontsize=7, color="gray",
-                        va="top")
+            # If no Phase I base data, title reflects Phase II-only content.
 
             # Phase II stress variants.
             for si, stress_task in enumerate(stress_tasks):
@@ -544,34 +541,59 @@ def fig_adaptation_plots(
                 )
                 ax.set_title(task.replace("_", " "))
                 continue
-            # R7-1 fix: prefer per-episode returns stored at top-level
-            # (episode-unit x-axis matches change_at_episode in episode units).
-            ep_by_seed = summary.get("episode_returns", {})
-            cp = summary.get("change_at_episode")
-            if cp is None:
-                curves = summary.get("curves", {})
-                cp = summary.get("change_point", curves.get("change_point"))
-            if isinstance(ep_by_seed, dict) and ep_by_seed:
-                seed_arrays = [
-                    np.array(v, dtype=float)
-                    for v in ep_by_seed.values()
-                    if isinstance(v, list) and v
-                ]
-                if seed_arrays:
-                    min_len = min(len(a) for a in seed_arrays)
-                    returns = np.mean(
-                        np.stack([a[:min_len] for a in seed_arrays], axis=0),
-                        axis=0,
-                    )
-                    episodes = np.arange(len(returns))
-                else:
-                    returns = np.array([])
-                    episodes = np.arange(0)
+
+            cp_ep = summary.get("change_at_episode")
+            if cp_ep is None:
+                curves_tmp = summary.get("curves", {})
+                cp_ep_raw = summary.get("change_point", curves_tmp.get("change_point"))
+                if cp_ep_raw is not None:
+                    cp_ep = int(cp_ep_raw)
+
+            curves_dict = summary.get("curves", {})
+            curve_steps = np.array(curves_dict.get("steps", []), dtype=float)
+            curve_mean = np.array(curves_dict.get("mean_return", []), dtype=float)
+
+            x_label = "Episode"
+
+            if len(curve_steps) > 0 and len(curve_mean) == len(curve_steps):
+                # Primary: use checkpoint-level training curve (step x-axis)
+                ep_by_seed = summary.get("episode_returns", {})
+                total_ep_est = (
+                    max((len(v) for v in ep_by_seed.values()), default=0)
+                    if isinstance(ep_by_seed, dict) else 0
+                )
+                change_at_step = None
+                if cp_ep is not None and total_ep_est > 0 and len(curve_steps) > 0:
+                    change_at_step = int(cp_ep * curve_steps[-1] / max(total_ep_est, 1))
+                episodes = curve_steps
+                returns = curve_mean
+                cp = change_at_step
+                x_label = "Training step"
             else:
-                # Fallback to checkpoint means (x-axis in checkpoint indices).
-                curves = summary.get("curves", {})
-                returns = np.array(curves.get("episode_returns", []))
-                episodes = np.arange(len(returns))
+                # Fallback: per-episode returns
+                ep_by_seed = summary.get("episode_returns", {})
+                cp = cp_ep
+                if isinstance(ep_by_seed, dict) and ep_by_seed:
+                    seed_arrays = [
+                        np.array(v, dtype=float)
+                        for v in ep_by_seed.values()
+                        if isinstance(v, list) and v
+                    ]
+                    if seed_arrays:
+                        min_len = min(len(a) for a in seed_arrays)
+                        returns = np.mean(
+                            np.stack([a[:min_len] for a in seed_arrays], axis=0),
+                            axis=0,
+                        )
+                        episodes = np.arange(len(returns))
+                    else:
+                        returns = np.array([])
+                        episodes = np.arange(0)
+                else:
+                    curves_fb = summary.get("curves", {})
+                    returns = np.array(curves_fb.get("episode_returns", []))
+                    episodes = np.arange(len(returns))
+
             if len(returns) == 0:
                 ax.text(
                     0.5, 0.5, "No episode returns",
@@ -601,7 +623,10 @@ def fig_adaptation_plots(
             ax.legend(fontsize=7)
 
         ax.set_title(task.replace("_", " "))
-        ax.set_xlabel("Episode")
+        if not demo:
+            ax.set_xlabel(x_label)
+        else:
+            ax.set_xlabel("Episode")
         if ax == axes[0]:
             ax.set_ylabel(f"Rolling mean return (w={window})")
 

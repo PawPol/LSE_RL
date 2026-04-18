@@ -292,58 +292,95 @@ def make_table_p2b(
     aggregated_root: Path,
     out_dir: Path,
 ) -> list[Path]:
-    """Generate Table P2-B: DP warm-start re-planning after regime shift."""
+    """Generate Table P2-B: DP warm-start re-planning after regime shift.
+
+    Reads from ``_pre_shift`` and ``_post_shift`` task variants rather than
+    the unsuffixed task name (which has no DP summary).
+    """
     tex_lines = [
         r"\begin{table}[t]",
         r"\centering",
         r"\caption{DP re-planning after regime shift.  "
-        r"Warm-start speedup is ratio of cold-start to warm-start "
-        r"iteration counts.}",
+        r"Wall ratio is post-shift wall-clock divided by pre-shift wall-clock.}",
         r"\label{tab:p2b}",
-        r"\begin{tabular}{llcccc}",
+        r"\begin{tabular}{llcccccc}",
         r"\toprule",
-        r"Task & Algorithm & Pre-shift $V^*$ range & Post-shift $V^*$ range "
-        r"& Iter ratio & Wall-clock ratio \\",
+        r"Task & Algorithm & Pre sweeps & Pre wall (ms) "
+        r"& Post sweeps & Post wall (ms) & Wall ratio \\",
         r"\midrule",
     ]
 
     csv_rows: list[list[str]] = []
     csv_rows.append([
-        "task", "algorithm", "pre_shift_v_range", "post_shift_v_range",
-        "iter_ratio", "wall_clock_ratio",
+        "task", "algorithm", "pre_sweeps", "pre_wall_ms",
+        "post_sweeps", "post_wall_ms", "wall_ratio",
     ])
 
     has_data = False
     for task in _REGIME_SHIFT_TASKS:
+        pre_task = task + "_pre_shift"
+        post_task = task + "_post_shift"
         for algo in _DP_ALGORITHMS:
-            summary = _load_task_summary(aggregated_root, task, algo)
-            if summary is None:
+            pre_sum = _load_task_summary(aggregated_root, pre_task, algo)
+            post_sum = _load_task_summary(aggregated_root, post_task, algo)
+            if pre_sum is None and post_sum is None:
                 continue
             has_data = True
 
-            pre_range = _get(summary, "scalar_metrics", "pre_shift_v_range")
-            post_range = _get(summary, "scalar_metrics", "post_shift_v_range")
-            iter_ratio = _get(summary, "scalar_metrics", "warmstart_iter_ratio")
-            wall_ratio = _get(summary, "scalar_metrics", "warmstart_wall_ratio")
+            pre_sweeps = _get(pre_sum, "scalar_metrics", "n_sweeps")
+            pre_wall = _get(pre_sum, "scalar_metrics", "wall_clock_s")
+            post_sweeps = _get(post_sum, "scalar_metrics", "n_sweeps")
+            post_wall = _get(post_sum, "scalar_metrics", "wall_clock_s")
+
+            # Wall ratio = post_wall.mean / pre_wall.mean
+            wall_ratio_val = None
+            if isinstance(pre_wall, dict) and isinstance(post_wall, dict):
+                pm = pre_wall.get("mean", 0)
+                pom = post_wall.get("mean", 0)
+                if pm and pm > 0:
+                    wall_ratio_val = pom / pm
+
+            # Convert wall-clock seconds to milliseconds for display
+            def _to_ms(val: Any) -> Any:
+                if val is None:
+                    return None
+                if isinstance(val, dict):
+                    result = {}
+                    for k, v in val.items():
+                        if isinstance(v, (int, float)):
+                            result[k] = v * 1000.0
+                        else:
+                            result[k] = v
+                    return result
+                if isinstance(val, (int, float)):
+                    return val * 1000.0
+                return val
+
+            pre_wall_ms = _to_ms(pre_wall)
+            post_wall_ms = _to_ms(post_wall)
 
             tex_lines.append(
                 f"  {_task_tex(task)} & {_algo_display(algo)} "
-                f"& {_fmt_mean_ci(pre_range)} & {_fmt_mean_ci(post_range)} "
-                f"& {_fmt_mean_ci(iter_ratio, fmt='.2f')} "
-                f"& {_fmt_mean_ci(wall_ratio, fmt='.2f')} \\\\"
+                f"& {_fmt_mean_ci(pre_sweeps, fmt='.1f')} "
+                f"& {_fmt_mean_ci(pre_wall_ms, fmt='.1f')} "
+                f"& {_fmt_mean_ci(post_sweeps, fmt='.1f')} "
+                f"& {_fmt_mean_ci(post_wall_ms, fmt='.1f')} "
+                f"& {_fmt_mean_ci(wall_ratio_val, fmt='.2f')} \\\\"
             )
             csv_rows.append([
                 task, algo,
-                _fmt_plain(pre_range), _fmt_plain(post_range),
-                _fmt_plain(iter_ratio, fmt=".2f"),
-                _fmt_plain(wall_ratio, fmt=".2f"),
+                _fmt_plain(pre_sweeps, fmt=".1f"),
+                _fmt_plain(pre_wall_ms, fmt=".1f"),
+                _fmt_plain(post_sweeps, fmt=".1f"),
+                _fmt_plain(post_wall_ms, fmt=".1f"),
+                _fmt_plain(wall_ratio_val, fmt=".2f"),
             ])
 
     if not has_data:
         tex_lines.append(
-            r"  \multicolumn{6}{c}{\emph{No regime-shift run data available yet.}} \\"
+            r"  \multicolumn{7}{c}{\emph{No regime-shift run data available yet.}} \\"
         )
-        csv_rows.append(["(no data)", "", "", "", "", ""])
+        csv_rows.append(["(no data)", "", "", "", "", "", ""])
 
     tex_lines.extend([
         r"\bottomrule",
@@ -408,10 +445,23 @@ def make_table_p2c(
             has_data = True
 
             sm = summary.get("scalar_metrics", {})
-            mean_ret = _get(sm, "final_disc_return_mean")
-            std_ret = _get(sm, "final_disc_return_std")
-            iqr_ret = _get(sm, "iqr_disc_return")
-            event_rate = _get(sm, "event_rate")
+            mean_ret_dict = sm.get("final_disc_return_mean") or {}
+            mean_ret = mean_ret_dict
+            std_ret = mean_ret_dict.get("std") if isinstance(mean_ret_dict, dict) else None
+            iqr_ret = mean_ret_dict.get("iqr") if isinstance(mean_ret_dict, dict) else None
+
+            # Event rates live in summary["event_rates"] with task-specific keys.
+            er_block = summary.get("event_rates") or {}
+            if "jackpot" in task or "bonus_shock" in task:
+                event_rate = er_block.get("jackpot_event_rate_mean")
+            elif "catastrophe" in task:
+                event_rate = er_block.get("catastrophe_event_rate_mean")
+            elif "hazard" in task:
+                event_rate = er_block.get("hazard_hit_rate_mean")
+            elif "regime_shift" in task:
+                event_rate = None
+            else:
+                event_rate = None
 
             # Compute delta vs Phase I base.
             delta_str_tex = "--"
@@ -500,12 +550,12 @@ def make_table_p2d(
                 continue
             has_data = True
 
-            sm = summary.get("scalar_metrics", {})
-            cvar5 = _get(sm, "cvar_5pct")
-            cvar10 = _get(sm, "cvar_10pct")
-            top10 = _get(sm, "top_10pct_mean")
-            event_rate = _get(sm, "event_rate")
-            event_cond = _get(sm, "event_cond_return")
+            tail = summary.get("tail_risk") or {}
+            cvar5 = tail.get("return_cvar_5pct_mean")
+            cvar10 = tail.get("return_cvar_10pct_mean")
+            top10 = tail.get("top10pct_mean")
+            event_rate = tail.get("event_rate_mean")
+            event_cond = tail.get("event_conditioned_return_mean")
 
             task_col = _task_tex(task) if task != prev_task else ""
             prev_task = task

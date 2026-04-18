@@ -1,0 +1,71 @@
+{
+  "suite": "paper_suite",
+  "task": "chain_catastrophe",
+  "algorithm": "PE",
+  "n_seeds": 5,
+  "seeds": [
+    11,
+    29,
+    47,
+    67,
+    83
+  ],
+  "scalar_metrics": {
+    "final_bellman_residual": {
+      "mean": 0.9988901220865705,
+      "std": 0.0,
+      "median": 0.9988901220865705,
+      "q25": 0.9988901220865705,
+      "q75": 0.9988901220865705,
+      "iqr": 0.0,
+      "ci_low": 0.9988901220865705,
+      "ci_high": 0.9988901220865705
+    },
+    "n_sweeps": {
+      "mean": 1.0,
+      "std": 0.0,
+      "median": 1.0,
+      "q25": 1.0,
+      "q75": 1.0,
+      "iqr": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0
+    },
+    "wall_clock_s": {
+      "mean": 0.0006252252031117677,
+      "std": 1.8209010131241932e-06,
+      "median": 0.0006245000113267452,
+      "q25": 0.0006244170072022825,
+      "q75": 0.0006256249907892197,
+      "iqr": 1.207983586937189e-06,
+      "ci_low": 0.0006240336049813777,
+      "ci_high": 0.0006267086020670832
+    }
+  },
+  "tail_risk": null,
+  "adaptation": null,
+  "event_rates": null,
+  "curves": {
+    "steps": [
+      0
+    ],
+    "bellman_residual": [
+      0.9988901220865705
+    ],
+    "supnorm_to_exact": [
+      20.12683523155178
+    ],
+    "mean_return": [
+      -0.9988901220865705
+    ],
+    "episode_returns": [
+      -0.9988901220865705
+    ]
+  },
+  "checkpoints": [
+    0
+  ],
+  "episode_returns": {},
+  "change_at_episode": null,
+  "visitation_counts": null
+}

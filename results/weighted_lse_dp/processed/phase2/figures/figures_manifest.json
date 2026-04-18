@@ -6,62 +6,62 @@
     {
       "figure": "learning_curves",
       "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_base_vs_modified_curves.pdf",
-      "sha256": "d3b127d986559920b02557fba9ef8b64fa7e1de24016f5aca5b9bcfe1241b666",
-      "timestamp": "2026-04-18T02:53:04Z"
+      "sha256": "e1639da28a6f017aef7c188e9d1a15c9416e073d498977e8fc8a9e8d4cb1f648",
+      "timestamp": "2026-04-18T04:07:21Z"
     },
     {
       "figure": "learning_curves",
       "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_base_vs_modified_curves.png",
-      "sha256": "31dc307108092c53bab3c1280fca1f85c758d2929559d572e7027a5cc8baa3aa",
-      "timestamp": "2026-04-18T02:53:04Z"
+      "sha256": "5ff82e421b698591a62ceea6bad36d391c1d8fb452d75297733eeec274ce591e",
+      "timestamp": "2026-04-18T04:07:21Z"
     },
     {
       "figure": "return_distributions",
       "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_return_distributions.pdf",
-      "sha256": "a41c449346d2de8396213be58ac4fbe29c12218e3473b792971a20e99d5ada6d",
-      "timestamp": "2026-04-18T02:53:04Z"
+      "sha256": "6245038797c20d0b9ab946284a6872df02cb8606aaff6ff5ffbe00e86fc6db71",
+      "timestamp": "2026-04-18T04:07:21Z"
     },
     {
       "figure": "return_distributions",
       "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_return_distributions.png",
-      "sha256": "e39bde06b83c120e7de2df5cb98d9c28596c9e346b348530d3e9891b705c449b",
-      "timestamp": "2026-04-18T02:53:04Z"
+      "sha256": "b5af844160d46aac6fb292d3f4b45ec4a4a4c6d513062b62f107cca8d0f4ceda",
+      "timestamp": "2026-04-18T04:07:21Z"
     },
     {
       "figure": "adaptation_plots",
       "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_adaptation_plots.pdf",
-      "sha256": "beb4a776578472e35e21ecf6d281bb1b358953957db23a5ef9fc25bba8cd78b4",
-      "timestamp": "2026-04-18T02:53:04Z"
+      "sha256": "37edbb0f7dc153738f63b8d8927f3d1aa9ce67d98b630e21223e97cc39c9647e",
+      "timestamp": "2026-04-18T04:07:21Z"
     },
     {
       "figure": "adaptation_plots",
       "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_adaptation_plots.png",
-      "sha256": "49b32f8abc91aec70d8a664f2c01d35c477c7d7d57e95af581ea6d39179cccc2",
-      "timestamp": "2026-04-18T02:53:04Z"
+      "sha256": "13fb5033852ec80b696b88f6a2eef9b4ceef3a8d72ce39f7158322cbdc6a3ea4",
+      "timestamp": "2026-04-18T04:07:21Z"
     },
     {
       "figure": "visitation_heatmaps",
       "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_visitation_heatmaps.pdf",
-      "sha256": "06c909ed1c21d293741eb8c0a7bdc5939b6c359b71bca928a49bef401e0b8db7",
-      "timestamp": "2026-04-18T02:53:04Z"
+      "sha256": "c746b025a68c2ef40b7ab85af1b0cfa8ad5f2e20982310c6ae3c96a74a6d2612",
+      "timestamp": "2026-04-18T04:07:21Z"
     },
     {
       "figure": "visitation_heatmaps",
       "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_visitation_heatmaps.png",
-      "sha256": "8fd6d1d1254ace70c7b6fa53783d9c9c4ff44b2be4c91c8ea884ecba92b51414",
-      "timestamp": "2026-04-18T02:53:04Z"
+      "sha256": "98d186895af2b290c835906c8abf3362b3b4c44c971e16065dfcab34d634f229",
+      "timestamp": "2026-04-18T04:07:21Z"
     },
     {
       "figure": "margin_quantiles",
       "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_margin_quantiles.pdf",
-      "sha256": "2daf543c4acc603cc71a1d4e5f1a9552fdae911f6ef13c07236dc866e10804e3",
-      "timestamp": "2026-04-18T02:53:04Z"
+      "sha256": "3679ce1e4a260e7e140bee604e924fe3571d34b6e28f69088823e1846370ee53",
+      "timestamp": "2026-04-18T04:07:21Z"
     },
     {
       "figure": "margin_quantiles",
       "file": "results/weighted_lse_dp/processed/phase2/figures/phase2_margin_quantiles.png",
-      "sha256": "e4a776beab7d78cb8e459b15fad210d26766933a8b87a6fbd4d8419096ce2a33",
-      "timestamp": "2026-04-18T02:53:04Z"
+      "sha256": "0845525aeb0ddaa60df7a9b2cd299c815517ddb413a7c9c5765e730e95c3860a",
+      "timestamp": "2026-04-18T04:07:21Z"
     }
   ]
 }

@@ -1,0 +1,77 @@
+{
+  "suite": "paper_suite",
+  "task": "chain_regime_shift_pre_shift",
+  "algorithm": "MPI",
+  "n_seeds": 5,
+  "seeds": [
+    11,
+    29,
+    47,
+    67,
+    83
+  ],
+  "scalar_metrics": {
+    "final_bellman_residual": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "n_sweeps": {
+      "mean": 2.0,
+      "std": 0.0,
+      "median": 2.0,
+      "q25": 2.0,
+      "q75": 2.0,
+      "iqr": 0.0,
+      "ci_low": 2.0,
+      "ci_high": 2.0
+    },
+    "wall_clock_s": {
+      "mean": 0.0040571248042397205,
+      "std": 0.0001248949709543093,
+      "median": 0.00398400000995025,
+      "q25": 0.0039638330054003745,
+      "q75": 0.004192082997178659,
+      "iqr": 0.0002282499917782843,
+      "ci_low": 0.003962783212773502,
+      "ci_high": 0.004151466395705938
+    }
+  },
+  "tail_risk": null,
+  "adaptation": null,
+  "event_rates": null,
+  "curves": {
+    "steps": [
+      0,
+      1
+    ],
+    "bellman_residual": [
+      20.62906695327968,
+      0.0
+    ],
+    "supnorm_to_exact": [
+      0.0,
+      0.0
+    ],
+    "mean_return": [
+      -20.62906695327968,
+      -0.0
+    ],
+    "episode_returns": [
+      -20.62906695327968,
+      -0.0
+    ]
+  },
+  "checkpoints": [
+    0,
+    1
+  ],
+  "episode_returns": {},
+  "change_at_episode": null,
+  "visitation_counts": null
+}

@@ -6,7 +6,17 @@
 \toprule
 Task & Algorithm & CVaR-5\% & CVaR-10\% & Top-10\% mean & Event rate & Event-cond.\ return \\
 \midrule
-  \multicolumn{7}{c}{\emph{No tail-risk run data available yet.}} \\
+  chain\_jackpot & Q-Learning & 0.000 & 0.000 & 0.071 & 0.001 & 6.205 \\
+   & Exp. SARSA & 0.000 & 0.000 & 0.071 & 0.001 & 6.205 \\
+\midrule
+  chain\_catastrophe & Q-Learning & -1.153 & -0.577 & 0.440 & 0.010 & -5.679 \\
+   & Exp. SARSA & -1.368 & -0.610 & 3.394 & 0.010 & -6.992 \\
+\midrule
+  grid\_hazard & Q-Learning & 0.751 & 0.766 & 0.820 & 0.000 & -- \\
+   & Exp. SARSA & 0.835 & 0.841 & 0.878 & 0.000 & -- \\
+\midrule
+  taxi\_bonus\_shock & Q-Learning & 0.300 & 0.454 & 2.739 & 0.057 & 4.257 \\
+   & Exp. SARSA & 0.621 & 0.655 & 2.342 & 0.045 & 4.324 \\
 \bottomrule
 \end{tabular}
 \end{table}
