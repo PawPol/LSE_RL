@@ -783,3 +783,109 @@ class TestGamma:
     def test_grid_sparse_goal_gamma(self):
         mdp, _, _ = make_grid_sparse_goal({})
         np.testing.assert_allclose(mdp.info.gamma, 0.99, rtol=1e-12)
+
+
+# ===================================================================
+# 10. chain_catastrophe safe-path tests (BLOCKER R3-2)
+# ===================================================================
+
+class TestChainCatastropheSafePath:
+    """Verify that a safe-only policy can reach the goal without ever taking
+    the risky action, and has strictly better CVaR than a risky policy.
+
+    Spec ref: phase_II_stress_test_beta0_experiments.md S5.1.C — the agent
+    must have a genuine non-risky route so the safe-path-selection frequency
+    metric is interpretable.
+    """
+
+    def _run_policy(
+        self,
+        mdp_base,
+        policy_fn,
+        n_episodes: int = 500,
+        seed: int = 42,
+    ):
+        """Roll out a deterministic policy; return list of undiscounted returns."""
+        p = mdp_base.p
+        r = mdp_base.r
+        horizon = mdp_base.info.horizon
+        state_n = p.shape[0]
+        goal = state_n - 2  # last non-catastrophe state (state_n-1 is cat.)
+
+        np.random.seed(seed)
+        returns = []
+        for _ in range(n_episodes):
+            s = 0
+            ep_return = 0.0
+            for _ in range(horizon):
+                row_sum = p[s, :, :].sum()
+                if row_sum < 0.5:
+                    # Absorbing sink state (all-zero P rows).
+                    break
+                a = policy_fn(s)
+                probs = p[s, a, :]
+                row_a_sum = probs.sum()
+                if row_a_sum < 0.5:
+                    break
+                ns = int(np.random.choice(state_n, p=probs / row_a_sum))
+                ep_return += float(r[s, a, ns])
+                s = ns
+                if s == goal:
+                    break
+            returns.append(ep_return)
+        return returns
+
+    def test_safe_policy_can_reach_goal(self):
+        """A policy that always picks action 1 at risky_state and action 0
+        elsewhere must eventually reach the goal state with positive probability.
+
+        This fails if action 1 at risky_state is backward/trapped.
+        """
+        mdp, _, cfg = make_chain_catastrophe(
+            {}, risky_prob=0.5, risky_state=5, state_n=15,
+        )
+        p = mdp.p
+        state_n = p.shape[0]
+        risky_state = cfg["risky_state"]
+        goal = cfg["state_n"] - 1  # goal in the non-extended index
+
+        def safe_policy(s: int) -> int:
+            # At risky state, take the safe action (action 1).
+            return 1 if s == risky_state else 0
+
+        returns = self._run_policy(mdp, safe_policy, n_episodes=500, seed=0)
+        # At least some episodes should achieve positive return (reached goal).
+        positive_fraction = sum(1 for ret in returns if ret > 0) / len(returns)
+        assert positive_fraction > 0.05, (
+            f"Safe policy reached goal in only {positive_fraction:.1%} of episodes; "
+            "action 1 at risky_state is not a safe forward path."
+        )
+
+    def test_safe_policy_better_cvar_than_risky(self):
+        """A safe policy must have better CVaR-10 than an always-risky policy.
+
+        With high risky_prob the risky policy frequently incurs catastrophe
+        rewards, so its lower tail should be worse.
+        """
+        mdp, _, cfg = make_chain_catastrophe(
+            {}, risky_prob=0.8, risky_state=5, state_n=15,
+            catastrophe_reward=-10.0,
+        )
+        risky_state = cfg["risky_state"]
+
+        def safe_policy(s: int) -> int:
+            return 1 if s == risky_state else 0
+
+        def risky_policy(s: int) -> int:
+            return 0  # always take action 0 (risky at risky_state)
+
+        safe_returns = self._run_policy(mdp, safe_policy, n_episodes=1000, seed=1)
+        risky_returns = self._run_policy(mdp, risky_policy, n_episodes=1000, seed=2)
+
+        cvar_safe = float(np.percentile(safe_returns, 10))
+        cvar_risky = float(np.percentile(risky_returns, 10))
+
+        assert cvar_safe > cvar_risky, (
+            f"Safe policy CVaR-10 ({cvar_safe:.3f}) should exceed risky "
+            f"CVaR-10 ({cvar_risky:.3f}); risky action design is incorrect."
+        )

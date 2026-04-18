@@ -551,6 +551,16 @@ def run_single(
     stress_type: str | None = task_config.get("stress_type", None)
     n_base = _N_BASE[task]
 
+    # -- Read hyperparameter overrides (used by ablation runner) -----------
+    # run_phase2_ablation passes epsilon_override and lr_multiplier via
+    # task_config so that every sweep run uses its own hyperparameters.
+    _eps_override = task_config.get("epsilon_override")
+    _lr_mult = task_config.get("lr_multiplier", 1.0)
+    effective_epsilon: float = (
+        float(_eps_override) if _eps_override is not None else _EPSILON
+    )
+    effective_lr: float = _LEARNING_RATE * float(_lr_mult)
+
     # -- Build resolved config for run.json ---------------------------------
     resolved_config: dict[str, Any] = {
         "task": task,
@@ -563,8 +573,8 @@ def run_single(
         "checkpoint_every": checkpoint_every,
         "eval_episodes_checkpoint": eval_episodes_checkpoint,
         "success_threshold": success_threshold,
-        "epsilon": _EPSILON,
-        "learning_rate": _LEARNING_RATE,
+        "epsilon": effective_epsilon,
+        "learning_rate": effective_lr,
         "stress_type": stress_type,
         "task_config": task_config,
     }
@@ -589,7 +599,11 @@ def run_single(
     mdp_rl.info.gamma = gamma
 
     # -- Create agent -------------------------------------------------------
-    agent = _make_agent(algorithm, mdp_rl.info)
+    agent = _make_agent(
+        algorithm, mdp_rl.info,
+        epsilon=effective_epsilon,
+        learning_rate=effective_lr,
+    )
 
     # -- Create RunWriter ---------------------------------------------------
     rw = RunWriter.create(
@@ -796,6 +810,31 @@ def run_single(
     if adaptation is not None:
         metrics["adaptation_metrics"] = adaptation
         resolved_config["adaptation_metrics"] = adaptation
+
+    # -- Store episode returns for return-distribution figures (MAJOR R3-3) --
+    # Split by event flag so aggregation can build base_returns (no event)
+    # and stress_returns (event occurred) for figure 11.1.2.
+    if len(episode_returns) > 0:
+        metrics["episode_returns"] = episode_returns.tolist()
+        # episode_event_flags is only defined when stress_type is set;
+        # fall back to "all non-event" for base tasks.
+        _ef: np.ndarray | None = None
+        if stress_type in ("jackpot", "catastrophe", "hazard"):
+            _ef = episode_event_flags  # noqa: F821  (set in the block above)
+        if _ef is not None and len(_ef) == len(episode_returns):
+            metrics["episode_returns_noevent"] = (
+                episode_returns[~_ef.astype(bool)].tolist()
+            )
+            metrics["episode_returns_event"] = (
+                episode_returns[_ef.astype(bool)].tolist()
+            )
+        else:
+            metrics["episode_returns_noevent"] = episode_returns.tolist()
+            metrics["episode_returns_event"] = []
+    else:
+        metrics["episode_returns"] = []
+        metrics["episode_returns_noevent"] = []
+        metrics["episode_returns_event"] = []
 
     # -- Flush everything to disk -------------------------------------------
     rw.flush(

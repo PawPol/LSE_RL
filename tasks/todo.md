@@ -946,3 +946,143 @@ All R2 findings addressed in the current commit. Status:
 | MINOR 2 — `shortcut_action_taken` never flagged | FIXED | `run_phase2_rl.py` | `_AutoEventLogger` now accepts `risky_state` param; flags `mark_shortcut_taken()` when action 0 is taken at `risky_state` during catastrophe runs |
 
 Next: run `/lse:verify --full` then `/lse:review II` for R3.
+
+---
+
+## Phase II Triage R3 (2026-04-17)
+
+**Sources:**
+- Standard review R3: `results/processed/codex_reviews/phase_II/review_r3.md` (session review-mo2thz1w-kohkfg)
+- Adversarial review R3: `results/processed/codex_reviews/phase_II/adversarial_r3.md` (session review-mo2tjcbx-sp1s50)
+
+### Classified findings
+
+#### Finding R3-1: Hyperparameter overrides ignored in ablation RL runs
+
+**Source:** Standard R3 [P1]
+**Severity:** BLOCKER
+**Status:** NEW (not previously raised)
+**Spec ref:** `docs/specs/phase_II_stress_test_beta0_experiments.md` section 7 (hyperparameter policy)
+
+**Description:** `run_phase2_ablation.py` passes `epsilon_override` and `lr_multiplier` through `task_config` (lines 487-488), but `run_phase2_rl.py:run_single()` never reads those keys. Lines 566-567 hard-code `_EPSILON` and `_LEARNING_RATE` in `resolved_config`, and line 592 calls `_make_agent(algorithm, mdp_rl.info)` without forwarding epsilon or learning_rate overrides. Every hyperparameter ablation run therefore trains with identical exploration rate (0.1) and step size (0.1), making the entire sweep produce mislabeled duplicates.
+
+**Acceptance criterion:** After the fix, `run_single()` must (a) check `task_config` for `epsilon_override` and `lr_multiplier`, (b) compute effective `epsilon = epsilon_override` (if present, else `_EPSILON`) and effective `learning_rate = _LEARNING_RATE * lr_multiplier` (if present, else `_LEARNING_RATE`), (c) pass both to `_make_agent()`, (d) record the effective values (not the defaults) in `resolved_config`. Add a unit test that calls `run_single` with overrides and asserts the agent's epsilon and lr differ from defaults.
+
+**Files to fix:**
+- `experiments/weighted_lse_dp/runners/run_phase2_rl.py` lines 555-592
+
+- [ ] [BLOCKER] [ablation] Hyperparameter overrides (epsilon_override, lr_multiplier) ignored by run_single(); entire hparam ablation sweep is mislabeled duplicates -> algo-implementer
+      (codex-session: review-mo2thz1w-kohkfg, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#7)
+
+---
+
+#### Finding R3-2: Return-distribution figure uses wrong data source
+
+**Source:** Standard R3 [P2]
+**Severity:** MAJOR
+**Status:** NEW (not previously raised; the R2 BLOCKER-2 fix introduced these keys but populated them incorrectly)
+**Spec ref:** `docs/specs/phase_II_stress_test_beta0_experiments.md` section 11.1 item 2 (return distribution plots)
+
+**Description:** `aggregate_phase2.py` lines 835-845 populate `base_returns` from `stagewise.reward_mean_mean` (one float per stage, not per-episode returns) and `stress_returns` from a single `event_conditioned_return` scalar. The resulting "return distribution" histogram plots a per-stage reward profile against a single-point stress sample -- neither is an episode-return distribution across seeds. The spec requires "return distribution plots for jackpot/catastrophe tasks" which means histograms of per-episode total returns.
+
+**Acceptance criterion:** `base_returns` must contain per-episode total returns (one value per episode per seed) loaded from `curves.npz` or `metrics.json` episode-return arrays. `stress_returns` must contain per-episode total returns from the stress variant (same shape). Both arrays must span all seeds so the histogram has meaningful sample size. The figure script must produce histograms with visually distinct base vs stress distributions.
+
+**Files to fix:**
+- `experiments/weighted_lse_dp/runners/aggregate_phase2.py` lines 831-845
+
+- [ ] [MAJOR] [figures] base_returns/stress_returns in calibration JSON are per-stage means and a single scalar, not per-episode return distributions -> plotter-analyst
+      (codex-session: review-mo2thz1w-kohkfg, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#11.1)
+
+---
+
+#### Finding R3-3: chain_catastrophe has no safe path to goal (spec violation)
+
+**Source:** Adversarial R3 [high] (confidence 0.95)
+**Severity:** BLOCKER
+**Status:** NEW (not previously raised)
+**Spec ref:** `docs/specs/phase_II_stress_test_beta0_experiments.md` section 5.1C
+
+**Description:** At `risky_state`, action 0 is replaced with catastrophe-or-shortcut and action 1 is the standard left/backward move. Since the chain is a linear corridor with the goal at the right end, the only way to reach the goal from `risky_state` is action 0 (the risky shortcut). There is no modeled safe alternative path. The spec explicitly requires: "keep a slower safe path with smaller mean return but much better tail risk." Without a genuine safe route, the "safe-path selection frequency" metric (spec section 10.2) is uninterpretable, and any measured classical degradation is partly an artifact of forced exposure rather than evidence of tail-averaging weakness.
+
+**Acceptance criterion:** At `risky_state`, the agent must have a non-risky action that can eventually reach the goal (e.g., action 1 at `risky_state` advances by 1 state deterministically with no catastrophe risk, while action 0 jumps forward by `shortcut_jump` but carries catastrophe risk). A test must verify that a safe-only policy (never taking action 0 at `risky_state`) achieves positive expected return, and that a risky policy achieves higher mean return but worse CVaR.
+
+**Files to fix:**
+- `experiments/weighted_lse_dp/tasks/stress_families.py` lines 356-429
+
+- [ ] [BLOCKER] [env-design] chain_catastrophe has no safe path to goal; action 1 at risky_state goes backward, forcing all goal-reaching policies through the risky shortcut -> env-builder
+      (codex-session: review-mo2tjcbx-sp1s50, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#5.1C)
+
+---
+
+#### Finding R3-4: Calibration sign derived from stage-0 margins, defaults to +1
+
+**Source:** Adversarial R3 [high] (confidence 0.97)
+**Severity:** MAJOR
+**Status:** NEW (not previously raised)
+**Spec ref:** `docs/specs/phase_II_stress_test_beta0_experiments.md` section 12
+
+**Description:** `_determine_task_sign()` (aggregate_phase2.py lines 934-994) infers the recommended task sign from stage-0 positive/negative margin means and falls back to `+1` on missing or ambiguous data. The spec says "recommended task sign for Phase III (+1 for jackpot/positive-shift families, -1 for catastrophe families, one sign only per experiment family)" -- this is a semantic property of the task family, not an empirical quantity to be estimated from noisy stage-0 data. Using margin statistics is brittle (stress events may not occur at stage 0) and the default-to-+1 fallback can silently mislabel catastrophe families, corrupting Phase III schedule calibration.
+
+**Acceptance criterion:** The sign must be derived from the task family name or explicit config metadata (e.g., a `"sign"` field in the suite JSON, or a hardcoded map: `catastrophe -> -1`, `jackpot -> +1`, `hazard -> -1`, `bonus_shock -> +1`, `regime_shift -> configurable`). The function must raise an error (not default to +1) for unknown families. The margin-based computation may be retained as a validation cross-check that logs a warning if it disagrees with the semantic sign.
+
+**Files to fix:**
+- `experiments/weighted_lse_dp/runners/aggregate_phase2.py` lines 934-994
+
+- [ ] [MAJOR] [calibration] Task sign derived from stage-0 margins with silent +1 default; must use family semantics per spec section 12 -> calibration-engineer
+      (codex-session: review-mo2tjcbx-sp1s50, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#12)
+
+---
+
+#### Finding R3-5: Calibration JSON averages across all classical algorithms
+
+**Source:** Adversarial R3 [medium] (confidence 0.90)
+**Severity:** MINOR
+**Status:** NEW (related to R2 MAJOR-1 which fixed quantile computation but did not change the cross-algorithm averaging design)
+**Spec ref:** `docs/specs/phase_II_stress_test_beta0_experiments.md` section 12
+
+**Description:** `build_calibration_json()` (lines 609-675) pools all algorithm groups for a task family and averages their calibration arrays into one profile. The spec says "stagewise empirical envelope estimates from the classical solution or best classical approximation." Averaging DP planners and online RL traces together produces a synthetic profile that may match no actual classical baseline and can mute the tail/alignment structure Phase III needs.
+
+**Assessment:** The spec says "classical solution or best classical approximation" (singular), not "average of all classical algorithms." However, the spec does not prescribe an explicit algorithm-selection rule. This is a design decision that affects calibration quality but is not a hard spec violation. The current approach is defensible if all classical algorithms produce similar calibration profiles on a given task family.
+
+- [ ] [MINOR] [calibration] Calibration JSON averages across all classical algorithms instead of selecting a single reference baseline per family -> calibration-engineer
+      (codex-session: review-mo2tjcbx-sp1s50, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#12)
+
+---
+
+### Novelty assessment
+
+| Finding | New? | Notes |
+|---------|------|-------|
+| R3-1 (hparam overrides ignored) | YES | Not raised in R1 or R2. The ablation runner was not in scope for earlier reviews. |
+| R3-2 (return distribution data) | YES | The R2 BLOCKER-2 fix added `base_returns`/`stress_returns` keys but populated them with wrong data sources. This is a new finding about the quality of the R2 fix. |
+| R3-3 (chain_catastrophe no safe path) | YES | Not raised in R1 or R2. This is a fundamental environment design issue. |
+| R3-4 (calibration sign from margins) | YES | Not raised in R1 or R2. Related to R1 MAJOR-C (calibration NaN) but distinct. |
+| R3-5 (cross-algorithm averaging) | PARTIALLY NEW | R2 MAJOR-1 fixed quantile computation but the cross-algorithm averaging design was not challenged until now. |
+
+### Patterns promoted to lessons.md
+
+**Pattern: Function delegation that passes config-dict overrides without the callee reading them.**
+
+The ablation runner carefully constructed `task_config` entries with `epsilon_override` and `lr_multiplier`, but the callee (`run_single`) never consumes those keys. The resolved config even records `_EPSILON` / `_LEARNING_RATE` as the effective values, masking the bug in logs. This is a silent contract violation between caller and callee.
+
+Prevention rule: When a caller passes override values through a dict to a callee, the callee must explicitly extract and use those overrides, and the integration test must verify the override actually changes behavior (e.g., assert that the agent's epsilon differs from the default when an override is supplied).
+
+### Open questions (SPEC-GAP)
+
+**SPEC-GAP: Algorithm selection rule for calibration reference baseline.**
+
+Spec section 12 says "stagewise empirical envelope estimates from the classical solution or best classical approximation" but does not define a rule for selecting which classical algorithm serves as the reference when multiple algorithms (exact DP, Q-Learning, ExpectedSARSA) are available for the same task family. Options: (a) use exact DP when available (model-based tasks), (b) use the algorithm with lowest variance, (c) keep cross-algorithm average but document it as a design choice. Recommend the user decide before Phase III calibration is consumed.
+
+### Summary
+
+```
+BLOCKER: 2  (R3-1: hparam overrides ignored; R3-3: chain_catastrophe no safe path)
+MAJOR:   2  (R3-2: return distribution data wrong; R3-4: calibration sign from margins)
+MINOR:   1  (R3-5: cross-algorithm averaging)
+NIT:     0
+DISPUTE: 0
+```
+
+All 5 findings are genuinely new. Both BLOCKERs must be resolved before R4 review.
+
+Next: fix BLOCKERs R3-1 and R3-3, then MAJORs R3-2 and R3-4, then re-run `/lse:review II` for R4.

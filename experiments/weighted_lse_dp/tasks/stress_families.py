@@ -351,18 +351,28 @@ def make_chain_catastrophe(
     shortcut_prob: float = 0.90,
     shortcut_jump: int = 5,
 ) -> tuple:
-    """Chain with a risky shortcut: rare catastrophe vs fast forward jump.
+    """Chain with a genuine safe-vs-risky tradeoff at one decision point.
 
-    At ``risky_state``, action 0 (right/forward) is modified:
+    At ``risky_state`` the agent faces two actions:
 
-    * With probability ``risky_prob``: catastrophe -- immediate reward
-      ``catastrophe_reward`` and the agent is sent to a dedicated
-      absorbing terminal state (episode ends).
-    * With probability ``1 - risky_prob``: the agent jumps forward
-      ``shortcut_jump`` states (clamped to the goal state).
+    * **Action 0 (risky shortcut)**:
 
-    Action 1 (left) at ``risky_state`` is unchanged (normal chain
-    dynamics). All other states follow standard chain dynamics.
+      * With probability ``risky_prob``: catastrophe -- immediate reward
+        ``catastrophe_reward`` and the agent is sent to a dedicated
+        absorbing terminal state (episode ends).
+      * With probability ``1 - risky_prob``: the agent jumps forward
+        ``shortcut_jump`` states (clamped to the goal state).
+
+    * **Action 1 (safe step)**: the agent moves deterministically to
+      ``risky_state + 1`` (one state toward the goal, no catastrophe
+      risk).  This gives the agent a genuine slower-but-safe alternative.
+
+    All other states follow standard chain dynamics (action 0 = right with
+    probability ``prob``, action 1 = left with probability ``prob``).
+
+    This design satisfies Phase II spec S5.1.C: a safe policy that always
+    takes action 1 at ``risky_state`` can reach the goal, while a risky
+    policy achieves a higher mean return at the cost of worse tail risk.
 
     **severity=0**: ``risky_prob=0.0`` recovers ``chain_base`` exactly
     (the risky state retains its normal chain dynamics when the
@@ -425,6 +435,16 @@ def make_chain_catastrophe(
         # If the shortcut lands on the goal, give the goal reward.
         if shortcut_dest == goal:
             r_ext[risky_state, 0, shortcut_dest] = 1.0
+
+        # Safe action at risky_state: deterministic forward step (right by 1).
+        # This provides a genuine slower-but-safe alternative to action 0,
+        # so a policy can always reach the goal without ever taking the risk.
+        p_ext[risky_state, 1, :] = 0.0
+        r_ext[risky_state, 1, :] = 0.0
+        safe_dest = min(risky_state + 1, goal)
+        p_ext[risky_state, 1, safe_dest] = 1.0
+        if safe_dest == goal:
+            r_ext[risky_state, 1, safe_dest] = 1.0
 
         p = p_ext
         r = r_ext

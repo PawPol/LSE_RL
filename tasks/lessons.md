@@ -191,3 +191,23 @@ citing rho*(r,v) = sigma(beta*(r-v) + log(1/gamma)) from the paper.
 **Prevention rule**: (1) For RL: when a stress task uses a wrapper, the factory must time-augment the wrapper itself (not `mdp_base`) and the runner must pass the augmented wrapper to `Core`. (2) For DP: if the wrapper's stress cannot be encoded in `(P, R)`, the task must not appear in the DP suite. If it can be encoded, build a stressed `(P, R)` model directly rather than wrapping and then unwrapping. (3) Add a per-wrapper integration test that runs a short episode and asserts the stress event fires at least once (non-zero event count in transitions). This catches the "wrapper never stepped" failure mode that structural validators miss.
 
 **Source incident**: Phase II Codex reviews (byl14ca5j + bqm6fkd15) — `run_phase2_rl.py:607` passes `mdp_rl` (base) to Core; `run_phase2_dp.py:223-224` strips wrapper via `._base`; triaged 2026-04-17.
+
+---
+
+### 2026-04-17 — Figure scripts written against assumed JSON schema without contract testing
+
+**Pattern**: The Phase II figure script (`make_phase2_figures.py`) was developed alongside a `--demo` mode that synthesizes data and bypasses all JSON/NPZ reads. The production code path reads keys (`summary["curves"]`, `cal["base_returns"]`, `cal["stress_returns"]`) that do not exist in the actual aggregator output. Because `--demo` mode was the only path exercised during development and review, the schema mismatch was invisible until the R2 Codex review. Result: 3 of 5 mandatory Phase II figures produce blank or placeholder-text panels in production mode.
+
+**Prevention rule**: (1) Every figure script that reads structured data must have at least one integration test that runs it against a minimal but structurally correct data fixture -- NOT the `--demo` synthetic path. The test must assert non-empty plotted output and zero "No data" / "Empty" / placeholder text annotations. (2) Define output schemas (summary.json keys, calibration JSON keys) as shared constants or TypedDicts between the aggregator and the figure script, so a key rename in the aggregator causes an immediate import-time or type-check failure in the figure script. (3) Never ship a figure script whose production path has only been exercised via `--demo`.
+
+**Source incident**: Phase II Codex R2 reviews (b0nweghxr + bewezccsc) — `make_phase2_figures.py:299-305` reads `summary["curves"]` (non-existent); lines 373-374 read `cal["base_returns"]` and `cal["stress_returns"]` (non-existent). Triaged 2026-04-17 as 2 BLOCKERs.
+
+---
+
+### 2026-04-17 — Config-dict override keys passed but never consumed by callee
+
+**Pattern**: The ablation runner (`run_phase2_ablation.py`) carefully constructs `task_config` entries with `epsilon_override` and `lr_multiplier` keys and passes them to `run_phase2_rl.run_single()`. But `run_single()` never reads those keys -- it hard-codes `_EPSILON` and `_LEARNING_RATE` at lines 566-567 and calls `_make_agent()` without forwarding overrides. The resolved config even records the defaults as the "effective" values, making the bug invisible in logs. The entire hyperparameter ablation sweep produces mislabeled duplicate results.
+
+**Prevention rule**: (1) When a caller passes override values through a dict to a callee, the callee must explicitly extract and use those overrides -- add a comment or assertion at the callee showing which keys it consumes. (2) Add an integration test that calls the callee with non-default overrides and asserts the downstream object (agent, optimizer) reflects the overridden values, not the module-level defaults. (3) When recording resolved config, derive values from the same code path that constructs the agent, not from separate constant references.
+
+**Source incident**: Phase II Codex R3 standard review (review-mo2thz1w-kohkfg) — `run_phase2_rl.py:566-567,592` ignores `task_config["epsilon_override"]` and `task_config["lr_multiplier"]`. Triaged 2026-04-17 as BLOCKER R3-1.

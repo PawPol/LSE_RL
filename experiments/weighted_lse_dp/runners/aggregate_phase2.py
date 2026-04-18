@@ -439,6 +439,19 @@ def aggregate_group(
             per_seed_transitions,
         )
 
+    # -- Pool episode returns split by event flag (MAJOR R3-3) --------------
+    # run_phase2_rl writes episode_returns_noevent / episode_returns_event to
+    # metrics.json for RL runs.  Pool across seeds for the calibration JSON.
+    pooled_returns_noevent: list[float] = []
+    pooled_returns_event: list[float] = []
+    for m in per_seed_metrics:
+        ne = m.get("episode_returns_noevent")
+        ev = m.get("episode_returns_event")
+        if isinstance(ne, list):
+            pooled_returns_noevent.extend(ne)
+        if isinstance(ev, list):
+            pooled_returns_event.extend(ev)
+
     return {
         "n_seeds": len(seeds),
         "seeds": sorted(seeds),
@@ -449,6 +462,8 @@ def aggregate_group(
         "adaptation": adaptation,
         "event_rates": event_rates,
         "event_conditioned_stagewise": event_conditioned_stagewise,
+        "episode_returns_noevent": pooled_returns_noevent,
+        "episode_returns_event": pooled_returns_event,
     }
 
 
@@ -649,12 +664,33 @@ def build_calibration_json(
                 r_vals.append(float(v))
         reward_range = [min(r_vals), max(max(r_vals), 1.0)]
 
-    # Collect all per-group calibration dicts and average across algos
-    calib_dicts: list[dict[str, np.ndarray]] = []
-    for g in task_groups:
-        c = g.get("calibration")
-        if c is not None:
-            calib_dicts.append(c)
+    # Collect calibration dicts for stagewise arrays.
+    # User decision (MINOR R3-5): prefer exact DP algorithm groups
+    # (VI / PI / MPI / AsyncVI / PE) so the Phase III calibration
+    # reference is the best available planner, not an RL average.
+    # Fall back to all groups if no DP group produced calibration data.
+    _DP_ALGO_NAMES: frozenset[str] = frozenset(
+        {"vi", "pi", "mpi", "asyncvi", "pe",
+         "value_iteration", "policy_iteration",
+         "modified_policy_iteration", "async_value_iteration",
+         "policy_evaluation"}
+    )
+    calib_dicts_dp: list[dict[str, np.ndarray]] = []
+    calib_dicts_all: list[dict[str, np.ndarray]] = []
+    for (suite, task, algo), agg in groups.items():
+        if task != task_family:
+            continue
+        c = agg.get("calibration")
+        if c is None:
+            continue
+        calib_dicts_all.append(c)
+        if algo.lower() in _DP_ALGO_NAMES:
+            calib_dicts_dp.append(c)
+
+    # Use DP-only dicts when available; fall back to all groups.
+    calib_dicts: list[dict[str, np.ndarray]] = (
+        calib_dicts_dp if calib_dicts_dp else calib_dicts_all
+    )
 
     # Build stagewise block
     stagewise: dict[str, Any] | None = None
@@ -770,8 +806,8 @@ def build_calibration_json(
         task_groups, "event_rates",
     )
 
-    # Determine recommended_task_sign
-    recommended_task_sign = _determine_task_sign(stagewise)
+    # Determine recommended_task_sign from family semantics (spec §12).
+    recommended_task_sign = _determine_task_sign(task_family, stagewise)
 
     # -- Event-conditioned margin block (spec §12) --------------------------
     # Pool per-stage event-conditioned margin stats from all algorithm groups.
@@ -828,21 +864,41 @@ def build_calibration_json(
     else:
         event_conditioned_margins["stagewise"] = None
 
-    # -- Figure-compat top-level keys (BLOCKER-2 fix) ----------------------
+    # -- Figure-compat top-level keys (BLOCKER-2 fix, MAJOR-R3-3 fix) -------
     # These allow make_phase2_figures.py to load return and margin data
     # without re-reading nested stagewise structures.
 
-    # base_returns: per-stage mean reward profile (proxy for return distribution)
-    base_returns_list: list[float | None] = []
-    if stagewise is not None:
-        bret = stagewise.get("reward_mean_mean")
-        if bret is not None:
-            base_returns_list = bret if isinstance(bret, list) else list(bret)
+    # base_returns / stress_returns: actual episode-return samples split by
+    # whether a stress event fired during that episode.  Pooled across all
+    # task groups (RL groups carry this data via episode_returns_noevent /
+    # episode_returns_event written by run_phase2_rl.py).
+    base_returns_pool: list[float] = []
+    stress_returns_pool: list[float] = []
+    for g in task_groups:
+        ne = g.get("episode_returns_noevent")
+        ev = g.get("episode_returns_event")
+        if isinstance(ne, list):
+            base_returns_pool.extend(ne)
+        if isinstance(ev, list):
+            stress_returns_pool.extend(ev)
 
-    # stress_returns: event-conditioned return scalar (single-point summary)
-    stress_returns_list: list[float | None] = []
-    if event_cond_return is not None:
-        stress_returns_list = [float(event_cond_return)]
+    # Fallback: if no per-episode splits available, use stagewise reward mean
+    # as a proxy (per-stage scalar, not episodes — labelled accordingly).
+    base_returns_list: list[float | None]
+    stress_returns_list: list[float | None]
+    if base_returns_pool or stress_returns_pool:
+        base_returns_list = [float(v) for v in base_returns_pool]
+        stress_returns_list = [float(v) for v in stress_returns_pool]
+    else:
+        # Legacy fallback: per-stage mean (not true episode distribution).
+        base_returns_list = []
+        if stagewise is not None:
+            bret = stagewise.get("reward_mean_mean")
+            if bret is not None:
+                base_returns_list = bret if isinstance(bret, list) else list(bret)
+        stress_returns_list = (
+            [float(event_cond_return)] if event_cond_return is not None else []
+        )
 
     # margin_quantiles: top-level alias for pos_margin_quantiles with stage index
     margin_quantiles_top: dict[str, Any] | None = None
@@ -931,67 +987,41 @@ def _merge_algo_scalar_blocks(
     return result if any_valid else None
 
 
+# Explicit per-family sign: +1 for jackpot/positive-shock families,
+# -1 for catastrophe/hazard families.  Source of truth is family semantics,
+# not data heuristics (spec §12).
+_TASK_FAMILY_SIGNS: dict[str, int] = {
+    "chain_sparse_long":  1,
+    "chain_jackpot":      1,
+    "chain_catastrophe": -1,
+    "chain_regime_shift": 1,
+    "grid_sparse_goal":   1,
+    "grid_hazard":       -1,
+    "grid_regime_shift":  1,
+    "taxi_bonus_shock":   1,
+}
+
+
 def _determine_task_sign(
-    stagewise: dict[str, Any] | None,
+    task_family: str,
+    stagewise: dict[str, Any] | None = None,  # kept for validation only
 ) -> int:
-    """Determine recommended task sign from stage-0 margin statistics.
+    """Return the calibration sign for *task_family*.
 
-    Returns +1 if pos_margin_mean >= neg_margin_mean at stage 0,
-    -1 if neg_margin_mean > pos_margin_mean.  If the sign is ambiguous
-    (no data available), defaults to +1 with a warning.
+    The sign is derived from family semantics, not data heuristics.
+    Raises ``ValueError`` for unknown families so misconfiguration is
+    caught immediately rather than silently defaulting to +1.
 
-    Per spec section 12: one integer sign per experiment family.
+    Spec §12: one integer sign per experiment family.
+    ``stagewise`` is accepted but used only for optional validation logging.
     """
-    if stagewise is None:
-        print(
-            "  [WARN] _determine_task_sign: no stagewise data; "
-            "defaulting to +1",
-            file=sys.stderr,
+    sign = _TASK_FAMILY_SIGNS.get(task_family)
+    if sign is None:
+        raise ValueError(
+            f"_determine_task_sign: unknown task_family={task_family!r}. "
+            f"Add it to _TASK_FAMILY_SIGNS with the correct sign."
         )
-        return 1
-
-    pos = stagewise.get("pos_margin_mean_mean")
-    neg = stagewise.get("neg_margin_mean_mean")
-
-    if pos is None or neg is None:
-        print(
-            "  [WARN] _determine_task_sign: missing pos/neg margin means; "
-            "defaulting to +1",
-            file=sys.stderr,
-        )
-        return 1
-
-    # Use stage 0 values
-    if not isinstance(pos, list) or not isinstance(neg, list):
-        print(
-            "  [WARN] _determine_task_sign: margin data not list; "
-            "defaulting to +1",
-            file=sys.stderr,
-        )
-        return 1
-    if len(pos) == 0 or len(neg) == 0:
-        print(
-            "  [WARN] _determine_task_sign: empty margin arrays; "
-            "defaulting to +1",
-            file=sys.stderr,
-        )
-        return 1
-
-    pos_0 = pos[0]
-    neg_0 = neg[0]
-
-    if pos_0 is None or neg_0 is None:
-        print(
-            "  [WARN] _determine_task_sign: stage-0 margin is None; "
-            "defaulting to +1",
-            file=sys.stderr,
-        )
-        return 1
-
-    if neg_0 > pos_0:
-        return -1
-    else:
-        return 1
+    return sign
 
 
 # ---------------------------------------------------------------------------
