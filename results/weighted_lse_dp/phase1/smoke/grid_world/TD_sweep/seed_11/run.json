@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-16T21:15:58Z",
+  "created_at": "2026-04-17T02:03:54Z",
   "phase": "phase1",
   "task": "grid_world",
   "algorithm": "TD_sweep",
   "seed": 11,
-  "git_sha": "3cb556df921a97676c8199d65daa406dca6115c1",
+  "git_sha": "8668d67660c22e575f96812d0461ea2497ceaff0",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "source": "mushroom-rl-dev/examples/grid_world_td.py",
@@ -140,15 +140,15 @@
     }
   },
   "timings": {
-    "total_s": 1.14755491699907,
+    "total_s": 1.1450561250021565,
     "step_s": 0.0,
-    "fit_s": 1.146813043007569,
+    "fit_s": 1.1442851670071832,
     "eval_s": 0.0,
     "plot_s": 0.0,
     "other_s": 0.0,
     "steps_per_s": null,
     "updates_per_s": null
   },
-  "total_wall_s": 1.1483480829992914,
+  "total_wall_s": 1.1459067079995293,
   "stdout_log": "stdout.log"
 }

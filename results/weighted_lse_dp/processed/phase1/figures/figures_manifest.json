@@ -7,61 +7,61 @@
       "figure": "chain_vp",
       "file": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/processed/phase1/figures/phase1_chain_value_propagation.pdf",
       "sha256": "29a3ab154975d284dff00bd740f6cfd9367c2474fe0493f45f69f7c8404ed2a2",
-      "timestamp": "2026-04-16T22:43:03Z"
+      "timestamp": "2026-04-17T01:09:23Z"
     },
     {
       "figure": "chain_vp",
       "file": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/processed/phase1/figures/phase1_chain_value_propagation.png",
       "sha256": "b1014f66263373738328567dfe37ecd21285ee03d458b072605e07686f149972",
-      "timestamp": "2026-04-16T22:43:03Z"
+      "timestamp": "2026-04-17T01:09:23Z"
     },
     {
       "figure": "dp_residuals",
       "file": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/processed/phase1/figures/phase1_dp_residuals.pdf",
       "sha256": "3c4adfa801b9367c0813bd084367b0421ee0ec684f9f9350dc23af5d663e9fd3",
-      "timestamp": "2026-04-16T22:43:03Z"
+      "timestamp": "2026-04-17T01:09:23Z"
     },
     {
       "figure": "dp_residuals",
       "file": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/processed/phase1/figures/phase1_dp_residuals.png",
       "sha256": "725c3518b436089f17d0943ec21e56af666716cf2a8aa524046b763078208ce2",
-      "timestamp": "2026-04-16T22:43:03Z"
+      "timestamp": "2026-04-17T01:09:23Z"
     },
     {
       "figure": "rl_curves",
       "file": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/processed/phase1/figures/phase1_rl_learning_curves.pdf",
-      "sha256": "ef976ea3c082543185af9a4edc7cf9ee784479cd571f7739857c612b687ddaa9",
-      "timestamp": "2026-04-16T22:43:03Z"
+      "sha256": "4ecd093b22cb227e85df0cf6bf97f3c16140d599471cc697f489b864dde6cb68",
+      "timestamp": "2026-04-17T01:09:23Z"
     },
     {
       "figure": "rl_curves",
       "file": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/processed/phase1/figures/phase1_rl_learning_curves.png",
-      "sha256": "78a2fab24372143e935e6afd74c8f2c57ca6707877f6280e9a38022dcea2c9b0",
-      "timestamp": "2026-04-16T22:43:03Z"
+      "sha256": "090867eda375e4b7df1e68b3453900a3fa71088e2d9deeb274e6be6112bbd44e",
+      "timestamp": "2026-04-17T01:09:23Z"
     },
     {
       "figure": "margins",
       "file": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/processed/phase1/figures/phase1_margin_histograms.pdf",
       "sha256": "8536ccd53e41b52fe081112c5a1671516d25f03c39c9dc1cfb09db4b0da53633",
-      "timestamp": "2026-04-16T22:43:03Z"
+      "timestamp": "2026-04-17T01:09:23Z"
     },
     {
       "figure": "margins",
       "file": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/processed/phase1/figures/phase1_margin_histograms.png",
       "sha256": "0e02ed310b45915a35a40efbb40df65ec561c83f12df32e47e94943ccc98ab93",
-      "timestamp": "2026-04-16T22:43:03Z"
+      "timestamp": "2026-04-17T01:09:23Z"
     },
     {
       "figure": "ablation",
       "file": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/processed/phase1/figures/phase1_ablation.pdf",
       "sha256": "0c546d89299039fcdb886c96ebfcfcdfcbf5345c49f21b86eb2104baa6729267",
-      "timestamp": "2026-04-16T22:43:03Z"
+      "timestamp": "2026-04-17T01:09:23Z"
     },
     {
       "figure": "ablation",
       "file": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/processed/phase1/figures/phase1_ablation.png",
       "sha256": "a4de5fe69153af310fa16d9a74da15faad6cfde3b0630800d9be7ae02d833c9b",
-      "timestamp": "2026-04-16T22:43:03Z"
+      "timestamp": "2026-04-17T01:09:23Z"
     }
   ]
 }
