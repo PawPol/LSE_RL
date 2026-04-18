@@ -186,6 +186,13 @@ class SafeWeightedPolicyIteration:
                 f"Schedule horizon ({schedule.T}) does not match MDP "
                 f"horizon ({self._T})."
             )
+        # Guard: schedule gamma must match the MDP gamma.
+        if abs(schedule._gamma - self._gamma) > 1e-9:
+            raise ValueError(
+                f"SafeWeightedCommon: schedule.gamma={schedule._gamma} does "
+                f"not match provided gamma={self._gamma}. Schedule must be "
+                "calibrated for this exact discount factor."
+            )
         self._schedule: BetaSchedule = schedule
 
         self._max_iter: int = int(max_iter)
@@ -218,6 +225,8 @@ class SafeWeightedPolicyIteration:
         self.pi: np.ndarray = pi0                           # (T, S)
 
         # Warm-start: copy caller-provided V table, then re-enforce terminal.
+        # Store v_init for use in run() warm-start.
+        self._v_init: np.ndarray | None = None
         if v_init is not None:
             v_init_arr = np.asarray(v_init, dtype=np.float64)
             if v_init_arr.shape != self.V.shape:
@@ -227,6 +236,7 @@ class SafeWeightedPolicyIteration:
                 )
             self.V[:] = v_init_arr
             self.V[self._T, :] = 0.0  # terminal boundary is always zero
+            self._v_init = self.V.copy()  # store the validated copy
 
         # Timing / logging scaffolding.
         self.residuals: List[float] = []
@@ -334,7 +344,10 @@ class SafeWeightedPolicyIteration:
         """
         # Reset tables so ``run()`` is idempotent.
         self.Q.fill(0.0)
-        self.V.fill(0.0)
+        if self._v_init is not None:
+            self.V[:] = self._v_init  # restore warm-start (terminal V[T,:]=0 already enforced in __init__)
+        else:
+            self.V.fill(0.0)
         self.pi = self._init_pi.copy()                     # (T, S)
         self.residuals = []
         self.iter_times_s = []
@@ -404,14 +417,14 @@ class SafeWeightedPolicyIteration:
                 break
 
             # --- 5. Advance: adopt the improved policy for the next PE --------
-            self.pi = pi_new                                 # (T, S)
-            V_prev_non_terminal = V_pi[: self._T].copy()     # (T, S)
-
-            # Residual-based early stop: only kicks in when ``tol > 0``.
-            # Policy stability is checked first because a stable policy is
-            # the canonical PI termination condition.
+            # Residual-based early stop checked BEFORE committing pi_new so
+            # that (pi, Q, V) remain consistent: Q/V reflect evaluation of
+            # self.pi, and we return without advancing to pi_new.
             if self._tol > 0.0 and residual < self._tol:
                 break
+
+            self.pi = pi_new                                 # (T, S)
+            V_prev_non_terminal = V_pi[: self._T].copy()     # (T, S)
 
         self.wall_clock_s = float(time.perf_counter() - t_start)
         self.iter_times_s = list(iter_timer.sweep_times_s)

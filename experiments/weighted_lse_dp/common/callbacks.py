@@ -220,6 +220,24 @@ class SafeTransitionLogger(TransitionLogger):
     The additional arrays populated are those in
     :data:`~schemas.SAFE_TRANSITIONS_ARRAYS`.
 
+    .. warning:: Inherited ``*_beta0`` fields are misnomers in safe runs.
+
+       The parent :class:`TransitionLogger` populates ``q_current_beta0``,
+       ``v_next_beta0``, ``margin_beta0``, ``td_target_beta0``, and
+       ``td_error_beta0`` by reading the agent's live Q table.  In
+       Phase I/II the agent IS a classical (beta=0) agent, so the
+       ``_beta0`` suffix is accurate.  In Phase III safe runs, these
+       fields reflect the **safe** agent's Q values (beta != 0), NOT a
+       classical baseline.  The suffix is retained for schema
+       compatibility, but consumers must not interpret these values as
+       classical-baseline quantities.  The ``after_fit`` method also
+       reads ``_q_current_beta0[-1]`` and ``_v_next_beta0[-1]``
+       internally to derive ``safe_margin`` and ``safe_td_error``.
+
+       No primary Phase III aggregation metric depends on the ``*_beta0``
+       fields (verified: ``aggregate_phase3.py`` has zero references to
+       ``margin_beta0``, ``td_target_beta0``, or ``td_error_beta0``).
+
     Parameters
     ----------
     agent:
@@ -249,22 +267,29 @@ class SafeTransitionLogger(TransitionLogger):
     # ------------------------------------------------------------------
 
     def __call__(self, sample: tuple) -> None:  # type: ignore[override]
-        """Record base transition fields, then append safe-specific fields.
+        """callback_step hook: log base transition fields only.
 
-        Reads ``agent.swc.last_*`` attributes populated by the most
-        recent ``_update()`` call. Values are coerced to Python scalars
-        via ``float(np.asarray(x).item())`` to handle both scalar and
-        0-d array returns from the safe operator.
+        Safe fields are logged in :meth:`after_fit`, which must be
+        registered as a ``callbacks_fit`` entry on Core so it fires
+        after ``agent.fit(dataset)`` — that is when
+        ``agent.swc.last_*`` fields reflect the current update.
         """
-        # Call parent first (appends base transition fields).
         super().__call__(sample)
 
-        # Read safe fields from agent.swc (populated by the last _update()).
-        swc = self._agent.swc  # type: ignore[attr-defined]
-        reward = float(sample[2])
+    def after_fit(self, dataset: list) -> None:
+        """callbacks_fit hook: log safe fields after agent.fit() runs.
 
-        # v_next from parent's last-appended entry (already computed).
-        v_next = self._v_next_beta0[-1]
+        Must be passed as a ``callbacks_fit`` entry to
+        :class:`mushroom_rl.core.Core` so it fires after each
+        ``agent.fit(dataset)`` call — that is when
+        ``agent.swc.last_*`` fields reflect the most recent update.
+
+        For evaluation (no fit calls), this method is never invoked and
+        safe fields are intentionally not logged.
+        """
+        swc = self._agent.swc  # type: ignore[attr-defined]
+        reward = self._reward[-1]        # reward from the just-logged sample
+        v_next = self._v_next_beta0[-1]  # v_next from parent's last entry
 
         self._safe_stage.append(int(swc.last_stage))
         self._safe_beta_raw.append(float(np.asarray(swc.last_beta_raw).item()))
@@ -278,7 +303,10 @@ class SafeTransitionLogger(TransitionLogger):
 
         safe_target = float(np.asarray(swc.last_target).item())
         self._safe_target.append(safe_target)
-        self._safe_margin.append(reward - v_next)  # margin = r - v_next (no gamma)
+        # Use swc.last_margin (= r - v_next as seen by the safe operator) rather
+        # than reward - v_next_beta0, which is always max_a Q(s',a) and gives a
+        # wrong margin for ExpectedSARSA/TD0 where the operator used E_π[V'].
+        self._safe_margin.append(float(np.asarray(swc.last_margin).item()))
 
         # TD error: safe_target - q_current (q_current from parent).
         q_current = self._q_current_beta0[-1]
@@ -289,7 +317,27 @@ class SafeTransitionLogger(TransitionLogger):
     # ------------------------------------------------------------------
 
     def build_safe_payload(self) -> dict[str, np.ndarray]:
-        """Return safe-specific transition arrays (SAFE_TRANSITIONS_ARRAYS keys)."""
+        """Return safe-specific transition arrays (SAFE_TRANSITIONS_ARRAYS keys).
+
+        Returns empty arrays if no safe fields were logged (e.g. during
+        evaluation where ``after_fit`` is never called).
+        """
+        if len(self._safe_stage) == 0:
+            empty_f = np.array([], dtype=np.float64)
+            empty_i = np.array([], dtype=np.int64)
+            empty_b = np.array([], dtype=bool)
+            return {
+                "safe_stage": empty_i,
+                "safe_beta_raw": empty_f,
+                "safe_beta_cap": empty_f,
+                "safe_beta_used": empty_f,
+                "safe_clip_active": empty_b,
+                "safe_rho": empty_f,
+                "safe_effective_discount": empty_f,
+                "safe_target": empty_f,
+                "safe_margin": empty_f,
+                "safe_td_error": empty_f,
+            }
         return {
             "safe_stage": np.array(self._safe_stage, dtype=np.int64),
             "safe_beta_raw": np.array(self._safe_beta_raw, dtype=np.float64),
@@ -306,9 +354,15 @@ class SafeTransitionLogger(TransitionLogger):
         }
 
     def build_payload(self) -> dict[str, np.ndarray]:
-        """Return the full transitions payload: base + safe arrays merged."""
+        """Return the full transitions payload: base + safe arrays merged.
+
+        Safe fields are only included when ``after_fit`` was called at
+        least once (i.e. during training). During evaluation the
+        payload contains only base transition fields.
+        """
         payload = super().build_payload()
-        payload.update(self.build_safe_payload())
+        if len(self._safe_stage) > 0:
+            payload.update(self.build_safe_payload())
         return payload
 
     # ------------------------------------------------------------------

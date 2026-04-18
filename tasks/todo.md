@@ -1478,4 +1478,131 @@ Group M (verification + close -- depends on all above):
 
 4. **Phase II review items still open.** The R6 and R8 triage sections contain unresolved BLOCKERs and MAJORs for Phase II. Are these all resolved before Phase III starts? Phase III depends on correct calibration JSONs. If any calibration-affecting items (R6-1 regime-shift grouping, R6-2 margin_quantiles negative tail, R8-1 n_base) are unresolved, Phase III schedule construction will consume corrupted inputs.
 
+---
+
+## Phase III R1 Triage — Codex Review Round 1 (2026-04-18)
+
+Codex standard review (session 019da11e) + adversarial review (session 019da120) run against base 4fdbf0d (Phase II close commit) vs branch phase-III/closing (commit 7f1930a). All findings fixed in commit 11f2189.
+
+### BLOCKERs (both fixed)
+
+**B1 — Safe transition logging off-by-one [standard P1 / adversarial high]**
+- File: `experiments/weighted_lse_dp/common/callbacks.py:262-285`, `runners/run_phase3_rl.py:338-360`
+- Root cause: `callback_step` fires before `agent.fit(dataset)` in MushroomRL `Core._run()` (core.py:108-117). Reading `swc.last_*` in `callback_step` always returns the previous update's diagnostics.
+- Fix: split `SafeTransitionLogger` into `__call__` (base fields only, via callback_step) + `after_fit(dataset)` (safe fields, via callbacks_fit after fit). Same pattern applied to `_SafeAutoEventLogger` in run_phase3_rl.py.
+- Tests added: `test_safe_stage_alignment_with_augmented_state` in test_phase3_smoke_runs.py
+
+**B2 — Certification uses empirical_r_max instead of configured bound [standard — / adversarial high]**
+- File: `experiments/weighted_lse_dp/calibration/build_schedule_from_phase12.py:116-119`
+- Root cause: `R_max = float(cal["empirical_r_max"])` from Phase II calibration JSON. Spec S2.2/S5.9 requires the configured absolute maximum reward bound; rare jackpot/catastrophe rewards missed during calibration underestimate `Bhat_t` and produce too-loose `beta_cap_t`.
+- Fix: added `reward_bound: float | None = None` parameter; raises `UserWarning` and falls back to empirical only if `reward_bound` is absent. Added `"reward_bound"` field to all 8 entries in `configs/phase3/paper_suite.json` (chain_jackpot=10.0, chain_catastrophe=10.0, grid_hazard=5.0, taxi_bonus_shock=6.0, others=1.0). Regenerated all 8 `schedule.json` files.
+
+### MAJORs (all fixed)
+
+**M1 — Missing schedule.T == mdp.horizon guard [adversarial medium / standard P2]**
+- File: `mushroom-rl-dev/.../safe_weighted_value_iteration.py:184-187`
+- Fix: added `if schedule.T != self._T: raise ValueError(...)` in `__init__` of SafeWeightedVI, PE, MPI, AsyncVI. SafeWeightedPI already had this guard.
+- Tests added: `TestHorizonMismatchGuard` in test_safe_dp_integration.py (5 tests, one per planner).
+
+**M2 — No schedule.gamma == mdp.gamma check [adversarial medium]**
+- File: `mushroom-rl-dev/.../safe_weighted_common.py`
+- Fix: `SafeWeightedCommon.__init__` raises `ValueError` when `abs(schedule.gamma - gamma) > 1e-9`. SafeWeightedPI got explicit check separately (it bypasses SafeWeightedCommon internally).
+- Tests added: `TestGammaMismatchGuard` in test_safe_dp_integration.py (5 tests).
+
+**M3 — v_init warm-start silently discarded by run() [standard P2]**
+- File: `mushroom-rl-dev/.../safe_weighted_value_iteration.py:346-349`
+- Root cause: `__init__` copied `v_init` into `self.V`, but `run()` immediately called `self.V.fill(0.0)`, erasing the warm start.
+- Fix: store as `self._v_init`; in `run()`, conditionally restore from `self._v_init` (or zero-fill if `None`). Same pattern applied to PE, MPI, AsyncVI, PI.
+- Tests added: `TestVInitWarmStart` in test_safe_dp_integration.py (4 tests).
+
+### Post-fix verification
+
+- Test suite: **547 passed, 0 failed** (14 new tests added for B1/M1/M2/M3 guards)
+- All 8 schedule.json files regenerated with correct R_max values
+- Commit: 11f2189 ("Phase III R1 fixes: logging alignment, R_max certification, schedule validation")
+
 5. **Optional MC-relaxation ablation (spec S3.5, S6.3, S8.5, S9.8).** The spec explicitly marks this as optional and appendix-only. Should it be included in the Phase III plan as a stretch task, or deferred entirely? Current plan omits it from the main checklist. If desired, it would add approximately 3-4 tasks (implementation, tests, ablation run, figure).
+
+---
+
+## Phase III R2 Triage (2026-04-18)
+
+Source reviews:
+- Standard: `results/processed/codex_reviews/phase_III/review.md` (session 019da19f)
+- Adversarial: `results/processed/codex_reviews/phase_III/adversarial.md` (session 019da1a0)
+
+### Findings
+
+- [ ] [BLOCKER] R2-1: `save_json` and `save_npz_with_schema` called with reversed/missing arguments in aggregate_phase3.py -> experiment-runner
+      File: `experiments/weighted_lse_dp/runners/aggregate_phase3.py:281-287`
+      Finding: `save_json(summary, path)` passes dict as first arg but signature is `save_json(path, data)`. `save_npz_with_schema(agg_curves, path)` passes only 2 args but signature requires 3 `(path, schema, arrays)`. Any non-dry-run Phase III aggregation raises before writing output.
+      Acceptance criterion: `save_json(out_dir / "summary.json", summary)` and `save_npz_with_schema(out_dir / "curves.npz", CURVES_SCHEMA, agg_curves)` (and same for safe_stagewise.npz) with correct argument order and schema passed.
+      (codex-session: 019da19f, spec-ref: docs/specs/phase_III_safe_weighted_lse_experiments.md#aggregation)
+
+- [ ] [BLOCKER] R2-2: `aggregate_safe_stats` called with incompatible API in aggregate_phase3.py -> experiment-runner
+      File: `experiments/weighted_lse_dp/runners/aggregate_phase3.py:461-463`
+      Finding: Called as `aggregate_safe_stats(stages, values, n_stages, quantiles=...)` but signature is `aggregate_safe_stats(payload, T, gamma)`. TypeError on any group with safe transition data, so safe_stagewise.npz is never produced.
+      Acceptance criterion: Call site uses the correct signature `aggregate_safe_stats(payload_dict, T, gamma)` or the aggregation helper is refactored to compute per-stage quantiles correctly from the pooled raw fields. Output safe_stagewise.npz loads without error and contains the expected keys.
+      (codex-session: 019da19f, spec-ref: docs/specs/phase_III_safe_weighted_lse_experiments.md#aggregation)
+
+- [ ] [MAJOR] R2-3: PI returns inconsistent (Q, V, pi) when tolerance-based early stop fires -> algo-implementer
+      File: `mushroom-rl-dev/mushroom_rl/algorithms/value/dp/safe_weighted_policy_iteration.py:419-427`
+      Finding: When `tol > 0` and residual < tol before policy stability, `self.pi = pi_new` is set but Q/V still reflect the evaluation of the previous policy. Returned tables are internally inconsistent.
+      Mitigation: Low probability in practice (default tol=0 in paper suite; residual convergence typically implies policy stability). But any user who enables tol>0 gets wrong results.
+      (codex-session: 019da19f, spec-ref: docs/specs/phase_III_safe_weighted_lse_experiments.md#safe-pi)
+
+- [ ] [MAJOR] R2-4: BetaSchedule.from_file does not verify certification recurrences -> algo-implementer
+      File: `mushroom-rl-dev/mushroom_rl/algorithms/value/dp/safe_weighted_common.py:62-117`
+      Finding: On load, BetaSchedule checks array lengths but never verifies that kappa_t, Bhat_t, beta_cap_t satisfy the certification recurrences, that beta_used_t equals clip(beta_raw_t, -beta_cap_t, beta_cap_t), or that alpha_t is in [0,1). A hand-edited or stale schedule.json can silently bypass safety clipping.
+      Mitigation: In the current pipeline, schedules are machine-generated by build_schedule_from_phase12.py and not hand-edited. Risk is low for automated runs but the certification claim is unenforced.
+      (codex-session: 019da1a0, spec-ref: docs/specs/phase_III_safe_weighted_lse_experiments.md#S2.2)
+
+- [ ] [MAJOR] R2-5: RL runner does not check schedule.T == horizon before constructing agent -> experiment-runner
+      File: `experiments/weighted_lse_dp/runners/run_phase3_rl.py:778-807`
+      Finding: Unlike the DP path (which was fixed in R1-M1), the RL runner loads schedule.json and records schedule_T in metadata but never asserts schedule.T == horizon. If schedule and task config drift, run either crashes late (IndexError at t >= schedule.T) or silently ignores extra entries.
+      (codex-session: 019da1a0, spec-ref: docs/specs/phase_III_safe_weighted_lse_experiments.md#safe-rl-runner)
+
+- [ ] [MAJOR] R2-6: SafeQLearning not serialization-safe (no _post_load for schedule/swc) -> algo-implementer
+      File: `mushroom-rl-dev/mushroom_rl/algorithms/value/td/safe_q_learning.py:44-50`
+      Finding: `_schedule` and `_swc` are marked `'none'` (not serialized) and no `_post_load` hook rebuilds them. A reloaded agent cannot compute safe targets or expose instrumentation. Breaks checkpoint resume and any evaluation path that loads saved agents. Same issue likely affects SafeSARSA and SafeExpectedSARSA.
+      (codex-session: 019da1a0, spec-ref: docs/specs/phase_III_safe_weighted_lse_experiments.md#safe-td-agents)
+
+### Summary
+
+Triage summary: BLOCKER=2, MAJOR=4, MINOR=0, NIT=0, DISPUTE=0
+
+---
+
+## Phase III R3 Triage
+
+Review inputs:
+- Standard: `results/processed/codex_reviews/phase_III/review.md` (session 019da1xx)
+- Adversarial: `results/processed/codex_reviews/phase_III/adversarial.md` (session 019da1c7)
+- Commit reviewed: 424a73d
+
+### Findings
+
+- [ ] [BLOCKER] [algo] R3-1: SafePE supnorm_to_exact uses SafeVI optimal value instead of PE fixed point -> algo-implementer
+      File: `experiments/weighted_lse_dp/runners/run_phase3_dp.py:519-528`
+      Finding: When algo_name == "SafePE", the else branch computes v_exact via a SafeVI solve (optimal control value). SafePE evaluates a fixed reference policy, so the correct reference is the exact PE fixed point for that policy, not V*. Every supnorm_to_exact curve and convergence summary for SafePE is misreported as error-to-optimal rather than convergence-to-exact-evaluation.
+      Acceptance criterion: For SafePE runs, v_exact must be computed by running SafeWeightedPolicyEvaluation to convergence on the same (mdp, schedule, ref_pi) and using its converged V as the reference. supnorm_to_exact[k] must equal max|V_k - V_PE_exact|, not max|V_k - V_VI_optimal|.
+      (codex-session: 019da1xx-standard-P2, spec-ref: docs/specs/phase_III_safe_weighted_lse_experiments.md#dp-specific-metrics)
+
+- [ ] [MINOR] [infra] R3-2: Config declares dp_algorithms for RL-only tasks (grid_hazard, taxi_bonus_shock) -> experiment-runner
+      File: `experiments/weighted_lse_dp/configs/phase3/paper_suite.json:198-204,264-270`
+      Finding: paper_suite.json declares dp_algorithms for grid_hazard and taxi_bonus_shock, but the runner correctly skips these tasks because their stress dynamics are wrapper-injected and cannot be encoded in the P/R kernel (same design as Phase II). The config should not declare dp_algorithms for tasks the runner will never process.
+      (codex-session: 019da1xx-standard-P1, spec-ref: docs/specs/phase_III_safe_weighted_lse_experiments.md#S6.1)
+
+- [ ] [MINOR] [logging] R3-3: Safe RL runs emit safe Q/V values under *_beta0 field names -> experiment-runner
+      File: `experiments/weighted_lse_dp/common/callbacks.py:125-142`
+      Finding: TransitionLogger.__call__ reads q_current and v_next from self._agent.Q (the safe Q table in Phase III) and stores them as q_current_beta0 / v_next_beta0. The field names suggest classical beta=0 reference values but actually contain safe-operator values. Phase III aggregation (aggregate_phase3.py) does NOT consume these fields for primary metrics -- confirmed by grep showing zero references. The fields are written to transitions.npz but unused. Risk is limited to potential future confusion if someone trusts the field names for baseline comparison.
+      (codex-session: 019da1c7-adversarial-high-1, spec-ref: docs/specs/phase_III_safe_weighted_lse_experiments.md#S7.1)
+
+- [ ] [MINOR] [operator] R3-4: Schedule validation permits stored beta_cap larger than certified cap -> operator-theorist
+      File: `mushroom-rl-dev/mushroom_rl/algorithms/value/dp/safe_weighted_common.py:169-183`
+      Finding: The permissive override allows stored beta_cap_t >= certified beta_cap_t, meaning beta_used_t can exceed the certified cap. In practice, the production pipeline (build_schedule_from_phase12.py) always writes stored_cap == certified_cap because the same certification formulas produce both. Only test fixtures use larger caps. Adding a test_only flag would be clean but the risk to primary results is not material.
+      (codex-session: 019da1c7-adversarial-high-2, spec-ref: docs/specs/phase_III_safe_weighted_lse_experiments.md#S2.2)
+
+### Summary
+
+Triage summary: BLOCKER=1, MAJOR=0, MINOR=3, NIT=0, DISPUTE=0

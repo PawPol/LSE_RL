@@ -309,7 +309,13 @@ class _SafeAutoEventLogger(EventTransitionLogger):
         self._safe_td_error: list[float] = []
 
     def __call__(self, sample: tuple) -> None:
-        """Detect events, set flags, record base + event + safe fields."""
+        """callback_step hook: detect events, set flags, record base + event fields.
+
+        Safe fields are logged in :meth:`after_fit`, which must be
+        registered as a ``callbacks_fit`` entry on Core so it fires
+        after ``agent.fit(dataset)`` -- that is when
+        ``agent.swc.last_*`` fields reflect the current update.
+        """
         reward = float(sample[2])
         absorbing = bool(sample[4])
 
@@ -338,8 +344,19 @@ class _SafeAutoEventLogger(EventTransitionLogger):
         # -- Delegate to EventTransitionLogger (appends base + event) --
         super().__call__(sample)
 
-        # -- Append safe-specific fields from agent.swc --
+    def after_fit(self, dataset: list) -> None:
+        """callbacks_fit hook: log safe fields after agent.fit() runs.
+
+        Must be passed as a ``callbacks_fit`` entry to
+        :class:`mushroom_rl.core.Core` so it fires after each
+        ``agent.fit(dataset)`` call -- that is when
+        ``agent.swc.last_*`` fields reflect the most recent update.
+
+        For evaluation (no fit calls), this method is never invoked and
+        safe fields are intentionally not logged.
+        """
         swc = self._agent.swc  # type: ignore[attr-defined]
+        reward = self._reward[-1]
         v_next = self._v_next_beta0[-1]
 
         self._safe_stage.append(int(swc.last_stage))
@@ -360,7 +377,27 @@ class _SafeAutoEventLogger(EventTransitionLogger):
         self._safe_td_error.append(safe_target - q_current)
 
     def build_safe_payload(self) -> dict[str, np.ndarray]:
-        """Return safe-specific transition arrays."""
+        """Return safe-specific transition arrays.
+
+        Returns empty arrays if no safe fields were logged (e.g. during
+        evaluation where ``after_fit`` is never called).
+        """
+        if len(self._safe_stage) == 0:
+            empty_f = np.array([], dtype=np.float64)
+            empty_i = np.array([], dtype=np.int64)
+            empty_b = np.array([], dtype=bool)
+            return {
+                "safe_stage": empty_i,
+                "safe_beta_raw": empty_f,
+                "safe_beta_cap": empty_f,
+                "safe_beta_used": empty_f,
+                "safe_clip_active": empty_b,
+                "safe_rho": empty_f,
+                "safe_effective_discount": empty_f,
+                "safe_target": empty_f,
+                "safe_margin": empty_f,
+                "safe_td_error": empty_f,
+            }
         return {
             "safe_stage": np.array(self._safe_stage, dtype=np.int64),
             "safe_beta_raw": np.array(self._safe_beta_raw, dtype=np.float64),
@@ -377,9 +414,15 @@ class _SafeAutoEventLogger(EventTransitionLogger):
         }
 
     def build_payload(self) -> dict[str, np.ndarray]:
-        """Return the full transitions payload: base + event + safe merged."""
+        """Return the full transitions payload: base + event + safe merged.
+
+        Safe fields are only included when ``after_fit`` was called at
+        least once (i.e. during training). During evaluation the
+        payload contains only base + event fields.
+        """
         payload = super().build_payload()  # base + event flags
-        payload.update(self.build_safe_payload())
+        if len(self._safe_stage) > 0:
+            payload.update(self.build_safe_payload())
         return payload
 
     def reset(self) -> None:
@@ -733,13 +776,25 @@ def run_single(
     effective_lr: float = _LEARNING_RATE * float(_lr_mult)
 
     # -- Load schedule -------------------------------------------------------
-    schedule_path = schedule_dir / task / "schedule.json"
+    # Honour per-task schedule_file override from the suite config (used by
+    # ablation suites); fall back to the canonical default path.
+    _schedule_file_override = task_config.get("schedule_file")
+    if _schedule_file_override is not None:
+        schedule_path = Path(_schedule_file_override)
+    else:
+        schedule_path = schedule_dir / task / "schedule.json"
     if not schedule_path.is_file():
         raise FileNotFoundError(
             f"Schedule not found at {schedule_path}. "
             f"Run calibration first or pass --schedule-dir."
         )
     schedule = BetaSchedule.from_file(schedule_path)
+
+    if schedule.T != horizon:
+        raise ValueError(
+            f"Schedule T={schedule.T} does not match task horizon={horizon} "
+            f"for task={task!r}. Regenerate the schedule or check the config."
+        )
 
     # -- Task 34: Extract event detection thresholds EXPLICITLY --------------
     event_thresholds = _get_event_thresholds(task, task_config, stress_type)
@@ -828,7 +883,11 @@ def run_single(
     )
 
     # -- Create Core --------------------------------------------------------
-    core = Core(agent, mdp_rl, callback_step=logger)
+    # Safe fields are logged in after_fit (callbacks_fit), not callback_step,
+    # because Core fires callback_step BEFORE agent.fit() — so swc.last_*
+    # would be stale by one transition if read in callback_step.
+    core = Core(agent, mdp_rl, callback_step=logger,
+                callbacks_fit=[logger.after_fit])
 
     # -- Training loop with checkpoints ------------------------------------
     print(

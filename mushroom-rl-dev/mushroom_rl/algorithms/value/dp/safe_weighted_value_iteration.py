@@ -183,6 +183,12 @@ class SafeWeightedValueIteration:
 
         # Safe weighted-LSE components.
         self._schedule = schedule
+        if schedule.T != self._T:
+            raise ValueError(
+                f"{type(self).__name__}: schedule.T={schedule.T} does not "
+                f"match MDP horizon={self._T}. The schedule must be "
+                "calibrated for this exact horizon."
+            )
         self._safe = SafeWeightedCommon(
             schedule, gamma=self._gamma, n_base=self._S
         )
@@ -194,6 +200,8 @@ class SafeWeightedValueIteration:
         self.pi: np.ndarray = pi0                        # (T, S)
 
         # Warm-start: copy caller-provided V table, then re-enforce terminal.
+        # Store v_init for use in run() warm-start.
+        self._v_init: np.ndarray | None = None
         if v_init is not None:
             v_init_arr = np.asarray(v_init, dtype=np.float64)
             if v_init_arr.shape != self.V.shape:
@@ -203,6 +211,7 @@ class SafeWeightedValueIteration:
                 )
             self.V[:] = v_init_arr
             self.V[self._T, :] = 0.0  # terminal boundary is always zero
+            self._v_init = self.V.copy()  # store the validated copy
 
         # Timing / logging scaffolding.
         self.residuals: List[float] = []
@@ -345,7 +354,10 @@ class SafeWeightedValueIteration:
         """
         # Reset tables so ``run()`` is idempotent.
         self.Q.fill(0.0)
-        self.V.fill(0.0)
+        if self._v_init is not None:
+            self.V[:] = self._v_init  # restore warm-start (terminal V[T,:]=0 already enforced in __init__)
+        else:
+            self.V.fill(0.0)
         self.pi.fill(0)
         self.residuals = []
         self.sweep_times_s = []

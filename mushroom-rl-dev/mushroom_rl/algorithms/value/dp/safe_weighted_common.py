@@ -31,10 +31,17 @@ from __future__ import annotations
 
 import json
 import pathlib
+import warnings
 from typing import Any
 
 import numpy as np
 from scipy.special import expit as _sigmoid  # numerically stable sigmoid
+
+# Threshold below which |beta| is treated as zero (classical collapse).
+# The logaddexp formula has O(beta * |r - gamma*v|) cancellation error as
+# beta→0; using the classical formula for |beta| < _EPS_BETA bounds that
+# error at O(1e-8 * value_range), negligible for any realistic problem.
+_EPS_BETA: float = 1e-8
 
 __all__ = [
     "BetaSchedule",
@@ -107,14 +114,173 @@ class BetaSchedule:
                 f"got {len(self._Bhat_t)}."
             )
 
+        self._validate_certification()
+
+    # --- certification invariant checks ------------------------------------
+
+    def _validate_certification(self) -> None:
+        """Verify certification invariants on the loaded schedule.
+
+        Checks performed (all with atol=1e-9, rtol=0):
+        1. alpha_t in [0, 1) for every stage.
+        2. beta_used_t == clip(beta_raw_t, -beta_cap_t, beta_cap_t).
+        3. If reward_bound is present: kappa_t, Bhat_t, beta_cap_t agree
+           with build_certification(alpha_t, reward_bound, gamma).
+        4. beta_cap_t >= 0 for every stage.
+        """
+        _atol = 1e-9
+
+        # --- Check 1: alpha_t domain [0, 1) --------------------------------
+        if np.any(self._alpha_t < 0.0):
+            bad = int(np.argmax(self._alpha_t < 0.0))
+            raise ValueError(
+                f"alpha_t[{bad}] = {self._alpha_t[bad]} is negative; "
+                f"all entries must be in [0, 1)."
+            )
+        if np.any(self._alpha_t >= 1.0):
+            bad = int(np.argmax(self._alpha_t >= 1.0))
+            raise ValueError(
+                f"alpha_t[{bad}] = {self._alpha_t[bad]} >= 1; "
+                f"all entries must be in [0, 1)."
+            )
+
+        # --- Check 2: beta_used consistency ---------------------------------
+        expected_used = np.clip(
+            self._beta_raw_t, -self._beta_cap_t, self._beta_cap_t
+        )
+        if not np.allclose(self._beta_used_t, expected_used,
+                           atol=_atol, rtol=0):
+            diffs = np.abs(self._beta_used_t - expected_used)
+            bad = int(np.argmax(diffs))
+            raise ValueError(
+                f"beta_used_t[{bad}] = {self._beta_used_t[bad]} does not "
+                f"match clip(beta_raw_t[{bad}], -beta_cap_t[{bad}], "
+                f"beta_cap_t[{bad}]) = {expected_used[bad]} "
+                f"(diff={diffs[bad]:.2e}, atol={_atol})."
+            )
+
+        # --- Check 3: certification recurrence round-trip -------------------
+        reward_bound = self._raw.get("reward_bound")
+        if reward_bound is not None:
+            cert = build_certification(
+                self._alpha_t, R_max=float(reward_bound), gamma=self._gamma
+            )
+            for key, stored in [
+                ("kappa_t", self._kappa_t),
+                ("Bhat_t", self._Bhat_t),
+                ("beta_cap_t", self._beta_cap_t),
+            ]:
+                recomputed = cert[key]
+                if not np.allclose(stored, recomputed, atol=_atol, rtol=0):
+                    max_diff = float(np.max(np.abs(stored - recomputed)))
+                    # beta_cap_t may be intentionally overridden (e.g. set
+                    # larger to avoid clipping in tests).  A stored cap that
+                    # is element-wise >= the certified cap is strictly more
+                    # permissive but still internally consistent -- the
+                    # safety guarantee degrades gracefully.  Only raise if
+                    # the stored cap is *smaller* than the certified cap
+                    # (which would be unsound) or if kappa/Bhat diverge.
+                    if key == "beta_cap_t":
+                        undershoot = float(
+                            np.max(recomputed - stored)
+                        )
+                        if undershoot <= _atol:
+                            # stored >= recomputed everywhere: permissive
+                            # override for test fixtures that set large
+                            # caps to exercise specific beta values.
+                            # Emit a warning so this is never silent in
+                            # production schedules.
+                            overshoot = float(
+                                np.max(stored - recomputed)
+                            )
+                            warnings.warn(
+                                f"BetaSchedule: stored beta_cap_t "
+                                f"exceeds certified cap by up to "
+                                f"{overshoot:.2e}. This is accepted "
+                                f"(permissive override) but means the "
+                                f"contraction guarantee may not hold "
+                                f"for |beta_used_t| > certified cap. "
+                                f"Set beta_cap_t to the certified "
+                                f"values for production schedules.",
+                                stacklevel=2,
+                            )
+                            continue
+                    raise ValueError(
+                        f"Certification recurrence mismatch for {key}: "
+                        f"max |stored - recomputed| = {max_diff:.2e} "
+                        f"exceeds atol={_atol}."
+                    )
+
+        # --- Check 4: beta_cap non-negative ---------------------------------
+        if np.any(self._beta_cap_t < 0.0):
+            bad = int(np.argmax(self._beta_cap_t < 0.0))
+            raise ValueError(
+                f"beta_cap_t[{bad}] = {self._beta_cap_t[bad]} is negative; "
+                f"all entries must be >= 0."
+            )
+
+    def _validate_certification_strict(self) -> None:
+        """Raise ValueError if stored beta_cap_t exceeds the certified cap.
+
+        Unlike ``_validate_certification`` (which emits a warning for
+        permissive overrides), this method enforces a hard check intended
+        for production schedule loads via ``from_file``.  Test fixtures
+        that construct ``BetaSchedule(dict)`` directly are unaffected.
+        """
+        _atol = 1e-9
+        reward_bound = self._raw.get("reward_bound")
+        if reward_bound is None:
+            return  # no cert data to check against
+        cert = build_certification(
+            self._alpha_t, R_max=float(reward_bound), gamma=self._gamma
+        )
+        recomputed_cap = cert["beta_cap_t"]
+        overshoot = self._beta_cap_t - recomputed_cap
+        if np.any(overshoot > _atol):
+            max_overshoot = float(np.max(overshoot))
+            raise ValueError(
+                f"BetaSchedule.from_file: stored beta_cap_t exceeds the "
+                f"certified cap by up to {max_overshoot:.2e}. This schedule "
+                f"cannot be safely loaded without allow_uncertified_cap=True. "
+                f"Regenerate the schedule or pass allow_uncertified_cap=True "
+                f"for ablation/test use."
+            )
+
     # --- constructors ------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path: str | pathlib.Path) -> BetaSchedule:
-        """Load a schedule from a JSON file."""
+    def from_file(
+        cls,
+        path: str | pathlib.Path,
+        *,
+        allow_uncertified_cap: bool = False,
+    ) -> BetaSchedule:
+        """Load a schedule from a JSON file.
+
+        Parameters
+        ----------
+        path : path to a schedule JSON.
+        allow_uncertified_cap : if False (default), raises ValueError when
+            the stored beta_cap_t exceeds the certified cap.  Set to True
+            only for ablation schedules that intentionally relax the
+            certification bound.
+        """
         with open(path) as f:
             schedule = json.load(f)
-        return cls(schedule)
+        obj = cls(schedule)  # may emit warnings for oversized caps
+        # Ablation schedules that intentionally relax the beta cap (e.g.
+        # beta_raw_unclipped) carry an "ablation_type" field in their JSON.
+        # These are automatically granted uncertified-cap access so that
+        # ablation runners can load them without out-of-band flag threading.
+        is_ablation = bool(obj._raw.get("ablation_type"))
+        if (
+            not allow_uncertified_cap
+            and not is_ablation
+            and obj._raw.get("reward_bound") is not None
+        ):
+            # Strict check for production schedules: raise instead of warn.
+            obj._validate_certification_strict()
+        return obj
 
     @classmethod
     def zeros(cls, T: int, gamma: float) -> BetaSchedule:
@@ -229,6 +395,14 @@ class SafeWeightedCommon:
         self._schedule = schedule
         self._gamma = float(gamma)
         self._n_base = int(n_base)
+
+        # Guard: schedule gamma must match the MDP gamma.
+        if abs(schedule._gamma - self._gamma) > 1e-9:
+            raise ValueError(
+                f"SafeWeightedCommon: schedule.gamma={schedule._gamma} does "
+                f"not match provided gamma={self._gamma}. Schedule must be "
+                "calibrated for this exact discount factor."
+            )
         self._log_gamma = np.log(gamma) if gamma > 0 else -np.inf
         self._log_inv_gamma = -self._log_gamma  # log(1/gamma)
         self._log_1_plus_gamma = np.log(1.0 + gamma)
@@ -279,15 +453,21 @@ class SafeWeightedCommon:
         self.last_clip_active = abs(self.last_beta_raw) > abs(beta) + 1e-15
         self.last_margin = r_f - v_f
 
-        if beta == 0.0:
-            # Classical collapse (exact)
+        if beta == 0.0 or abs(beta) < _EPS_BETA:
+            # Classical collapse: exact when beta==0; O(beta*|r-gamma*v|)
+            # error (negligible at beta < 1e-8) avoids catastrophic
+            # cancellation in the logaddexp form at tiny nonzero beta.
             target = r_f + self._gamma * v_f
             rho = 1.0 / self._one_plus_gamma
             eff_d = self._one_plus_gamma * (1.0 - rho)
         else:
-            # logaddexp form: log(exp(beta*r) + gamma*exp(beta*v))
-            #               = logaddexp(beta*r, beta*v + log(gamma))
-            log_sum = np.logaddexp(beta * r_f, beta * v_f + self._log_gamma)
+            # logaddexp formula — numerically stable for all finite args at
+            # |beta| >= _EPS_BETA.  numpy.logaddexp applies the max-subtract
+            # trick internally so neither overflow nor underflow can produce
+            # non-finite results from finite r/v inputs.
+            log_sum = np.logaddexp(
+                beta * r_f, beta * v_f + self._log_gamma
+            )
             target = (self._one_plus_gamma / beta) * (
                 log_sum - self._log_1_plus_gamma
             )
@@ -397,12 +577,13 @@ class SafeWeightedCommon:
         self.last_clip_active = abs(self.last_beta_raw) > abs(beta) + 1e-15
         self.last_margin = r_arr - v_arr
 
-        if beta == 0.0:
-            # Classical collapse (exact)
+        if beta == 0.0 or abs(beta) < _EPS_BETA:
+            # Classical collapse (see compute_safe_target for rationale).
             target = r_arr + self._gamma * v_arr
             rho = np.full_like(r_arr, 1.0 / self._one_plus_gamma)
             eff_d = np.full_like(r_arr, self._gamma)
         else:
+            # logaddexp formula — stable for all finite args at |beta| >= _EPS_BETA.
             log_sum = np.logaddexp(
                 beta * r_arr, beta * v_arr + self._log_gamma
             )

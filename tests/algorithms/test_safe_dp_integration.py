@@ -47,6 +47,7 @@ from mushroom_rl.algorithms.value.dp.safe_weighted_common import (
     BetaSchedule,
     build_certification,
 )
+from mushroom_rl.algorithms.value.dp import ClassicalValueIteration
 from mushroom_rl.algorithms.value.dp.safe_weighted_value_iteration import (
     SafeWeightedValueIteration,
 )
@@ -323,4 +324,145 @@ class TestSafeVSweepHistory:
             err_msg=(
                 "V_sweep_history[-1] must match the final V after run()."
             ),
+        )
+
+
+# =========================================================================
+# M1: schedule.T != mdp.horizon guard
+# =========================================================================
+
+class TestHorizonMismatchGuard:
+    """All five safe DP planners must raise ValueError when schedule.T != horizon."""
+
+    def _wrong_T_schedule(self) -> BetaSchedule:
+        """Schedule with T=3, but the MDP has T=5."""
+        return _make_direct_schedule(T=3, gamma=_GAMMA, beta_used_t=[0.5, 0.4, 0.3])
+
+    def test_vi_rejects_wrong_T(self, chain_mdp):
+        with pytest.raises(ValueError, match="schedule.T="):
+            SafeWeightedValueIteration(chain_mdp, schedule=self._wrong_T_schedule())
+
+    def test_pe_rejects_wrong_T(self, chain_mdp, all_zero_policy):
+        # PE needs a policy with matching T -- use T=5 policy, but pass T=3 schedule.
+        with pytest.raises(ValueError, match="schedule.T="):
+            SafeWeightedPolicyEvaluation(
+                chain_mdp, pi=all_zero_policy, schedule=self._wrong_T_schedule()
+            )
+
+    def test_pi_rejects_wrong_T(self, chain_mdp):
+        with pytest.raises(ValueError, match="does not match"):
+            SafeWeightedPolicyIteration(chain_mdp, schedule=self._wrong_T_schedule())
+
+    def test_mpi_rejects_wrong_T(self, chain_mdp):
+        with pytest.raises(ValueError, match="schedule.T="):
+            SafeWeightedModifiedPolicyIteration(
+                chain_mdp, schedule=self._wrong_T_schedule()
+            )
+
+    def test_async_vi_rejects_wrong_T(self, chain_mdp):
+        with pytest.raises(ValueError, match="schedule.T="):
+            SafeWeightedAsyncValueIteration(
+                chain_mdp, schedule=self._wrong_T_schedule()
+            )
+
+
+# =========================================================================
+# M2: schedule.gamma != mdp.gamma guard
+# =========================================================================
+
+class TestGammaMismatchGuard:
+    """All safe planners must raise ValueError when schedule.gamma != mdp.gamma."""
+
+    def _wrong_gamma_schedule(self) -> BetaSchedule:
+        """Schedule with gamma=0.95, but the MDP has gamma=0.99."""
+        return _make_direct_schedule(T=_HORIZON, gamma=0.95)
+
+    def test_vi_rejects_wrong_gamma(self, chain_mdp):
+        with pytest.raises(ValueError, match="schedule.gamma="):
+            SafeWeightedValueIteration(
+                chain_mdp, schedule=self._wrong_gamma_schedule()
+            )
+
+    def test_pe_rejects_wrong_gamma(self, chain_mdp, all_zero_policy):
+        with pytest.raises(ValueError, match="schedule.gamma="):
+            SafeWeightedPolicyEvaluation(
+                chain_mdp, pi=all_zero_policy,
+                schedule=self._wrong_gamma_schedule()
+            )
+
+    def test_pi_rejects_wrong_gamma(self, chain_mdp):
+        with pytest.raises(ValueError, match="schedule.gamma="):
+            SafeWeightedPolicyIteration(
+                chain_mdp, schedule=self._wrong_gamma_schedule()
+            )
+
+    def test_mpi_rejects_wrong_gamma(self, chain_mdp):
+        with pytest.raises(ValueError, match="schedule.gamma="):
+            SafeWeightedModifiedPolicyIteration(
+                chain_mdp, schedule=self._wrong_gamma_schedule()
+            )
+
+    def test_async_vi_rejects_wrong_gamma(self, chain_mdp):
+        with pytest.raises(ValueError, match="schedule.gamma="):
+            SafeWeightedAsyncValueIteration(
+                chain_mdp, schedule=self._wrong_gamma_schedule()
+            )
+
+
+# =========================================================================
+# M3: v_init warm-start preserved through run()
+# =========================================================================
+
+class TestVInitWarmStart:
+    """Safe VI with v_init set to classical solution must work correctly."""
+
+    def test_vi_warm_start_runs_without_error(self, chain_mdp, schedule):
+        """Safe VI with v_init = classical V runs without error."""
+        classical = ClassicalValueIteration(chain_mdp, n_sweeps=1).run()
+        vi = SafeWeightedValueIteration(
+            chain_mdp, schedule=schedule, n_sweeps=1, v_init=classical.V
+        ).run()
+        # Verify non-trivial output (not all zeros).
+        assert np.max(np.abs(vi.V[0])) > 0.0, (
+            "V[0] should be non-zero after warm-started safe VI."
+        )
+
+    def test_vi_warm_start_idempotent(self, chain_mdp, schedule):
+        """Calling run() twice on a warm-started VI gives the same result."""
+        classical = ClassicalValueIteration(chain_mdp, n_sweeps=1).run()
+        vi = SafeWeightedValueIteration(
+            chain_mdp, schedule=schedule, n_sweeps=1, v_init=classical.V
+        )
+        vi.run()
+        V_first = vi.V.copy()
+        vi.run()
+        V_second = vi.V.copy()
+        np.testing.assert_array_equal(
+            V_first, V_second,
+            err_msg="run() must be idempotent: warm-start restored on each call."
+        )
+
+    def test_vi_warm_start_v_init_not_zeroed(self, chain_mdp, schedule):
+        """The v_init is not discarded by run() -- V before backward pass is non-zero.
+
+        We verify this indirectly: with n_sweeps=2, the first sweep residual
+        should differ from the cold-start residual because the initial V is
+        non-zero.
+        """
+        # Cold start
+        vi_cold = SafeWeightedValueIteration(
+            chain_mdp, schedule=schedule, n_sweeps=2
+        ).run()
+
+        # Warm start with classical solution
+        classical = ClassicalValueIteration(chain_mdp, n_sweeps=1).run()
+        vi_warm = SafeWeightedValueIteration(
+            chain_mdp, schedule=schedule, n_sweeps=2, v_init=classical.V
+        ).run()
+
+        # The first-sweep residuals should differ because the starting V
+        # tables differ (zero vs classical).
+        assert vi_cold.residuals[0] != vi_warm.residuals[0], (
+            "First-sweep residuals should differ between cold and warm start, "
+            "proving v_init is not discarded."
         )

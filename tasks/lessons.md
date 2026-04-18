@@ -251,3 +251,44 @@ citing rho*(r,v) = sigma(beta*(r-v) + log(1/gamma)) from the paper.
 **Prevention rule**: (1) When deriving event detection thresholds from config, use explicit keys that are guaranteed to exist in the task config. If the key might not exist, fail loudly (KeyError) rather than defaulting silently. (2) Add a startup assertion that all required config keys for event detection are present: `assert "bonus_reward" in task_config` before deriving thresholds. (3) Log derived thresholds to `run.json` so post-hoc auditing can catch threshold mismatches.
 
 **Source incident**: Phase II Codex R8 reviews (019d9e60) -- `run_phase2_rl.py:623` uses absent `jackpot_reward` key with silent default. Triaged 2026-04-17 as MAJOR R8-4.
+
+
+---
+
+### 2026-04-18 — MushroomRL callback_step fires before agent.fit: reading agent state in callback_step yields stale values
+
+**Pattern**: `SafeTransitionLogger.__call__` (the callback_step hook) read `agent.swc.last_*` diagnostics to log safe fields alongside the current transition sample. But MushroomRL `Core._run()` calls `callback_step(sample)` at line 110 *before* `agent.fit(dataset)` at line 116. With `n_steps_per_fit=1`, every row in the safe transition log contains the *previous* update's safe diagnostics paired with the *current* transition's reward/state. The first row contains zero-initialized defaults. The bug is silent: shapes are correct, values are plausible, but they belong to different transitions. This corrupts all Phase III per-transition observability and can hide certification violations.
+
+**Prevention rule**: (1) Never read agent internals (mixin state, last-computed quantities) from `callback_step` — they reflect the previous fit call, not the current sample. (2) Use `callbacks_fit` (the post-fit hook, fired via `Core._run()` after `agent.fit()`) for any logging that depends on the agent's computed values for the current transition. (3) Concretely: split the logger into two methods — `__call__` (callback_step) logs only fields derivable from the raw sample (state, action, reward, next_state), and `after_fit(dataset)` (callbacks_fit) logs agent-computed diagnostics. (4) Add a smoke test that asserts `safe_stage[k]` matches the stage encoded in `aug_state[k]` for every transition k.
+
+**Source incident**: Phase III Codex R1 standard review (019da11e, P1) + adversarial review (019da120, high) — `callbacks.py:262-285` and `run_phase3_rl.py:338-360`. Fixed in commit 11f2189.
+
+---
+
+### 2026-04-18 — Certification R_max must be the configured absolute reward bound, not the empirical sample maximum
+
+**Pattern**: `build_schedule_from_phase12.py` set `R_max = float(cal["empirical_r_max"])` — the largest reward observed during Phase I/II calibration runs. The Phase III spec (S2.2, S5.9) requires `R_max` to be the configured absolute maximum reward for the task. If rare jackpot or catastrophe events were not observed during the finite-sample calibration runs, `empirical_r_max` underestimates the true bound, which underestimates `Bhat_t` (the certification-box radius) and produces a `beta_cap_t` that is too loose. The schedule JSON then advertises certified invariants that can be violated in deployment.
+
+**Prevention rule**: (1) `R_max` for certification must come from task configuration (the field that governs the reward generator), not from aggregate statistics of observed rewards. (2) Add `"reward_bound"` to every task-family config entry and fail loudly (raised exception or at minimum a `warnings.warn`) if only empirical data is available. (3) The schedule builder should log the source of `R_max` (`"configured"` vs `"empirical_fallback"`) in the emitted `schedule.json` so downstream audits can detect unsafe certification provenance.
+
+**Source incident**: Phase III Codex R1 adversarial review (019da120, high) — `build_schedule_from_phase12.py:116-119`. Fixed in commit 11f2189 by adding `reward_bound` parameter and populating it in `paper_suite.json`.
+
+---
+
+### 2026-04-18 — Schedule/MDP parameter mismatch (horizon, gamma) must be enforced at planner construction time
+
+**Pattern**: `SafeWeightedValueIteration` accepted any `BetaSchedule` and silently started indexing it during backward sweeps. If `schedule.T != mdp_horizon`, the planner either threw an off-by-one index error mid-run or silently ignored extra stages. If `schedule.gamma != mdp_gamma`, the certification coefficients (`kappa_t`, `Bhat_t`, `beta_cap_t`) were calibrated for a different discount and the invariant guarantees failed silently. `SafeWeightedPolicyIteration` already had the horizon guard; the other four planners did not.
+
+**Prevention rule**: (1) Every safe planner that consumes a `BetaSchedule` must validate at construction time (in `__init__`): `schedule.T == self._T` and `abs(schedule.gamma - self._gamma) <= 1e-9`. Raise `ValueError` immediately — do not defer to runtime. (2) Centralize this validation in `SafeWeightedCommon.__init__` so all subclasses inherit it automatically, rather than duplicating guards in each planner. (3) When adding a new planner, add a test that passes a schedule with wrong T and wrong gamma and asserts `ValueError` is raised before `run()` is called.
+
+**Source incident**: Phase III Codex R1 standard review (019da11e, P2) + adversarial review (019da120, medium) — `safe_weighted_value_iteration.py:169-188`. Fixed in commit 11f2189 with horizon check added to VI/PE/MPI/AsyncVI and gamma check added to `SafeWeightedCommon.__init__`.
+
+---
+
+### 2026-04-18 — Aggregation call sites written against assumed helper signatures without verification
+
+**Pattern**: `aggregate_phase3.py` called `save_json(data, path)` (reversed args), `save_npz_with_schema(arrays, path)` (missing schema arg), and `aggregate_safe_stats(stages, values, n_stages, quantiles=...)` (completely wrong signature -- actual is `(payload, T, gamma)`). All three calls were written to match an imagined API rather than the actual function signatures in `common/io.py` and `common/schemas.py`. The errors are invisible at import time and only surface at runtime when the aggregation path is actually exercised.
+
+**Prevention rule**: (1) Before writing a call to any helper function, read the callee's signature (at minimum the `def` line and parameter docstring). Never write calls from memory or assumed convention. (2) After writing aggregation code, add a minimal integration test that exercises the write path with a small synthetic dataset and asserts the output files are loadable. (3) For IO helpers, adopt a consistent convention (path-first or data-first) and document it in the module docstring. When wrapping third-party conventions, name parameters explicitly at call sites (`save_json(path=..., data=...)`).
+
+**Source incident**: Phase III Codex R2 standard review (019da19f, P1+P2) -- `aggregate_phase3.py:281-287` (reversed args) and `:461-463` (wrong API). Triaged 2026-04-18 as BLOCKERs R2-1 and R2-2.

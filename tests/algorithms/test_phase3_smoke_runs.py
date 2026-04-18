@@ -220,6 +220,10 @@ class TestSafeQLSmoke:
 
     def test_safe_transition_logger_accumulates(self, ql_agent):
         """SafeTransitionLogger accumulates 5 transitions with all 10 safe keys.
+
+        after_fit() must be called after each _update() to log safe
+        fields (mirrors the Core execution order: callback_step fires
+        before fit, callbacks_fit fires after fit).
         # docs/specs/phase_III_safe_weighted_lse_experiments.md SS8.4
         """
         n_base = 3
@@ -230,8 +234,6 @@ class TestSafeQLSmoke:
         for i in range(5):
             state = i % n_aug
             next_state = (i + 1) % n_aug
-            # _update populates swc fields
-            ql_agent._update(state, 0, 1.0, next_state, False)
             sample = (
                 np.array([state]),
                 np.array([0]),
@@ -240,7 +242,12 @@ class TestSafeQLSmoke:
                 False,
                 (i == 4),
             )
+            # Mirror Core order: callback_step (logger.__call__) BEFORE fit
             logger(sample)
+            # _update populates swc fields (simulates agent.fit)
+            ql_agent._update(state, 0, 1.0, next_state, False)
+            # after_fit fires AFTER fit
+            logger.after_fit([])
 
         payload = logger.build_safe_payload()
 
@@ -274,6 +281,61 @@ class TestSafeQLSmoke:
         ql_agent._update(0, 0, 1.0, 1, False)
         ed = float(ql_agent.swc.last_effective_discount)
         assert ed > 0.0, f"last_effective_discount = {ed}, expected > 0"
+
+    def test_safe_stage_alignment_with_augmented_state(self, ql_agent):
+        """safe_stage[k] must match the stage decoded from aug_state at step k.
+
+        This verifies that the after_fit() hook logs safe fields from
+        the CURRENT update (not stale values from the previous one).
+        With n_base=3, aug_id = stage * n_base + base_state, so:
+          - step 0: aug_id=0 -> stage=0
+          - step 1: aug_id=3 -> stage=1
+          - step 2: aug_id=6 -> stage=2
+        # docs/specs/phase_III_safe_weighted_lse_experiments.md SS8.4
+        """
+        n_base = 3
+        gamma = 0.9
+        logger = SafeTransitionLogger(ql_agent, n_base=n_base, gamma=gamma)
+
+        # 3 transitions stepping through stages 0, 1, 2
+        transitions = [
+            # (aug_id, action, reward, next_aug_id, absorbing, last)
+            (0, 0, 0.5, 3, False, False),   # stage 0
+            (3, 0, 0.5, 6, False, False),   # stage 1
+            (6, 0, 1.0, 9, False, True),    # stage 2
+        ]
+
+        for aug_id, action, reward, next_aug_id, absorbing, last in transitions:
+            sample = (
+                np.array([aug_id]),
+                np.array([action]),
+                reward,
+                np.array([next_aug_id]),
+                absorbing,
+                last,
+            )
+            # Mirror Core order: callback_step BEFORE fit
+            logger(sample)
+            # agent.fit (simulated by direct _update)
+            ql_agent._update(aug_id, action, reward, next_aug_id, absorbing)
+            # after_fit AFTER fit
+            logger.after_fit([])
+
+        # Base and safe lists must have same length
+        assert len(logger._safe_stage) == len(logger._state), (
+            f"safe_stage has {len(logger._safe_stage)} entries but "
+            f"base _state has {len(logger._state)} entries"
+        )
+
+        # safe_stage[k] must match the stage decoded from aug_id at step k
+        expected_stages = [0, 1, 2]
+        for k, (expected, actual) in enumerate(
+            zip(expected_stages, logger._safe_stage)
+        ):
+            assert actual == expected, (
+                f"safe_stage[{k}] = {actual}, expected {expected} "
+                f"(aug_id={transitions[k][0]}, n_base={n_base})"
+            )
 
 
 # ===========================================================================

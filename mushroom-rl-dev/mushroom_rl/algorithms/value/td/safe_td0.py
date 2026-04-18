@@ -49,9 +49,16 @@ class SafeTD0(SafeWeightedLSEBase, TD):
         Q = Table(mdp_info.size)
         TD.__init__(self, mdp_info, policy, Q, learning_rate)
         self._safe_init(schedule, n_base)
+        self._schedule_dict = schedule._raw  # JSON-serializable dict
         self._add_save_attr(
-            _schedule='none', _n_base='primitive', _swc='none',
+            _schedule_dict='primitive', _n_base='primitive', _swc='none',
         )
+
+    def _post_load(self):
+        super()._post_load()
+        from mushroom_rl.algorithms.value.dp.safe_weighted_common import BetaSchedule
+        schedule = BetaSchedule(self._schedule_dict)
+        self._safe_init(schedule, self._n_base)
 
     def _update(self, state, action, reward, next_state, absorbing):
         # Current value estimate: V(s) = E_pi[Q(s, .)]
