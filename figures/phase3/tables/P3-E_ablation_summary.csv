@@ -1,0 +1,25 @@
+task,algorithm,ablation,auc_disc_return
+chain_sparse_long,SafeQLearning,main,15.327 +/- 0.488
+chain_sparse_long,SafeExpectedSARSA,main,15.464 +/- 0.555
+chain_sparse_long,SafeQLearning,beta_zero,15.327 +/- 0.437
+chain_sparse_long,SafeExpectedSARSA,beta_zero,15.464 +/- 0.497
+chain_sparse_long,SafeQLearning,beta_constant_small,15.375 +/- 0.501
+chain_sparse_long,SafeExpectedSARSA,beta_constant_small,15.446 +/- 0.565
+chain_sparse_long,SafeQLearning,alpha_0.05,15.327 +/- 0.437
+chain_sparse_long,SafeExpectedSARSA,alpha_0.05,15.464 +/- 0.497
+chain_jackpot,SafeQLearning,main,1.268 +/- 0.099
+chain_jackpot,SafeExpectedSARSA,main,1.268 +/- 0.099
+chain_jackpot,SafeQLearning,beta_zero,1.268 +/- 0.089
+chain_jackpot,SafeExpectedSARSA,beta_zero,1.268 +/- 0.089
+chain_jackpot,SafeQLearning,beta_constant_small,1.268 +/- 0.089
+chain_jackpot,SafeExpectedSARSA,beta_constant_small,1.268 +/- 0.089
+chain_jackpot,SafeQLearning,alpha_0.05,1.268 +/- 0.089
+chain_jackpot,SafeExpectedSARSA,alpha_0.05,1.268 +/- 0.089
+chain_catastrophe,SafeQLearning,main,2.125 +/- 0.394
+chain_catastrophe,SafeExpectedSARSA,main,2.073 +/- 0.216
+chain_catastrophe,SafeQLearning,beta_zero,1.990 +/- 0.454
+chain_catastrophe,SafeExpectedSARSA,beta_zero,1.836 +/- 0.420
+chain_catastrophe,SafeQLearning,beta_constant_small,2.375 +/- 0.305
+chain_catastrophe,SafeExpectedSARSA,beta_constant_small,2.452 +/- 0.388
+chain_catastrophe,SafeQLearning,alpha_0.05,2.154 +/- 0.339
+chain_catastrophe,SafeExpectedSARSA,alpha_0.05,2.046 +/- 0.431
