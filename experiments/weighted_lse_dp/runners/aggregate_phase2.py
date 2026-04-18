@@ -1223,18 +1223,22 @@ def build_calibration_json(
         chosen_q = raw_mq if raw_mq is not None else fallback_q
         if chosen_q is not None:
             n_q = len(chosen_q.get("q50", []))
-            # stagewise["stage"] includes the terminal step (len = horizon+1),
-            # but raw_margin_quantiles has horizon entries.  Clip to n_q so
-            # stages and quantile arrays are always the same length.
+            n_s = len(stage_vals) if isinstance(stage_vals, list) else n_q
+            # Align stages and quantile arrays to the shorter of the two.
+            # stagewise["stage"] includes the terminal step (len = horizon+1)
+            # while raw_margin_quantiles has horizon entries → clip stages.
+            # For grid tasks, _compute_margin_quantiles_from_transitions can
+            # produce more quantile entries than stagewise stages → clip quantiles.
+            n_align = min(n_q, n_s)
             stages_for_q = (
-                stage_vals[:n_q] if isinstance(stage_vals, list)
-                else list(range(n_q))
+                stage_vals[:n_align] if isinstance(stage_vals, list)
+                else list(range(n_align))
             )
             margin_quantiles_top = {
                 "stages": stages_for_q,
-                "q05": chosen_q.get("q05", []),
-                "q50": chosen_q.get("q50", []),
-                "q95": chosen_q.get("q95", []),
+                "q05": (chosen_q.get("q05") or [])[:n_align],
+                "q50": (chosen_q.get("q50") or [])[:n_align],
+                "q95": (chosen_q.get("q95") or [])[:n_align],
             }
 
     doc: dict[str, Any] = {
