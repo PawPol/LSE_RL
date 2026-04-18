@@ -245,7 +245,23 @@ def aggregate_group(
 
     # ----- scalar metrics -----
     per_seed_scalars = _collect_scalar_metrics(seed_dirs)
-    agg_scalars = aggregate(per_seed_scalars) if per_seed_scalars else {}
+    # aggregate() takes a 1-D numpy array of seed values per key.
+    # per_seed_scalars is a List[Dict[str, float]]; collect per-key arrays.
+    agg_scalars: Dict[str, Any] = {}
+    if len(per_seed_scalars) >= 2:
+        all_keys = set().union(*(d.keys() for d in per_seed_scalars))
+        for key in sorted(all_keys):
+            vals = [d[key] for d in per_seed_scalars if key in d and isinstance(d[key], float)]
+            if len(vals) >= 2:
+                arr = np.array(vals, dtype=np.float64)
+                result = aggregate(arr)
+                agg_scalars[key] = {
+                    k: float(v) if isinstance(v, (float, np.floating)) else v
+                    for k, v in result.items()
+                }
+    elif len(per_seed_scalars) == 1:
+        for key, val in per_seed_scalars[0].items():
+            agg_scalars[key] = {"mean": float(val), "n_seeds": 1}
 
     # ----- curves -----
     agg_curves = _aggregate_curves(seed_dirs, algorithm)
