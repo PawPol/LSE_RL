@@ -523,24 +523,9 @@ def _make_table_p1d(
 
     gamma_primes = sorted(all_gp)
 
-    lines_tex = [
-        r"\begin{table}[t]",
-        r"\centering",
-        r"\caption{Phase I discount-factor ($\gamma'$) ablation. "
-        r"Percentile bootstrap 95\% CI over seeds.}",
-        r"\label{tab:p1d}",
-        r"\begin{tabular}{llccc}",
-        r"\toprule",
-        r"Task & Algorithm & $\gamma'$ & Disc.\ Return & AUC \\",
-        r"\midrule",
-    ]
-
-    lines_md = [
-        "## Table P1-D: Discount Ablation",
-        "",
-        "| Task | Algorithm | gamma' | Disc Return | AUC |",
-        "|------|-----------|--------|-------------|-----|",
-    ]
+    # Split into two sub-tables: DP (residual + sweeps) and RL (return + AUC).
+    # Using shared column headers for incompatible quantities (e.g. "Disc Return"
+    # for both residuals and returns) is misleading — keep them separate.
 
     # Collect all (task, algo) pairs that appear.
     seen_pairs: list[tuple[str, str]] = []
@@ -549,50 +534,112 @@ def _make_table_p1d(
         if pair not in seen_pairs:
             seen_pairs.append(pair)
 
-    # Sort by task order, then algorithm.
     task_rank = {t: i for i, t in enumerate(_TASK_ORDER)}
     all_algos = list(_DP_ALGORITHMS) + list(_RL_ALGORITHMS)
     algo_rank = {a: i for i, a in enumerate(all_algos)}
     seen_pairs.sort(key=lambda p: (task_rank.get(p[0], 99), algo_rank.get(p[1], 99)))
 
-    prev_task = None
-    for task_name, algo in seen_pairs:
-        for gp in gamma_primes:
-            g = idx.get((task_name, algo, gp))
-            if g is None:
-                continue
+    dp_pairs = [(t, a) for t, a in seen_pairs if a in _DP_ALGORITHMS]
+    rl_pairs = [(t, a) for t, a in seen_pairs if a in _RL_ALGORITHMS]
 
-            task_col = _task_display(task_name) if task_name != prev_task else ""
-            task_col_md = _task_display_md(task_name) if task_name != prev_task else ""
-            prev_task = task_name
+    def _dp_block_tex() -> list[str]:
+        lines = [
+            r"\begin{table}[t]",
+            r"\centering",
+            r"\caption{Phase I DP discount-factor ($\gamma'$) ablation: "
+            r"final Bellman residual and sweep count. "
+            r"Percentile bootstrap 95\% CI over seeds.}",
+            r"\label{tab:p1d-dp}",
+            r"\begin{tabular}{llccc}",
+            r"\toprule",
+            r"Task & Algorithm & $\gamma'$ & Bellman Residual & Sweeps \\",
+            r"\midrule",
+        ]
+        prev_task = None
+        for task_name, algo in dp_pairs:
+            for gp in gamma_primes:
+                g = idx.get((task_name, algo, gp))
+                if g is None:
+                    continue
+                task_col = _task_display(task_name) if task_name != prev_task else ""
+                prev_task = task_name
+                residual = _fmt_sci(_get_metric(g, "final_bellman_residual"))
+                sweeps = _fmt_int_mean(_get_metric(g, "n_sweeps"))
+                lines.append(f"  {task_col} & {_algo_display(algo)} & {gp:.2f} & {residual} & {sweeps} \\\\")
+        lines.extend([r"\bottomrule", r"\end{tabular}", r"\end{table}"])
+        return lines
 
-            # For DP algos, show residual in the "Disc Return" column;
-            # for RL algos, show the actual discounted return.
-            if algo in _DP_ALGORITHMS:
-                disc_ret = _fmt_sci(_get_metric(g, "final_bellman_residual"))
-                disc_ret_md = _fmt_sci_md(_get_metric(g, "final_bellman_residual"))
-                auc_val = _fmt_int_mean(_get_metric(g, "n_sweeps"))
-                auc_val_md = auc_val
-            else:
+    def _rl_block_tex() -> list[str]:
+        lines = [
+            r"\begin{table}[t]",
+            r"\centering",
+            r"\caption{Phase I RL discount-factor ($\gamma'$) ablation: "
+            r"final discounted return and AUC (transitions). "
+            r"Percentile bootstrap 95\% CI over seeds.}",
+            r"\label{tab:p1d-rl}",
+            r"\begin{tabular}{llccc}",
+            r"\toprule",
+            r"Task & Algorithm & $\gamma'$ & Disc.\ Return & AUC (transitions) \\",
+            r"\midrule",
+        ]
+        prev_task = None
+        for task_name, algo in rl_pairs:
+            for gp in gamma_primes:
+                g = idx.get((task_name, algo, gp))
+                if g is None:
+                    continue
+                task_col = _task_display(task_name) if task_name != prev_task else ""
+                prev_task = task_name
                 disc_ret = _fmt_mean_ci(_get_metric(g, "final_disc_return_mean"), fmt=".3f")
-                disc_ret_md = _fmt_mean_ci_md(_get_metric(g, "final_disc_return_mean"), fmt=".3f")
                 auc_val = _fmt_mean_ci(_get_metric(g, "auc_disc_return"), fmt=".0f")
-                auc_val_md = _fmt_mean_ci_md(_get_metric(g, "auc_disc_return"), fmt=".0f")
+                lines.append(f"  {task_col} & {_algo_display(algo)} & {gp:.2f} & {disc_ret} & {auc_val} \\\\")
+        lines.extend([r"\bottomrule", r"\end{tabular}", r"\end{table}"])
+        return lines
 
-            lines_tex.append(
-                f"  {task_col} & {_algo_display(algo)} & {gp:.2f} "
-                f"& {disc_ret} & {auc_val} \\\\"
-            )
-            lines_md.append(
-                f"| {task_col_md} | {_algo_display(algo)} | {gp:.2f} "
-                f"| {disc_ret_md} | {auc_val_md} |"
-            )
+    def _dp_block_md() -> list[str]:
+        lines = [
+            "### Table P1-D (DP): Bellman Residual and Sweeps vs gamma'",
+            "",
+            "| Task | Algorithm | gamma' | Bellman Residual | Sweeps |",
+            "|------|-----------|--------|-----------------|--------|",
+        ]
+        prev_task = None
+        for task_name, algo in dp_pairs:
+            for gp in gamma_primes:
+                g = idx.get((task_name, algo, gp))
+                if g is None:
+                    continue
+                task_col = _task_display_md(task_name) if task_name != prev_task else ""
+                prev_task = task_name
+                residual = _fmt_sci_md(_get_metric(g, "final_bellman_residual"))
+                sweeps = _fmt_int_mean(_get_metric(g, "n_sweeps"))
+                lines.append(f"| {task_col} | {_algo_display(algo)} | {gp:.2f} | {residual} | {sweeps} |")
+        return lines
 
-    lines_tex.extend([
-        r"\bottomrule",
-        r"\end{tabular}",
-        r"\end{table}",
-    ])
+    def _rl_block_md() -> list[str]:
+        lines = [
+            "",
+            "### Table P1-D (RL): Discounted Return and AUC (transitions) vs gamma'",
+            "",
+            "| Task | Algorithm | gamma' | Disc Return | AUC (transitions) |",
+            "|------|-----------|--------|-------------|-------------------|",
+        ]
+        prev_task = None
+        for task_name, algo in rl_pairs:
+            for gp in gamma_primes:
+                g = idx.get((task_name, algo, gp))
+                if g is None:
+                    continue
+                task_col = _task_display_md(task_name) if task_name != prev_task else ""
+                prev_task = task_name
+                disc_ret = _fmt_mean_ci_md(_get_metric(g, "final_disc_return_mean"), fmt=".3f")
+                auc_val = _fmt_mean_ci_md(_get_metric(g, "auc_disc_return"), fmt=".0f")
+                lines.append(f"| {task_col} | {_algo_display(algo)} | {gp:.2f} | {disc_ret} | {auc_val} |")
+        return lines
+
+    header_md = ["## Table P1-D: Discount Ablation", ""]
+    lines_tex = _dp_block_tex() + ["", "% --- RL sub-table ---", ""] + _rl_block_tex()
+    lines_md = header_md + _dp_block_md() + _rl_block_md()
 
     return "\n".join(lines_tex) + "\n", "\n".join(lines_md) + "\n"
 

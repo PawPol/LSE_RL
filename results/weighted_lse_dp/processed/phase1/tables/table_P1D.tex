@@ -1,10 +1,10 @@
 \begin{table}[t]
 \centering
-\caption{Phase I discount-factor ($\gamma'$) ablation. Percentile bootstrap 95\% CI over seeds.}
-\label{tab:p1d}
+\caption{Phase I DP discount-factor ($\gamma'$) ablation: final Bellman residual and sweep count. Percentile bootstrap 95\% CI over seeds.}
+\label{tab:p1d-dp}
 \begin{tabular}{llccc}
 \toprule
-Task & Algorithm & $\gamma'$ & Disc.\ Return & AUC \\
+Task & Algorithm & $\gamma'$ & Bellman Residual & Sweeps \\
 \midrule
   chain\_base & PE & 0.90 & 9.9e-07 $\pm$ 2.0e-07 & 66 \\
    & PE & 0.95 & 2.4e-07 $\pm$ 4.8e-08 & 33 \\
@@ -21,12 +21,6 @@ Task & Algorithm & $\gamma'$ & Disc.\ Return & AUC \\
    & Async VI & 0.90 & 3.2e-08 $\pm$ 6.3e-09 & 58 \\
    & Async VI & 0.95 & 1.5e-06 $\pm$ 2.9e-07 & 21 \\
    & Async VI & 0.99 & 3.0e-08 $\pm$ 6.1e-09 & 20 \\
-   & Q-Learning & 0.90 & 0.569 $\pm$ 0.057 & 87810 $\pm$ 8781 \\
-   & Q-Learning & 0.95 & 0.671 $\pm$ 0.067 & 63941 $\pm$ 6394 \\
-   & Q-Learning & 0.99 & 0.784 $\pm$ 0.078 & 81710 $\pm$ 8171 \\
-   & Exp. SARSA & 0.90 & 0.553 $\pm$ 0.055 & 107459 $\pm$ 10746 \\
-   & Exp. SARSA & 0.95 & 0.909 $\pm$ 0.091 & 140834 $\pm$ 14083 \\
-   & Exp. SARSA & 0.99 & 0.936 $\pm$ 0.079 & 156158 $\pm$ 15616 \\
   grid\_base & PE & 0.90 & 2.2e-07 $\pm$ 4.5e-08 & 31 \\
    & PE & 0.95 & 1.9e-08 $\pm$ 3.9e-09 & 61 \\
    & PE & 0.99 & 4.0e-08 $\pm$ 8.1e-09 & 23 \\
@@ -42,12 +36,6 @@ Task & Algorithm & $\gamma'$ & Disc.\ Return & AUC \\
    & Async VI & 0.90 & 7.5e-06 $\pm$ 1.5e-06 & 34 \\
    & Async VI & 0.95 & 2.2e-06 $\pm$ 4.5e-07 & 16 \\
    & Async VI & 0.99 & 3.0e-07 $\pm$ 5.9e-08 & 32 \\
-   & Q-Learning & 0.90 & 0.757 $\pm$ 0.076 & 91648 $\pm$ 9165 \\
-   & Q-Learning & 0.95 & 0.620 $\pm$ 0.062 & 61850 $\pm$ 6185 \\
-   & Q-Learning & 0.99 & 0.698 $\pm$ 0.070 & 37137 $\pm$ 3714 \\
-   & Exp. SARSA & 0.90 & 0.872 $\pm$ 0.087 & 160787 $\pm$ 16079 \\
-   & Exp. SARSA & 0.95 & 0.749 $\pm$ 0.075 & 49669 $\pm$ 4967 \\
-   & Exp. SARSA & 0.99 & 0.803 $\pm$ 0.080 & 73979 $\pm$ 7398 \\
   taxi\_base & PE & 0.90 & 1.5e-06 $\pm$ 3.0e-07 & 57 \\
    & PE & 0.95 & 5.6e-06 $\pm$ 1.1e-06 & 35 \\
    & PE & 0.99 & 1.3e-08 $\pm$ 2.6e-09 & 22 \\
@@ -63,7 +51,33 @@ Task & Algorithm & $\gamma'$ & Disc.\ Return & AUC \\
    & Async VI & 0.90 & 1.7e-06 $\pm$ 3.5e-07 & 58 \\
    & Async VI & 0.95 & 5.3e-08 $\pm$ 1.1e-08 & 15 \\
    & Async VI & 0.99 & 3.1e-06 $\pm$ 6.2e-07 & 75 \\
-   & Q-Learning & 0.90 & 0.581 $\pm$ 0.058 & 81240 $\pm$ 8124 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% --- RL sub-table ---
+
+\begin{table}[t]
+\centering
+\caption{Phase I RL discount-factor ($\gamma'$) ablation: final discounted return and AUC (transitions). Percentile bootstrap 95\% CI over seeds.}
+\label{tab:p1d-rl}
+\begin{tabular}{llccc}
+\toprule
+Task & Algorithm & $\gamma'$ & Disc.\ Return & AUC (transitions) \\
+\midrule
+  chain\_base & Q-Learning & 0.90 & 0.569 $\pm$ 0.057 & 87810 $\pm$ 8781 \\
+   & Q-Learning & 0.95 & 0.671 $\pm$ 0.067 & 63941 $\pm$ 6394 \\
+   & Q-Learning & 0.99 & 0.784 $\pm$ 0.078 & 81710 $\pm$ 8171 \\
+   & Exp. SARSA & 0.90 & 0.553 $\pm$ 0.055 & 107459 $\pm$ 10746 \\
+   & Exp. SARSA & 0.95 & 0.909 $\pm$ 0.091 & 140834 $\pm$ 14083 \\
+   & Exp. SARSA & 0.99 & 0.936 $\pm$ 0.079 & 156158 $\pm$ 15616 \\
+  grid\_base & Q-Learning & 0.90 & 0.757 $\pm$ 0.076 & 91648 $\pm$ 9165 \\
+   & Q-Learning & 0.95 & 0.620 $\pm$ 0.062 & 61850 $\pm$ 6185 \\
+   & Q-Learning & 0.99 & 0.698 $\pm$ 0.070 & 37137 $\pm$ 3714 \\
+   & Exp. SARSA & 0.90 & 0.872 $\pm$ 0.087 & 160787 $\pm$ 16079 \\
+   & Exp. SARSA & 0.95 & 0.749 $\pm$ 0.075 & 49669 $\pm$ 4967 \\
+   & Exp. SARSA & 0.99 & 0.803 $\pm$ 0.080 & 73979 $\pm$ 7398 \\
+  taxi\_base & Q-Learning & 0.90 & 0.581 $\pm$ 0.058 & 81240 $\pm$ 8124 \\
    & Q-Learning & 0.95 & 0.588 $\pm$ 0.059 & 56809 $\pm$ 5681 \\
    & Q-Learning & 0.99 & 0.850 $\pm$ 0.085 & 166375 $\pm$ 16638 \\
    & Exp. SARSA & 0.90 & 0.565 $\pm$ 0.056 & 29418 $\pm$ 2942 \\

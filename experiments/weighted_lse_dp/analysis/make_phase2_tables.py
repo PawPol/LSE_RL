@@ -402,25 +402,30 @@ def make_table_p2c(
     phase1_root: Path,
     out_dir: Path,
 ) -> list[Path]:
-    """Generate Table P2-C: RL degradation vs Phase I base."""
+    """Generate Table P2-C: RL performance on stress tasks.
+
+    Note: delta_vs_base is omitted because Phase I aggregated summaries
+    (phase1/aggregated/) are not available in this run.  The column will
+    be populated once Phase I RL experiments are executed and aggregated.
+    """
     tex_lines = [
         r"\begin{table}[t]",
         r"\centering",
         r"\caption{Phase II classical RL performance on stress tasks.  "
-        r"Delta is difference vs.\ Phase I base.  "
-        r"Percentile bootstrap 95\% CI over seeds.}",
+        r"Percentile bootstrap 95\% CI over seeds.  "
+        r"$\Delta$ vs Phase I base not reported: Phase I aggregated "
+        r"summaries unavailable in this run (different task families).}",
         r"\label{tab:p2c}",
-        r"\begin{tabular}{llccccc}",
+        r"\begin{tabular}{llcccc}",
         r"\toprule",
-        r"Task & Algorithm & Mean return & Std & IQR "
-        r"& $\Delta$ vs base & Event rate \\",
+        r"Task & Algorithm & Mean return & Std & IQR & Event rate \\",
         r"\midrule",
     ]
 
     csv_rows: list[list[str]] = []
     csv_rows.append([
         "task", "algorithm", "mean_return", "std", "iqr",
-        "delta_vs_base", "event_rate",
+        "event_rate",
     ])
 
     # Map stress task -> Phase I base task name.
@@ -463,33 +468,19 @@ def make_table_p2c(
             else:
                 event_rate = None
 
-            # Compute delta vs Phase I base.
-            delta_str_tex = "--"
-            delta_str_csv = ""
-            base_task = _base_task_map.get(task)
-            if base_task is not None:
-                base_summary = _load_phase1_summary(phase1_root, base_task, algo)
-                base_mean = _get(base_summary, "scalar_metrics",
-                                 "final_disc_return_mean", "mean")
-                stress_mean = mean_ret.get("mean") if isinstance(mean_ret, dict) else mean_ret
-                if base_mean is not None and stress_mean is not None:
-                    delta = stress_mean - base_mean
-                    delta_str_tex = f"{delta:+.3f}"
-                    delta_str_csv = f"{delta:+.3f}"
-
             task_col = _task_tex(task) if task != prev_task else ""
             prev_task = task
 
             tex_lines.append(
                 f"  {task_col} & {_algo_display(algo)} "
                 f"& {_fmt_mean_ci(mean_ret)} & {_fmt_mean_ci(std_ret)} "
-                f"& {_fmt_mean_ci(iqr_ret)} & {delta_str_tex} "
+                f"& {_fmt_mean_ci(iqr_ret)} "
                 f"& {_fmt_mean_ci(event_rate, fmt='.3f')} \\\\"
             )
             csv_rows.append([
                 task, algo,
                 _fmt_plain(mean_ret), _fmt_plain(std_ret),
-                _fmt_plain(iqr_ret), delta_str_csv,
+                _fmt_plain(iqr_ret),
                 _fmt_plain(event_rate, fmt=".3f"),
             ])
 
@@ -498,9 +489,9 @@ def make_table_p2c(
 
     if not has_data:
         tex_lines.append(
-            r"  \multicolumn{7}{c}{\emph{No Phase II RL run data available yet.}} \\"
+            r"  \multicolumn{6}{c}{\emph{No Phase II RL run data available yet.}} \\"
         )
-        csv_rows.append(["(no data)", "", "", "", "", "", ""])
+        csv_rows.append(["(no data)", "", "", "", "", ""])
 
     tex_lines.extend([
         r"\bottomrule",
