@@ -494,11 +494,15 @@ def fig_adaptation_plots(
                 ax.set_title(task.replace("_", " "))
                 continue
 
-        # Rolling mean.
+        # Rolling mean.  np.convolve(mode="valid") produces n-window+1 values;
+        # value i represents episodes[i..i+window-1].  Right-align so each
+        # value is plotted at the LAST episode in its window (episodes[i+window-1]).
+        # This keeps the change_at_episode marker correctly aligned with the
+        # plotted recovery trajectory (R9-1 fix).
         if len(returns) >= window:
             kernel = np.ones(window) / window
             rolling = np.convolve(returns, kernel, mode="valid")
-            ep_rolling = episodes[:len(rolling)]
+            ep_rolling = episodes[window - 1 : window - 1 + len(rolling)]
         else:
             rolling = returns
             ep_rolling = episodes
