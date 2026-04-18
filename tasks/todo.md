@@ -1132,3 +1132,42 @@ DISPUTE: 0
 All 6 findings are genuine and new (not duplicates of R3 items). All 4 BLOCKERs must be resolved before Phase II can close. R4-1 and R4-2 are metric correctness issues that invalidate reported results. R4-3 and R4-4 are calibration integrity issues that would propagate bad inputs to Phase III schedule construction.
 
 Next: fix BLOCKERs R4-1 through R4-4, then MAJORs R4-5 and R4-6, then re-run `/lse:review II` for R5.
+
+---
+
+## R5 triage (2026-04-17)
+
+Sources: `results/processed/codex_reviews/phase_II/adversarial_r5a.md`, `adversarial_r5b.md`
+
+- [ ] [BLOCKER] R5-1 [env] `grid_sparse_goal` is identical to `grid_base` under paper_suite defaults — `experiments/weighted_lse_dp/tasks/stress_families.py:267-272`, `experiments/weighted_lse_dp/configs/phase2/paper_suite.json:88-100` — Redesign `grid_sparse_goal` so the paper-suite instance differs from `grid_base` (e.g. set `goal_reward=10.0` and/or add `step_penalty=-0.01`), then add a degradation test in `tests/environments/test_phase2_stress_tasks.py` that asserts the stress MDP's reward table is not element-wise equal to the base MDP's reward table. Acceptance criterion: `stress_families.make_grid_sparse_goal(cfg=paper_suite_defaults)` returns an MDP whose `R` matrix differs from `base_families.make_grid_base()` in at least one (s,a) entry, AND the degradation test fails if they are identical. -> `env-builder`
+      (codex-session: review-mo3lol08-fchzjo, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#5.2A)
+
+- [ ] [BLOCKER] R5-2 [calibration] Phase III calibration quantiles fabricated from summary statistics (q25=q05, q75=q95) — `experiments/weighted_lse_dp/runners/aggregate_phase2.py:893-935` — Extend `TRANSITIONS_ARRAYS` or `calibration_stats.npz` to store raw per-stage `aligned_positive` and `aligned_negative` sample arrays (or per-stage quantile sketches with at least 5 quantile points). Rewrite the calibration builder to compute `q05/q25/q50/q75/q95` from pooled raw aligned-margin samples instead of approximating from `q05/q50/q95` envelopes. Acceptance criterion: `pos_margin_quantiles` and `neg_margin_quantiles` in every calibration JSON are computed from true per-transition aligned margins; `q25 != q05` and `q75 != q95` when the underlying distribution is non-degenerate. -> `calibration-engineer`
+      (codex-session: review-mo3lol08-fchzjo + 019d9dfe-2651, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#12)
+      NOTE: supersedes R4-3 which identified the same root cause but the fix was incomplete (stored per-transition margin_beta0 quantiles but still approximated q25/q75).
+
+- [ ] [MAJOR] R5-3 [logging] Regime-shift DP runs keyed under synthetic task names that break family-level calibration grouping — `experiments/weighted_lse_dp/runners/run_phase2_dp.py:592-649` — Keep `task` field in `run.json` as the canonical family name (`chain_regime_shift`, `grid_regime_shift`) and add a separate `regime_phase` field (`pre_shift` / `post_shift`). Update `aggregate_phase2.py` grouping logic to merge pre/post into a single family-level calibration document. Acceptance criterion: `results/weighted_lse_dp/phase2/calibration/chain_regime_shift.json` exists as a single file (not fragmented into `*_pre_shift.json` / `*_post_shift.json`), and pre/post statistics appear as sub-keys within it. -> `experiment-runner`
+      (codex-session: review-mo3lol08-fchzjo, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#12)
+
+- [ ] [MAJOR] R5-4 [logging] Phase II event arrays not enforced in transitions schema — `experiments/weighted_lse_dp/common/schemas.py:482-500` — Add a Phase II required-keys set (`jackpot_event`, `catastrophe_event`, `regime_post_change`, `hazard_cell_hit`, `shortcut_action_taken`) to `validate_transitions_npz()` that is enforced when the run's task family is a stress task. Acceptance criterion: calling `validate_transitions_npz()` on a stress-task run that omits any of the applicable event arrays raises `SchemaValidationError`. -> `experiment-runner`
+      (codex-session: 019d9dfe-2651, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#8.1)
+
+- [ ] [DISPUTE] R5-D1 `grid_hazard` skipped for DP claimed as incomplete coverage — `experiments/weighted_lse_dp/runners/run_phase2_dp.py:570-579` — COUNTER-ARGUMENT: Spec section 6.1 explicitly says "Run on the stress tasks **where a model is available**." `GridHazardWrapper` injects hazard penalties via `step()` at runtime; the hazard cannot be encoded in a static P/R MDP kernel without redesigning the factory. The code's `_RL_ONLY_TASKS` set (lines 99-105) documents this with a clear comment. Spec exit criterion 14.2 says "baselines were rerun on all mandatory stress-task families" — RL baselines satisfy this for grid_hazard. The DP exemption is spec-compliant.
+
+### Open questions (SPEC-GAP)
+
+No new SPEC-GAP findings in R5. The grid_hazard DP exemption is covered by spec section 6.1 ("where a model is available"). If the user wants DP coverage for grid_hazard, the spec should be amended to require encoding runtime hazards in a static MDP kernel.
+
+### Summary
+
+```
+BLOCKER: 2  (R5-1: grid_sparse_goal identical to base; R5-2: calibration quantiles fabricated)
+MAJOR:   2  (R5-3: regime-shift synthetic task names; R5-4: event schema not enforced)
+MINOR:   0
+NIT:     0
+DISPUTE: 1  (R5-D1: grid_hazard DP exemption is spec-compliant)
+```
+
+R5-2 supersedes the incomplete R4-3 fix. R5-1 is new and was not caught in prior rounds because the severity=0 equivalence was documented but not flagged as a problem at the paper-suite config level. Both BLOCKERs must be resolved before Phase II can close. R5-3 and R5-4 are functional bugs that affect downstream aggregation and validation but have workarounds.
+
+Next: fix R5-1 (env-builder), R5-2 (calibration-engineer), then R5-3 and R5-4 (experiment-runner), then re-run `/lse:review II` for R6.

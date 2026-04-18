@@ -205,11 +205,20 @@ def discover_runs(
                 )
                 continue
 
+            # R5-3: regime-shift DP runs carry a canonical_task_family in
+            # their config so pre/post phases group under the same family key.
+            raw_task = rj.get("task", "unknown")
+            run_cfg = rj.get("config", {})
+            canonical_family = (
+                run_cfg.get("canonical_task_family")
+                if isinstance(run_cfg, dict)
+                else None
+            )
             records.append({
                 "run_dir": run_dir,
                 "run_json": rj,
                 "suite": suite,
-                "task": rj.get("task", "unknown"),
+                "task": canonical_family if canonical_family else raw_task,
                 "algorithm": rj.get("algorithm", "unknown"),
                 "seed": rj.get("seed", -1),
             })
@@ -644,12 +653,22 @@ def _compute_event_conditioned_stagewise(
 def _compute_margin_quantiles_from_transitions(
     per_seed_transitions: list[dict[str, np.ndarray]],
 ) -> dict[str, Any] | None:
-    """Compute per-stage margin quantiles from raw per-transition margins (R4-3).
+    """Compute per-stage margin quantiles from raw per-transition margins (R4-3/R5-2).
 
     Pools all ``margin_beta0`` values at each stage ``t`` across seeds, then
     computes quantiles over the pooled per-transition distribution.  This
     preserves the full tail structure rather than computing percentiles of
     per-seed means.
+
+    Additionally computes aligned-positive and aligned-negative quantiles from
+    the true per-transition sign split (R5-2):
+
+    - ``aligned_positive`` at transition i = max(margin_beta0[i], 0)
+    - ``aligned_negative`` at transition i = max(-margin_beta0[i], 0)
+
+    These are stored as ``pos_q{05,25,50,75,95}`` and ``neg_q{05,25,50,75,95}``
+    in the returned dict so downstream code can emit faithful Phase III
+    calibration quantiles without fabrication.
 
     Returns ``None`` if no transition data has ``margin_beta0`` and ``t``.
     """
@@ -671,23 +690,40 @@ def _compute_margin_quantiles_from_transitions(
 
     stages_sorted = sorted(stage_margins.keys())
     q05, q25, q50, q75, q95 = [], [], [], [], []
+    pos_q05, pos_q25, pos_q50, pos_q75, pos_q95 = [], [], [], [], []
+    neg_q05, neg_q25, neg_q50, neg_q75, neg_q95 = [], [], [], [], []
     counts = []
     for t_val in stages_sorted:
         vals = np.array(stage_margins[t_val], dtype=np.float64)
+        # Raw margin quantiles
         q05.append(float(np.nanpercentile(vals, 5)))
         q25.append(float(np.nanpercentile(vals, 25)))
         q50.append(float(np.nanpercentile(vals, 50)))
         q75.append(float(np.nanpercentile(vals, 75)))
         q95.append(float(np.nanpercentile(vals, 95)))
+        # Aligned-positive: max(m, 0) per transition
+        pos_vals = np.maximum(vals, 0.0)
+        pos_q05.append(float(np.nanpercentile(pos_vals, 5)))
+        pos_q25.append(float(np.nanpercentile(pos_vals, 25)))
+        pos_q50.append(float(np.nanpercentile(pos_vals, 50)))
+        pos_q75.append(float(np.nanpercentile(pos_vals, 75)))
+        pos_q95.append(float(np.nanpercentile(pos_vals, 95)))
+        # Aligned-negative: max(-m, 0) per transition
+        neg_vals = np.maximum(-vals, 0.0)
+        neg_q05.append(float(np.nanpercentile(neg_vals, 5)))
+        neg_q25.append(float(np.nanpercentile(neg_vals, 25)))
+        neg_q50.append(float(np.nanpercentile(neg_vals, 50)))
+        neg_q75.append(float(np.nanpercentile(neg_vals, 75)))
+        neg_q95.append(float(np.nanpercentile(neg_vals, 95)))
         counts.append(len(vals))
 
     return {
         "stages": stages_sorted,
-        "q05": q05,
-        "q25": q25,
-        "q50": q50,
-        "q75": q75,
-        "q95": q95,
+        "q05": q05, "q25": q25, "q50": q50, "q75": q75, "q95": q95,
+        "pos_q05": pos_q05, "pos_q25": pos_q25, "pos_q50": pos_q50,
+        "pos_q75": pos_q75, "pos_q95": pos_q95,
+        "neg_q05": neg_q05, "neg_q25": neg_q25, "neg_q50": neg_q50,
+        "neg_q75": neg_q75, "neg_q95": neg_q95,
         "counts": counts,
     }
 
@@ -891,48 +927,70 @@ def build_calibration_json(
         ]
 
         if trans_mq_list:
-            # Pool stages across groups and re-quantile from pooled samples.
-            # Because we only stored quantile summaries (not raw values) per
-            # group, use the q50 as the representative and build pos/neg
-            # distributions from the margin sign.  For truly correct behaviour
-            # the per-transition sign would need to be separate; here we use
-            # the pooled quantile envelope as the best available approximation.
+            # Pool per-stage quantiles across groups by averaging.
+            # pos_* and neg_* keys are computed from true per-transition sign
+            # splits (R5-2 fix): aligned_positive[i] = max(m[i], 0),
+            # aligned_negative[i] = max(-m[i], 0).  These are available when
+            # _compute_margin_quantiles_from_transitions produced R5-2 output.
             all_stages: list[int] = sorted(
                 {s for mq in trans_mq_list for s in mq["stages"]}
             )
-            for out_key, q_src_key in (
-                ("pos_margin_quantiles", "q95"),
-                ("neg_margin_quantiles", "q05"),
-            ):
-                q05_by_stage = []
-                q50_by_stage = []
-                q95_by_stage = []
+
+            def _pool_stage_key(key: str) -> list[float | None]:
+                result: list[float | None] = []
                 for s in all_stages:
-                    stage_q05 = [
-                        mq["q05"][mq["stages"].index(s)]
+                    vals = [
+                        mq[key][mq["stages"].index(s)]
                         for mq in trans_mq_list
-                        if s in mq["stages"]
+                        if s in mq["stages"] and key in mq
                     ]
-                    stage_q50 = [
-                        mq["q50"][mq["stages"].index(s)]
-                        for mq in trans_mq_list
-                        if s in mq["stages"]
-                    ]
-                    stage_q95 = [
-                        mq["q95"][mq["stages"].index(s)]
-                        for mq in trans_mq_list
-                        if s in mq["stages"]
-                    ]
-                    q05_by_stage.append(float(np.mean(stage_q05)) if stage_q05 else None)
-                    q50_by_stage.append(float(np.mean(stage_q50)) if stage_q50 else None)
-                    q95_by_stage.append(float(np.mean(stage_q95)) if stage_q95 else None)
-                stagewise[out_key] = {
-                    "q05": q05_by_stage,
-                    "q25": q05_by_stage,  # best approximation without per-trans split
-                    "q50": q50_by_stage,
-                    "q75": q95_by_stage,
-                    "q95": q95_by_stage,
+                    result.append(float(np.mean(vals)) if vals else None)
+                return result
+
+            # Emit aligned pos/neg quantiles from true per-transition splits
+            # (R5-2).  Fall through to the seed-level fallback only when the
+            # per-transition keys are absent (legacy data pre-R5-2).
+            has_aligned_split = any("pos_q05" in mq for mq in trans_mq_list)
+            if has_aligned_split:
+                stagewise["pos_margin_quantiles"] = {
+                    "q05": _pool_stage_key("pos_q05"),
+                    "q25": _pool_stage_key("pos_q25"),
+                    "q50": _pool_stage_key("pos_q50"),
+                    "q75": _pool_stage_key("pos_q75"),
+                    "q95": _pool_stage_key("pos_q95"),
                 }
+                stagewise["neg_margin_quantiles"] = {
+                    "q05": _pool_stage_key("neg_q05"),
+                    "q25": _pool_stage_key("neg_q25"),
+                    "q50": _pool_stage_key("neg_q50"),
+                    "q75": _pool_stage_key("neg_q75"),
+                    "q95": _pool_stage_key("neg_q95"),
+                }
+            else:
+                # Legacy trans_mq_list without per-transition sign split.
+                # Fall back to seed-level aligned_*_mean arrays for quantiles.
+                for margin_key, out_key in (
+                    ("aligned_positive_mean", "pos_margin_quantiles"),
+                    ("aligned_negative_mean", "neg_margin_quantiles"),
+                ):
+                    seed_pools_legacy: list[np.ndarray] = []
+                    for g in task_groups:
+                        cs = g.get("calibration_stacked") or {}
+                        arr = cs.get(margin_key)
+                        if arr is not None and arr.ndim == 2:
+                            seed_pools_legacy.append(arr)
+                    if seed_pools_legacy:
+                        try:
+                            pooled_legacy = np.concatenate(seed_pools_legacy, axis=0)
+                            stagewise[out_key] = {
+                                "q05": _nan_safe_list(np.nanpercentile(pooled_legacy, 5, axis=0)),
+                                "q25": _nan_safe_list(np.nanpercentile(pooled_legacy, 25, axis=0)),
+                                "q50": _nan_safe_list(np.nanpercentile(pooled_legacy, 50, axis=0)),
+                                "q75": _nan_safe_list(np.nanpercentile(pooled_legacy, 75, axis=0)),
+                                "q95": _nan_safe_list(np.nanpercentile(pooled_legacy, 95, axis=0)),
+                            }
+                        except ValueError:
+                            pass
         else:
             # Fallback: pool calibration_stacked seed-level arrays.
             for margin_key, out_key in (

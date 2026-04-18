@@ -430,18 +430,33 @@ def _run_dp_on_mdp(
     suite: str,
     resolved_cfg: dict[str, Any],
     full_config: dict,
+    canonical_task_family: str | None = None,
+    regime_phase: str | None = None,
 ) -> np.ndarray:
     """Run a single DP algorithm on a single MDP and flush artifacts.
+
+    For regime-shift tasks the ``task_label`` carries a ``_pre_shift`` /
+    ``_post_shift`` suffix so each phase lands in a separate directory.
+    Pass ``canonical_task_family`` (the undecorated task name, e.g.
+    ``"chain_regime_shift"``) and ``regime_phase`` (``"pre_shift"`` or
+    ``"post_shift"``) so that aggregation can re-group the runs under the
+    canonical family name (R5-3 fix).
 
     Returns the planner's final ``V`` table (for downstream warm-start use).
     """
     print(f"  [RUN] task={task_label}  algo={algo_name}  seed={seed}")
 
     # Build resolved config for this run
-    run_config = {
+    run_config: dict[str, Any] = {
         **resolved_cfg,
         "suite_config_path": str(_DEFAULT_CONFIG),
     }
+    # R5-3: persist canonical family name + phase so aggregation can group
+    # pre/post regime-shift runs under the single canonical task family.
+    if canonical_task_family is not None:
+        run_config["canonical_task_family"] = canonical_task_family
+    if regime_phase is not None:
+        run_config["regime_phase"] = regime_phase
 
     # Create RunWriter
     rw = RunWriter.create(
@@ -610,6 +625,8 @@ def _run_single(
                 suite=suite,
                 resolved_cfg=resolved_cfg,
                 full_config=full_config,
+                canonical_task_family=task_name,
+                regime_phase="pre_shift",
             )
         else:
             v_pre = _run_dp_on_mdp(
@@ -624,6 +641,8 @@ def _run_single(
                 suite=suite,
                 resolved_cfg=resolved_cfg,
                 full_config=full_config,
+                canonical_task_family=task_name,
+                regime_phase="pre_shift",
             )
 
         # --- Post-shift run (warm-started from pre-shift V) ---
@@ -646,6 +665,8 @@ def _run_single(
             suite=suite,
             resolved_cfg=resolved_cfg,
             full_config=full_config,
+            canonical_task_family=task_name,
+            regime_phase="post_shift",
         )
     elif is_regime_shift:
         # --- Regime-shift without warmstart: run on the pre-shift MDP ---
@@ -668,6 +689,8 @@ def _run_single(
             suite=suite,
             resolved_cfg=resolved_cfg,
             full_config=full_config,
+            canonical_task_family=task_name,
+            regime_phase="pre_shift",
         )
     else:
         # --- Standard (non-regime-shift) run ---

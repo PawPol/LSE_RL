@@ -258,18 +258,24 @@ def make_grid_sparse_goal(
     gamma: float = 0.99,
     horizon: int = 80,
     goal_reward: float = 1.0,
+    step_penalty: float = -0.05,
     *,
     time_augment: bool = True,
     seed: int | None = None,
 ) -> tuple:
     """Create the Phase II ``grid_sparse_goal`` stress task (spec S5.2.A).
 
-    Same 5x5 open grid as Phase I ``grid_base`` but with goal-only reward:
-    the agent receives ``goal_reward`` upon reaching the goal cell and 0
-    everywhere else (no step penalty / shaping).
+    Same 5x5 open grid as Phase I ``grid_base`` but with a non-zero step
+    penalty (``step_penalty``, default -0.05): every non-goal transition
+    incurs a small negative reward.  This creates a background of negative
+    Bellman targets that stresses the LSE operator's alignment margin ---
+    the stress mechanism is the negative-reward baseline, not reward
+    sparsity alone.
 
-    severity=0 equivalence: when ``goal_reward=1.0`` and step_penalty=0
-    this is identical to ``grid_base`` (which already has ``neg_rew=0``).
+    severity=0 equivalence: when ``step_penalty=0.0`` this reduces to
+    ``grid_base`` (goal-only reward, no shaping).  The default paper-suite
+    instance uses ``step_penalty=-0.05`` to ensure the stress variant is
+    behaviourally distinct from the Phase I baseline.
 
     Args:
         cfg: caller-supplied overrides (merged into defaults).
@@ -295,6 +301,7 @@ def make_grid_sparse_goal(
         "gamma": gamma,
         "horizon": horizon,
         "goal_reward": goal_reward,
+        "step_penalty": step_penalty,
     })
     resolved.update(cfg)
 
@@ -305,15 +312,26 @@ def make_grid_sparse_goal(
             f"(cwd={Path.cwd()!s})."
         )
 
-    # pos_rew = goal_reward, neg_rew = 0 (no step penalty / hole penalty).
+    # Generate base grid world; pos_rew on goal cell, neg_rew unused (open grid).
     mdp_base = generate_grid_world(
         grid=str(grid_path),
         prob=float(resolved["prob"]),
         pos_rew=float(resolved["goal_reward"]),
-        neg_rew=float(resolved["step_penalty"]),
+        neg_rew=0.0,          # open grid has no hole cells; see step_penalty below
         gamma=float(resolved["gamma"]),
         horizon=int(resolved["horizon"]),
     )
+
+    # Apply step_penalty to every transition that does NOT land on a goal state.
+    # This creates a uniform negative background that stresses the Bellman-target
+    # distribution: the stress mechanism is per-step cost, not hole penalty.
+    step_pen = float(resolved["step_penalty"])
+    if step_pen != 0.0:
+        r = mdp_base.r  # shape (S, A, S) — direct reference to internal array
+        # Identify goal-state indices: any s' where r[:,:,s'] > 0 somewhere.
+        goal_mask = r.max(axis=(0, 1)) > 0  # shape (S,) bool
+        non_goal_idx = np.where(~goal_mask)[0]
+        r[:, :, non_goal_idx] += step_pen  # broadcast step penalty in-place
 
     n_states_expected = resolved["n_rows"] * resolved["n_cols"]
     if mdp_base.info.observation_space.n != n_states_expected:

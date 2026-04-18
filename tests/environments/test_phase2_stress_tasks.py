@@ -229,16 +229,17 @@ class TestSeverity0ChainCatastrophe:
 
 
 class TestSeverity0GridSparseGoal:
-    """make_grid_sparse_goal with goal_reward=1.0 recovers grid_base.
+    """make_grid_sparse_goal with goal_reward=1.0 and step_penalty=0 recovers grid_base.
     # docs/specs/phase_II_*.md S9.1 -- severity=0 identity
 
     grid_base has pos_rew=1.0 and neg_rew=0.0; grid_sparse_goal with
-    goal_reward=1.0 and step_penalty=0 should produce the same MDP.
+    goal_reward=1.0 and step_penalty=0.0 should produce the same MDP.
+    Note: step_penalty must be passed explicitly; the stress default is -0.05.
     """
 
     def test_p_identity(self, grid_base):
         mdp_stress, _, _ = make_grid_sparse_goal(
-            {}, goal_reward=1.0, prob=0.9, gamma=0.99, horizon=80,
+            {}, goal_reward=1.0, step_penalty=0.0, prob=0.9, gamma=0.99, horizon=80,
         )
         np.testing.assert_array_equal(
             mdp_stress.p, grid_base.p,
@@ -247,11 +248,48 @@ class TestSeverity0GridSparseGoal:
 
     def test_r_identity(self, grid_base):
         mdp_stress, _, _ = make_grid_sparse_goal(
-            {}, goal_reward=1.0, prob=0.9, gamma=0.99, horizon=80,
+            {}, goal_reward=1.0, step_penalty=0.0, prob=0.9, gamma=0.99, horizon=80,
         )
         np.testing.assert_array_equal(
             mdp_stress.r, grid_base.r,
             err_msg="grid_sparse_goal severity=0 R != grid_base R",
+        )
+
+
+class TestGridSparseGoalStressDistinct:
+    """grid_sparse_goal stress instance must be behaviourally distinct from grid_base.
+    # docs/specs/phase_II_*.md S5.2.A -- stress degradation
+
+    With step_penalty=-0.05 the reward matrix must differ from the
+    severity=0 (step_penalty=0) instance.  This guards against silently
+    shipping a paper-suite config that collapses the stress task back to
+    the Phase I baseline.
+    """
+
+    def test_stress_r_differs_from_severity0(self):
+        """Default paper-suite step_penalty (-0.05) must change reward matrix."""
+        mdp_stress, _, cfg_stress = make_grid_sparse_goal({})
+        mdp_base, _, _ = make_grid_sparse_goal({}, step_penalty=0.0)
+        assert not np.array_equal(mdp_stress.r, mdp_base.r), (
+            f"grid_sparse_goal stress (step_penalty={cfg_stress['step_penalty']}) "
+            "has the same reward matrix as the severity=0 instance; "
+            "the paper-suite step_penalty is not active."
+        )
+
+    def test_stress_step_penalty_negative(self):
+        """Default paper-suite step_penalty must be strictly negative."""
+        _, _, cfg = make_grid_sparse_goal({})
+        assert cfg["step_penalty"] < 0.0, (
+            f"grid_sparse_goal default step_penalty={cfg['step_penalty']} is "
+            "not negative; stress mechanism is inactive."
+        )
+
+    def test_stress_r_min_negative(self):
+        """With step_penalty < 0, R must contain negative entries."""
+        mdp, _, cfg = make_grid_sparse_goal({})
+        assert mdp.r.min() < 0.0, (
+            f"grid_sparse_goal stress R.min()={mdp.r.min():.4f} >= 0; "
+            f"step_penalty={cfg['step_penalty']} is not affecting the reward."
         )
 
 
@@ -427,7 +465,8 @@ class TestRewardRanges:
 
     def test_grid_sparse_goal_reward_range(self):
         mdp, _, cfg = make_grid_sparse_goal({})
-        assert mdp.r.min() >= 0.0 - 1e-14
+        # Default stress instance has step_penalty=-0.05, so r.min() is negative.
+        assert mdp.r.min() >= cfg["step_penalty"] - 1e-14
         assert mdp.r.max() <= cfg["goal_reward"] + 1e-14
 
 

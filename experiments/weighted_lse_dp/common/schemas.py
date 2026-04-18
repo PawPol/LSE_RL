@@ -66,8 +66,10 @@ __all__ = [
     "TRANSITIONS_ARRAYS",
     "CALIBRATION_ARRAYS",
     "MARGIN_BETA0_FORMULA",
+    "PHASE2_EVENT_ARRAYS",
     "RunWriter",
     "validate_transitions_npz",
+    "validate_phase2_transitions_npz",
     "validate_calibration_npz",
     "validate_curves_npz",
 ]
@@ -115,6 +117,23 @@ TRANSITIONS_ARRAYS: tuple[str, ...] = (
     "td_error_beta0",       # (N,) float64
 )
 """Array names in ``transitions.npz`` (per-transition calibration log)."""
+
+
+PHASE2_EVENT_ARRAYS: dict[str, tuple[str, ...]] = {
+    "jackpot": ("jackpot_event",),
+    "catastrophe": ("catastrophe_event", "shortcut_action_taken"),
+    "regime_shift": ("regime_post_change",),
+    "hazard": ("hazard_cell_hit",),
+}
+"""Per-stress-type event arrays required in ``transitions.npz`` for Phase II runs.
+
+Each value is a tuple of array names that must be present when
+``stress_type`` matches the key.  Validated by
+:func:`validate_phase2_transitions_npz`.
+
+Stress types not in this mapping (e.g. ``"sparse_reward"``) have no
+additional event requirements.
+"""
 
 
 CALIBRATION_ARRAYS: tuple[str, ...] = (
@@ -797,6 +816,42 @@ def validate_transitions_npz(path: Path) -> list[str]:
     contract. Extra keys are ignored.
     """
     return _missing_keys(path, TRANSITIONS_ARRAYS)
+
+
+def validate_phase2_transitions_npz(
+    path: Path,
+    stress_type: str | None = None,
+) -> list[str]:
+    """Return keys missing from ``path`` for a Phase II transitions file.
+
+    Checks :data:`TRANSITIONS_ARRAYS` (Phase I baseline) plus the
+    stress-type-specific event arrays from :data:`PHASE2_EVENT_ARRAYS`
+    when ``stress_type`` is provided.
+
+    Parameters
+    ----------
+    path:
+        Path to the ``transitions.npz`` file.
+    stress_type:
+        Value of the ``stress_type`` field from the task config
+        (e.g. ``"jackpot"``, ``"catastrophe"``, ``"regime_shift"``,
+        ``"hazard"``).  When ``None`` or not found in
+        :data:`PHASE2_EVENT_ARRAYS`, only Phase I arrays are checked.
+
+    Returns
+    -------
+    list[str]
+        Sorted list of missing key names; empty means valid.
+    """
+    missing = list(_missing_keys(path, TRANSITIONS_ARRAYS))
+    if stress_type and stress_type in PHASE2_EVENT_ARRAYS:
+        from experiments.weighted_lse_dp.common.io import load_npz  # local to avoid circular
+        loaded = load_npz(Path(path))
+        present = set(loaded.keys()) - {"_schema"}
+        for key in PHASE2_EVENT_ARRAYS[stress_type]:
+            if key not in present:
+                missing.append(key)
+    return sorted(missing)
 
 
 def validate_calibration_npz(path: Path) -> list[str]:
