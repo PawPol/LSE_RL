@@ -61,7 +61,7 @@ class SafeWeightedLSEBase:
 
         Delegates to ``SafeWeightedCommon.stage_from_augmented_state``.
         """
-        return self._swc.stage_from_augmented_state(int(state))
+        return self._swc.stage_from_augmented_state(int(np.asarray(state).flat[0]))
 
     def _safe_target(self, reward: float, v_next: float, state: int) -> float:
         """Compute safe target g_t^safe(reward, v_next) at stage from state.

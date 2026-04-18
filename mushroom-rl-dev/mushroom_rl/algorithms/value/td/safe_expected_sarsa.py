@@ -66,7 +66,7 @@ class SafeExpectedSARSA(SafeWeightedLSEBase, TD):
 
         # Safe target replaces classical target r + gamma * q_next
         safe_target = self._safe_target(
-            float(reward), float(q_next), int(state)
+            float(reward), float(q_next), int(np.asarray(state).flat[0])
         )
 
         self.Q[state, action] = q_current + self._alpha(state, action) * (

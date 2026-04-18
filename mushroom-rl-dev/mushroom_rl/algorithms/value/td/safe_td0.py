@@ -70,7 +70,9 @@ class SafeTD0(SafeWeightedLSEBase, TD):
             v_next = 0.0
 
         # Safe target replaces classical target r + gamma * v_next
-        safe_target = self._safe_target(float(reward), float(v_next), int(state))
+        safe_target = self._safe_target(
+            float(reward), float(v_next), int(np.asarray(state).flat[0])
+        )
 
         td_error = safe_target - v_current
 
