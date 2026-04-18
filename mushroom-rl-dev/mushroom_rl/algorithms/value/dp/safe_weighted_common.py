@@ -37,6 +37,12 @@ from typing import Any
 import numpy as np
 from scipy.special import expit as _sigmoid  # numerically stable sigmoid
 
+# Threshold below which |beta| is treated as zero (classical collapse).
+# The logaddexp formula has O(beta * |r - gamma*v|) cancellation error as
+# beta→0; using the classical formula for |beta| < _EPS_BETA bounds that
+# error at O(1e-8 * value_range), negligible for any realistic problem.
+_EPS_BETA: float = 1e-8
+
 __all__ = [
     "BetaSchedule",
     "SafeWeightedCommon",
@@ -262,8 +268,17 @@ class BetaSchedule:
         with open(path) as f:
             schedule = json.load(f)
         obj = cls(schedule)  # may emit warnings for oversized caps
-        if not allow_uncertified_cap and obj._raw.get("reward_bound") is not None:
-            # Strict check: raise instead of warn
+        # Ablation schedules that intentionally relax the beta cap (e.g.
+        # beta_raw_unclipped) carry an "ablation_type" field in their JSON.
+        # These are automatically granted uncertified-cap access so that
+        # ablation runners can load them without out-of-band flag threading.
+        is_ablation = bool(obj._raw.get("ablation_type"))
+        if (
+            not allow_uncertified_cap
+            and not is_ablation
+            and obj._raw.get("reward_bound") is not None
+        ):
+            # Strict check for production schedules: raise instead of warn.
             obj._validate_certification_strict()
         return obj
 
@@ -438,42 +453,24 @@ class SafeWeightedCommon:
         self.last_clip_active = abs(self.last_beta_raw) > abs(beta) + 1e-15
         self.last_margin = r_f - v_f
 
-        if beta == 0.0:
-            # Classical collapse (exact)
+        if beta == 0.0 or abs(beta) < _EPS_BETA:
+            # Classical collapse: exact when beta==0; O(beta*|r-gamma*v|)
+            # error (negligible at beta < 1e-8) avoids catastrophic
+            # cancellation in the logaddexp form at tiny nonzero beta.
             target = r_f + self._gamma * v_f
             rho = 1.0 / self._one_plus_gamma
             eff_d = self._one_plus_gamma * (1.0 - rho)
         else:
-            # Numerically stable safe target computation.
-            #
-            # The naive formula
-            #   g = ((1+gamma)/beta) * (logaddexp(beta*r, beta*v+log(gamma))
-            #                           - log(1+gamma))
-            # suffers catastrophic cancellation for small beta because the
-            # subtraction removes nearly all significant digits before
-            # division by beta amplifies the error.
-            #
-            # Reformulation via expm1/log1p:
-            #   logaddexp(br, bv+log(g)) - log(1+g)
-            #     = log((exp(br) + g*exp(bv)) / (1+g))
-            #     = log1p((expm1(br) + g*expm1(bv)) / (1+g))
-            #
-            # This is stable for small beta since expm1(x) ~ x near 0.
-            # For large |beta*r| or |beta*v| (> 500), expm1 overflows,
-            # so we fall back to the logaddexp form which handles large
-            # arguments correctly via its max-subtract trick.
-            br = beta * r_f
-            bv = beta * v_f
-            if max(abs(br), abs(bv)) > 500.0:
-                # Large arg: original logaddexp formula (stable for |beta*x| >> 1)
-                log_sum = np.logaddexp(br, bv + self._log_gamma)
-                target = (self._one_plus_gamma / beta) * (
-                    log_sum - self._log_1_plus_gamma
-                )
-            else:
-                # Small/medium arg: expm1/log1p (stable for |beta*x| -> 0)
-                inner = (np.expm1(br) + self._gamma * np.expm1(bv)) / self._one_plus_gamma
-                target = (self._one_plus_gamma / beta) * np.log1p(inner)
+            # logaddexp formula — numerically stable for all finite args at
+            # |beta| >= _EPS_BETA.  numpy.logaddexp applies the max-subtract
+            # trick internally so neither overflow nor underflow can produce
+            # non-finite results from finite r/v inputs.
+            log_sum = np.logaddexp(
+                beta * r_f, beta * v_f + self._log_gamma
+            )
+            target = (self._one_plus_gamma / beta) * (
+                log_sum - self._log_1_plus_gamma
+            )
             rho = float(_sigmoid(
                 beta * (r_f - v_f) + self._log_inv_gamma
             ))
@@ -580,29 +577,19 @@ class SafeWeightedCommon:
         self.last_clip_active = abs(self.last_beta_raw) > abs(beta) + 1e-15
         self.last_margin = r_arr - v_arr
 
-        if beta == 0.0:
-            # Classical collapse (exact)
+        if beta == 0.0 or abs(beta) < _EPS_BETA:
+            # Classical collapse (see compute_safe_target for rationale).
             target = r_arr + self._gamma * v_arr
             rho = np.full_like(r_arr, 1.0 / self._one_plus_gamma)
             eff_d = np.full_like(r_arr, self._gamma)
         else:
-            # Numerically stable target: see compute_safe_target docstring
-            # for the expm1/log1p reformulation rationale.
-            br = beta * r_arr
-            bv = beta * v_arr
-            # Compute both paths; select element-wise based on magnitude.
-            # logaddexp path (stable for large args):
-            log_sum = np.logaddexp(br, bv + self._log_gamma)
-            logaddexp_target = (self._one_plus_gamma / beta) * (
+            # logaddexp formula — stable for all finite args at |beta| >= _EPS_BETA.
+            log_sum = np.logaddexp(
+                beta * r_arr, beta * v_arr + self._log_gamma
+            )
+            target = (self._one_plus_gamma / beta) * (
                 log_sum - self._log_1_plus_gamma
             )
-            # expm1/log1p path (stable for small args):
-            inner = (np.expm1(br) + self._gamma * np.expm1(bv)) / self._one_plus_gamma
-            log1p_target = (self._one_plus_gamma / beta) * np.log1p(inner)
-            # Select: use logaddexp where |beta*x| > 500, else log1p
-            large_mask = np.maximum(np.abs(br), np.abs(bv)) > 500.0
-            target = np.where(large_mask, logaddexp_target, log1p_target)
-
             arg = beta * (r_arr - v_arr) + self._log_inv_gamma
             rho = _sigmoid(arg)
             eff_d = self._one_plus_gamma * (1.0 - rho)

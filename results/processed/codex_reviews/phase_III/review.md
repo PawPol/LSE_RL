@@ -1,19 +1,45 @@
-# Codex Standard Review — Phase III R3
+# Codex Standard Review — Phase III R5
 
-Session ID: (019da1xx — standard review, codex review --base 4fdbf0d)
+Session ID: (r5_standard)
 Base: 4fdbf0d (Phase II close commit)
 Branch: phase-III/closing
-Round: R3 (post R2-fix commit 424a73d)
+Round: R5 (post R4-fix commit)
 Status: completed
 
-## Summary
+## Verdict
 
-The new Phase III DP runner omits two configured task families entirely, and it records incorrect convergence targets for all `SafePE` runs. Those issues affect the completeness and correctness of the generated Phase III artifacts.
+Needs-attention: three P2 (MAJOR) issues found in the Phase III pipeline —
+safe margin logging is inconsistent for ExpectedSARSA, per-task schedule_file
+overrides are silently ignored, and DP rho aggregates are all-NaN.
 
 ## Findings
 
-- [P1] Stop skipping `grid_hazard` and `taxi_bonus_shock` in DP runs — experiments/weighted_lse_dp/runners/run_phase3_dp.py:318-320
-  The Phase III suite config still declares `dp_algorithms` for `grid_hazard` and `taxi_bonus_shock`, and the file comment above `_RL_ONLY_TASKS` says DP should run on the base MDP for these families. However `_build_run_list()` drops both tasks entirely, and `_run_single()` returns early if they are requested explicitly, so `run_phase3_dp.py --task all` will never produce DP artifacts for two configured paper-suite tasks.
+- [P2] Log safe margins against the actual bootstrap target — experiments/weighted_lse_dp/common/callbacks.py:292-306
+  `self._v_next_beta0[-1]` comes from `TransitionLogger`, which always stores
+  `max_a Q(s',a)`. That matches `SafeQLearning`, but for `SafeExpectedSARSA`
+  (and `SafeTD0`) the safe target was computed with a policy expectation instead,
+  so `safe_margin` and `safe_td_error` are silently inconsistent with
+  `swc.last_target`. Corrupts Phase III diagnostics and `target_stats.npz` for
+  those runs even though the learning update itself is correct.
+  Recommendation: Read `v_next` from `swc.last_target`-consistent quantity (e.g.
+  the policy-expected value) for ExpectedSARSA/TD0 agents rather than the
+  greedy max-Q.
 
-- [P2] Use the evaluated policy's value as `v_exact` for `SafePE` — experiments/weighted_lse_dp/runners/run_phase3_dp.py:519-528
-  When `algo_name == "SafePE"`, this branch computes `v_exact` with a `SafeVI` solve and passes that to `DPCurvesLogger`. For policy-evaluation runs, that is the optimal control value of a different problem, not the exact fixed point of the supplied reference policy, so every `supnorm_to_exact` curve and summary for `SafePE` is misreported as error-to-optimal rather than convergence-to-exact-evaluation.
+- [P2] Respect per-task schedule_file overrides in Phase III runs — experiments/weighted_lse_dp/runners/run_phase3_rl.py:778-785
+  The suite config carries a `schedule_file` per task, but the runner hard-codes
+  `<schedule_dir>/<task>/schedule.json`. Any ablation or custom suite that points
+  a task at a specific ablation schedule will silently use the default schedule
+  and record misleading provenance/metrics. The DP runner has the same issue.
+  Recommendation: Read `schedule_file` from the task config entry and use it when
+  present; fall back to the default path only when absent.
+
+- [P2] Emit DP rho aggregates instead of all-NaN placeholders — experiments/weighted_lse_dp/runners/run_phase3_dp.py:600-604
+  `aggregate_phase3._aggregate_dp_safe_stagewise()` reads `safe_rho_mean`/
+  `safe_rho_std` from each DP seed's `calibration_stats.npz`, but the DP runner
+  unconditionally writes `NaN` for every stage. Every aggregated DP
+  `safe_stagewise.npz` loses the responsibility curves the Phase III comparison
+  is supposed to report, even though the planner computes rho on the (S,A) grid
+  during each safe backup.
+  Recommendation: In `run_phase3_dp.py`, compute and log `safe_rho_mean` /
+  `safe_rho_std` per stage from the DP planner's `swc.last_rho` grid during
+  each backup sweep.
