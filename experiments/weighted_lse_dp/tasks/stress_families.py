@@ -642,11 +642,13 @@ def make_taxi_bonus_shock(
     )
 
     if time_augment:
+        # R8-3: time-augment the bonus-shock wrapper, not the bare base MDP.
+        # The RL agent must train on the stressed environment.
         mdp_rl = make_time_augmented(
-            mdp_base, horizon=int(resolved["horizon"])
+            wrapped, horizon=int(resolved["horizon"])
         )
         assert isinstance(mdp_rl, DiscreteTimeAugmentedEnv)
     else:
-        mdp_rl = mdp_base
+        mdp_rl = wrapped
 
     return wrapped, mdp_rl, resolved

@@ -230,11 +230,13 @@ def make_grid_hazard(
     )
 
     if time_augment:
+        # R8-2: time-augment the hazard wrapper, not the bare base MDP.
+        # The RL agent must train on the stressed environment.
         mdp_rl = make_time_augmented(
-            mdp_base, horizon=int(resolved["horizon"])
+            wrapper, horizon=int(resolved["horizon"])
         )
         assert isinstance(mdp_rl, DiscreteTimeAugmentedEnv)
     else:
-        mdp_rl = mdp_base
+        mdp_rl = wrapper
 
     return wrapper, mdp_rl, resolved

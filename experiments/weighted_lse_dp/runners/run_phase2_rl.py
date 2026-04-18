@@ -119,7 +119,7 @@ _N_BASE: dict[str, int] = {
     "chain_jackpot": 26,        # 25 + 1 absorbing terminal
     "chain_catastrophe": 26,    # 25 + 1 absorbing terminal
     "chain_regime_shift": 25,
-    "grid_sparse_goal": 25,
+    "grid_sparse_goal": 49,        # 7x7 grid (Decision 1, R8-1)
     "grid_hazard": 25,
     "grid_regime_shift": 25,
     "taxi_bonus_shock": 44,
@@ -620,7 +620,16 @@ def run_single(
     # -- Create callbacks ---------------------------------------------------
     # Determine event-detection thresholds from config.
     hazard_reward_thr = float(task_config.get("hazard_reward", -5.0)) + 1.0
-    jackpot_reward_thr = float(task_config.get("jackpot_reward", 10.0)) * 0.5
+    # R8-4: derive jackpot threshold from the correct config key.
+    # chain_jackpot uses "jackpot_reward"; taxi_bonus_shock uses "bonus_reward"
+    # (no jackpot_reward key).  Use goal_reward (base delivery reward, default 1.0)
+    # + bonus_reward * 0.5 as the threshold when jackpot_reward is absent.
+    if "jackpot_reward" in task_config:
+        jackpot_reward_thr = float(task_config["jackpot_reward"]) * 0.5
+    else:
+        bonus_reward = float(task_config.get("bonus_reward", 5.0))
+        goal_reward = float(task_config.get("goal_reward", 1.0))
+        jackpot_reward_thr = goal_reward + bonus_reward * 0.5
     catastrophe_reward_thr = float(task_config.get("catastrophe_reward", -10.0)) * 0.5
 
     # For catastrophe tasks, pass the risky state so shortcut_action_taken
