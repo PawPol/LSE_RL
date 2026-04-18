@@ -205,8 +205,11 @@ def discover_runs(
                 )
                 continue
 
-            # R5-3: regime-shift DP runs carry a canonical_task_family in
-            # their config so pre/post phases group under the same family key.
+            # R5-3 / R6-1: keep raw task label as the grouping key so
+            # *_pre_shift and *_post_shift DP runs remain in separate groups
+            # (their calibration stats must NOT be averaged together).
+            # canonical_task_family is preserved as metadata for downstream
+            # code that needs to map back to the parent family name.
             raw_task = rj.get("task", "unknown")
             run_cfg = rj.get("config", {})
             canonical_family = (
@@ -218,7 +221,8 @@ def discover_runs(
                 "run_dir": run_dir,
                 "run_json": rj,
                 "suite": suite,
-                "task": canonical_family if canonical_family else raw_task,
+                "task": raw_task,                        # grouping key unchanged
+                "canonical_task_family": canonical_family or raw_task,
                 "algorithm": rj.get("algorithm", "unknown"),
                 "seed": rj.get("seed", -1),
             })
@@ -947,6 +951,16 @@ def build_calibration_json(
                     result.append(float(np.mean(vals)) if vals else None)
                 return result
 
+            # Raw margin quantiles (full distribution, signed) — used as the
+            # top-level margin_quantiles alias for Phase II figures (R6-2).
+            stagewise["raw_margin_quantiles"] = {
+                "q05": _pool_stage_key("q05"),
+                "q25": _pool_stage_key("q25"),
+                "q50": _pool_stage_key("q50"),
+                "q75": _pool_stage_key("q75"),
+                "q95": _pool_stage_key("q95"),
+            }
+
             # Emit aligned pos/neg quantiles from true per-transition splits
             # (R5-2).  Fall through to the seed-level fallback only when the
             # per-transition keys are absent (legacy data pre-R5-2).
@@ -1154,21 +1168,29 @@ def build_calibration_json(
             [float(event_cond_return)] if event_cond_return is not None else []
         )
 
-    # margin_quantiles: top-level alias for pos_margin_quantiles with stage index
+    # margin_quantiles: top-level alias for the RAW margin distribution (R6-2).
+    # Must use the full margin_beta0 quantiles — NOT pos_margin_quantiles —
+    # so the negative tail (catastrophe/hazard tasks) is preserved and Phase III
+    # schedule calibration sees the correct q05/q95 ribbon.
     margin_quantiles_top: dict[str, Any] | None = None
     if stagewise is not None:
-        pos_q = stagewise.get("pos_margin_quantiles")
         stage_vals = stagewise.get("stage")
-        if pos_q is not None:
+        # Prefer trans_mq_list-derived raw quantiles (q05..q95 of full margin_beta0).
+        # These are stored in the first available trans_mq entry for this call context.
+        # Fall back to pos_margin_quantiles only if raw quantiles are unavailable.
+        raw_mq = stagewise.get("raw_margin_quantiles")
+        fallback_q = stagewise.get("pos_margin_quantiles")
+        chosen_q = raw_mq if raw_mq is not None else fallback_q
+        if chosen_q is not None:
             stages_for_q = (
                 stage_vals if isinstance(stage_vals, list)
-                else list(range(len(pos_q.get("q50", []))))
+                else list(range(len(chosen_q.get("q50", []))))
             )
             margin_quantiles_top = {
                 "stages": stages_for_q,
-                "q05": pos_q.get("q05", []),
-                "q50": pos_q.get("q50", []),
-                "q95": pos_q.get("q95", []),
+                "q05": chosen_q.get("q05", []),
+                "q50": chosen_q.get("q50", []),
+                "q95": chosen_q.get("q95", []),
             }
 
     doc: dict[str, Any] = {
