@@ -157,9 +157,23 @@ def _load_config(path: Path) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _load_schedule(task_name: str, schedule_dir: Path) -> BetaSchedule:
-    """Load the calibrated schedule.json for a task family."""
-    path = schedule_dir / task_name / "schedule.json"
+def _load_schedule(
+    task_name: str,
+    schedule_dir: Path,
+    *,
+    override_path: str | None = None,
+) -> BetaSchedule:
+    """Load the calibrated schedule.json for a task family.
+
+    Parameters
+    ----------
+    override_path:
+        If provided (from a per-task ``schedule_file`` config key), use this
+        path directly instead of the default ``<schedule_dir>/<task>/schedule.json``.
+    """
+    path = Path(override_path) if override_path is not None else (
+        schedule_dir / task_name / "schedule.json"
+    )
     if not path.is_file():
         raise FileNotFoundError(
             f"Schedule file not found: {path}\n"
@@ -598,10 +612,14 @@ def _run_dp_on_mdp(
     )
 
     # Write safe calibration arrays into calibration stats.
-    # For DP, rho and effective_discount statistics come from the grid-level
-    # backup (all state-action pairs), not per-transition sampling.
-    calib_stats["safe_rho_mean"] = np.full(T, np.nan, dtype=np.float64)
-    calib_stats["safe_rho_std"] = np.full(T, np.nan, dtype=np.float64)
+    # For DP, rho is derived from effective discount via the exact linear
+    # relationship rho = 1 - eff_d / (1+gamma), which holds by definition
+    # of eff_d = (1+gamma)(1-rho).  mean/std propagate linearly.
+    _one_plus_gamma = 1.0 + gamma_mdp
+    calib_stats["safe_rho_mean"] = (
+        1.0 - safe_eff_discount_mean_arr[:T] / _one_plus_gamma
+    )
+    calib_stats["safe_rho_std"] = safe_eff_discount_std_arr[:T] / _one_plus_gamma
     calib_stats["safe_effective_discount_mean"] = safe_eff_discount_mean_arr[:T]
     calib_stats["safe_effective_discount_std"] = safe_eff_discount_std_arr[:T]
     calib_stats["safe_beta_used_min"] = safe_beta_used_arr[:T].copy()
@@ -696,7 +714,9 @@ def _run_single(
     )
 
     # Load the calibrated schedule for this task family.
-    schedule = _load_schedule(task_name, schedule_dir)
+    # Honour per-task schedule_file override (used by ablation suites).
+    _schedule_override = task_cfg.get("schedule_file")
+    schedule = _load_schedule(task_name, schedule_dir, override_path=_schedule_override)
 
     is_regime_shift = task_name in _REGIME_SHIFT_TASKS
     warmstart = bool(task_cfg.get("warmstart_dp", False))

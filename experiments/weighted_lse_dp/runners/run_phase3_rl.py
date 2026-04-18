@@ -776,7 +776,13 @@ def run_single(
     effective_lr: float = _LEARNING_RATE * float(_lr_mult)
 
     # -- Load schedule -------------------------------------------------------
-    schedule_path = schedule_dir / task / "schedule.json"
+    # Honour per-task schedule_file override from the suite config (used by
+    # ablation suites); fall back to the canonical default path.
+    _schedule_file_override = task_config.get("schedule_file")
+    if _schedule_file_override is not None:
+        schedule_path = Path(_schedule_file_override)
+    else:
+        schedule_path = schedule_dir / task / "schedule.json"
     if not schedule_path.is_file():
         raise FileNotFoundError(
             f"Schedule not found at {schedule_path}. "

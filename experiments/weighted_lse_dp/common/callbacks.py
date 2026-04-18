@@ -303,7 +303,10 @@ class SafeTransitionLogger(TransitionLogger):
 
         safe_target = float(np.asarray(swc.last_target).item())
         self._safe_target.append(safe_target)
-        self._safe_margin.append(reward - v_next)  # margin = r - v_next (no gamma)
+        # Use swc.last_margin (= r - v_next as seen by the safe operator) rather
+        # than reward - v_next_beta0, which is always max_a Q(s',a) and gives a
+        # wrong margin for ExpectedSARSA/TD0 where the operator used E_π[V'].
+        self._safe_margin.append(float(np.asarray(swc.last_margin).item()))
 
         # TD error: safe_target - q_current (q_current from parent).
         q_current = self._q_current_beta0[-1]
