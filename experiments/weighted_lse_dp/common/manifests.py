@@ -52,6 +52,7 @@ __all__ = [
     "resolve_config",
     "write_run_json",
     "write_metrics_json",
+    "write_safe_provenance",
     "load_run_json",
     "load_metrics_json",
     "find_run_dirs",
@@ -370,6 +371,53 @@ def write_metrics_json(
     out = run_dir / "metrics.json"
     save_json(out, payload)
     return out
+
+
+# ----------------------------------------------------------------------------
+# Safe provenance manifest (spec §7.3)
+# ----------------------------------------------------------------------------
+
+
+def write_safe_provenance(
+    run_dir: Path | str,
+    schedule_path: str,
+    calibration_source_path: str,
+    calibration_hash: str,
+    source_phase: str,
+) -> dict[str, str]:
+    """Write safe calibration provenance to ``<run_dir>/safe_provenance.json``.
+
+    Records the lineage of the beta schedule back to its calibration
+    source so that Phase III runs can be fully audited.
+
+    Parameters
+    ----------
+    run_dir:
+        Destination run directory. Created if it does not exist.
+    schedule_path:
+        Path to the ``schedule.json`` file consumed by this run.
+    calibration_source_path:
+        Path to the Phase I/II calibration JSON that produced the schedule.
+    calibration_hash:
+        SHA-256 hex digest of the calibration JSON file.
+    source_phase:
+        Origin phase label (``"phase1"``, ``"phase2"``, or ``"pooled"``).
+
+    Returns
+    -------
+    dict[str, str]
+        The payload dict that was written (useful for tests and chaining).
+    """
+    p = Path(run_dir) / "safe_provenance.json"
+    payload: dict[str, str] = {
+        "schedule_path": str(schedule_path),
+        "calibration_source_path": str(calibration_source_path),
+        "calibration_hash": str(calibration_hash),
+        "source_phase": str(source_phase),
+    }
+    p.parent.mkdir(parents=True, exist_ok=True)
+    save_json(p, payload)
+    return payload
 
 
 # ----------------------------------------------------------------------------

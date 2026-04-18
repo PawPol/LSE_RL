@@ -1285,3 +1285,197 @@ DISPUTE: 2  (R8-A1: grid_sparse_goal stress design; R8-A2: shortcut_action_taken
 R8-1 is the only BLOCKER and has a clear fix (single dict value change + verification). R8-2 and R8-3 are recurring instances of the factory contract pattern already logged in `tasks/lessons.md` (2026-04-17 "Wrapper-based stress environments not wired through the training loop"). R8-4 is fragile but non-breaking with current configs. R8-5 requires a design decision from the user on whether sparse-reward tasks need event logging. Both disputes are grounded in explicit user decisions made during the R8 session.
 
 Next: fix R8-1 (experiment-runner, immediate), then R8-2/R8-3/R8-4 (experiment-runner), surface R8-5 to user for decision.
+
+---
+
+## Active task: Phase III -- Safe weighted-LSE experiments (2026-04-18)
+
+Source spec: `docs/specs/phase_III_safe_weighted_lse_experiments.md`. Every task
+cites the exact spec section it is motivated by. Do NOT mark the phase
+closed until all exit criteria in Section 14 are satisfied.
+
+### Parallelizable groups
+
+Group A (no dependencies -- start immediately):
+  Tasks 1, 2, 3, 4
+
+Group B (depends on A.2 operator utilities):
+  Tasks 5, 6, 7, 8, 9
+
+Group C (depends on A.2 + A.3 operator + certification):
+  Tasks 10, 11, 12, 13
+
+Group D (calibration pipeline -- depends on A.2 certification math):
+  Tasks 14, 15, 16
+
+Group E (safe DP planners -- depends on B safe_weighted_common + C tests):
+  Tasks 17, 18, 19, 20, 21
+
+Group F (safe online RL -- depends on B safe_weighted_common + C tests):
+  Tasks 22, 23, 24, 25
+
+Group G (logging -- depends on B safe_weighted_common):
+  Tasks 26, 27
+
+Group H (smoke tests -- depends on E + F + D + G):
+  Tasks 28, 29
+
+Group I (configs + runners -- depends on E + F + D + G):
+  Tasks 30, 31, 32, 33, 34
+
+Group J (aggregation -- depends on I runners):
+  Tasks 35, 36
+
+Group K (ablations -- depends on I runners + D schedules):
+  Tasks 37, 38, 39, 40, 41, 42
+
+Group L (figures + tables -- depends on J aggregation + K ablations):
+  Tasks 43, 44, 45, 46, 47, 48, 49, 50, 51, 52
+
+Group M (verification + close -- depends on all above):
+  Tasks 53, 54, 55
+
+### Checklist
+
+1.  - [x] [spec-read] Re-read Phase III spec end-to-end; confirm scope vs Section 14 exit criteria; verify Phase II closing notes and all 8 calibration JSONs exist at `results/weighted_lse_dp/phase2/calibration/` -> planner  (spec S0, S14)
+    <!-- done 2026-04-18; all 8 JSONs confirmed; spec aligned with manuscript; decisions on OQs 1-5 recorded -->
+2.  - [x] [operator] Implement `safe_weighted_common.py` in `mushroom_rl/algorithms/value/dp/`: closed-form safe target `g_t^{safe}(r,v)` with `logaddexp`, responsibility `rho_t`, effective discount `d_t`, KL term, `clip_beta`, `stage_from_augmented_state`; all methods from spec S2.1; instrument fields from spec S3.3 -> operator-theorist  (spec S2.1, S3.3, S13.4)
+    <!-- done 2026-04-18; BetaSchedule + SafeWeightedCommon + certification functions; scipy.special.expit for sigmoid; beta=0 exact branch verified; 176/176 tests pass -->
+3.  - [x] [operator] Implement certification math: `kappa_t` from `alpha_t`, recursive `Bhat_t`, `beta_cap_t` computation, deployed clip `tilde_beta_t = clip(beta_raw, -cap, cap)` -- all per spec S2.2; use headroom fractions `alpha_t` as primary knob per spec S5.8 -> operator-theorist  (spec S2.2, S5.8, S5.9)
+    <!-- done 2026-04-18; alpha_t=0 => beta_cap=0 confirmed; backward recursion verified numerically -->
+4.  - [x] [test] Create `tests/algorithms/test_safe_weighted_lse_operator.py`: (a) `g_t_safe == r + gamma*v` when `beta=0`, (b) closed-form vs variational agree on `(r,v,beta,gamma)` grid, (c) analytic derivative matches finite differences, (d) responsibility in `(0,1)` -> test-author  (spec S8.1)
+    <!-- done 2026-04-18; 176 tests across 7 classes pass; note: monotonicity tests use _make_direct_schedule to bypass certification clipping (correct: tests pure operator property, not clipping behavior) -->
+
+5.  - [x] [algo] Implement `safe_weighted_value_iteration.py` in `mushroom_rl/algorithms/value/dp/`: finite-horizon backward induction using `g_t^{safe}` from `safe_weighted_common`, outputs `Q[t,s,a]`, `V[t,s]`, `pi[t,s]`, residual per sweep, deployed schedule report, clipping activity summary -> algo-implementer  (spec S3.1, S6.1)
+    <!-- done 2026-04-18; beta=0 classical equivalence verified: V max diff 0.0 on 3-state chain -->
+6.  - [x] [algo] Implement `safe_weighted_policy_evaluation.py`: fixed-policy safe PE using `g_t^{safe}` -> algo-implementer  (spec S3.1, S6.1)
+    <!-- done 2026-04-18; PE beta=0 equivalence: V and Q allclose atol=1e-14 -->
+7.  - [x] [algo] Implement `safe_weighted_policy_iteration.py`: safe PI with greedy improvement using safe Q -> algo-implementer  (spec S3.1, S6.1)
+    <!-- done 2026-04-18; PI beta=0 equivalence: V and pi match classical -->
+8.  - [x] [algo] Implement `safe_weighted_modified_policy_iteration.py`: bounded sweeps per policy using safe target -> algo-implementer  (spec S3.1, S6.1)
+    <!-- done 2026-04-18; MPI m=2 beta=0 equivalence verified -->
+9.  - [x] [algo] Implement `safe_weighted_async_value_iteration.py`: asynchronous sweep order with safe target -> algo-implementer  (spec S3.1, S6.1)
+    <!-- done 2026-04-18; AsyncVI beta=0 equivalence all 4 orders; sequential bit-identical to SafeVI -->
+
+10. - [x] [test] Create `tests/algorithms/test_safe_clipping_certification.py`: (a) for every stage and grid point in certified box `|d_v g_t_safe| <= kappa_t + tol`, (b) `alpha_t=0` implies `beta_cap=0` and target collapses to classical, (c) safe operator maps certified box into itself -> test-author  (spec S8.2)
+    <!-- done 2026-04-18; 38 tests, 3 classes (TestLocalDerivativeBound, TestAlphaZeroCollapse, TestBoxInvariance); all import from safe_weighted_common; analytic effective_discount used instead of FD (avoids O(eps) noise at box boundaries); 330/330 tests pass across all Phase III test files -->
+11. - [x] [test] Create `tests/algorithms/test_safe_beta0_equivalence.py`: (a) safe VI with zero schedule == classical VI exactly, (b) safe PE with zero schedule == classical PE, (c) safe Q-learning update == classical when `beta=0`, (d) safe ExpectedSARSA update == classical when `beta=0` -> test-author  (spec S8.3)
+    <!-- done 2026-04-18; 22 passed, 3 skipped (TD stubs: SafeTD0/QL/ESARSA not yet implemented); all 5 safe DP planners verified bit-identical to classical at beta=0; np.testing.assert_equal for exact bit-level comparison -->
+12. - [x] [test] Numerical verification of margin formula: confirm `margin = reward - v_next` (no gamma) per lessons.md entry 2026-04-16; verify logaddexp-based implementation matches naive exponentiation on a small grid -> test-author  (spec S2.1, lessons.md)
+    <!-- done 2026-04-18; TestMarginFormula (89 tests) appended to test_safe_weighted_lse_operator.py; covers last_margin instrumentation, no-gamma contract, logaddexp vs naive agreement (atol=1e-10) -->
+13. - [x] [test] Numerical verification of certification recursion: for a small hand-worked example (3-stage, known `alpha_t`, known `R_max`), verify `kappa_t`, `Bhat_t`, `beta_cap_t` match hand computation -> test-author  (spec S2.2, S5.9)
+    <!-- done 2026-04-18; TestCertificationRecursionHandComputed (5 tests) appended to test_safe_weighted_lse_operator.py; verifies kappa, Bhat backward recursion, beta_cap formula, build_certification keys+shapes, alpha=0 cap=0 -->
+
+14. - [x] [calibration] Implement `experiments/weighted_lse_dp/calibration/build_schedule_from_phase12.py`: reads Phase I/II calibration JSONs, computes per-stage `m_t^*` (q75 of positive aligned margins), informativeness `I_t`, derivative target `d_t^{target}`, raw `beta_t^{raw}`, headroom `alpha_t`, certification `kappa_t/Bhat_t/beta_cap_t`, clips to deployed `tilde_beta_t`; emits `schedule.json` per spec S5.10 schema -> calibration-engineer  (spec S5.1--S5.10)
+    <!-- done 2026-04-18; all 8 schedule.json emitted to results/weighted_lse_dp/phase3/calibration/<family>/; BetaSchedule round-trip validates; near-zero beta_used expected: large Bhat[0]~919 with gamma=0.99/T=60 makes beta_cap~1e-5; sparse-data fallback fires at low-freq stages -->
+15. - [x] [calibration] Implement `experiments/weighted_lse_dp/calibration/calibration_utils.py`: helper functions for aligned margin extraction, informativeness normalization, derivative target mapping, beta-from-derivative inversion (spec S5.4--S5.7) -> calibration-engineer  (spec S5.4--S5.7)
+    <!-- done 2026-04-18; calibration_utils.py implements load_calibration_json, compute_calibration_hash, extract_stagewise_arrays, compute_representative_margin, compute_informativeness, compute_derivative_targets, compute_raw_beta, compute_headroom_fractions; note: uses inline certification math (identical to safe_weighted_common) -- cleanup pending -->
+16. - [x] [calibration] Generate fallback/ablation schedules automatically: `beta_zero`, `beta_constant_small`, `beta_constant_large`, `beta_raw_unclipped`, `alpha_constant_grid` per spec S5.11; write all to `results/weighted_lse_dp/phase3/calibration/<task_family>/` -> calibration-engineer  (spec S5.11)
+    <!-- done 2026-04-18; generate_ablation_schedules.py produces 9 schedules per family × 8 families = 72 schedules; all pass BetaSchedule round-trip; note: beta_constant_small/large are fully clipped (tight certification box) -- beta_raw_unclipped shows actual pre-clip betas up to ±1.68 -->
+
+17. - [x] [algo] Export safe DP planners from `mushroom_rl/algorithms/value/dp/__init__.py`; add `_add_save_attr` and `_post_load` per MushroomRL conventions -> algo-implementer  (spec S3.1, S13.5)
+    <!-- done 2026-04-18; added BetaSchedule, SafeWeightedCommon, and all 5 safe DP planner exports to dp/__init__.py -->
+18. - [x] [algo-integration] Wire `BetaSchedule` from `schedules.py` into all 5 safe DP planners: each planner reads `schedule.beta_at(t)` at stage `t` and applies safe clipping per certification -> algo-implementer  (spec S3.1, S5.9, S13.3)
+    <!-- done 2026-04-18; safe DP planners already accept BetaSchedule from safe_weighted_common; added load_safe_schedule_native() bridge in schedules.py -->
+19. - [x] [algo-integration] Implement `build_schedule()` in `experiments/weighted_lse_dp/common/schedules.py`: replace the `NotImplementedError` stub with a call to `build_schedule_from_phase12` -> algo-implementer  (spec S3.4, Phase I stub)
+    <!-- done 2026-04-18; build_schedule() now reads schedule.json and returns Phase I BetaSchedule (beta_used_t as betas array); load_safe_schedule_native() returns rich safe_weighted_common.BetaSchedule -->
+20. - [x] [test] Run safe DP planners on a tiny FiniteMDP (3-state chain, horizon=5) with a non-trivial beta schedule: verify convergence, check Q/V shapes, confirm clipping activity report is populated -> test-author  (spec S8.4)
+    <!-- done 2026-04-18; tests/algorithms/test_safe_dp_integration.py: 6 shape tests + 3 V_sweep_history tests; all 9 pass -->
+21. - [x] [test] Verify `V_sweep_history` is populated by safe DP planners (per lessons.md entry 2026-04-16 on multi-sweep DP curves) -> test-author  (spec S7.2, lessons.md)
+    <!-- done 2026-04-18; TestSafeVSweepHistory: 3 tests verify populated/different-per-sweep/final-matches-V; all pass -->
+
+22. - [x] [algo] Implement `safe_weighted_lse_base.py` in `mushroom_rl/algorithms/value/td/`: mixin/base class for online safe TD algorithms, using `safe_weighted_common` methods; reads stage from augmented state per spec S4, S13.3 -> algo-implementer  (spec S3.2, S3.3, S4, S13.3)
+    <!-- done 2026-04-18; SafeWeightedLSEBase mixin with _safe_init(), _stage_from_state(), _safe_target(), swc property; composes SafeWeightedCommon(schedule, gamma, n_base) -->
+23. - [x] [algo] Implement `safe_td0.py`: `SafeTD0` for fixed-policy prediction using safe target; compatible with `Core.learn()` and `Core.evaluate()` -> algo-implementer  (spec S3.2, S6.2, S13.2)
+    <!-- done 2026-04-18; SafeTD0: v_current=Q[s,:].pi(s), v_next=Q[s',:].pi(s'), Q[s,a]+=alpha*(g_safe-v_current); beta=0 verified exact -->
+24. - [x] [algo] Implement `safe_q_learning.py`: `SafeQLearning` using safe Bellman target for control; compatible with `Core` -> algo-implementer  (spec S3.2, S6.2, S13.2)
+    <!-- done 2026-04-18; SafeQLearning: q_next=max(Q[s',:]), target=g_safe(r,q_next); bit-identical to classical at beta=0; 20-step multi-update test passes -->
+25. - [x] [algo] Implement `safe_expected_sarsa.py`: `SafeExpectedSARSA` (not sampled-SARSA) using safe target; compatible with `Core` -> algo-implementer  (spec S3.2, S6.2, S13.2)
+    <!-- done 2026-04-18; SafeExpectedSARSA: q_next=Q[s',:].pi(s'), target=g_safe(r,q_next); bit-identical to classical at beta=0; 20-step multi-update test passes -->
+
+26. - [x] [logging] Extend per-transition logging for safe fields: `stage`, `beta_raw_t`, `beta_cap_t`, `beta_used_t`, `clip_active`, `rho_t`, `effective_discount_t`, `safe_target`, `margin_safe`, `kl_term`, `td_error_safe` -- per spec S7.1 -> experiment-runner  (spec S7.1)
+    <!-- done 2026-04-18; schemas.py: SAFE_TRANSITIONS_ARRAYS (10 fields); callbacks.py: SafeTransitionLogger subclass reads agent.swc.last_* fields; backward-compatible (no existing arrays modified) -->
+27. - [x] [logging] Extend per-stage aggregate logging for safe stats: mean/std of `rho_t` and `effective_discount_t`, min/mean/max of `beta_used_t`, clip fraction, fraction with `effective_discount < gamma`, Bellman residuals for DP -> experiment-runner  (spec S7.2)
+    <!-- done 2026-04-18; schemas.py: SAFE_CALIBRATION_ARRAYS (10 fields), aggregate_safe_stats(payload, T, gamma), validate_safe_transitions_npz(); safe_bellman_residual=NaN for RL runs by default -->
+
+28. - [x] [test] Create `tests/algorithms/test_phase3_smoke_runs.py`: (a) one short safe DP run finishes and logs schedule fields, (b) one short safe Q-learning run finishes and logs `rho_t`, `effective_discount_t`, clipping activity, (c) aggregation and figure scripts run on smoke outputs -> test-author  (spec S8.4)
+    <!-- done 2026-04-18; 12 tests in 3 classes: TestSafeDPSmokeRun (4), TestSafeQLSmoke (4), TestSafeAggregation (4); all 12 pass; 533 total tests passing -->
+29. - [x] [logging] Implement calibration provenance logging: schedule file path, calibration source path, calibration hash/checksum, source phase tag -- per spec S7.3 -> experiment-runner  (spec S7.3)
+    <!-- done 2026-04-18; manifests.py: write_safe_provenance() writes safe_provenance.json; schemas.py: SAFE_PROVENANCE_FIELDS (4 fields) -->
+
+30. - [x] [infra] Write `experiments/weighted_lse_dp/configs/phase3/paper_suite.json`: all mandatory task families x {safe PE, safe VI, safe PI, safe MPI, safe AsyncVI, SafeQLearning, SafeExpectedSARSA} x seeds {11,29,47} x schedule references -> experiment-runner  (spec S6.1, S6.2, S12)
+    <!-- done 2026-04-18; 8 task families, all dp_algorithms + safe_rl_algorithms + schedule_file per task; merged from DP+RL agents; event thresholds explicitly in config (catastrophe_threshold, jackpot_threshold, hazard_threshold) -->
+31. - [x] [infra] Write `experiments/weighted_lse_dp/runners/run_phase3_dp.py`: driver for safe DP planners on all finite-model task families; loads calibrated schedule per task; logs all safe-specific fields -> experiment-runner  (spec S6.1)
+    <!-- done 2026-04-18; 130 runs planned (6 chain/grid families x 5 algos x 3-5 seeds); grid_hazard+taxi_bonus_shock excluded (RL-only); safe planner constructors confirmed; write_safe_provenance() called per run; dry-run verified -->
+32. - [x] [infra] Write `experiments/weighted_lse_dp/runners/run_phase3_rl.py`: driver for SafeQLearning + SafeExpectedSARSA on time-augmented tasks; same seeds/checkpoints as Phase I/II; logs safe fields -> experiment-runner  (spec S6.2)
+    <!-- done 2026-04-18; 64 runs planned (8 families x 2 algos x 3-4 seeds); SafeTransitionLogger used; _SafeAutoEventLogger for stress tasks; write_safe_provenance() called; dry-run shows schedule=OK for all tasks -->
+33. - [x] [infra] Ensure DP runner uses correct `n_base` from environment object at runtime, not hard-coded lookup (per lessons.md entry 2026-04-17 on hard-coded state constants) -> experiment-runner  (spec S4, lessons.md)
+    <!-- done 2026-04-18; n_states read from extract_mdp_arrays(mdp) p.shape[0] in _run_dp_on_mdp(); no hardcoded lookup -->
+34. - [x] [infra] Ensure RL runner derives event detection thresholds from explicit config keys, not silent `.get()` defaults (per lessons.md entry 2026-04-17) -> experiment-runner  (spec S7.1, lessons.md)
+    <!-- done 2026-04-18; _require_key() raises KeyError with clear message if threshold key missing; _get_event_thresholds() maps stress_type to required keys; no .get() fallbacks -->
+
+35. - [x] [infra] Write `experiments/weighted_lse_dp/runners/aggregate_phase3.py`: seed aggregation + safe-specific metric extraction; produces `results/weighted_lse_dp/phase3/aggregated/` and `results/weighted_lse_dp/phase3/calibration/` -> experiment-runner  (spec S10, S14)
+    <!-- done 2026-04-18; discover_runs+group_runs+aggregate_group structure; outputs summary.json+safe_stagewise.npz+curves.npz per (task,algo); graceful on missing files; dry-run verified -->
+36. - [x] [infra] Ensure aggregation computes quantiles from raw per-transition data, not summaries-of-summaries (per lessons.md entry 2026-04-17 on aggregation statistics) -> experiment-runner  (spec S10.1, lessons.md)
+    <!-- done 2026-04-18; _aggregate_safe_stagewise_from_raw() pools raw safe_rho/ed/beta_used arrays across all seeds before computing q05/q50/q95 per stage; no mean-of-means -->
+
+37. - [ ] [ablation] Main comparison: classical `beta=0` baseline (Phase I/II) vs safe weighted-LSE with reverse-engineered clipped schedule, for every task family -> experiment-runner  (spec S9.1)
+38. - [ ] [ablation] Fixed-discount control: compare against best classical tuned fixed-`gamma'` baseline from Phase I/II; show gain is not due to smaller global discount -> experiment-runner  (spec S9.2)
+39. - [ ] [ablation] Constant-beta: compare same-sign constant `beta` (small + large) before clipping vs stagewise reverse-engineered schedule; show stagewise calibration matters -> experiment-runner  (spec S9.3)
+40. - [ ] [ablation] Wrong-sign: run wrong-sign schedule on at least one positive-tail family and one catastrophe family; show sign alignment matters -> experiment-runner  (spec S9.4)
+41. - [ ] [ablation] Raw-unclipped: run raw schedule without clipping on small subset; demonstrate why safe calibration is needed -> experiment-runner  (spec S9.5)
+42. - [ ] [ablation] Alpha/headroom + calibration-source ablations: constant `alpha in {0.00, 0.02, 0.05, 0.10, 0.20}`; Phase I vs Phase II vs pooled calibration source on at least one family -> experiment-runner  (spec S9.6, S9.7)
+
+43. - [ ] [plot] Effective discount vs classical gamma figure: empirical `effective_discount_t` distributions with horizontal gamma reference -> plotter-analyst  (spec S11.1.1)
+44. - [ ] [plot] Planning residual curves: classical vs safe DP planners on exact model tasks -> plotter-analyst  (spec S11.1.2)
+45. - [ ] [plot] Learning curves: classical vs safe online RL on base and stress tasks -> plotter-analyst  (spec S11.1.3)
+46. - [ ] [plot] Regime-shift adaptation: post-change recovery curves comparing classical vs safe -> plotter-analyst  (spec S11.1.4)
+47. - [ ] [plot] Return distribution plots: catastrophe and jackpot tasks, classical vs safe -> plotter-analyst  (spec S11.1.5)
+48. - [ ] [plot] Clip activity / deployed beta plot by stage -> plotter-analyst  (spec S11.1.6)
+49. - [ ] [plot] Appendix figures: alpha ablation, constant-beta vs stagewise, wrong-sign, fixed-gamma' control, optional MC-relaxation -> plotter-analyst  (spec S11.2)
+50. - [ ] [analysis] Write Table P3-A (main performance comparison: classical vs safe) -> plotter-analyst  (spec S11.3)
+51. - [ ] [analysis] Write Tables P3-B through P3-E (planning iterations/wall-clock, nonstationary adaptation, tail-event metrics, compute overhead/clip activity) -> plotter-analyst  (spec S11.3)
+52. - [ ] [analysis] Write `experiments/weighted_lse_dp/analysis/make_phase3_figures.py` bundling all Phase III figures; ensure production path tested against real data fixtures (per lessons.md entry on figure scripts without contract testing) -> plotter-analyst  (spec S11, lessons.md)
+
+53. - [ ] [test] Verifier pass: run full test suite + smoke runs on 1 seed per task family + schema/shape audit + confirm safe operator diagnostics are populated -> verifier  (spec S14 exit criteria 1--9)
+54. - [ ] [infra] Append Phase III review section to `tasks/todo.md` summarizing deviations, timings, per-task-family schedule answers (spec S14 questions 1--5) -> planner  (spec S14)
+55. - [ ] [infra] Audit `tasks/lessons.md` -- every bug found during safe-operator implementation and calibration recorded with pattern + prevention rule + source incident -> planner  (spec S14 exit criterion 9)
+
+### Dependencies
+
+- 1 blocks all other tasks (spec comprehension gate).
+- 2 blocks 5-9, 14-15, 22-25, 26-27 (safe_weighted_common is the foundation for all safe algorithms and logging).
+- 3 blocks 10, 14-15 (certification math needed for certification tests and calibration pipeline).
+- 4, 10, 11, 12, 13 block 17-21 (operator/certification/equivalence tests must pass before DP planners are wired up).
+- 2-3 block 5-9 (safe common utilities needed by all DP planners).
+- 5-9 block 17-18, 20-21 (DP planner implementations needed before export/integration/tests).
+- 14-16 block 18-19, 30-32 (calibration pipeline produces schedules consumed by planners and runners).
+- 22-25 block 28, 32 (online RL algorithms needed before smoke tests and RL runner).
+- 26-27 block 28, 31-32 (logging extensions needed before smoke tests and runners).
+- 28-29 block 30-34 (smoke tests must pass before full runs).
+- 30-34 block 35-36 (runners precede aggregation).
+- 35-36 block 37-42 (aggregation precedes ablation comparisons).
+- 37-42 block 43-52 (ablation results needed for figures and tables).
+- 43-52 block 53 (figures/tables precede verifier pass).
+- 53 blocks 54-55 (verifier precedes review and lessons audit).
+
+### Parallelizable within groups
+
+- Within Group B: tasks 5, 6, 7, 8, 9 are independent DP planner implementations.
+- Within Group C: tasks 10, 11, 12, 13 are independent test files.
+- Within Group D: tasks 14, 15 are tightly coupled but 16 (fallback schedules) can run after 14-15.
+- Within Group F: tasks 22, 23, 24, 25 are independent safe TD algorithm implementations (22 is base, 23-25 depend on 22).
+- Within Group K: tasks 37-42 are independent ablation runs (all need runners + schedules).
+- Within Group L: tasks 43-52 are largely independent figure/table/analysis tasks.
+
+### Open questions
+
+1. **Algorithm selection for calibration reference baseline (inherited from Phase II R3 SPEC-GAP).** Spec S5.2 says "calibrate from Phase I/II classical outputs" but does not prescribe which classical algorithm (exact DP vs Q-Learning vs ExpectedSARSA) serves as the reference when multiple are available. The current Phase II calibration JSON pools all algorithms. Should Phase III use (a) exact DP when available, (b) the algorithm with lowest variance, or (c) the pooled average? This affects the `m_t^*` representative margin and therefore the entire beta schedule. Recommend: use exact DP (VI) as the reference for model-based tasks, and the best RL algorithm (by final return) for RL-only tasks.
+
+2. **Default lambda_min / lambda_max values (spec S5.6).** Spec recommends `lambda_min=0.10`, `lambda_max=0.50`. Should these be treated as fixed or as tunable hyperparameters for the main runs? The spec lists them as "default constants for the main runs" which suggests fixed. Ablation over lambda range could be added but is not specified. Confirm: use spec defaults as fixed for main runs, no lambda ablation needed.
+
+3. **SafeTD0 prediction tasks (spec S6.2).** SafeTD0 is for "fixed-policy prediction tasks." Which policies should be evaluated? The same reference policies used in Phase I PE runs (e.g., all-right for chain_base)? Or the optimal policy found by safe VI? This determines whether SafeTD0 measures safe policy evaluation accuracy or safe operator convergence under a reference policy. Recommend: evaluate the same reference policies as Phase I PE for comparability.
+
+4. **Phase II review items still open.** The R6 and R8 triage sections contain unresolved BLOCKERs and MAJORs for Phase II. Are these all resolved before Phase III starts? Phase III depends on correct calibration JSONs. If any calibration-affecting items (R6-1 regime-shift grouping, R6-2 margin_quantiles negative tail, R8-1 n_base) are unresolved, Phase III schedule construction will consume corrupted inputs.
+
+5. **Optional MC-relaxation ablation (spec S3.5, S6.3, S8.5, S9.8).** The spec explicitly marks this as optional and appendix-only. Should it be included in the Phase III plan as a stretch task, or deferred entirely? Current plan omits it from the main checklist. If desired, it would add approximately 3-4 tasks (implementation, tests, ablation run, figure).

@@ -67,11 +67,16 @@ __all__ = [
     "CALIBRATION_ARRAYS",
     "MARGIN_BETA0_FORMULA",
     "PHASE2_EVENT_ARRAYS",
+    "SAFE_TRANSITIONS_ARRAYS",
+    "SAFE_CALIBRATION_ARRAYS",
+    "SAFE_PROVENANCE_FIELDS",
     "RunWriter",
     "validate_transitions_npz",
     "validate_phase2_transitions_npz",
     "validate_calibration_npz",
     "validate_curves_npz",
+    "validate_safe_transitions_npz",
+    "aggregate_safe_stats",
 ]
 
 
@@ -196,6 +201,142 @@ without the ``gamma`` factor. The string is recorded verbatim in every
 ``transitions.npz`` header so any downstream consumer can recover the
 exact convention that produced the on-disk numbers.
 """
+
+
+# ----------------------------------------------------------------------------
+# Phase III safe-specific array contracts (spec §7.1-7.3)
+# ----------------------------------------------------------------------------
+
+
+SAFE_TRANSITIONS_ARRAYS: tuple[str, ...] = (
+    "safe_stage",              # (N,) int64   - stage decoded from augmented state
+    "safe_beta_raw",           # (N,) float64 - raw (pre-clip) beta at stage
+    "safe_beta_cap",           # (N,) float64 - clip cap at stage
+    "safe_beta_used",          # (N,) float64 - deployed beta (after clipping)
+    "safe_clip_active",        # (N,) bool    - whether clipping fired
+    "safe_rho",                # (N,) float64 - responsibility rho_t(r, v_next)
+    "safe_effective_discount", # (N,) float64 - effective discount |d/dv g_t^safe|
+    "safe_target",             # (N,) float64 - safe Bellman target g_t^safe(r, v_next)
+    "safe_margin",             # (N,) float64 - margin = reward - v_next (no gamma)
+    "safe_td_error",           # (N,) float64 - safe_target - q_current (TD error)
+)
+"""Array names for safe-specific per-transition fields in ``transitions.npz``.
+
+These supplement (NOT replace) :data:`TRANSITIONS_ARRAYS`.  A Phase III
+safe run's ``transitions.npz`` should contain all keys from both tuples.
+"""
+
+
+SAFE_CALIBRATION_ARRAYS: tuple[str, ...] = (
+    # Per-stage arrays (shape (T,) each):
+    "safe_rho_mean",                 # (T,) float64 - mean rho_t per stage
+    "safe_rho_std",                  # (T,) float64 - std rho_t per stage
+    "safe_effective_discount_mean",  # (T,) float64
+    "safe_effective_discount_std",   # (T,) float64
+    "safe_beta_used_min",            # (T,) float64
+    "safe_beta_used_mean",           # (T,) float64
+    "safe_beta_used_max",            # (T,) float64
+    "safe_clip_fraction",            # (T,) float64 - fraction of transitions with clipping
+    "safe_underdiscount_fraction",   # (T,) float64 - fraction with effective_discount < gamma
+    "safe_bellman_residual",         # (T,) float64 - per-stage DP Bellman residual (NaN for RL)
+)
+"""Array names for per-stage aggregate safe stats in ``calibration_stats.npz``.
+
+These supplement :data:`CALIBRATION_ARRAYS` for Phase III safe runs.
+``safe_bellman_residual`` is populated by DP runners; RL runs fill it
+with ``NaN``.
+"""
+
+
+SAFE_PROVENANCE_FIELDS: tuple[str, ...] = (
+    "schedule_path",           # str - path to schedule.json used
+    "calibration_source_path", # str - path to Phase I/II calibration JSON
+    "calibration_hash",        # str - SHA-256 of calibration JSON
+    "source_phase",            # str - "phase1", "phase2", or "pooled"
+)
+"""Field names for ``safe_provenance.json`` (spec §7.3).
+
+These fields trace the lineage of the beta schedule back to its
+calibration source, enabling full reproducibility auditing.
+"""
+
+
+# ----------------------------------------------------------------------------
+# Phase III aggregate safe stats helper
+# ----------------------------------------------------------------------------
+
+
+def aggregate_safe_stats(
+    payload: dict[str, np.ndarray],
+    T: int,
+    gamma: float,
+) -> dict[str, np.ndarray]:
+    """Compute per-stage aggregate safe stats from a SafeTransitionLogger payload.
+
+    Parameters
+    ----------
+    payload : dict
+        Output of ``SafeTransitionLogger.build_safe_payload()``.
+        Must contain at least ``safe_stage``, ``safe_rho``,
+        ``safe_effective_discount``, ``safe_beta_used``, and
+        ``safe_clip_active``.
+    T : int
+        Number of stages.
+    gamma : float
+        Nominal discount factor (used for ``safe_underdiscount_fraction``
+        threshold).
+
+    Returns
+    -------
+    dict[str, np.ndarray]
+        Keys matching :data:`SAFE_CALIBRATION_ARRAYS`.
+        ``safe_bellman_residual`` is filled with ``NaN`` (RL default);
+        DP runners should override it after calling this function.
+    """
+    stages = np.asarray(payload["safe_stage"], dtype=np.int64)
+    rho = np.asarray(payload["safe_rho"], dtype=np.float64)
+    ed = np.asarray(payload["safe_effective_discount"], dtype=np.float64)
+    beta_used = np.asarray(payload["safe_beta_used"], dtype=np.float64)
+    clip = np.asarray(payload["safe_clip_active"]).astype(np.float64)
+
+    rho_mean = np.full(T, np.nan)
+    rho_std = np.full(T, np.nan)
+    ed_mean = np.full(T, np.nan)
+    ed_std = np.full(T, np.nan)
+    bu_min = np.full(T, np.nan)
+    bu_mean = np.full(T, np.nan)
+    bu_max = np.full(T, np.nan)
+    clip_frac = np.full(T, np.nan)
+    underdiscount_frac = np.full(T, np.nan)
+
+    for t in range(T):
+        mask = stages == t
+        if not np.any(mask):
+            continue
+        rho_mean[t] = np.mean(rho[mask])
+        rho_std[t] = np.std(rho[mask])
+        ed_mean[t] = np.mean(ed[mask])
+        ed_std[t] = np.std(ed[mask])
+        bu_min[t] = np.min(beta_used[mask])
+        bu_mean[t] = np.mean(beta_used[mask])
+        bu_max[t] = np.max(beta_used[mask])
+        clip_frac[t] = np.mean(clip[mask])
+        underdiscount_frac[t] = np.mean(
+            (ed[mask] < gamma).astype(np.float64)
+        )
+
+    return {
+        "safe_rho_mean": rho_mean,
+        "safe_rho_std": rho_std,
+        "safe_effective_discount_mean": ed_mean,
+        "safe_effective_discount_std": ed_std,
+        "safe_beta_used_min": bu_min,
+        "safe_beta_used_mean": bu_mean,
+        "safe_beta_used_max": bu_max,
+        "safe_clip_fraction": clip_frac,
+        "safe_underdiscount_fraction": underdiscount_frac,
+        "safe_bellman_residual": np.full(T, np.nan),  # RL default; DP runners override
+    }
 
 
 # ----------------------------------------------------------------------------
@@ -860,6 +1001,14 @@ def validate_calibration_npz(path: Path) -> list[str]:
     An empty list means the file is valid.
     """
     return _missing_keys(path, CALIBRATION_ARRAYS)
+
+
+def validate_safe_transitions_npz(path: str | Path) -> list[str]:
+    """Check that a safe transitions.npz contains all SAFE_TRANSITIONS_ARRAYS keys.
+
+    Returns list of missing keys (empty if all present).
+    """
+    return _missing_keys(Path(path), SAFE_TRANSITIONS_ARRAYS)
 
 
 def validate_curves_npz(path: Path, mode: str) -> list[str]:

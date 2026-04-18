@@ -32,6 +32,25 @@ from mushroom_rl.algorithms.value.dp.classical_modified_policy_iteration import 
 from mushroom_rl.algorithms.value.dp.classical_async_value_iteration import (
     ClassicalAsyncValueIteration,
 )
+from mushroom_rl.algorithms.value.dp.safe_weighted_common import (
+    BetaSchedule,
+    SafeWeightedCommon,
+)
+from mushroom_rl.algorithms.value.dp.safe_weighted_value_iteration import (
+    SafeWeightedValueIteration,
+)
+from mushroom_rl.algorithms.value.dp.safe_weighted_policy_evaluation import (
+    SafeWeightedPolicyEvaluation,
+)
+from mushroom_rl.algorithms.value.dp.safe_weighted_policy_iteration import (
+    SafeWeightedPolicyIteration,
+)
+from mushroom_rl.algorithms.value.dp.safe_weighted_modified_policy_iteration import (
+    SafeWeightedModifiedPolicyIteration,
+)
+from mushroom_rl.algorithms.value.dp.safe_weighted_async_value_iteration import (
+    SafeWeightedAsyncValueIteration,
+)
 
 __all__ = [
     "validate_finite_mdp",
@@ -49,4 +68,11 @@ __all__ = [
     "ClassicalPolicyIteration",
     "ClassicalModifiedPolicyIteration",
     "ClassicalAsyncValueIteration",
+    "BetaSchedule",
+    "SafeWeightedCommon",
+    "SafeWeightedValueIteration",
+    "SafeWeightedPolicyEvaluation",
+    "SafeWeightedPolicyIteration",
+    "SafeWeightedModifiedPolicyIteration",
+    "SafeWeightedAsyncValueIteration",
 ]

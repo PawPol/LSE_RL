@@ -273,18 +273,74 @@ def load_schedule_or_zero(
 # ----------------------------------------------------------------------------
 
 
-def build_schedule(*args: Any, **kwargs: Any) -> BetaSchedule:  # noqa: D401
-    """Phase III entry point -- NOT implemented in Phase I.
+def build_schedule(
+    schedule_json_path: str | Path,
+    task: str,
+    algorithm: str,
+) -> BetaSchedule:
+    """Load a Phase III calibrated schedule.json and return a BetaSchedule.
 
-    The calibration-engineer will implement this against
-    ``calibration_stats.npz`` during Phase III. Keeping the symbol here
-    with a clear error makes premature calls fail loudly instead of
-    silently constructing a wrong schedule.
+    This is the Phase III implementation of the stub left in Phase I.
+    Reads the schedule.json produced by ``build_schedule_from_phase12.py``
+    and wraps the ``beta_used_t`` array as the Phase I
+    :class:`BetaSchedule` ``.betas`` field.
+
+    Parameters
+    ----------
+    schedule_json_path:
+        Filesystem path to the ``schedule.json`` file produced by the
+        Phase III calibration pipeline.
+    task:
+        Task identifier (e.g. ``"chain_catastrophe"``).
+    algorithm:
+        Algorithm identifier (e.g. ``"SafeWeightedValueIteration"``).
+
+    Returns
+    -------
+    BetaSchedule
+        Phase I dataclass with ``.betas`` populated from the calibrated
+        ``beta_used_t`` array.
     """
-    raise NotImplementedError(
-        "build_schedule is a Phase III responsibility; in Phase I use "
-        "zero_schedule() or load_schedule_or_zero()."
+    p = Path(schedule_json_path)
+    with p.open("r", encoding="utf-8") as f:
+        schedule = json.load(f)
+
+    return BetaSchedule(
+        task=task,
+        algorithm=algorithm,
+        phase="phase3",
+        betas=np.asarray(schedule["beta_used_t"], dtype=np.float64),
+        source="calibrated",
     )
+
+
+def load_safe_schedule_native(
+    path: str | Path,
+) -> "safe_weighted_common_BetaSchedule":
+    """Load a Phase III schedule.json as the native safe-common BetaSchedule.
+
+    Returns the richer :class:`BetaSchedule` from
+    ``safe_weighted_common`` (the one safe DP planners actually consume).
+    This performs a lazy import to avoid hard-coupling the experiments
+    tree to mushroom-rl-dev at module-load time.
+
+    Parameters
+    ----------
+    path:
+        Filesystem path to the ``schedule.json`` file.
+
+    Returns
+    -------
+    safe_weighted_common.BetaSchedule
+        Native schedule object accepted by all safe DP planners.
+    """
+    # Lazy import to avoid import-time coupling.  The mushroom-rl-dev
+    # directory must be on sys.path for this to work; callers (tests,
+    # runners) are expected to set that up.
+    from mushroom_rl.algorithms.value.dp.safe_weighted_common import (  # noqa: F811
+        BetaSchedule as _NativeBetaSchedule,
+    )
+    return _NativeBetaSchedule.from_file(path)
 
 
 # ----------------------------------------------------------------------------
@@ -299,4 +355,10 @@ __all__ = [
     "load_schedule",
     "load_schedule_or_zero",
     "build_schedule",
+    "load_safe_schedule_native",
 ]
+
+# Type alias used in the return annotation of load_safe_schedule_native.
+# The actual class is imported lazily inside the function to avoid
+# module-level coupling to mushroom-rl-dev.
+safe_weighted_common_BetaSchedule = Any

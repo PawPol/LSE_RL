@@ -39,8 +39,13 @@ from experiments.weighted_lse_dp.common.calibration import (  # noqa: E402
     build_transitions_payload_from_lists,
 )
 
+from experiments.weighted_lse_dp.common.schemas import (  # noqa: E402
+    SAFE_TRANSITIONS_ARRAYS,
+)
+
 __all__ = [
     "TransitionLogger",
+    "SafeTransitionLogger",
     "DPCurvesLogger",
     "RLEvaluator",
     "EventTransitionLogger",
@@ -198,6 +203,131 @@ class TransitionLogger:
     def n_transitions(self) -> int:
         """Number of transitions accumulated so far."""
         return len(self._episode_index)
+
+
+# -----------------------------------------------------------------------
+# Phase III: Safe per-transition logger (spec S7.1)
+# -----------------------------------------------------------------------
+
+
+class SafeTransitionLogger(TransitionLogger):
+    """Extends TransitionLogger with safe-specific per-transition fields.
+
+    Reads from ``agent.swc.last_*`` fields after each update. The agent
+    must be a safe TD algorithm (``SafeQLearning``, ``SafeExpectedSARSA``,
+    ``SafeTD0``) that has ``agent.swc`` (a ``SafeWeightedCommon`` instance).
+
+    The additional arrays populated are those in
+    :data:`~schemas.SAFE_TRANSITIONS_ARRAYS`.
+
+    Parameters
+    ----------
+    agent:
+        MushroomRL safe agent with both ``Q`` and ``swc`` attributes.
+    n_base:
+        Number of base (un-augmented) states.
+    gamma:
+        Discount factor (forwarded to parent for ``td_target_beta0``).
+    """
+
+    def __init__(self, agent: object, *, n_base: int, gamma: float) -> None:
+        super().__init__(agent, n_base=n_base, gamma=gamma)
+        # Safe-specific accumulation lists.
+        self._safe_stage: list[int] = []
+        self._safe_beta_raw: list[float] = []
+        self._safe_beta_cap: list[float] = []
+        self._safe_beta_used: list[float] = []
+        self._safe_clip_active: list[bool] = []
+        self._safe_rho: list[float] = []
+        self._safe_effective_discount: list[float] = []
+        self._safe_target: list[float] = []
+        self._safe_margin: list[float] = []
+        self._safe_td_error: list[float] = []
+
+    # ------------------------------------------------------------------
+    # Core callback interface (extends parent)
+    # ------------------------------------------------------------------
+
+    def __call__(self, sample: tuple) -> None:  # type: ignore[override]
+        """Record base transition fields, then append safe-specific fields.
+
+        Reads ``agent.swc.last_*`` attributes populated by the most
+        recent ``_update()`` call. Values are coerced to Python scalars
+        via ``float(np.asarray(x).item())`` to handle both scalar and
+        0-d array returns from the safe operator.
+        """
+        # Call parent first (appends base transition fields).
+        super().__call__(sample)
+
+        # Read safe fields from agent.swc (populated by the last _update()).
+        swc = self._agent.swc  # type: ignore[attr-defined]
+        reward = float(sample[2])
+
+        # v_next from parent's last-appended entry (already computed).
+        v_next = self._v_next_beta0[-1]
+
+        self._safe_stage.append(int(swc.last_stage))
+        self._safe_beta_raw.append(float(np.asarray(swc.last_beta_raw).item()))
+        self._safe_beta_cap.append(float(np.asarray(swc.last_beta_cap).item()))
+        self._safe_beta_used.append(float(np.asarray(swc.last_beta_used).item()))
+        self._safe_clip_active.append(bool(swc.last_clip_active))
+        self._safe_rho.append(float(np.asarray(swc.last_rho).item()))
+        self._safe_effective_discount.append(
+            float(np.asarray(swc.last_effective_discount).item())
+        )
+
+        safe_target = float(np.asarray(swc.last_target).item())
+        self._safe_target.append(safe_target)
+        self._safe_margin.append(reward - v_next)  # margin = r - v_next (no gamma)
+
+        # TD error: safe_target - q_current (q_current from parent).
+        q_current = self._q_current_beta0[-1]
+        self._safe_td_error.append(safe_target - q_current)
+
+    # ------------------------------------------------------------------
+    # Payload construction
+    # ------------------------------------------------------------------
+
+    def build_safe_payload(self) -> dict[str, np.ndarray]:
+        """Return safe-specific transition arrays (SAFE_TRANSITIONS_ARRAYS keys)."""
+        return {
+            "safe_stage": np.array(self._safe_stage, dtype=np.int64),
+            "safe_beta_raw": np.array(self._safe_beta_raw, dtype=np.float64),
+            "safe_beta_cap": np.array(self._safe_beta_cap, dtype=np.float64),
+            "safe_beta_used": np.array(self._safe_beta_used, dtype=np.float64),
+            "safe_clip_active": np.array(self._safe_clip_active, dtype=bool),
+            "safe_rho": np.array(self._safe_rho, dtype=np.float64),
+            "safe_effective_discount": np.array(
+                self._safe_effective_discount, dtype=np.float64
+            ),
+            "safe_target": np.array(self._safe_target, dtype=np.float64),
+            "safe_margin": np.array(self._safe_margin, dtype=np.float64),
+            "safe_td_error": np.array(self._safe_td_error, dtype=np.float64),
+        }
+
+    def build_payload(self) -> dict[str, np.ndarray]:
+        """Return the full transitions payload: base + safe arrays merged."""
+        payload = super().build_payload()
+        payload.update(self.build_safe_payload())
+        return payload
+
+    # ------------------------------------------------------------------
+    # State management
+    # ------------------------------------------------------------------
+
+    def reset(self) -> None:
+        """Clear all accumulated data including safe-specific fields."""
+        super().reset()
+        self._safe_stage.clear()
+        self._safe_beta_raw.clear()
+        self._safe_beta_cap.clear()
+        self._safe_beta_used.clear()
+        self._safe_clip_active.clear()
+        self._safe_rho.clear()
+        self._safe_effective_discount.clear()
+        self._safe_target.clear()
+        self._safe_margin.clear()
+        self._safe_td_error.clear()
 
 
 # -----------------------------------------------------------------------
