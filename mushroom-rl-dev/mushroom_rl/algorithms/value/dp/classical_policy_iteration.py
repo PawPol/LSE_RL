@@ -142,6 +142,7 @@ class ClassicalPolicyIteration:
         init_pi: Optional[np.ndarray] = None,
         max_iter: int = 100,
         tol: float = 0.0,
+        v_init: "np.ndarray | None" = None,
     ) -> None:
         if not isinstance(max_iter, (int, np.integer)) or int(max_iter) <= 0:
             raise ValueError(
@@ -192,6 +193,17 @@ class ClassicalPolicyIteration:
         self.Q: np.ndarray = Q0                             # (T, S, A)
         self.V: np.ndarray = V0                             # (T + 1, S)
         self.pi: np.ndarray = pi0                           # (T, S)
+
+        # Warm-start: copy caller-provided V table, then re-enforce terminal.
+        if v_init is not None:
+            v_init_arr = np.asarray(v_init, dtype=np.float64)
+            if v_init_arr.shape != self.V.shape:
+                raise ValueError(
+                    f"v_init shape {v_init_arr.shape} != V shape {self.V.shape}; "
+                    "v_init must be (H+1, S) matching horizon and state space."
+                )
+            self.V[:] = v_init_arr
+            self.V[self._T, :] = 0.0  # terminal boundary is always zero
 
         # Timing / logging scaffolding.
         self.residuals: List[float] = []

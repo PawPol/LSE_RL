@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-16T21:15:59Z",
+  "created_at": "2026-04-17T02:03:55Z",
   "phase": "phase1",
   "task": "double_chain",
   "algorithm": "TD_sweep",
   "seed": 11,
-  "git_sha": "3cb556df921a97676c8199d65daa406dca6115c1",
+  "git_sha": "8668d67660c22e575f96812d0461ea2497ceaff0",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "source": "mushroom-rl-dev/examples/double_chain_q_learning/double_chain.py",
@@ -115,15 +115,15 @@
     }
   },
   "timings": {
-    "total_s": 0.5883885840012226,
+    "total_s": 0.5815213329988183,
     "step_s": 0.0,
-    "fit_s": 0.5875685430073645,
+    "fit_s": 0.5807355410070159,
     "eval_s": 0.0,
     "plot_s": 0.0,
     "other_s": 0.0,
     "steps_per_s": null,
     "updates_per_s": null
   },
-  "total_wall_s": 0.5892053329953342,
+  "total_wall_s": 0.5822962919992278,
   "stdout_log": "stdout.log"
 }

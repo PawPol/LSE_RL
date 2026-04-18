@@ -1,0 +1,49 @@
+{
+  "suite": "smoke",
+  "task": "chain_catastrophe",
+  "algorithm": "VI",
+  "n_seeds": 1,
+  "seeds": [
+    11
+  ],
+  "scalar_metrics": {
+    "final_bellman_residual": {
+      "mean": 20.62906695327968,
+      "n_seeds": 1
+    },
+    "n_sweeps": {
+      "mean": 1.0,
+      "n_seeds": 1
+    },
+    "wall_clock_s": {
+      "mean": 0.00020816700998693705,
+      "n_seeds": 1
+    }
+  },
+  "tail_risk": null,
+  "adaptation": null,
+  "event_rates": null,
+  "curves": {
+    "steps": [
+      0
+    ],
+    "bellman_residual": [
+      20.62906695327968
+    ],
+    "supnorm_to_exact": [
+      0.0
+    ],
+    "mean_return": [
+      -20.62906695327968
+    ],
+    "episode_returns": [
+      -20.62906695327968
+    ]
+  },
+  "checkpoints": [
+    0
+  ],
+  "episode_returns": {},
+  "change_at_episode": null,
+  "visitation_counts": null
+}

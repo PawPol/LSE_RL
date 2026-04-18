@@ -1,0 +1,131 @@
+{
+  "suite": "smoke",
+  "task": "grid_regime_shift",
+  "algorithm": "QLearning",
+  "n_seeds": 1,
+  "seeds": [
+    11
+  ],
+  "scalar_metrics": {
+    "train_steps": {
+      "mean": 3000.0,
+      "n_seeds": 1
+    },
+    "n_transitions": {
+      "mean": 3000.0,
+      "n_seeds": 1
+    },
+    "final_disc_return_mean": {
+      "mean": 0.0,
+      "n_seeds": 1
+    },
+    "auc_disc_return": {
+      "mean": 0.0,
+      "n_seeds": 1
+    },
+    "steps_to_threshold": {
+      "mean": 1000.0,
+      "n_seeds": 1
+    }
+  },
+  "tail_risk": null,
+  "adaptation": {
+    "adaptation_pre_change_auc_mean": 0.2191825149405647,
+    "adaptation_post_change_auc_mean": 0.4797738799373198,
+    "adaptation_lag_50pct_mean": 0.0,
+    "adaptation_lag_75pct_mean": 30.0,
+    "adaptation_lag_90pct_mean": null,
+    "regime_shift_episode_mean": 10.0
+  },
+  "event_rates": {
+    "jackpot_event_rate_mean": 0.0,
+    "catastrophe_event_rate_mean": 0.0,
+    "hazard_hit_rate_mean": 0.0,
+    "shortcut_risky_path_fraction_mean": 0.0
+  },
+  "curves": {
+    "steps": [
+      1000,
+      2000,
+      3000
+    ],
+    "mean_return": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "std_return": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "success_rate": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "episode_returns": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "change_point": 10.0
+  },
+  "checkpoints": [
+    1000,
+    2000,
+    3000
+  ],
+  "episode_returns": {
+    "11": [
+      0.4801414565714212,
+      0.8345137614500875,
+      0.6964132180495735,
+      0.6556592205741436,
+      0.0,
+      0.8687458127689782,
+      0.7397003733882802,
+      0.0,
+      0.8953382542587164,
+      0.7471720943315961,
+      0.46588077516979337,
+      0.0,
+      0.5811664141181095,
+      0.7471720943315961,
+      0.8016305895390459,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.7936142836436554
+    ]
+  },
+  "change_at_episode": 10,
+  "visitation_counts": [
+    356,
+    230,
+    173,
+    137,
+    139,
+    227,
+    193,
+    153,
+    122,
+    108,
+    102,
+    122,
+    119,
+    111,
+    92,
+    48,
+    82,
+    93,
+    79,
+    60,
+    25,
+    61,
+    58,
+    66,
+    44
+  ]
+}

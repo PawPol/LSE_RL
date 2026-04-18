@@ -1,0 +1,95 @@
+{
+  "task": "grid_hazard",
+  "algorithm": "QLearning",
+  "seed": 11,
+  "gamma": 0.99,
+  "horizon": 80,
+  "n_base": 25,
+  "train_steps": 2000,
+  "checkpoint_every": 1000,
+  "eval_episodes_checkpoint": 10,
+  "success_threshold": 0.0,
+  "epsilon": 0.1,
+  "learning_rate": 0.1,
+  "stress_type": "hazard",
+  "task_config": {
+    "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_base_grid.txt",
+    "prob": 0.9,
+    "goal_reward": 1.0,
+    "gamma": 0.99,
+    "horizon": 80,
+    "hazard_states": [
+      12
+    ],
+    "hazard_prob": 0.5,
+    "hazard_reward": -5.0,
+    "hazard_terminates": false,
+    "n_states": 25,
+    "n_actions": 4,
+    "train_steps": 2000,
+    "checkpoint_every": 1000,
+    "eval_episodes_checkpoint": 10,
+    "eval_episodes_final": 40,
+    "success_threshold": 0.0,
+    "dp_algorithms": [
+      "VI"
+    ],
+    "rl_algorithms": [
+      "QLearning"
+    ],
+    "ref_policy": "shortest_path",
+    "severity": "hazard",
+    "stress_type": "hazard"
+  },
+  "factory_config": {
+    "task": "grid_hazard",
+    "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_base_grid.txt",
+    "n_rows": 5,
+    "n_cols": 5,
+    "prob": 0.9,
+    "pos_rew": 1.0,
+    "neg_rew": 0.0,
+    "gamma": 0.99,
+    "horizon": 80,
+    "goal_cell": [
+      4,
+      4
+    ],
+    "hazard_states": [
+      12
+    ],
+    "hazard_prob": 0.5,
+    "hazard_reward": -5.0,
+    "hazard_terminates": false,
+    "train_steps": 2000,
+    "checkpoint_every": 1000,
+    "eval_episodes_checkpoint": 10,
+    "eval_episodes_final": 40,
+    "success_threshold": 0.0,
+    "goal_reward": 1.0,
+    "n_states": 25,
+    "n_actions": 4,
+    "dp_algorithms": [
+      "VI"
+    ],
+    "rl_algorithms": [
+      "QLearning"
+    ],
+    "ref_policy": "shortest_path",
+    "severity": "hazard",
+    "stress_type": "hazard"
+  },
+  "tail_risk_metrics": {
+    "return_q05": -11.413390062271386,
+    "return_q25": -4.128967927265235,
+    "return_q50": -2.43868044919843,
+    "return_q75": 0.14383868749423212,
+    "return_q95": 0.8187372787898736,
+    "cvar_5pct": -14.274977795857938,
+    "cvar_10pct": -11.8943621449057,
+    "top5pct_mean": 0.8429857662724816,
+    "top10pct_mean": 0.8146494393364566,
+    "event_rate": 0.525,
+    "event_conditioned_return": -5.708263982023043
+  }
+}

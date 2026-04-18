@@ -39,7 +39,15 @@ from experiments.weighted_lse_dp.common.calibration import (  # noqa: E402
     build_transitions_payload_from_lists,
 )
 
-__all__ = ["TransitionLogger", "DPCurvesLogger", "RLEvaluator"]
+__all__ = [
+    "TransitionLogger",
+    "DPCurvesLogger",
+    "RLEvaluator",
+    "EventTransitionLogger",
+    "AdaptationMetricsLogger",
+    "TailRiskLogger",
+    "TargetStatsLogger",
+]
 
 
 class TransitionLogger:
@@ -561,4 +569,379 @@ class RLEvaluator:
             "auc_disc_return": auc_val,
             "final_disc_return_mean": f10_dr,
             "final_10pct_success_rate": f10_sr,
+        }
+
+
+# -----------------------------------------------------------------------
+# Phase II: Event-level transition logger (spec S8.1)
+# -----------------------------------------------------------------------
+
+
+class EventTransitionLogger(TransitionLogger):
+    """Extension of :class:`TransitionLogger` that also records binary event flags.
+
+    The runner sets pending event flags (via :meth:`set_step_events` or
+    individual ``mark_*`` methods) **before** the Core step callback fires.
+    When :meth:`__call__` executes, the pending flags are appended to their
+    respective lists and then reset to ``False``.
+
+    Parameters
+    ----------
+    agent, n_base, gamma:
+        Forwarded to :class:`TransitionLogger`.
+    """
+
+    def __init__(self, agent: object, *, n_base: int, gamma: float) -> None:
+        super().__init__(agent, n_base=n_base, gamma=gamma)
+
+        # Pending flags (set by runner before each step).
+        self._pending_jackpot: bool = False
+        self._pending_catastrophe: bool = False
+        self._pending_regime_post: bool = False
+        self._pending_hazard: bool = False
+        self._pending_shortcut: bool = False
+
+        # Accumulated event arrays.
+        self._jackpot_event: list[bool] = []
+        self._catastrophe_event: list[bool] = []
+        self._regime_post_change: list[bool] = []
+        self._hazard_cell_hit: list[bool] = []
+        self._shortcut_action_taken: list[bool] = []
+
+    # ------------------------------------------------------------------
+    # Mark helpers (runner calls these before each step)
+    # ------------------------------------------------------------------
+
+    def set_step_events(
+        self,
+        *,
+        jackpot: bool = False,
+        catastrophe: bool = False,
+        regime_post: bool = False,
+        hazard: bool = False,
+        shortcut: bool = False,
+    ) -> None:
+        """Set all pending event flags for the upcoming step at once."""
+        self._pending_jackpot = jackpot
+        self._pending_catastrophe = catastrophe
+        self._pending_regime_post = regime_post
+        self._pending_hazard = hazard
+        self._pending_shortcut = shortcut
+
+    def mark_jackpot(self) -> None:
+        """Mark the upcoming step as a jackpot event."""
+        self._pending_jackpot = True
+
+    def mark_catastrophe(self) -> None:
+        """Mark the upcoming step as a catastrophe event."""
+        self._pending_catastrophe = True
+
+    def mark_regime_post_change(self, status: bool = True) -> None:
+        """Mark the upcoming step as occurring after a regime change."""
+        self._pending_regime_post = status
+
+    def mark_hazard_hit(self) -> None:
+        """Mark the upcoming step as a hazard-cell hit."""
+        self._pending_hazard = True
+
+    def mark_shortcut_taken(self) -> None:
+        """Mark the upcoming step as a shortcut action."""
+        self._pending_shortcut = True
+
+    # ------------------------------------------------------------------
+    # Core callback interface (extends parent)
+    # ------------------------------------------------------------------
+
+    def __call__(self, sample: tuple) -> None:  # type: ignore[override]
+        """Record the transition and snapshot pending event flags."""
+        # Delegate base transition logging.
+        super().__call__(sample)
+
+        # Snapshot and reset pending flags.
+        self._jackpot_event.append(self._pending_jackpot)
+        self._catastrophe_event.append(self._pending_catastrophe)
+        self._regime_post_change.append(self._pending_regime_post)
+        self._hazard_cell_hit.append(self._pending_hazard)
+        self._shortcut_action_taken.append(self._pending_shortcut)
+
+        self._pending_jackpot = False
+        self._pending_catastrophe = False
+        self._pending_regime_post = False
+        self._pending_hazard = False
+        self._pending_shortcut = False
+
+    # ------------------------------------------------------------------
+    # Payload construction
+    # ------------------------------------------------------------------
+
+    def build_payload(self) -> dict[str, np.ndarray]:
+        """Return the base transitions payload plus 5 event-flag arrays."""
+        payload = super().build_payload()
+        payload["jackpot_event"] = np.asarray(self._jackpot_event, dtype=bool)
+        payload["catastrophe_event"] = np.asarray(self._catastrophe_event, dtype=bool)
+        payload["regime_post_change"] = np.asarray(self._regime_post_change, dtype=bool)
+        payload["hazard_cell_hit"] = np.asarray(self._hazard_cell_hit, dtype=bool)
+        payload["shortcut_action_taken"] = np.asarray(
+            self._shortcut_action_taken, dtype=bool
+        )
+        return payload
+
+    # ------------------------------------------------------------------
+    # State management
+    # ------------------------------------------------------------------
+
+    def reset(self) -> None:
+        """Clear all accumulated data including event flags."""
+        super().reset()
+        self._pending_jackpot = False
+        self._pending_catastrophe = False
+        self._pending_regime_post = False
+        self._pending_hazard = False
+        self._pending_shortcut = False
+        self._jackpot_event.clear()
+        self._catastrophe_event.clear()
+        self._regime_post_change.clear()
+        self._hazard_cell_hit.clear()
+        self._shortcut_action_taken.clear()
+
+
+# -----------------------------------------------------------------------
+# Phase II: Adaptation metrics (spec S8.2)
+# -----------------------------------------------------------------------
+
+
+class AdaptationMetricsLogger:
+    """Compute adaptation metrics from per-episode returns around a regime change.
+
+    This is a stateless helper: call :meth:`compute` with episode returns
+    and the change-point episode index to get the metrics dict.
+    """
+
+    _ROLLING_WINDOW: int = 10
+    """Window size for rolling-mean recovery lag computation."""
+
+    def compute(
+        self,
+        episode_returns: np.ndarray,
+        change_at_episode: int,
+    ) -> dict[str, float | int | None | np.ndarray]:
+        """Compute adaptation metrics.
+
+        Parameters
+        ----------
+        episode_returns:
+            Shape ``(n_episodes,)`` float64 array of per-episode returns.
+        change_at_episode:
+            Episode index at which the regime change occurs.
+
+        Returns
+        -------
+        dict
+            Keys: ``change_at_episode``, ``pre_change_auc``,
+            ``post_change_auc``, ``lag_to_50pct_recovery``,
+            ``lag_to_75pct_recovery``, ``lag_to_90pct_recovery``,
+            ``post_change_optimum``.
+        """
+        episode_returns = np.asarray(episode_returns, dtype=np.float64)
+        n_episodes = len(episode_returns)
+
+        # Edge case: change point is at or beyond all episodes.
+        if change_at_episode >= n_episodes:
+            return {
+                "change_at_episode": int(change_at_episode),
+                "pre_change_auc": float("nan"),
+                "post_change_auc": float("nan"),
+                "lag_to_50pct_recovery": None,
+                "lag_to_75pct_recovery": None,
+                "lag_to_90pct_recovery": None,
+                "post_change_optimum": float("nan"),
+            }
+
+        pre = episode_returns[:change_at_episode]
+        post = episode_returns[change_at_episode:]
+
+        pre_auc = float(np.nanmean(pre)) if len(pre) > 0 else float("nan")
+        post_auc = float(np.nanmean(post)) if len(post) > 0 else float("nan")
+        post_optimum = float(np.nanmax(post)) if len(post) > 0 else float("nan")
+
+        # Recovery lags via rolling mean.
+        w = self._ROLLING_WINDOW
+        lags: dict[str, int | None] = {}
+        for pct_label, pct in [
+            ("lag_to_50pct_recovery", 0.50),
+            ("lag_to_75pct_recovery", 0.75),
+            ("lag_to_90pct_recovery", 0.90),
+        ]:
+            threshold = pct * post_optimum
+            lag: int | None = None
+            for i in range(len(post)):
+                start = max(0, i - w + 1)
+                rolling_mean = float(np.mean(post[start : i + 1]))
+                if rolling_mean >= threshold:
+                    lag = i
+                    break
+            lags[pct_label] = lag
+
+        return {
+            "change_at_episode": int(change_at_episode),
+            "pre_change_auc": pre_auc,
+            "post_change_auc": post_auc,
+            "lag_to_50pct_recovery": lags["lag_to_50pct_recovery"],
+            "lag_to_75pct_recovery": lags["lag_to_75pct_recovery"],
+            "lag_to_90pct_recovery": lags["lag_to_90pct_recovery"],
+            "post_change_optimum": post_optimum,
+        }
+
+
+# -----------------------------------------------------------------------
+# Phase II: Tail-risk metrics (spec S8.3)
+# -----------------------------------------------------------------------
+
+
+class TailRiskLogger:
+    """Compute tail-risk metrics from per-episode returns and event flags.
+
+    This is a stateless helper: call :meth:`compute` with episode returns
+    and boolean event flags to get quantiles, CVaR, and event statistics.
+    """
+
+    def compute(
+        self,
+        episode_returns: np.ndarray,
+        event_flags: np.ndarray,
+    ) -> dict[str, float]:
+        """Compute tail-risk metrics.
+
+        Parameters
+        ----------
+        episode_returns:
+            Shape ``(n_episodes,)`` float64 array of per-episode returns.
+        event_flags:
+            Shape ``(n_episodes,)`` bool array.  True when the event of
+            interest occurred in that episode.
+
+        Returns
+        -------
+        dict
+            Keys: ``return_q05``, ``return_q25``, ``return_q50``,
+            ``return_q75``, ``return_q95``, ``cvar_5pct``,
+            ``cvar_10pct``, ``top5pct_mean``, ``top10pct_mean``,
+            ``event_rate``, ``event_conditioned_return``.
+        """
+        r = np.asarray(episode_returns, dtype=np.float64)
+        flags = np.asarray(event_flags, dtype=bool)
+        n = len(r)
+
+        # Quantiles.
+        q05, q25, q50, q75, q95 = np.nanpercentile(r, [5, 25, 50, 75, 95])
+
+        # CVaR: sort ascending, take bottom alpha% slice.
+        sorted_r = np.sort(r)
+        k5 = max(1, int(np.ceil(n * 0.05)))
+        k10 = max(1, int(np.ceil(n * 0.10)))
+        cvar_5 = float(np.nanmean(sorted_r[:k5]))
+        cvar_10 = float(np.nanmean(sorted_r[:k10]))
+
+        # Top percentile means (descending).
+        sorted_desc = sorted_r[::-1]
+        top5_k = max(1, int(np.ceil(n * 0.05)))
+        top10_k = max(1, int(np.ceil(n * 0.10)))
+        top5_mean = float(np.nanmean(sorted_desc[:top5_k]))
+        top10_mean = float(np.nanmean(sorted_desc[:top10_k]))
+
+        # Event statistics.
+        event_rate = float(np.mean(flags)) if n > 0 else 0.0
+        if np.any(flags):
+            event_cond_ret = float(np.nanmean(r[flags]))
+        else:
+            event_cond_ret = float("nan")
+
+        return {
+            "return_q05": float(q05),
+            "return_q25": float(q25),
+            "return_q50": float(q50),
+            "return_q75": float(q75),
+            "return_q95": float(q95),
+            "cvar_5pct": cvar_5,
+            "cvar_10pct": cvar_10,
+            "top5pct_mean": top5_mean,
+            "top10pct_mean": top10_mean,
+            "event_rate": event_rate,
+            "event_conditioned_return": event_cond_ret,
+        }
+
+
+# -----------------------------------------------------------------------
+# Phase II: Target-statistics logger (spec S8.4)
+# -----------------------------------------------------------------------
+
+
+class TargetStatsLogger:
+    """Compute target-statistics from a transitions payload.
+
+    This is a stateless helper: call :meth:`compute` with a transitions
+    payload dict (as returned by :meth:`TransitionLogger.build_payload`)
+    to get aligned margins and running standard deviations.
+    """
+
+    def compute(
+        self,
+        transitions_payload: dict[str, np.ndarray],
+    ) -> dict[str, np.ndarray]:
+        """Compute target statistics.
+
+        Parameters
+        ----------
+        transitions_payload:
+            Dict containing at least ``margin_beta0``,
+            ``td_target_beta0``, and ``td_error_beta0`` arrays of
+            shape ``(N,)``.
+
+        Returns
+        -------
+        dict[str, np.ndarray]
+            Keys: ``aligned_positive``, ``aligned_negative``,
+            ``td_target_std_running``, ``td_error_std_running``.
+            All arrays have shape ``(N,)`` and dtype float64.
+        """
+        margin = np.asarray(transitions_payload["margin_beta0"], dtype=np.float64)
+        td_target = np.asarray(transitions_payload["td_target_beta0"], dtype=np.float64)
+        td_error = np.asarray(transitions_payload["td_error_beta0"], dtype=np.float64)
+
+        n = len(margin)
+
+        aligned_pos = np.maximum(margin, 0.0)
+        aligned_neg = np.maximum(-margin, 0.0)
+
+        # Running (expanding-window) standard deviation.
+        td_target_std = np.empty(n, dtype=np.float64)
+        td_error_std = np.empty(n, dtype=np.float64)
+
+        if n > 0:
+            # Welford's online algorithm for numerical stability.
+            t_mean = 0.0
+            t_m2 = 0.0
+            e_mean = 0.0
+            e_m2 = 0.0
+            for i in range(n):
+                count = i + 1
+                # TD target running std.
+                delta_t = td_target[i] - t_mean
+                t_mean += delta_t / count
+                delta_t2 = td_target[i] - t_mean
+                t_m2 += delta_t * delta_t2
+                td_target_std[i] = np.sqrt(t_m2 / count) if count > 1 else 0.0
+
+                # TD error running std.
+                delta_e = td_error[i] - e_mean
+                e_mean += delta_e / count
+                delta_e2 = td_error[i] - e_mean
+                e_m2 += delta_e * delta_e2
+                td_error_std[i] = np.sqrt(e_m2 / count) if count > 1 else 0.0
+
+        return {
+            "aligned_positive": aligned_pos,
+            "aligned_negative": aligned_neg,
+            "td_target_std_running": td_target_std,
+            "td_error_std_running": td_error_std,
         }

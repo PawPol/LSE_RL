@@ -1,0 +1,145 @@
+{
+  "suite": "smoke",
+  "task": "chain_jackpot",
+  "algorithm": "QLearning",
+  "n_seeds": 1,
+  "seeds": [
+    11
+  ],
+  "scalar_metrics": {
+    "train_steps": {
+      "mean": 2000.0,
+      "n_seeds": 1
+    },
+    "n_transitions": {
+      "mean": 2000.0,
+      "n_seeds": 1
+    },
+    "final_disc_return_mean": {
+      "mean": 2.2328690724780405,
+      "n_seeds": 1
+    },
+    "auc_disc_return": {
+      "mean": 1.8554623719624967,
+      "n_seeds": 1
+    },
+    "steps_to_threshold": {
+      "mean": 1000.0,
+      "n_seeds": 1
+    }
+  },
+  "tail_risk": {
+    "return_cvar_5pct_mean": 0.0,
+    "return_cvar_10pct_mean": 0.0,
+    "event_rate_mean": 0.0,
+    "event_conditioned_return_mean": null
+  },
+  "adaptation": {
+    "adaptation_pre_change_auc_mean": null,
+    "adaptation_post_change_auc_mean": null,
+    "adaptation_lag_50pct_mean": null,
+    "adaptation_lag_75pct_mean": null,
+    "adaptation_lag_90pct_mean": null,
+    "regime_shift_episode_mean": -1.0
+  },
+  "event_rates": {
+    "jackpot_event_rate_mean": 0.0005,
+    "catastrophe_event_rate_mean": 0.0,
+    "hazard_hit_rate_mean": 0.0,
+    "shortcut_risky_path_fraction_mean": 0.0
+  },
+  "curves": {
+    "steps": [
+      1000,
+      2000
+    ],
+    "mean_return": [
+      1.478055671446953,
+      2.2328690724780405
+    ],
+    "std_return": [
+      2.1262824715594,
+      2.9120271492831207
+    ],
+    "success_rate": [
+      0.1,
+      0.2
+    ],
+    "episode_returns": [
+      1.478055671446953,
+      2.2328690724780405
+    ]
+  },
+  "checkpoints": [
+    1000,
+    2000
+  ],
+  "episode_returns": {
+    "11": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "change_at_episode": null,
+  "visitation_counts": [
+    386,
+    330,
+    277,
+    225,
+    173,
+    148,
+    105,
+    89,
+    93,
+    79,
+    49,
+    25,
+    9,
+    2,
+    1,
+    2,
+    3,
+    1,
+    1,
+    1,
+    1
+  ]
+}

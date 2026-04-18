@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-16T21:16:10Z",
+  "created_at": "2026-04-17T02:04:06Z",
   "phase": "phase1",
   "task": "puddle_world",
   "algorithm": "TrueOnlineSARSALambda",
   "seed": 11,
-  "git_sha": "3cb556df921a97676c8199d65daa406dca6115c1",
+  "git_sha": "8668d67660c22e575f96812d0461ea2497ceaff0",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "source": "mushroom-rl-dev/examples/puddle_world_sarsa.py",
@@ -52,9 +52,9 @@
   "non_degenerate": true,
   "metrics": {
     "train_n_steps": 3000,
-    "train_wall_s": 0.5704696249958943,
+    "train_wall_s": 0.5782627079970553,
     "baseline_eval_n_episodes": 2,
-    "baseline_eval_wall_s": 0.11242050000146264,
+    "baseline_eval_wall_s": 0.1126015829941025,
     "J_baseline_discounted_per_episode": [
       -104.00611953105928,
       -1336.7550169381966
@@ -62,7 +62,7 @@
     "J_baseline_discounted_mean": -720.380568234628,
     "eval_n_episodes": 2,
     "eval_horizon": 500,
-    "eval_wall_s": 0.11613445900002262,
+    "eval_wall_s": 0.11753741700522369,
     "J_discounted_per_episode": [
       -955.2408810460348,
       -697.4961648122347
@@ -93,15 +93,15 @@
     "non_degenerate": true
   },
   "timings": {
-    "total_s": 0.7994393330009189,
+    "total_s": 0.8090597499976866,
     "step_s": 0.0,
-    "fit_s": 0.5704711660000612,
-    "eval_s": 0.2285579159943154,
+    "fit_s": 0.5782642499980284,
+    "eval_s": 0.23014224999496946,
     "plot_s": 0.0,
     "other_s": 0.0,
     "steps_per_s": null,
     "updates_per_s": null
   },
-  "total_wall_s": 0.8009517079990474,
+  "total_wall_s": 0.8130004169943277,
   "stdout_log": "stdout.log"
 }

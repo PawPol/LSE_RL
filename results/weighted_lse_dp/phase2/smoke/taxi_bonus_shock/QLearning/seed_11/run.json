@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-18T02:06:40Z",
+  "phase": "phase2",
+  "task": "taxi_bonus_shock",
+  "algorithm": "QLearning",
+  "seed": 11,
+  "git_sha": "0806a043788643fd9fbafa697cc33e2390537544",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "task": "taxi_bonus_shock",
+    "algorithm": "QLearning",
+    "seed": 11,
+    "gamma": 0.99,
+    "horizon": 120,
+    "n_base": 44,
+    "train_steps": 3000,
+    "checkpoint_every": 1000,
+    "eval_episodes_checkpoint": 10,
+    "success_threshold": 0.0,
+    "epsilon": 0.1,
+    "learning_rate": 0.1,
+    "stress_type": "jackpot",
+    "task_config": {
+      "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_taxi_grid.txt",
+      "prob": 0.9,
+      "gamma": 0.99,
+      "horizon": 120,
+      "bonus_prob": 0.25,
+      "bonus_reward": 5.0,
+      "n_states": 44,
+      "n_actions": 4,
+      "train_steps": 3000,
+      "checkpoint_every": 1000,
+      "eval_episodes_checkpoint": 10,
+      "eval_episodes_final": 40,
+      "success_threshold": 0.0,
+      "dp_algorithms": [
+        "VI"
+      ],
+      "rl_algorithms": [
+        "QLearning"
+      ],
+      "ref_policy": "pickup_then_deliver",
+      "severity": "jackpot",
+      "stress_type": "jackpot"
+    },
+    "factory_config": {
+      "task": "taxi_bonus_shock",
+      "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_taxi_grid.txt",
+      "n_passengers": 1,
+      "prob": 0.9,
+      "rew": [
+        0,
+        1
+      ],
+      "gamma": 0.99,
+      "horizon": 120,
+      "n_states": 44,
+      "bonus_prob": 0.25,
+      "bonus_reward": 5.0,
+      "train_steps": 3000,
+      "checkpoint_every": 1000,
+      "eval_episodes_checkpoint": 10,
+      "eval_episodes_final": 40,
+      "success_threshold": 0.0,
+      "n_actions": 4,
+      "dp_algorithms": [
+        "VI"
+      ],
+      "rl_algorithms": [
+        "QLearning"
+      ],
+      "ref_policy": "pickup_then_deliver",
+      "severity": "jackpot",
+      "stress_type": "jackpot"
+    },
+    "tail_risk_metrics": {
+      "return_q05": 0.0,
+      "return_q25": 0.0,
+      "return_q50": 0.0,
+      "return_q75": 0.0,
+      "return_q95": 0.6511199512434358,
+      "cvar_5pct": 0.0,
+      "cvar_10pct": 0.0,
+      "top5pct_mean": 1.4428215667542266,
+      "top10pct_mean": 1.0124707198251648,
+      "event_rate": 0.025,
+      "event_conditioned_return": 2.1961940476393753
+    }
+  },
+  "suite": "smoke",
+  "storage_mode": "rl_online"
+}

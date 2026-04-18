@@ -1,0 +1,57 @@
+{
+  "task": "chain_sparse_long",
+  "algorithm": "QLearning",
+  "seed": 11,
+  "gamma": 0.99,
+  "horizon": 120,
+  "n_base": 60,
+  "train_steps": 3000,
+  "checkpoint_every": 1000,
+  "eval_episodes_checkpoint": 10,
+  "success_threshold": 0.0,
+  "epsilon": 0.1,
+  "learning_rate": 0.1,
+  "stress_type": null,
+  "task_config": {
+    "state_n": 60,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 120,
+    "train_steps": 3000,
+    "checkpoint_every": 1000,
+    "eval_episodes_checkpoint": 10,
+    "eval_episodes_final": 20,
+    "success_threshold": 0.0,
+    "dp_algorithms": [
+      "VI"
+    ],
+    "rl_algorithms": [
+      "QLearning"
+    ],
+    "ref_policy": "always_right",
+    "severity": "sparse_reward"
+  },
+  "factory_config": {
+    "task": "chain_sparse_long",
+    "state_n": 60,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 120,
+    "goal_states": [
+      59
+    ],
+    "train_steps": 3000,
+    "checkpoint_every": 1000,
+    "eval_episodes_checkpoint": 10,
+    "eval_episodes_final": 20,
+    "success_threshold": 0.0,
+    "dp_algorithms": [
+      "VI"
+    ],
+    "rl_algorithms": [
+      "QLearning"
+    ],
+    "ref_policy": "always_right",
+    "severity": "sparse_reward"
+  }
+}

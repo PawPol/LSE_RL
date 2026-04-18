@@ -1,0 +1,78 @@
+{
+  "task": "chain_catastrophe",
+  "algorithm": "QLearning",
+  "seed": 11,
+  "gamma": 0.99,
+  "horizon": 60,
+  "n_base": 26,
+  "train_steps": 2000,
+  "checkpoint_every": 1000,
+  "eval_episodes_checkpoint": 10,
+  "success_threshold": 0.0,
+  "epsilon": 0.1,
+  "learning_rate": 0.1,
+  "stress_type": "catastrophe",
+  "task_config": {
+    "state_n": 25,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 60,
+    "risky_state": 15,
+    "risky_prob": 0.5,
+    "shortcut_jump": 5,
+    "catastrophe_reward": -10.0,
+    "train_steps": 2000,
+    "checkpoint_every": 1000,
+    "eval_episodes_checkpoint": 10,
+    "eval_episodes_final": 40,
+    "success_threshold": 0.0,
+    "dp_algorithms": [
+      "VI"
+    ],
+    "rl_algorithms": [
+      "QLearning"
+    ],
+    "ref_policy": "always_right",
+    "severity": "catastrophe",
+    "stress_type": "catastrophe"
+  },
+  "factory_config": {
+    "task": "chain_catastrophe",
+    "state_n": 25,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 60,
+    "risky_state": 15,
+    "risky_prob": 0.5,
+    "catastrophe_reward": -10.0,
+    "shortcut_prob": 0.9,
+    "shortcut_jump": 5,
+    "train_steps": 2000,
+    "checkpoint_every": 1000,
+    "eval_episodes_checkpoint": 10,
+    "eval_episodes_final": 40,
+    "success_threshold": 0.0,
+    "dp_algorithms": [
+      "VI"
+    ],
+    "rl_algorithms": [
+      "QLearning"
+    ],
+    "ref_policy": "always_right",
+    "severity": "catastrophe",
+    "stress_type": "catastrophe"
+  },
+  "tail_risk_metrics": {
+    "return_q05": -0.314911815601615,
+    "return_q25": 0.0,
+    "return_q50": 0.0,
+    "return_q75": 0.0,
+    "return_q95": 0.0,
+    "cvar_5pct": -6.631184246264029,
+    "cvar_10pct": -3.3155921231320145,
+    "top5pct_mean": 0.0,
+    "top10pct_mean": 0.0,
+    "event_rate": 0.05,
+    "event_conditioned_return": -6.631184246264029
+  }
+}

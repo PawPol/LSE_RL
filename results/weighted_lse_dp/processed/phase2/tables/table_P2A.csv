@@ -1,0 +1,9 @@
+task_family,stress_type,severity_param,states,horizon,reduces_to
+chain_sparse_long,Sparse reward,sparse_reward,60,120,chain_base (longer horizon)
+chain_jackpot,Rare jackpot,jackpot_prob=0.05; jackpot_reward=10.0,25,60,chain_base
+chain_catastrophe,Rare catastrophe,risky_prob=0.05; catastrophe_reward=-10.0,25,60,chain_base
+chain_regime_shift,Regime shift,change_at_episode=300,25,60,chain_base (no shift)
+grid_sparse_goal,Sparse reward,sparse_reward,25,80,grid_base (goal-only reward)
+grid_hazard,Stochastic hazard,hazard_prob=0.1; hazard_reward=-5.0,25,80,grid_base
+grid_regime_shift,Regime shift,change_at_episode=200,25,80,grid_base (no shift)
+taxi_bonus_shock,Rare jackpot,bonus_prob=0.05; bonus_reward=5.0,44,120,taxi_base

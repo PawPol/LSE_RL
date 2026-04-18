@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-16T21:16:09Z",
+  "created_at": "2026-04-17T02:04:05Z",
   "phase": "phase1",
   "task": "mountain_car",
   "algorithm": "TrueOnlineSARSALambda",
   "seed": 11,
-  "git_sha": "3cb556df921a97676c8199d65daa406dca6115c1",
+  "git_sha": "8668d67660c22e575f96812d0461ea2497ceaff0",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "source": "mushroom-rl-dev/examples/mountain_car_sarsa.py",
@@ -41,10 +41,10 @@
   "non_degenerate": true,
   "metrics": {
     "train_n_steps": 3000,
-    "train_wall_s": 0.27594391599996015,
+    "train_wall_s": 0.25638433400308713,
     "eval_n_episodes": 2,
     "eval_horizon": 500,
-    "eval_wall_s": 0.028721583999868017,
+    "eval_wall_s": 0.02892779200192308,
     "J_per_episode": [
       -500.0,
       -500.0
@@ -68,15 +68,15 @@
     "non_degenerate": true
   },
   "timings": {
-    "total_s": 0.3047085420039366,
+    "total_s": 0.28535895800450817,
     "step_s": 0.0,
-    "fit_s": 0.2759457080028369,
-    "eval_s": 0.028723292001814116,
+    "fit_s": 0.2563860830050544,
+    "eval_s": 0.02892995800357312,
     "plot_s": 0.0,
     "other_s": 0.0,
     "steps_per_s": null,
     "updates_per_s": null
   },
-  "total_wall_s": 0.30914695800311165,
+  "total_wall_s": 0.29057654200005345,
   "stdout_log": "stdout.log"
 }

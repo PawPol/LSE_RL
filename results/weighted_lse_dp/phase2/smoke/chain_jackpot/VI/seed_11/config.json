@@ -1,0 +1,26 @@
+{
+  "task": "chain_jackpot",
+  "state_n": 25,
+  "prob": 0.9,
+  "gamma": 0.99,
+  "horizon": 60,
+  "jackpot_state": 20,
+  "jackpot_prob": 0.25,
+  "jackpot_reward": 10.0,
+  "jackpot_terminates": true,
+  "train_steps": 2000,
+  "checkpoint_every": 1000,
+  "eval_episodes_checkpoint": 10,
+  "eval_episodes_final": 40,
+  "success_threshold": 0.0,
+  "dp_algorithms": [
+    "VI"
+  ],
+  "rl_algorithms": [
+    "QLearning"
+  ],
+  "ref_policy": "always_right",
+  "severity": "jackpot",
+  "stress_type": "jackpot",
+  "suite_config_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/weighted_lse_dp/configs/phase2/paper_suite.json"
+}

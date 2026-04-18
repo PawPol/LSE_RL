@@ -151,3 +151,103 @@ citing rho*(r,v) = sigma(beta*(r-v) + log(1/gamma)) from the paper.
 **Prevention rule**: After any agent writes or edits a `from X import Y` statement in `mushroom-rl-dev/`, verify the import path uses only dots as separators. Run `.venv/bin/python -c "import mushroom_rl.algorithms.value.dp"` as a quick sanity check before committing. Edit justified under CLAUDE.md §4: single-character typo fix in vendored code, isolated to one line.
 
 **Source incident**: Phase I closing branch — `mushroom-rl-dev/mushroom_rl/algorithms/value/dp/classical_value_iteration.py` line 44; caught by verifier on `phase-I/closing`; fixed 2026-04-16.
+
+---
+
+### 2026-04-17 — Default out-root constants that duplicate RunWriter's path structure
+
+**Pattern**: Runner scripts set `_DEFAULT_OUT_ROOT` to a path that already includes the `phase/suite` directory levels (e.g. `results/weighted_lse_dp/phase1/paper_suite`). RunWriter.create then appends `phase/suite/task/algo/seed_*` again, producing a double-nested path that no aggregator or validator discovers. The same pattern appeared in both the RL runner (double-nesting `phase1/paper_suite`) and the ablation runner (double-nesting `phase1/<gamma_dir>`).
+
+**Prevention rule**: Default out-root in any runner must be the bare results root (e.g. `results/weighted_lse_dp`). Let RunWriter (or whatever path-constructing helper the runner uses) be the single source of truth for the `phase/suite/task/algo/seed_*` hierarchy. Never embed phase or suite segments in the default out-root constant. When adding a new runner, verify the produced path by printing `rw.run_dir` in dry-run mode and confirming it matches the glob pattern in `find_run_dirs`.
+
+**Source incident**: Phase I R2 Codex review — `run_phase1_rl.py:75` (`_DEFAULT_OUT_ROOT`), `run_phase1_ablation.py:189-227` (ablation path construction); both caused BLOCKERs in triage 2026-04-17.
+
+---
+
+### 2026-04-17 — FiniteMDP absorbing state with mu=None causes uniform init crash
+
+**Pattern**: When a task factory adds an extra absorbing terminal state (e.g., jackpot or catastrophe terminus at `state_n + 1`), the resulting `P` array has shape `(state_n+1, A, state_n+1)` with an all-zero row for the absorbing state. Passing `mu=None` to `FiniteMDP` triggers uniform initialization over all states including the zero-P absorbing row. On the next `env.reset()`, MushroomRL samples a state from the discrete distribution defined by `mu`, which may draw the absorbing state, and then attempts a step from a state with zero transition probability — crashing with `ValueError: probabilities do not sum to 1`. This manifests only when `severity > 0` (absorbing state added); `severity=0` avoids the extra state and passes silently.
+
+**Prevention rule**: Whenever a task factory adds absorbing states that are unreachable from the initial distribution, always compute `mu` explicitly: `mu = np.zeros(P.shape[0]); mu[initial_state] = 1.0`. Never pass `mu=None` to `FiniteMDP` when the state space has been extended beyond the base MDP. The guard is: `if P.shape[0] > base_state_n: mu = ...; else: mu = None`.
+
+**Source incident**: Phase II task 20 degradation tests — `make_chain_jackpot` and `make_chain_catastrophe` both passed `mu=None` with the absorbing state present; crash caught by `test_phase2_classical_degradation.py`; fixed 2026-04-17 in `stress_families.py`.
+
+---
+
+### 2026-04-17 — Ablation runner must delegate to same-phase runners, not Phase I runners
+
+**Pattern**: A phase-N ablation runner was written to delegate to Phase I task factory runners (`run_phase1_dp._run_single`, `run_phase1_rl.run_single`). Those runners only know Phase I task names (`chain_base`, `grid_base`, `taxi_base`). Phase II task names (`chain_jackpot`, `grid_hazard`, etc.) are unknown to Phase I dispatch tables, so any Phase II ablation run fails at task-factory lookup with a `KeyError` or dispatches to the wrong factory. The bug is silent at import time — it only surfaces when a Phase II task name is passed.
+
+**Prevention rule**: Every phase-N ablation runner must import and delegate to the phase-N DP and RL runners, not earlier-phase runners. When writing `run_phase{N}_ablation.py`, immediately verify the import statement reads `from run_phase{N}_dp import _run_single as dp_run_single` (not `run_phase{N-1}_dp`). Gamma injection in ablation must use `task_cfg_gp = dict(task_cfg); task_cfg_gp["gamma"] = gp` rather than a separate kwarg, since the phase-N runner signature may differ from phase N-1.
+
+**Source incident**: Phase II task 24 — initial `run_phase2_ablation.py` imported `run_phase1_dp._run_single`; caught during implementation review; corrected 2026-04-17 to import from `run_phase2_dp`.
+
+---
+
+### 2026-04-17 — Wrapper-based stress environments not wired through the training loop
+
+**Pattern**: Task factories that return `(wrapper, mdp_rl, cfg)` build `mdp_rl` from `mdp_base` (the unwrapped MDP), not from the wrapper. When the runner passes `mdp_rl` to `Core` for RL training or strips the wrapper via `._base` for DP planning, the stress dynamics (hazard penalties, regime shifts, bonus shocks) never fire. The agent trains on the base task under the stress task's name. This affected 4 of 8 RL task families and 2 of 8 DP task families in Phase II, producing invalid results that passed all structural/schema validators because the output format was correct -- only the content was wrong.
+
+**Prevention rule**: (1) For RL: when a stress task uses a wrapper, the factory must time-augment the wrapper itself (not `mdp_base`) and the runner must pass the augmented wrapper to `Core`. (2) For DP: if the wrapper's stress cannot be encoded in `(P, R)`, the task must not appear in the DP suite. If it can be encoded, build a stressed `(P, R)` model directly rather than wrapping and then unwrapping. (3) Add a per-wrapper integration test that runs a short episode and asserts the stress event fires at least once (non-zero event count in transitions). This catches the "wrapper never stepped" failure mode that structural validators miss.
+
+**Source incident**: Phase II Codex reviews (byl14ca5j + bqm6fkd15) — `run_phase2_rl.py:607` passes `mdp_rl` (base) to Core; `run_phase2_dp.py:223-224` strips wrapper via `._base`; triaged 2026-04-17.
+
+---
+
+### 2026-04-17 — Figure scripts written against assumed JSON schema without contract testing
+
+**Pattern**: The Phase II figure script (`make_phase2_figures.py`) was developed alongside a `--demo` mode that synthesizes data and bypasses all JSON/NPZ reads. The production code path reads keys (`summary["curves"]`, `cal["base_returns"]`, `cal["stress_returns"]`) that do not exist in the actual aggregator output. Because `--demo` mode was the only path exercised during development and review, the schema mismatch was invisible until the R2 Codex review. Result: 3 of 5 mandatory Phase II figures produce blank or placeholder-text panels in production mode.
+
+**Prevention rule**: (1) Every figure script that reads structured data must have at least one integration test that runs it against a minimal but structurally correct data fixture -- NOT the `--demo` synthetic path. The test must assert non-empty plotted output and zero "No data" / "Empty" / placeholder text annotations. (2) Define output schemas (summary.json keys, calibration JSON keys) as shared constants or TypedDicts between the aggregator and the figure script, so a key rename in the aggregator causes an immediate import-time or type-check failure in the figure script. (3) Never ship a figure script whose production path has only been exercised via `--demo`.
+
+**Source incident**: Phase II Codex R2 reviews (b0nweghxr + bewezccsc) — `make_phase2_figures.py:299-305` reads `summary["curves"]` (non-existent); lines 373-374 read `cal["base_returns"]` and `cal["stress_returns"]` (non-existent). Triaged 2026-04-17 as 2 BLOCKERs.
+
+---
+
+### 2026-04-17 — Config-dict override keys passed but never consumed by callee
+
+**Pattern**: The ablation runner (`run_phase2_ablation.py`) carefully constructs `task_config` entries with `epsilon_override` and `lr_multiplier` keys and passes them to `run_phase2_rl.run_single()`. But `run_single()` never reads those keys -- it hard-codes `_EPSILON` and `_LEARNING_RATE` at lines 566-567 and calls `_make_agent()` without forwarding overrides. The resolved config even records the defaults as the "effective" values, making the bug invisible in logs. The entire hyperparameter ablation sweep produces mislabeled duplicate results.
+
+**Prevention rule**: (1) When a caller passes override values through a dict to a callee, the callee must explicitly extract and use those overrides -- add a comment or assertion at the callee showing which keys it consumes. (2) Add an integration test that calls the callee with non-default overrides and asserts the downstream object (agent, optimizer) reflects the overridden values, not the module-level defaults. (3) When recording resolved config, derive values from the same code path that constructs the agent, not from separate constant references.
+
+**Source incident**: Phase II Codex R3 standard review (review-mo2thz1w-kohkfg) — `run_phase2_rl.py:566-567,592` ignores `task_config["epsilon_override"]` and `task_config["lr_multiplier"]`. Triaged 2026-04-17 as BLOCKER R3-1.
+
+---
+
+### 2026-04-18 -- Grouping-key fix that replaces the discriminating key instead of adding metadata
+
+**Pattern**: A review finding (R5-3) asked for family-level calibration grouping so that regime-shift pre/post runs would appear under a single family-level calibration document. The fix replaced the `task` grouping key with `canonical_task_family` in `_discover_runs`, which collapsed pre_shift and post_shift DP runs into the same aggregate group. Their calibration statistics were then averaged together, corrupting the post-change signal that Phase III depends on. The correct approach was to keep `task` as the discriminating key (preserving separate groups) and add `canonical_task_family` as a metadata field for downstream use.
+
+**Prevention rule**: When a review asks for "family-level grouping" or "merge X into Y", distinguish between (a) adding a metadata/tag field that downstream consumers can use to select or combine groups, and (b) replacing the primary grouping key. If the items being "grouped" have semantically different data that must not be averaged (e.g. pre-change vs post-change statistics), the fix must be (a), not (b). Always add a test that asserts the number of groups produced by `_discover_runs` matches the expected count for a regime-shift task family (i.e. 2 groups, not 1).
+
+**Source incident**: Phase II Codex R6 adversarial review (019d9e19-c138) -- `aggregate_phase2.py:208-221` regression from R5-3 fix. Triaged 2026-04-18 as BLOCKER R6-1.
+
+---
+
+### 2026-04-17 — Aggregation statistics computed from summaries-of-summaries instead of raw data
+
+**Pattern**: Calibration statistics meant to capture distributional properties (quantiles, extremes) were computed from already-aggregated arrays (per-seed means, per-stage means) rather than from the underlying raw data. This appeared in two forms in Phase II R4: (1) margin quantiles computed from `aligned_positive_mean` arrays (percentiles of means, not quantiles of the margin distribution), and (2) `empirical_r_max` derived from `reward_mean + 2*reward_std` instead of `max(|r|)` over actual observations. Both silently produce plausible-looking numbers that are systematically biased, especially for rare-event / heavy-tail families where the whole point is tail behavior.
+
+**Prevention rule**: (1) Any statistic that claims to represent a distributional property (quantiles, extremes, CVaR) must be computed from the most granular data available (per-transition, per-episode), never from pre-averaged summaries. (2) Name arrays precisely: `aligned_positive_mean` is a mean, not a sample -- code that treats it as a sample for percentile computation is wrong by construction. (3) Add a unit test that verifies calibration quantiles against a known synthetic distribution with fat tails; the test should fail if quantiles are computed from stage means instead of raw samples.
+
+**Source incident**: Phase II Codex R4 adversarial review (review-mo3l48hq-1ncnzo) — `aggregate_phase2.py:721-776` (margin quantiles from means) and `aggregate_phase2.py:778-792` (r_max from moments). Triaged 2026-04-17 as BLOCKERs R4-3 and R4-4.
+
+---
+
+### 2026-04-17 — Hard-coded state-count constants not updated when task parameters change
+
+**Pattern**: `_N_BASE` in `run_phase2_rl.py` maps task names to base state counts used by `TransitionLogger` for index decomposition (`aug_id // n_base`, `aug_id % n_base`). When `grid_sparse_goal` was changed from 5x5 (25 states) to 7x7 (49 states), the `_N_BASE` entry was not updated. Every transition with `aug_id >= 25` produces wrong timestep and state values, corrupting all downstream transition logs, calibration stats, and visitation heatmaps for this task. The bug is silent: no assertion fires, shapes are correct, values are plausible but wrong.
+
+**Prevention rule**: (1) Never hard-code derived constants (like state counts) separately from the factory that produces the environment. Either compute `n_base` from the environment object at runtime (`mdp.info.observation_space.size`), or have the factory return it alongside the MDP. (2) If a hard-coded lookup table must exist, add an assertion at task creation time that `_N_BASE[task] == mdp.info.observation_space.size`. (3) When changing any task parameter that affects state-space size, grep for all hard-coded references to the old size.
+
+**Source incident**: Phase II Codex R8 reviews (019d9e60) -- `run_phase2_rl.py:122` has `"grid_sparse_goal": 25` for a 49-state MDP. Triaged 2026-04-17 as BLOCKER R8-1.
+
+---
+
+### 2026-04-17 — Event detection thresholds derived from absent config keys (silent default)
+
+**Pattern**: `run_phase2_rl.py:623` reads `task_config.get("jackpot_reward", 10.0)` for the taxi_bonus_shock task, but this config has no `jackpot_reward` field (it has `bonus_reward`). The threshold silently defaults to `10.0 * 0.5 = 5.0`, which happens to work when `bonus_reward=5.0` (total delivery = 6.0 > 5.0). If `bonus_reward` is lowered to 4.0 or below, jackpot events are silently never logged. The `.get()` with a default masks the missing key.
+
+**Prevention rule**: (1) When deriving event detection thresholds from config, use explicit keys that are guaranteed to exist in the task config. If the key might not exist, fail loudly (KeyError) rather than defaulting silently. (2) Add a startup assertion that all required config keys for event detection are present: `assert "bonus_reward" in task_config` before deriving thresholds. (3) Log derived thresholds to `run.json` so post-hoc auditing can catch threshold mismatches.
+
+**Source incident**: Phase II Codex R8 reviews (019d9e60) -- `run_phase2_rl.py:623` uses absent `jackpot_reward` key with silent default. Triaged 2026-04-17 as MAJOR R8-4.

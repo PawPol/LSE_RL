@@ -1,0 +1,160 @@
+{
+  "suite": "smoke",
+  "task": "chain_sparse_long",
+  "algorithm": "QLearning",
+  "n_seeds": 1,
+  "seeds": [
+    11
+  ],
+  "scalar_metrics": {
+    "train_steps": {
+      "mean": 3000.0,
+      "n_seeds": 1
+    },
+    "n_transitions": {
+      "mean": 3000.0,
+      "n_seeds": 1
+    },
+    "final_disc_return_mean": {
+      "mean": 0.7408687805900471,
+      "n_seeds": 1
+    },
+    "auc_disc_return": {
+      "mean": 0.7183163002878653,
+      "n_seeds": 1
+    },
+    "steps_to_threshold": {
+      "mean": 1000.0,
+      "n_seeds": 1
+    }
+  },
+  "tail_risk": null,
+  "adaptation": {
+    "adaptation_pre_change_auc_mean": null,
+    "adaptation_post_change_auc_mean": null,
+    "adaptation_lag_50pct_mean": null,
+    "adaptation_lag_75pct_mean": null,
+    "adaptation_lag_90pct_mean": null,
+    "regime_shift_episode_mean": -1.0
+  },
+  "event_rates": null,
+  "curves": {
+    "steps": [
+      1000,
+      2000,
+      3000
+    ],
+    "mean_return": [
+      0.7130171068451229,
+      0.7096896568581454,
+      0.7408687805900471
+    ],
+    "std_return": [
+      0.14057320847968632,
+      0.08403975368922383,
+      0.13936032603314477
+    ],
+    "success_rate": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "episode_returns": [
+      0.7130171068451229,
+      0.7096896568581454,
+      0.7408687805900471
+    ]
+  },
+  "checkpoints": [
+    1000,
+    2000,
+    3000
+  ],
+  "episode_returns": {
+    "11": [
+      0.0,
+      6.716631069310713,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      3.6687311260100675
+    ]
+  },
+  "change_at_episode": null,
+  "visitation_counts": [
+    25,
+    37,
+    54,
+    51,
+    34,
+    33,
+    34,
+    35,
+    36,
+    43,
+    47,
+    48,
+    50,
+    59,
+    75,
+    83,
+    81,
+    65,
+    46,
+    37,
+    42,
+    27,
+    24,
+    39,
+    50,
+    44,
+    65,
+    75,
+    76,
+    65,
+    72,
+    68,
+    64,
+    77,
+    70,
+    70,
+    70,
+    54,
+    45,
+    43,
+    28,
+    20,
+    32,
+    54,
+    61,
+    66,
+    70,
+    67,
+    66,
+    59,
+    43,
+    37,
+    31,
+    23,
+    25,
+    35,
+    45,
+    50,
+    42,
+    33
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-18T02:06:39Z",
+  "phase": "phase2",
+  "task": "chain_jackpot",
+  "algorithm": "QLearning",
+  "seed": 11,
+  "git_sha": "0806a043788643fd9fbafa697cc33e2390537544",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "task": "chain_jackpot",
+    "algorithm": "QLearning",
+    "seed": 11,
+    "gamma": 0.99,
+    "horizon": 60,
+    "n_base": 26,
+    "train_steps": 2000,
+    "checkpoint_every": 1000,
+    "eval_episodes_checkpoint": 10,
+    "success_threshold": 0.0,
+    "epsilon": 0.1,
+    "learning_rate": 0.1,
+    "stress_type": "jackpot",
+    "task_config": {
+      "state_n": 25,
+      "prob": 0.9,
+      "gamma": 0.99,
+      "horizon": 60,
+      "jackpot_state": 20,
+      "jackpot_prob": 0.25,
+      "jackpot_reward": 10.0,
+      "jackpot_terminates": true,
+      "train_steps": 2000,
+      "checkpoint_every": 1000,
+      "eval_episodes_checkpoint": 10,
+      "eval_episodes_final": 40,
+      "success_threshold": 0.0,
+      "dp_algorithms": [
+        "VI"
+      ],
+      "rl_algorithms": [
+        "QLearning"
+      ],
+      "ref_policy": "always_right",
+      "severity": "jackpot",
+      "stress_type": "jackpot"
+    },
+    "factory_config": {
+      "task": "chain_jackpot",
+      "state_n": 25,
+      "prob": 0.9,
+      "gamma": 0.99,
+      "horizon": 60,
+      "jackpot_state": 20,
+      "jackpot_prob": 0.25,
+      "jackpot_reward": 10.0,
+      "jackpot_terminates": true,
+      "train_steps": 2000,
+      "checkpoint_every": 1000,
+      "eval_episodes_checkpoint": 10,
+      "eval_episodes_final": 40,
+      "success_threshold": 0.0,
+      "dp_algorithms": [
+        "VI"
+      ],
+      "rl_algorithms": [
+        "QLearning"
+      ],
+      "ref_policy": "always_right",
+      "severity": "jackpot",
+      "stress_type": "jackpot"
+    },
+    "tail_risk_metrics": {
+      "return_q05": 0.0,
+      "return_q25": 0.0,
+      "return_q50": 0.0,
+      "return_q75": 0.0,
+      "return_q95": 0.0,
+      "cvar_5pct": 0.0,
+      "cvar_10pct": 0.0,
+      "top5pct_mean": 0.0,
+      "top10pct_mean": 0.0,
+      "event_rate": 0.0,
+      "event_conditioned_return": NaN
+    }
+  },
+  "suite": "smoke",
+  "storage_mode": "rl_online"
+}
