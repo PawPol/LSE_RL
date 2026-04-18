@@ -1,26 +1,22 @@
-# Codex Adversarial Review — Phase III R2
+# Codex Adversarial Review — Phase III R3
 
-Session ID: 019da1a0-8d9f-7420-84c2-f65b1a6a2c19
+Session ID: 019da1c7-1367-7b93-ab4b-5d9398e39af1
 Base: 4fdbf0d (Phase II close commit)
 Branch: phase-III/closing
-Round: R2 (post R1-fix commit 11f2189)
+Round: R3 (post R2-fix commit 424a73d)
 Focus: "challenge operator correctness (g_t^safe closed form, responsibility, local derivative), certification-box invariance (kappa_t, B_hat_t, beta_cap), β=0 collapse, and logaddexp numerical stability, per docs/specs/phase_III_safe_weighted_lse_experiments.md."
 Status: completed
 
 ## Verdict
 
-No-ship. The safe operator path still trusts schedule JSONs without enforcing the certification invariants it claims, the RL runner does not fail fast on horizon/schema skew, and at least one new safe TD agent is not load-safe after serialization.
+No-ship: the Phase III path still accepts schedules that exceed the certified beta cap, and its RL logging records safe-table values under `*_beta0` names, so both the safety invariant and the baseline telemetry can silently drift without detection.
 
 ## Findings
 
-- [high] Certified-safety claims are unenforced when schedules are loaded from disk — mushroom-rl-dev/mushroom_rl/algorithms/value/dp/safe_weighted_common.py:62-117
-  `BetaSchedule` only checks array lengths and then exposes `beta_used_t`, `alpha_t`, `kappa_t`, and `Bhat_t` directly to the operator. It never verifies that `beta_used_t == clip(beta_raw_t, -beta_cap_t, beta_cap_t)`, that `alpha_t` stays in `[0,1)`, or that `kappa_t`/`Bhat_t`/`beta_cap_t` actually satisfy the certification recurrences from the spec. Because the runners load schedule JSONs verbatim and `compute_safe_target` uses `beta_used_at(t)` as-is, a stale or hand-edited schedule can silently bypass clipping while downstream logs still report the old certificate fields. The likely impact is shipping runs that are presented as certified-safe even though the contraction bound no longer holds.
-  Recommendation: On load, recompute `kappa_t`, `Bhat_t`, and `beta_cap_t` from `alpha_t`, `reward_bound`, and `gamma`, and assert they match the serialized values within tolerance; also assert `beta_used_t` equals the clipped raw schedule and that caps are non-negative.
+- [high] Phase III safe runs write safe Q/V estimates into fields labeled as beta=0 baselines — experiments/weighted_lse_dp/common/callbacks.py:125-142
+  `TransitionLogger.__call__` reads `q_current` and `v_next` directly from `self._agent.Q` and stores them as `q_current_beta0` / `v_next_beta0`. `SafeTransitionLogger` then inherits that payload shape for safe agents. In Phase III, those arrays are later turned into `margin_beta0`, `td_target_beta0`, and `td_error_beta0`, so the artifacts and downstream calibration summaries are labeled as classical-beta0 references even though they come from the evolving safe agent. That makes regressions against the beta=0 baseline hard to detect and can contaminate any analysis that trusts the field names.
+  Recommendation: For safe runs, either compute these arrays from an actual beta=0 reference estimator/policy, or stop emitting them under `*_beta0` names. At minimum, split the safe and classical telemetry schemas so downstream code cannot mistake safe-table values for beta=0 baselines.
 
-- [medium] Safe RL path accepts mismatched schedule horizons and will fail late or mis-run under schedule/task skew — experiments/weighted_lse_dp/runners/run_phase3_rl.py:778-807
-  The RL runner loads `schedule.json` and records `schedule_T` in metadata, but unlike the DP path it never checks `schedule.T == horizon` before constructing the agent. The safe TD base then decodes `t` from the augmented state and indexes the schedule on every update. If a task config and schedule file drift out of sync, the run will either crash only after reaching a later stage (`IndexError` once `t >= schedule.T`) or silently ignore extra schedule entries if the schedule is too long.
-  Recommendation: Immediately after `BetaSchedule.from_file`, assert `schedule.T == horizon` and reject mismatched files with a clear error, mirroring the DP constructors.
-
-- [medium] Serialized SafeQLearning agents lose the safe operator state on reload — mushroom-rl-dev/mushroom_rl/algorithms/value/td/safe_q_learning.py:44-50
-  `SafeQLearning` explicitly marks `_schedule` and `_swc` as non-serialized and does not provide a `_post_load` hook to rebuild them. The inherited `TD._post_load` only reconnects `policy.Q`; it does not restore the safe schedule/helper. A reloaded agent can therefore no longer compute safe targets or expose correct `last_*` instrumentation, which breaks checkpoint resume and any evaluation path that loads saved agents.
-  Recommendation: Persist enough state to reconstruct the safe helper, and implement `_post_load` to rebuild `_swc` from the saved schedule and `n_base` before the agent is used again.
+- [high] Schedule validation explicitly permits beta caps larger than the certified cap — mushroom-rl-dev/mushroom_rl/algorithms/value/dp/safe_weighted_common.py:155-183
+  The loader recomputes the certified `kappa_t`, `Bhat_t`, and `beta_cap_t`, but then intentionally accepts any stored `beta_cap_t` that is element-wise larger than the certified value. Because `beta_used_t` is only checked against the stored cap, a schedule can deploy `|beta_used_t| > beta_cap_t^{cert}` and still load successfully. That breaks the exact clipping rule in the spec and voids the certification-box / local-derivative guarantee precisely on the path the main runners use (`BetaSchedule.from_file`).
+  Recommendation: Reject any production schedule whose stored `beta_cap_t` differs from the recomputed certified cap, or gate the permissive override behind an explicit test-only flag. Also recompute `beta_used_t` from the certified cap on load so an unsafe schedule cannot be deployed by construction.

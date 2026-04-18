@@ -1570,3 +1570,39 @@ Source reviews:
 ### Summary
 
 Triage summary: BLOCKER=2, MAJOR=4, MINOR=0, NIT=0, DISPUTE=0
+
+---
+
+## Phase III R3 Triage
+
+Review inputs:
+- Standard: `results/processed/codex_reviews/phase_III/review.md` (session 019da1xx)
+- Adversarial: `results/processed/codex_reviews/phase_III/adversarial.md` (session 019da1c7)
+- Commit reviewed: 424a73d
+
+### Findings
+
+- [ ] [BLOCKER] [algo] R3-1: SafePE supnorm_to_exact uses SafeVI optimal value instead of PE fixed point -> algo-implementer
+      File: `experiments/weighted_lse_dp/runners/run_phase3_dp.py:519-528`
+      Finding: When algo_name == "SafePE", the else branch computes v_exact via a SafeVI solve (optimal control value). SafePE evaluates a fixed reference policy, so the correct reference is the exact PE fixed point for that policy, not V*. Every supnorm_to_exact curve and convergence summary for SafePE is misreported as error-to-optimal rather than convergence-to-exact-evaluation.
+      Acceptance criterion: For SafePE runs, v_exact must be computed by running SafeWeightedPolicyEvaluation to convergence on the same (mdp, schedule, ref_pi) and using its converged V as the reference. supnorm_to_exact[k] must equal max|V_k - V_PE_exact|, not max|V_k - V_VI_optimal|.
+      (codex-session: 019da1xx-standard-P2, spec-ref: docs/specs/phase_III_safe_weighted_lse_experiments.md#dp-specific-metrics)
+
+- [ ] [MINOR] [infra] R3-2: Config declares dp_algorithms for RL-only tasks (grid_hazard, taxi_bonus_shock) -> experiment-runner
+      File: `experiments/weighted_lse_dp/configs/phase3/paper_suite.json:198-204,264-270`
+      Finding: paper_suite.json declares dp_algorithms for grid_hazard and taxi_bonus_shock, but the runner correctly skips these tasks because their stress dynamics are wrapper-injected and cannot be encoded in the P/R kernel (same design as Phase II). The config should not declare dp_algorithms for tasks the runner will never process.
+      (codex-session: 019da1xx-standard-P1, spec-ref: docs/specs/phase_III_safe_weighted_lse_experiments.md#S6.1)
+
+- [ ] [MINOR] [logging] R3-3: Safe RL runs emit safe Q/V values under *_beta0 field names -> experiment-runner
+      File: `experiments/weighted_lse_dp/common/callbacks.py:125-142`
+      Finding: TransitionLogger.__call__ reads q_current and v_next from self._agent.Q (the safe Q table in Phase III) and stores them as q_current_beta0 / v_next_beta0. The field names suggest classical beta=0 reference values but actually contain safe-operator values. Phase III aggregation (aggregate_phase3.py) does NOT consume these fields for primary metrics -- confirmed by grep showing zero references. The fields are written to transitions.npz but unused. Risk is limited to potential future confusion if someone trusts the field names for baseline comparison.
+      (codex-session: 019da1c7-adversarial-high-1, spec-ref: docs/specs/phase_III_safe_weighted_lse_experiments.md#S7.1)
+
+- [ ] [MINOR] [operator] R3-4: Schedule validation permits stored beta_cap larger than certified cap -> operator-theorist
+      File: `mushroom-rl-dev/mushroom_rl/algorithms/value/dp/safe_weighted_common.py:169-183`
+      Finding: The permissive override allows stored beta_cap_t >= certified beta_cap_t, meaning beta_used_t can exceed the certified cap. In practice, the production pipeline (build_schedule_from_phase12.py) always writes stored_cap == certified_cap because the same certification formulas produce both. Only test fixtures use larger caps. Adding a test_only flag would be clean but the risk to primary results is not material.
+      (codex-session: 019da1c7-adversarial-high-2, spec-ref: docs/specs/phase_III_safe_weighted_lse_experiments.md#S2.2)
+
+### Summary
+
+Triage summary: BLOCKER=1, MAJOR=0, MINOR=3, NIT=0, DISPUTE=0

@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import warnings
 from typing import Any
 
 import numpy as np
@@ -179,7 +180,24 @@ class BetaSchedule:
                         )
                         if undershoot <= _atol:
                             # stored >= recomputed everywhere: permissive
-                            # override, accept silently.
+                            # override for test fixtures that set large
+                            # caps to exercise specific beta values.
+                            # Emit a warning so this is never silent in
+                            # production schedules.
+                            overshoot = float(
+                                np.max(stored - recomputed)
+                            )
+                            warnings.warn(
+                                f"BetaSchedule: stored beta_cap_t "
+                                f"exceeds certified cap by up to "
+                                f"{overshoot:.2e}. This is accepted "
+                                f"(permissive override) but means the "
+                                f"contraction guarantee may not hold "
+                                f"for |beta_used_t| > certified cap. "
+                                f"Set beta_cap_t to the certified "
+                                f"values for production schedules.",
+                                stacklevel=2,
+                            )
                             continue
                     raise ValueError(
                         f"Certification recurrence mismatch for {key}: "

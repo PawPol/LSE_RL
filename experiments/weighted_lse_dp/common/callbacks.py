@@ -220,6 +220,24 @@ class SafeTransitionLogger(TransitionLogger):
     The additional arrays populated are those in
     :data:`~schemas.SAFE_TRANSITIONS_ARRAYS`.
 
+    .. warning:: Inherited ``*_beta0`` fields are misnomers in safe runs.
+
+       The parent :class:`TransitionLogger` populates ``q_current_beta0``,
+       ``v_next_beta0``, ``margin_beta0``, ``td_target_beta0``, and
+       ``td_error_beta0`` by reading the agent's live Q table.  In
+       Phase I/II the agent IS a classical (beta=0) agent, so the
+       ``_beta0`` suffix is accurate.  In Phase III safe runs, these
+       fields reflect the **safe** agent's Q values (beta != 0), NOT a
+       classical baseline.  The suffix is retained for schema
+       compatibility, but consumers must not interpret these values as
+       classical-baseline quantities.  The ``after_fit`` method also
+       reads ``_q_current_beta0[-1]`` and ``_v_next_beta0[-1]``
+       internally to derive ``safe_margin`` and ``safe_td_error``.
+
+       No primary Phase III aggregation metric depends on the ``*_beta0``
+       fields (verified: ``aggregate_phase3.py`` has zero references to
+       ``margin_beta0``, ``td_target_beta0``, or ``td_error_beta0``).
+
     Parameters
     ----------
     agent:

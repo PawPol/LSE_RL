@@ -516,11 +516,20 @@ def _run_dp_on_mdp(
     # Task 33: n_states read from environment, not hardcoded.
     n_states = int(p.shape[0])
 
-    # Compute V* reference for supnorm_to_exact.
+    # Compute the exact convergence target for supnorm_to_exact.
+    # Bug R3-1 fix: SafePE evaluates a fixed policy ref_pi, so its
+    # convergence target is V^pi (the PE fixed point), NOT V* (the
+    # optimal value from SafeVI).  SafePE uses exact backward induction
+    # (single pass), so running a fresh instance gives the exact V^pi.
     if v_exact is not None:
         _v_exact_ref: np.ndarray | None = v_exact
     elif algo_name == "SafeVI":
         _v_exact_ref = None  # SafeVI computes V* itself
+    elif algo_name == "SafePE":
+        print(f"    [dp] Computing SafePE fixed-point reference for supnorm_to_exact...")
+        _pe_ref = _make_safe_planner("SafePE", mdp, schedule, ref_pi, v_init=None)
+        _pe_ref.run()
+        _v_exact_ref = _pe_ref.V
     else:
         print(f"    [dp] Computing SafeVI reference for supnorm_to_exact ({algo_name})...")
         _vi_ref = _make_safe_planner("SafeVI", mdp, schedule, ref_pi, v_init=None)

@@ -1,22 +1,19 @@
-# Codex Standard Review — Phase III R2
+# Codex Standard Review — Phase III R3
 
-Session ID: 019da19f-eb97-73c1-a714-77c6f0404ae3
+Session ID: (019da1xx — standard review, codex review --base 4fdbf0d)
 Base: 4fdbf0d (Phase II close commit)
 Branch: phase-III/closing
-Round: R2 (post R1-fix commit 11f2189)
+Round: R3 (post R2-fix commit 424a73d)
 Status: completed
 
 ## Summary
 
-The Phase III aggregation path is currently unusable because it calls its write helpers incorrectly and invokes `aggregate_safe_stats` with an incompatible API. There is also a correctness bug in safe policy iteration when tolerance-based stopping is used, so the patch is not ready as-is.
+The new Phase III DP runner omits two configured task families entirely, and it records incorrect convergence targets for all `SafePE` runs. Those issues affect the completeness and correctness of the generated Phase III artifacts.
 
 ## Findings
 
-- [P1] Pass aggregation write helpers the arguments they expect — experiments/weighted_lse_dp/runners/aggregate_phase3.py:281-287
-  `aggregate_group()` currently calls `save_json` and `save_npz_with_schema` with the argument order reversed. `save_json(summary, out_dir / "summary.json")` tries to treat the summary dict as a filesystem path, and both `save_npz_with_schema(...)` calls are also missing the required schema argument entirely, so any non-dry-run Phase III aggregation will raise before it can write outputs.
+- [P1] Stop skipping `grid_hazard` and `taxi_bonus_shock` in DP runs — experiments/weighted_lse_dp/runners/run_phase3_dp.py:318-320
+  The Phase III suite config still declares `dp_algorithms` for `grid_hazard` and `taxi_bonus_shock`, and the file comment above `_RL_ONLY_TASKS` says DP should run on the base MDP for these families. However `_build_run_list()` drops both tasks entirely, and `_run_single()` returns early if they are requested explicitly, so `run_phase3_dp.py --task all` will never produce DP artifacts for two configured paper-suite tasks.
 
-- [P1] Stop calling `aggregate_safe_stats` with the wrong signature — experiments/weighted_lse_dp/runners/aggregate_phase3.py:461-463
-  The helper imported from `common.schemas` expects a safe-payload dict plus `(T, gamma)`, but here it is invoked as if it were a quantile reducer over `(stages, values, n_stages, quantiles=...)`. That raises `TypeError` as soon as a group has safe transition data, so the new Phase III aggregator cannot produce `safe_stagewise.npz` for RL runs.
-
-- [P2] Keep `pi` consistent with `Q`/`V` when PI stops on tolerance — mushroom-rl-dev/mushroom_rl/algorithms/value/dp/safe_weighted_policy_iteration.py:420-427
-  When `tol > 0` and the residual threshold is hit before policy stability, `run()` assigns `self.pi = pi_new` and then breaks without re-evaluating that improved policy. The returned `Q` and `V` still correspond to the previous policy evaluation (`Q_pi`, `V_pi`), so callers get an internally inconsistent result whenever residual-based early stopping is enabled.
+- [P2] Use the evaluated policy's value as `v_exact` for `SafePE` — experiments/weighted_lse_dp/runners/run_phase3_dp.py:519-528
+  When `algo_name == "SafePE"`, this branch computes `v_exact` with a `SafeVI` solve and passes that to `DPCurvesLogger`. For policy-evaluation runs, that is the optimal control value of a different problem, not the exact fixed point of the supplied reference policy, so every `supnorm_to_exact` curve and summary for `SafePE` is misreported as error-to-optimal rather than convergence-to-exact-evaluation.
