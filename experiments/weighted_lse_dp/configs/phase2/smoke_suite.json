@@ -82,13 +82,14 @@
       "warmstart_dp": true
     },
     "grid_sparse_goal": {
-      "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_base_grid.txt",
+      "grid_file": "experiments/weighted_lse_dp/assets/grids/phase2_sparse_goal_7x7.txt",
       "prob": 0.9,
       "goal_reward": 1.0,
-      "step_penalty": -0.05,
       "gamma": 0.99,
-      "horizon": 80,
-      "n_states": 25,
+      "horizon": 120,
+      "n_rows": 7,
+      "n_cols": 7,
+      "n_states": 49,
       "n_actions": 4,
       "train_steps": 2000,
       "checkpoint_every": 1000,

@@ -145,11 +145,13 @@ _CALIB_SCALAR_ADAPTATION_KEYS: tuple[str, ...] = (
     "adaptation_lag_50pct",
     "adaptation_lag_75pct",
     "adaptation_lag_90pct",
+    "regime_shift_episode",  # R7-A2: carry change-point index into calibration JSON
 )
 _CALIB_SCALAR_EVENT_KEYS: tuple[str, ...] = (
     "jackpot_event_rate",
     "catastrophe_event_rate",
     "hazard_hit_rate",
+    "shortcut_risky_path_fraction",  # R7-A4: fraction of episodes using risky path
 )
 
 
@@ -569,6 +571,31 @@ def aggregate_group(
                     "episode_returns": _nan_safe_list(-mean_res),
                 }
 
+    # -- Per-seed episode returns (for adaptation figures — R7-1/R7-3 fix) ---
+    # Collected from metrics.json so the adaptation figure can plot a
+    # per-episode return curve in episode units (not checkpoint units).
+    episode_returns_by_seed: dict[str, list[float]] = {}
+    for i, m in enumerate(per_seed_metrics):
+        er = m.get("episode_returns")
+        if isinstance(er, list) and er:
+            seed_key = str(seeds[i]) if i < len(seeds) else str(i)
+            episode_returns_by_seed[seed_key] = er
+
+    # -- Per-state visitation counts from transitions (R7-2 fix) --------------
+    # Aggregated across seeds by summing visit counts per state.
+    visitation_counts: list[int] | None = None
+    if per_seed_transitions:
+        state_arrays = [
+            t["state"].astype(int)
+            for t in per_seed_transitions
+            if "state" in t and len(t["state"]) > 0
+        ]
+        if state_arrays:
+            all_states = np.concatenate(state_arrays)
+            n_states = int(all_states.max()) + 1
+            counts = np.bincount(all_states, minlength=n_states)
+            visitation_counts = counts.tolist()
+
     return {
         "n_seeds": len(seeds),
         "seeds": sorted(seeds),
@@ -584,6 +611,8 @@ def aggregate_group(
         "margin_quantiles_from_transitions": margin_quantiles_from_transitions,
         "empirical_r_max_from_transitions": empirical_r_max_from_transitions,
         "curves_from_checkpoints": curves_agg,
+        "episode_returns_by_seed": episode_returns_by_seed,
+        "visitation_counts": visitation_counts,
     }
 
 
@@ -816,6 +845,7 @@ def build_calibration_json(
     task_family: str,
     groups: dict[GroupKey, dict[str, Any]],
     task_config: dict[str, Any] | None = None,
+    raw_tasks: set[str] | None = None,
 ) -> dict[str, Any]:
     """Build the calibration JSON document for a single task family.
 
@@ -825,23 +855,33 @@ def build_calibration_json(
     Parameters
     ----------
     task_family:
-        Task name (e.g. ``"chain_jackpot"``).
+        Canonical task name (e.g. ``"chain_regime_shift"``).  Used as the
+        calibration document's ``task_family`` field and for sign lookup.
     groups:
         Already-aggregated groups keyed by ``(suite, task, algorithm)``.
-        Only entries matching ``task_family`` are consumed.
+        Only entries whose raw task label is in ``raw_tasks`` are consumed.
     task_config:
         Optional task configuration from ``paper_suite.json``. Used to
         extract ``gamma``, reward range, etc.
+    raw_tasks:
+        Set of raw task labels (group keys) to include.  Defaults to
+        ``{task_family}`` for non-regime-shift families.  Pass all
+        suffixed variants (e.g. ``{"chain_regime_shift",
+        "chain_regime_shift_pre_shift", "chain_regime_shift_post_shift"}``)
+        to merge pre/post DP groups into one calibration document (R7-A1).
 
     Returns
     -------
     dict
         The calibration JSON document per spec section 12.
     """
-    # Filter groups for this task family
+    if raw_tasks is None:
+        raw_tasks = {task_family}
+
+    # Filter groups for this task family (match any raw task label in raw_tasks)
     task_groups: list[dict[str, Any]] = []
     for (suite, task, algo), agg in groups.items():
-        if task == task_family:
+        if task in raw_tasks:
             task_groups.append(agg)
 
     n_seeds_total = max((g["n_seeds"] for g in task_groups), default=0)
@@ -1182,9 +1222,13 @@ def build_calibration_json(
         fallback_q = stagewise.get("pos_margin_quantiles")
         chosen_q = raw_mq if raw_mq is not None else fallback_q
         if chosen_q is not None:
+            n_q = len(chosen_q.get("q50", []))
+            # stagewise["stage"] includes the terminal step (len = horizon+1),
+            # but raw_margin_quantiles has horizon entries.  Clip to n_q so
+            # stages and quantile arrays are always the same length.
             stages_for_q = (
-                stage_vals if isinstance(stage_vals, list)
-                else list(range(len(chosen_q.get("q50", []))))
+                stage_vals[:n_q] if isinstance(stage_vals, list)
+                else list(range(n_q))
             )
             margin_quantiles_top = {
                 "stages": stages_for_q,
@@ -1310,6 +1354,19 @@ def _determine_task_sign(
     return sign
 
 
+def _canonical_family_from_task(raw_task: str) -> str:
+    """Strip ``_pre_shift`` / ``_post_shift`` suffix to get canonical family name.
+
+    Regime-shift DP runs are stored under suffixed task labels for directory
+    uniqueness (R5-3).  This function recovers the canonical name used in
+    calibration JSON filenames and ``_TASK_FAMILY_SIGNS``.
+    """
+    for suffix in ("_pre_shift", "_post_shift"):
+        if raw_task.endswith(suffix):
+            return raw_task[: -len(suffix)]
+    return raw_task
+
+
 # ---------------------------------------------------------------------------
 # JSON safety
 # ---------------------------------------------------------------------------
@@ -1398,10 +1455,12 @@ def write_outputs(
 
         # Add change_point from adaptation metadata if available.
         adapt = agg.get("adaptation")
+        change_at_episode: int | None = None
         if adapt is not None:
             cp = adapt.get("regime_shift_episode_mean")
-            if cp is not None:
+            if cp is not None and cp > 0:
                 curves = {**curves, "change_point": float(cp)}
+                change_at_episode = int(cp)
 
         entry = {
             "suite": suite,
@@ -1414,6 +1473,15 @@ def write_outputs(
             "adaptation": agg.get("adaptation"),
             "event_rates": agg.get("event_rates"),
             "curves": curves,
+            # -- Top-level aliases for standalone plotting scripts (R7-3 fix) --
+            # plot_phase2_learning_curves.py expects top-level "checkpoints"
+            "checkpoints": curves.get("steps"),
+            # plot_phase2_adaptation.py expects {seed: [returns]} at top-level
+            "episode_returns": agg.get("episode_returns_by_seed") or {},
+            # plot_phase2_adaptation.py reads "change_at_episode" at top-level
+            "change_at_episode": change_at_episode,
+            # make_phase2_figures.fig_visitation_heatmaps reads this (R7-2 fix)
+            "visitation_counts": agg.get("visitation_counts"),
         }
         summary_path = summary_dir / "summary.json"
         save_json(summary_path, _make_json_safe(entry))
@@ -1434,21 +1502,32 @@ def write_outputs(
             save_npz_with_schema(npz_path, schema, calib)
             written.append(npz_path)
 
-    # 2. Write per-task-family calibration JSON files
-    task_families: set[str] = set()
+    # 2. Write per-task-family calibration JSON files (R7-A1 fix).
+    # Group raw task labels by canonical family name so that regime-shift
+    # *_pre_shift / *_post_shift DP groups merge into one family-level JSON
+    # (spec §12: one calibration file per stress-task family).
+    family_to_raw_tasks: dict[str, set[str]] = {}
     for (suite, task, algo) in groups:
-        task_families.add(task)
+        canonical = _canonical_family_from_task(task)
+        family_to_raw_tasks.setdefault(canonical, set()).add(task)
 
-    for task_family in sorted(task_families):
+    for canonical_family in sorted(family_to_raw_tasks):
+        raw_tasks = family_to_raw_tasks[canonical_family]
         tc = None
         if task_configs is not None:
-            tc = task_configs.get(task_family)
+            # Look up config under canonical name first, then any raw variant.
+            tc = task_configs.get(canonical_family)
+            if tc is None:
+                for rt in raw_tasks:
+                    tc = task_configs.get(rt)
+                    if tc is not None:
+                        break
 
-        calib_doc = build_calibration_json(task_family, groups, tc)
+        calib_doc = build_calibration_json(canonical_family, groups, tc, raw_tasks)
         calib_doc_safe = _make_json_safe(calib_doc)
 
         calibration_root.mkdir(parents=True, exist_ok=True)
-        safe_family = task_family.replace("/", "_").replace(" ", "_")
+        safe_family = canonical_family.replace("/", "_").replace(" ", "_")
         calib_path = calibration_root / f"{safe_family}.json"
         save_json(calib_path, calib_doc_safe)
         written.append(calib_path)

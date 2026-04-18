@@ -1171,3 +1171,55 @@ DISPUTE: 1  (R5-D1: grid_hazard DP exemption is spec-compliant)
 R5-2 supersedes the incomplete R4-3 fix. R5-1 is new and was not caught in prior rounds because the severity=0 equivalence was documented but not flagged as a problem at the paper-suite config level. Both BLOCKERs must be resolved before Phase II can close. R5-3 and R5-4 are functional bugs that affect downstream aggregation and validation but have workarounds.
 
 Next: fix R5-1 (env-builder), R5-2 (calibration-engineer), then R5-3 and R5-4 (experiment-runner), then re-run `/lse:review II` for R6.
+
+---
+
+## R6 Triage -- 2026-04-18
+
+Sources: `results/processed/codex_reviews/phase_II/review_r6.md`, `adversarial_r6.md`
+
+BLOCKER: 2
+MAJOR:   2
+MINOR:   0
+NIT:     0
+DISPUTE: 1
+
+### BLOCKER items
+
+- [ ] [BLOCKER] R6-1 [calibration] Regime-shift pre/post DP runs collapsed into same aggregate group, corrupting calibration JSON -- `experiments/weighted_lse_dp/runners/aggregate_phase2.py:208-221` -- The R5-3 fix replaced `task` with `canonical_task_family` as the `_discover_runs` grouping key. This causes `*_pre_shift` and `*_post_shift` DP runs to merge into one `(suite, task, algorithm)` group, averaging pre-change and post-change calibration statistics together. Phase III calibration input is corrupted because the post-change signal (which Phase III depends on) is diluted by pre-change data. FIX: revert grouping key to `task` (preserving `chain_regime_shift_pre_shift` and `chain_regime_shift_post_shift` as separate groups). Add `canonical_task_family` as a metadata-only field in the group record. Downstream calibration export must select the `_post_shift` group as the authoritative Phase III input. Acceptance criterion: `_discover_runs` produces separate group entries for `chain_regime_shift_pre_shift` and `chain_regime_shift_post_shift`; the calibration JSON for `chain_regime_shift` derives its margin quantiles and envelope estimates exclusively from `_post_shift` runs, not averaged with `_pre_shift`. -> `experiment-runner`
+      (codex-session: 019d9e19-c138-70f1-833e-44a3ef10cfd1, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#12)
+      NOTE: This is a regression introduced by the R5-3 fix. R5-3 asked for family-level grouping but the implementation used the family key as the discriminating key instead of as metadata.
+
+- [ ] [BLOCKER] R6-2 [calibration] Top-level `margin_quantiles` built from `pos_margin_quantiles` instead of full margin distribution -- `experiments/weighted_lse_dp/runners/aggregate_phase2.py:1157-1171` -- The `margin_quantiles` alias consumed by `fig_margin_quantiles()` is built from the positive-only `pos_margin_quantiles`, clipping the entire negative tail. For tasks with substantial negative margins (catastrophe, hazard families), the reported median and q05/q95 ribbon are wrong, and Phase III calibration inherits biased statistics. FIX: build the top-level `margin_quantiles` from raw margin quantiles (q05..q95 of the full `margin_beta0` distribution). Keep `pos_margin_quantiles` and `neg_margin_quantiles` as separate fields per spec section 12. Acceptance criterion: `summary.json["margin_quantiles"]["q05"]` for `chain_catastrophe` is negative (reflecting the actual lower tail), not clipped to zero; the values match quantiles computed directly from raw per-transition `margin_beta0` arrays. -> `calibration-engineer`
+      (codex-session: 019d9e15-0efb-7493-a93b-fce383ba3f23, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#10.2, #12)
+
+### MAJOR items
+
+- [ ] [MAJOR] R6-3 [plot] Regime-shift adaptation plots consume checkpoint means instead of episode-level returns -- `experiments/weighted_lse_dp/runners/aggregate_phase2.py:536-542` -- `fig_adaptation_plots()` reads `summary["curves"]["episode_returns"]` as a per-episode trace and overlays the change-point episode on that axis, but the aggregation path fills this field with checkpoint-level `disc_return_mean` values. For regime-shift tasks this collapses hundreds of episodes into a few dozen checkpoints, so the rolling adaptation curve and change-point marker are on incompatible x-axes. FIX: either (a) store episode-level return traces in a separate key `episode_returns_raw` for regime-shift tasks and update `fig_adaptation_plots()` to read it, or (b) update `fig_adaptation_plots()` to use the checkpoint key with a matching x-axis. -> `experiment-runner`
+      (codex-session: 019d9e15-0efb-7493-a93b-fce383ba3f23, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#11.1 item 3, #8.2)
+
+- [ ] [MAJOR] R6-4 [plot] `visitation_counts` never written to summary.json, heatmap figure non-regenerable -- `experiments/weighted_lse_dp/analysis/make_phase2_figures.py:530-531` -- The heatmap figure loader reads `summary.json["visitation_counts"]`, but the aggregation pipeline never writes that field. In production mode every grid heatmap falls through to the "No visitation data" branch, making spec figure 11.1.4 non-regenerable from actual Phase II outputs. FIX: add visitation count aggregation to `aggregate_group()` (sum per-seed visitation arrays) and write the result to the per-task `summary.json`, or update `fig_visitation_heatmaps()` to read from the correct existing field name. -> `experiment-runner`
+      (codex-session: 019d9e15-0efb-7493-a93b-fce383ba3f23, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#11.1 item 4)
+
+### DISPUTE items
+
+- [ ] [DISPUTE] R6-D1 `grid_sparse_goal` step_penalty=-0.05 departs from spec's "no per-step shaping" -- `experiments/weighted_lse_dp/tasks/stress_families.py:268-278` -- COUNTER-ARGUMENT: This finding is in direct tension with R5-1 BLOCKER, which correctly identified that `grid_sparse_goal` with default params was behaviourally identical to `grid_base`. The R5-1 fix added `step_penalty=-0.05` to differentiate the task. However, the Phase II spec section 5.2A explicitly says "only the goal gives reward, no per-step shaping." Both positions have merit: (a) spec says no step cost, (b) without some differentiator the task is identical to base and therefore useless as a stress test. RESOLUTION NEEDED FROM USER: either (i) amend the spec to allow step_penalty as the sparse-reward stress mechanism, (ii) use a different differentiator (e.g. increase grid size, remove all non-goal rewards while keeping base's shaping rewards as the difference), or (iii) accept that grid_sparse_goal is only meaningful when the base task has shaping rewards to remove. This blocks final closure of the grid_sparse_goal stress task.
+      (codex-session: 019d9e19-c138-70f1-833e-44a3ef10cfd1, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#5.2A)
+
+### Open questions (SPEC-GAP)
+
+R6-D1 reveals a spec gap: spec section 5.2A defines `grid_sparse_goal` as "only the goal gives reward, no per-step shaping" but does not specify what should differ from the base task if the base task already has goal-only reward. The spec assumes the base grid has shaping rewards that can be removed, but if it does not, the stress task has no mechanism. User must clarify the intended stress mechanism for `grid_sparse_goal`.
+
+### Summary
+
+```
+BLOCKER: 2  (R6-1: regime-shift pre/post grouping regression; R6-2: margin_quantiles clips negative tail)
+MAJOR:   2  (R6-3: adaptation plots use checkpoint means; R6-4: visitation_counts missing from summary.json)
+MINOR:   0
+NIT:     0
+DISPUTE: 1  (R6-D1: grid_sparse_goal step_penalty vs spec "no per-step shaping")
+```
+
+R6-1 is a regression from the R5-3 fix: the implementation used `canonical_task_family` as the grouping key instead of as metadata, causing pre/post DP stats to be averaged together. This corrupts Phase III calibration input and must be fixed before Phase II can close. R6-2 is a new finding: the `margin_quantiles` alias silently drops the negative tail, biasing both the paper figure and the calibration export for catastrophe/hazard families. Both MAJORs are figure-pipeline issues that do not corrupt stored data but prevent regeneration of spec-mandated figures. R6-D1 requires user/spec resolution and cannot be closed by any subagent alone.
+
+Next: fix R6-1 (experiment-runner), R6-2 (calibration-engineer), R6-3 and R6-4 (experiment-runner), then surface R6-D1 to user for spec decision.

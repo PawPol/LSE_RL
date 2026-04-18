@@ -123,10 +123,43 @@ def _extract_stage_quantiles(
 ) -> tuple[Any, Any, Any, Any] | None:
     """Extract (stages, q05, q50, q95) arrays from calibration dict.
 
-    Returns None if per_stage data is missing.
+    Returns None if margin quantile data is missing.
+
+    Primary source: top-level ``margin_quantiles`` dict written by
+    ``build_calibration_json`` (R7-4 fix).  Falls back to ``per_stage``
+    dict (legacy format).
     """
     import numpy as np
 
+    # Primary path: margin_quantiles dict from aggregate_phase2.py
+    mq = cal.get("margin_quantiles")
+    if mq is not None:
+        stages_raw = mq.get("stages")
+        q05_raw = mq.get("q05")
+        q50_raw = mq.get("q50")
+        q95_raw = mq.get("q95")
+        if stages_raw and q50_raw:
+            stages = np.array(stages_raw, dtype=int)
+            q05 = np.array(q05_raw or [0.0] * len(stages), dtype=float)
+            q50 = np.array(q50_raw, dtype=float)
+            q95 = np.array(q95_raw or [0.0] * len(stages), dtype=float)
+            return stages, q05, q50, q95
+
+    # Fallback: stagewise dict (key names differ from per_stage legacy format)
+    stagewise = cal.get("stagewise")
+    if stagewise is not None:
+        stage_list = stagewise.get("stage")
+        q05_list = stagewise.get("margin_q05_mean")
+        q50_list = stagewise.get("margin_q50_mean")
+        q95_list = stagewise.get("margin_q95_mean")
+        if stage_list and q50_list:
+            stages = np.array(stage_list, dtype=int)
+            q05 = np.array(q05_list or [0.0] * len(stages), dtype=float)
+            q50 = np.array(q50_list, dtype=float)
+            q95 = np.array(q95_list or [0.0] * len(stages), dtype=float)
+            return stages, q05, q50, q95
+
+    # Legacy path: per_stage dict
     per_stage = cal.get("per_stage")
     if per_stage is None:
         return None

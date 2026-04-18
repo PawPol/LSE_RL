@@ -229,67 +229,67 @@ class TestSeverity0ChainCatastrophe:
 
 
 class TestSeverity0GridSparseGoal:
-    """make_grid_sparse_goal with goal_reward=1.0 and step_penalty=0 recovers grid_base.
-    # docs/specs/phase_II_*.md S9.1 -- severity=0 identity
+    """make_grid_sparse_goal uses goal-only reward (no per-step shaping).
+    # docs/specs/phase_II_*.md S9.1 -- severity=0 identity (spec S5.2.A)
 
-    grid_base has pos_rew=1.0 and neg_rew=0.0; grid_sparse_goal with
-    goal_reward=1.0 and step_penalty=0.0 should produce the same MDP.
-    Note: step_penalty must be passed explicitly; the stress default is -0.05.
+    The stress task uses a 7x7 grid (49 states) with goal-only reward (+1
+    at goal, 0 elsewhere).  Severity=0 means the reward function contains
+    only non-negative values: no step penalty, no negative shaping.
     """
 
-    def test_p_identity(self, grid_base):
-        mdp_stress, _, _ = make_grid_sparse_goal(
-            {}, goal_reward=1.0, step_penalty=0.0, prob=0.9, gamma=0.99, horizon=80,
-        )
-        np.testing.assert_array_equal(
-            mdp_stress.p, grid_base.p,
-            err_msg="grid_sparse_goal severity=0 P != grid_base P",
+    def test_goal_only_reward_nonneg(self):
+        """Default grid_sparse_goal must have no negative reward entries."""
+        mdp, _, _ = make_grid_sparse_goal({})
+        assert mdp.r.min() >= 0.0, (
+            f"grid_sparse_goal R.min()={mdp.r.min():.4f} < 0; "
+            "goal-only reward violated — no per-step shaping expected."
         )
 
-    def test_r_identity(self, grid_base):
-        mdp_stress, _, _ = make_grid_sparse_goal(
-            {}, goal_reward=1.0, step_penalty=0.0, prob=0.9, gamma=0.99, horizon=80,
+    def test_goal_only_reward_positive_at_goal(self):
+        """At least one entry in R must be positive (goal reward exists)."""
+        mdp, _, cfg = make_grid_sparse_goal({})
+        assert mdp.r.max() >= cfg["goal_reward"] - 1e-14, (
+            "grid_sparse_goal has no positive reward entry; "
+            "goal reward not present in R."
         )
-        np.testing.assert_array_equal(
-            mdp_stress.r, grid_base.r,
-            err_msg="grid_sparse_goal severity=0 R != grid_base R",
-        )
+
+    def test_p_is_valid(self):
+        """Transition matrix of 7x7 grid must be a valid stochastic matrix."""
+        mdp, _, _ = make_grid_sparse_goal({})
+        _assert_p_row_sums(mdp.p, "grid_sparse_goal_7x7")
 
 
 class TestGridSparseGoalStressDistinct:
-    """grid_sparse_goal stress instance must be behaviourally distinct from grid_base.
+    """grid_sparse_goal is behaviourally distinct from grid_base.
     # docs/specs/phase_II_*.md S5.2.A -- stress degradation
 
-    With step_penalty=-0.05 the reward matrix must differ from the
-    severity=0 (step_penalty=0) instance.  This guards against silently
-    shipping a paper-suite config that collapses the stress task back to
-    the Phase I baseline.
+    The 7x7 task has a larger state space (49 vs 25 states) and longer
+    horizon (120 vs 80), making credit assignment strictly harder than
+    the Phase I 5x5 grid_base.
     """
 
-    def test_stress_r_differs_from_severity0(self):
-        """Default paper-suite step_penalty (-0.05) must change reward matrix."""
-        mdp_stress, _, cfg_stress = make_grid_sparse_goal({})
-        mdp_base, _, _ = make_grid_sparse_goal({}, step_penalty=0.0)
-        assert not np.array_equal(mdp_stress.r, mdp_base.r), (
-            f"grid_sparse_goal stress (step_penalty={cfg_stress['step_penalty']}) "
-            "has the same reward matrix as the severity=0 instance; "
-            "the paper-suite step_penalty is not active."
+    def test_larger_state_space(self):
+        """grid_sparse_goal must have more states than the 5x5 grid_base."""
+        mdp_stress, _, _ = make_grid_sparse_goal({})
+        n_stress = mdp_stress.info.observation_space.n
+        assert n_stress == 49, (
+            f"grid_sparse_goal has {n_stress} states; expected 49 (7x7)."
         )
 
-    def test_stress_step_penalty_negative(self):
-        """Default paper-suite step_penalty must be strictly negative."""
-        _, _, cfg = make_grid_sparse_goal({})
-        assert cfg["step_penalty"] < 0.0, (
-            f"grid_sparse_goal default step_penalty={cfg['step_penalty']} is "
-            "not negative; stress mechanism is inactive."
-        )
-
-    def test_stress_r_min_negative(self):
-        """With step_penalty < 0, R must contain negative entries."""
+    def test_longer_horizon(self):
+        """grid_sparse_goal must have a longer horizon than grid_base (80)."""
         mdp, _, cfg = make_grid_sparse_goal({})
-        assert mdp.r.min() < 0.0, (
-            f"grid_sparse_goal stress R.min()={mdp.r.min():.4f} >= 0; "
-            f"step_penalty={cfg['step_penalty']} is not affecting the reward."
+        assert cfg["horizon"] > 80, (
+            f"grid_sparse_goal horizon={cfg['horizon']} is not longer than "
+            "grid_base horizon=80; stress distinction is lost."
+        )
+
+    def test_distinct_from_grid_base(self, grid_base):
+        """grid_sparse_goal must have a different transition matrix from grid_base."""
+        mdp_stress, _, _ = make_grid_sparse_goal({})
+        assert mdp_stress.p.shape != grid_base.p.shape, (
+            "grid_sparse_goal has same P shape as grid_base; "
+            "they are not distinct tasks."
         )
 
 
@@ -426,7 +426,7 @@ class TestPRowSums:
         _assert_p_row_sums(mdp.p, "grid_sparse_goal_default")
 
     def test_grid_sparse_goal_severity0(self):
-        mdp, _, _ = make_grid_sparse_goal({}, goal_reward=1.0)
+        mdp, _, _ = make_grid_sparse_goal({}, goal_reward=1.0, prob=0.9)
         _assert_p_row_sums(mdp.p, "grid_sparse_goal_sev0")
 
     def test_grid_hazard_default(self):
@@ -465,8 +465,11 @@ class TestRewardRanges:
 
     def test_grid_sparse_goal_reward_range(self):
         mdp, _, cfg = make_grid_sparse_goal({})
-        # Default stress instance has step_penalty=-0.05, so r.min() is negative.
-        assert mdp.r.min() >= cfg["step_penalty"] - 1e-14
+        # Goal-only reward: R in [0, goal_reward].
+        assert mdp.r.min() >= 0.0 - 1e-14, (
+            f"grid_sparse_goal R.min()={mdp.r.min():.4f} < 0; "
+            "goal-only reward violated."
+        )
         assert mdp.r.max() <= cfg["goal_reward"] + 1e-14
 
 
@@ -499,7 +502,7 @@ class TestHorizons:
 
     def test_grid_sparse_goal_horizon(self):
         mdp, _, cfg = make_grid_sparse_goal({})
-        assert mdp.info.horizon == cfg["horizon"] == 80
+        assert mdp.info.horizon == cfg["horizon"] == 120
 
     def test_grid_hazard_horizon(self):
         _, _, cfg = make_grid_hazard({})

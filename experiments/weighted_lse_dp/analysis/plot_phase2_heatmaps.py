@@ -175,20 +175,34 @@ def make_figure(
             any_data = True
         else:
             # Fallback: per-stage distribution.
+            # R7-4 fix: check stagewise (actual key) before per_stage (legacy).
             per_stage = cal.get("per_stage")
+            stagewise = cal.get("stagewise")
+
             if per_stage is not None:
                 stages = sorted(per_stage.keys(), key=lambda s: int(s))
                 margin_q50 = [
                     per_stage[s].get("margin_q50", 0.0) for s in stages
-                ]
-                counts = [
-                    per_stage[s].get("count", 0) for s in stages
                 ]
                 x = np.arange(len(stages))
                 ax.bar(x, margin_q50, color="#1f77b4", alpha=0.7,
                        label="margin $q_{50}$")
                 ax.set_xticks(x)
                 ax.set_xticklabels(stages, fontsize=6)
+                ax.set_xlabel("Stage")
+                ax.set_ylabel("Margin $q_{50}$")
+                ax.legend(fontsize=7)
+                ax.grid(True, axis="y", alpha=0.3)
+                any_data = True
+                used_fallback = True
+            elif stagewise is not None and stagewise.get("margin_q50_mean"):
+                stage_list = stagewise.get("stage", [])
+                q50_list = stagewise.get("margin_q50_mean", [])
+                x = np.arange(len(stage_list))
+                ax.bar(x, q50_list, color="#1f77b4", alpha=0.7,
+                       label="margin $q_{50}$")
+                ax.set_xticks(x)
+                ax.set_xticklabels(stage_list, fontsize=6)
                 ax.set_xlabel("Stage")
                 ax.set_ylabel("Margin $q_{50}$")
                 ax.legend(fontsize=7)

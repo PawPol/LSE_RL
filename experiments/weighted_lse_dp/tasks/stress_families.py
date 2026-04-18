@@ -229,60 +229,65 @@ def make_chain_jackpot(
 
 
 #: Frozen configuration for the ``grid_sparse_goal`` stress task.
+#: Uses a 7x7 open grid (49 states, goal at (6,6)) with goal-only reward.
+#: This is strictly larger than the Phase I 5x5 ``grid_base``, so credit
+#: assignment is harder (longer propagation chains) while reward semantics
+#: are kept clean: only the goal gives reward, no per-step shaping.
 GRID_SPARSE_GOAL_CONFIG: dict = {
     "task": "grid_sparse_goal",
     "grid_file": (
-        "experiments/weighted_lse_dp/assets/grids/phase1_base_grid.txt"
+        "experiments/weighted_lse_dp/assets/grids/phase2_sparse_goal_7x7.txt"
     ),
-    "n_rows": 5,
-    "n_cols": 5,
+    "n_rows": 7,
+    "n_cols": 7,
     "prob": 0.9,
     "goal_reward": 1.0,
-    "step_penalty": 0.0,
     "gamma": 0.99,
-    "horizon": 80,
-    "goal_cell": (4, 4),
+    "horizon": 120,
+    "goal_cell": (6, 6),
     # RL training schedule
     "train_steps": 200_000,
     "checkpoint_every": 5_000,
     "eval_episodes_checkpoint": 50,
     "eval_episodes_final": 200,
-    "success_threshold": 0.80,
+    "success_threshold": 0.70,
 }
 
 
 def make_grid_sparse_goal(
     cfg: dict,
-    grid_file: str = "experiments/weighted_lse_dp/assets/grids/phase1_base_grid.txt",
+    grid_file: str = "experiments/weighted_lse_dp/assets/grids/phase2_sparse_goal_7x7.txt",
     prob: float = 0.9,
     gamma: float = 0.99,
-    horizon: int = 80,
+    horizon: int = 120,
     goal_reward: float = 1.0,
-    step_penalty: float = -0.05,
     *,
     time_augment: bool = True,
     seed: int | None = None,
 ) -> tuple:
     """Create the Phase II ``grid_sparse_goal`` stress task (spec S5.2.A).
 
-    Same 5x5 open grid as Phase I ``grid_base`` but with a non-zero step
-    penalty (``step_penalty``, default -0.05): every non-goal transition
-    incurs a small negative reward.  This creates a background of negative
-    Bellman targets that stresses the LSE operator's alignment margin ---
-    the stress mechanism is the negative-reward baseline, not reward
-    sparsity alone.
+    A 7x7 open grid (49 states, goal at (6,6)) with **goal-only reward** and
+    no per-step shaping.  The stress is sparse-reward propagation over a larger
+    state space than the Phase I 5x5 ``grid_base``: the value gradient must
+    propagate 12 Manhattan steps from start (0,0) to goal (6,6), compared to
+    8 steps in the base task.
 
-    severity=0 equivalence: when ``step_penalty=0.0`` this reduces to
-    ``grid_base`` (goal-only reward, no shaping).  The default paper-suite
-    instance uses ``step_penalty=-0.05`` to ensure the stress variant is
-    behaviourally distinct from the Phase I baseline.
+    Stress mechanism: increased state space + longer propagation chains.
+    The reward function is identical in kind to ``grid_base`` (goal-only, +1);
+    the challenge comes from the longer credit-assignment path, which stresses
+    classical DP convergence rates and RL sample efficiency.
+
+    severity=0 equivalence: ``prob=1.0`` (deterministic) with ``horizon``
+    large enough to guarantee reachability degenerates the stress to a trivial
+    problem; setting ``grid_file`` back to the 5x5 base recovers ``grid_base``.
 
     Args:
         cfg: caller-supplied overrides (merged into defaults).
-        grid_file: path to the grid text file.
+        grid_file: path to the 7x7 grid text file.
         prob: action success probability.
         gamma: discount factor.
-        horizon: finite horizon length.
+        horizon: finite horizon length (default 120 for 7x7).
         goal_reward: reward for reaching the goal cell.
         time_augment: whether to wrap the RL env in
             :class:`DiscreteTimeAugmentedEnv`.
@@ -301,7 +306,6 @@ def make_grid_sparse_goal(
         "gamma": gamma,
         "horizon": horizon,
         "goal_reward": goal_reward,
-        "step_penalty": step_penalty,
     })
     resolved.update(cfg)
 
@@ -312,26 +316,15 @@ def make_grid_sparse_goal(
             f"(cwd={Path.cwd()!s})."
         )
 
-    # Generate base grid world; pos_rew on goal cell, neg_rew unused (open grid).
+    # Goal-only reward: pos_rew on goal cell, no holes (neg_rew=0), no shaping.
     mdp_base = generate_grid_world(
         grid=str(grid_path),
         prob=float(resolved["prob"]),
         pos_rew=float(resolved["goal_reward"]),
-        neg_rew=0.0,          # open grid has no hole cells; see step_penalty below
+        neg_rew=0.0,
         gamma=float(resolved["gamma"]),
         horizon=int(resolved["horizon"]),
     )
-
-    # Apply step_penalty to every transition that does NOT land on a goal state.
-    # This creates a uniform negative background that stresses the Bellman-target
-    # distribution: the stress mechanism is per-step cost, not hole penalty.
-    step_pen = float(resolved["step_penalty"])
-    if step_pen != 0.0:
-        r = mdp_base.r  # shape (S, A, S) — direct reference to internal array
-        # Identify goal-state indices: any s' where r[:,:,s'] > 0 somewhere.
-        goal_mask = r.max(axis=(0, 1)) > 0  # shape (S,) bool
-        non_goal_idx = np.where(~goal_mask)[0]
-        r[:, :, non_goal_idx] += step_pen  # broadcast step penalty in-place
 
     n_states_expected = resolved["n_rows"] * resolved["n_cols"]
     if mdp_base.info.observation_space.n != n_states_expected:

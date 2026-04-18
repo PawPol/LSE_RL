@@ -1,0 +1,28 @@
+{
+  "task": "chain_regime_shift_goal_flip",
+  "state_n": 25,
+  "prob": 0.9,
+  "gamma": 0.99,
+  "horizon": 60,
+  "change_at_episode": 10,
+  "shift_type": "goal_flip",
+  "post_prob": 0.9,
+  "train_steps": 3000,
+  "checkpoint_every": 1000,
+  "eval_episodes_checkpoint": 10,
+  "eval_episodes_final": 20,
+  "success_threshold": 0.0,
+  "dp_algorithms": [
+    "VI"
+  ],
+  "rl_algorithms": [
+    "QLearning"
+  ],
+  "ref_policy": "always_right",
+  "severity": "regime_shift",
+  "stress_type": "regime_shift",
+  "warmstart_dp": true,
+  "suite_config_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/weighted_lse_dp/configs/phase2/paper_suite.json",
+  "canonical_task_family": "chain_regime_shift",
+  "regime_phase": "pre_shift"
+}

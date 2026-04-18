@@ -146,6 +146,8 @@ def make_figure(
             continue
 
         # Prefer per-seed raw returns for box plot; fall back to quantiles.
+        # R7-4 fix: also accept base_returns/stress_returns pooled arrays
+        # written by build_calibration_json (the fields that actually exist).
         per_seed = cal.get("per_seed_returns")
         if per_seed is not None:
             flat = []
@@ -154,10 +156,18 @@ def make_figure(
             all_returns[label] = np.asarray(flat, dtype=float)
             any_data = True
         else:
-            rq = cal.get("return_quantiles")
-            if rq is not None:
-                all_returns[label] = {k: rq[k] for k in QUANTILE_KEYS if k in rq}
+            # Try pooled return arrays from aggregate_phase2.py
+            base_ret = cal.get("base_returns")
+            stress_ret = cal.get("stress_returns")
+            pooled = (base_ret or []) + (stress_ret or [])
+            if pooled:
+                all_returns[label] = np.asarray(pooled, dtype=float)
                 any_data = True
+            else:
+                rq = cal.get("return_quantiles")
+                if rq is not None:
+                    all_returns[label] = {k: rq[k] for k in QUANTILE_KEYS if k in rq}
+                    any_data = True
 
     if not any_data:
         warnings.warn(

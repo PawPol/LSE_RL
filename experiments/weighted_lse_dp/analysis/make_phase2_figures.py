@@ -151,6 +151,12 @@ _TAIL_TASKS = (
     "chain_jackpot", "chain_catastrophe", "grid_hazard", "taxi_bonus_shock",
 )
 _GRID_TASKS = ("grid_sparse_goal", "grid_hazard", "grid_regime_shift")
+# Per-task grid shapes for heatmap reshape.  grid_sparse_goal is 7x7; others are 5x5.
+_GRID_TASK_SHAPES: dict[str, tuple[int, int]] = {
+    "grid_sparse_goal": (7, 7),
+    "grid_hazard": (5, 5),
+    "grid_regime_shift": (5, 5),
+}
 
 
 # ---------------------------------------------------------------------------
@@ -451,9 +457,34 @@ def fig_adaptation_plots(
                 )
                 ax.set_title(task.replace("_", " "))
                 continue
-            curves = summary.get("curves", {})
-            returns = np.array(curves.get("episode_returns", []))
-            cp = summary.get("change_point", curves.get("change_point", None))
+            # R7-1 fix: prefer per-episode returns stored at top-level
+            # (episode-unit x-axis matches change_at_episode in episode units).
+            ep_by_seed = summary.get("episode_returns", {})
+            cp = summary.get("change_at_episode")
+            if cp is None:
+                curves = summary.get("curves", {})
+                cp = summary.get("change_point", curves.get("change_point"))
+            if isinstance(ep_by_seed, dict) and ep_by_seed:
+                seed_arrays = [
+                    np.array(v, dtype=float)
+                    for v in ep_by_seed.values()
+                    if isinstance(v, list) and v
+                ]
+                if seed_arrays:
+                    min_len = min(len(a) for a in seed_arrays)
+                    returns = np.mean(
+                        np.stack([a[:min_len] for a in seed_arrays], axis=0),
+                        axis=0,
+                    )
+                    episodes = np.arange(len(returns))
+                else:
+                    returns = np.array([])
+                    episodes = np.arange(0)
+            else:
+                # Fallback to checkpoint means (x-axis in checkpoint indices).
+                curves = summary.get("curves", {})
+                returns = np.array(curves.get("episode_returns", []))
+                episodes = np.arange(len(returns))
             if len(returns) == 0:
                 ax.text(
                     0.5, 0.5, "No episode returns",
@@ -462,7 +493,6 @@ def fig_adaptation_plots(
                 )
                 ax.set_title(task.replace("_", " "))
                 continue
-            episodes = np.arange(len(returns))
 
         # Rolling mean.
         if len(returns) >= window:
@@ -498,7 +528,6 @@ def fig_visitation_heatmaps(
     results_root: Path,
     *,
     demo: bool = False,
-    grid_shape: tuple[int, int] = (5, 5),
 ) -> list[Path]:
     """Figure 11.1.4: state-visitation heatmaps for grid tasks.
 
@@ -513,6 +542,8 @@ def fig_visitation_heatmaps(
     aggregated_root = results_root / "phase2" / "aggregated"
 
     for ax, task in zip(axes, _GRID_TASKS):
+        grid_shape = _GRID_TASK_SHAPES.get(task, (5, 5))
+        n_states = grid_shape[0] * grid_shape[1]
         if demo:
             heatmap = _demo_heatmap(
                 *grid_shape, rng=np.random.default_rng(hash(task) % 2**31),
@@ -536,7 +567,12 @@ def fig_visitation_heatmaps(
                 )
                 ax.set_title(task.replace("_", " "))
                 continue
-            heatmap = np.array(hm_data).reshape(grid_shape)
+            # np.bincount produces length max_state+1, which may be < n_states
+            # if some states were never visited.  Pad with zeros to n_states.
+            arr = np.array(hm_data, dtype=float)
+            if len(arr) < n_states:
+                arr = np.pad(arr, (0, n_states - len(arr)))
+            heatmap = arr[:n_states].reshape(grid_shape)
 
         im = ax.imshow(heatmap, cmap="YlOrRd", aspect="equal", origin="upper")
         fig.colorbar(im, ax=ax, shrink=0.8)

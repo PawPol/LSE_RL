@@ -132,22 +132,45 @@ def _extract_curves(
     """Extract (checkpoints, mean, std) from a summary dict.
 
     Returns None if the required keys are missing.
+
+    Reads from the nested ``curves`` dict (R7-3 fix).  Falls back to the
+    legacy top-level ``checkpoints`` / ``disc_return_mean_per_seed`` keys
+    for backward compatibility.
     """
     import numpy as np
 
-    checkpoints = summary.get("checkpoints")
+    # Primary path: nested curves dict written by aggregate_phase2.py.
+    curves = summary.get("curves", {})
+    ckpts_raw = curves.get("steps") or summary.get("checkpoints")
+    mean_raw = curves.get("mean_return")
+    std_raw = curves.get("std_return")
+
+    if ckpts_raw is not None and mean_raw is not None:
+        ckpts = np.asarray(ckpts_raw, dtype=float)
+        mean = np.asarray(mean_raw, dtype=float)
+        std = (
+            np.asarray(std_raw, dtype=float)
+            if std_raw and len(std_raw) == len(mean_raw)
+            else np.zeros_like(mean)
+        )
+        if len(ckpts) == len(mean) and len(ckpts) > 0:
+            return ckpts, mean, std
+
+    # Legacy path: per-seed dict at top level.
     per_seed = summary.get("disc_return_mean_per_seed")
-    if checkpoints is None or per_seed is None:
-        return None
+    if ckpts_raw is not None and per_seed is not None:
+        ckpts = np.asarray(ckpts_raw, dtype=float)
+        seeds_arr = np.array(list(per_seed.values()), dtype=float)
+        if seeds_arr.ndim == 2 and seeds_arr.shape[1] == len(ckpts):
+            mean = seeds_arr.mean(axis=0)
+            std = (
+                seeds_arr.std(axis=0, ddof=1)
+                if seeds_arr.shape[0] > 1
+                else np.zeros_like(mean)
+            )
+            return ckpts, mean, std
 
-    ckpts = np.asarray(checkpoints, dtype=float)
-    seeds_arr = np.array(list(per_seed.values()), dtype=float)  # (n_seeds, n_ckpts)
-    if seeds_arr.ndim != 2 or seeds_arr.shape[1] != len(ckpts):
-        return None
-
-    mean = seeds_arr.mean(axis=0)
-    std = seeds_arr.std(axis=0, ddof=1) if seeds_arr.shape[0] > 1 else np.zeros_like(mean)
-    return ckpts, mean, std
+    return None
 
 
 # ---------------------------------------------------------------------------

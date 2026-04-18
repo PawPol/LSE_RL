@@ -767,6 +767,25 @@ def run_single(
             calibration_stats["catastrophe_event_rate"] = np.array(
                 [float(np.mean(transitions_payload["catastrophe_event"]))],
             )
+        # R7-A4: episode-level risky-path fraction for catastrophe tasks.
+        # "Used the risky path" = at least one shortcut_action_taken=True
+        # in that episode.  Use eval payload (learned policy) when available,
+        # fall back to training payload.
+        _payload_for_shortcut = None
+        if eval_payload is not None and "shortcut_action_taken" in eval_payload:
+            _payload_for_shortcut = eval_payload
+        elif "shortcut_action_taken" in transitions_payload:
+            _payload_for_shortcut = transitions_payload
+        if _payload_for_shortcut is not None:
+            risky_ep_flags = _compute_episode_event_flags(
+                _payload_for_shortcut, "shortcut_action_taken"
+            )
+            shortcut_fraction = (
+                float(np.mean(risky_ep_flags)) if len(risky_ep_flags) > 0 else 0.0
+            )
+            calibration_stats["shortcut_risky_path_fraction"] = np.array(
+                [shortcut_fraction]
+            )
         if "hazard_cell_hit" in transitions_payload:
             calibration_stats["hazard_hit_rate"] = np.array(
                 [float(np.mean(transitions_payload["hazard_cell_hit"]))],
@@ -879,6 +898,13 @@ def run_single(
     if adaptation is not None:
         metrics["adaptation_metrics"] = adaptation
         resolved_config["adaptation_metrics"] = adaptation
+
+    # R7-A4: shortcut_risky_path_fraction — written to metrics.json for
+    # downstream aggregation and reporting (spec §10.2).
+    if "shortcut_risky_path_fraction" in calibration_stats:
+        metrics["shortcut_risky_path_fraction"] = float(
+            calibration_stats["shortcut_risky_path_fraction"][0]
+        )
 
     # -- Store episode returns for return-distribution figures (MAJOR R3-3) --
     # Split by event flag so aggregation can build base_returns (no event)

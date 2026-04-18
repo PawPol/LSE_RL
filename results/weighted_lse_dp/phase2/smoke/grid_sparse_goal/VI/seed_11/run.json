@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-18T02:06:44Z",
+  "phase": "phase2",
+  "task": "grid_sparse_goal",
+  "algorithm": "VI",
+  "seed": 11,
+  "git_sha": "0806a043788643fd9fbafa697cc33e2390537544",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "task": "grid_sparse_goal",
+    "grid_file": "experiments/weighted_lse_dp/assets/grids/phase2_sparse_goal_7x7.txt",
+    "n_rows": 7,
+    "n_cols": 7,
+    "prob": 0.9,
+    "goal_reward": 1.0,
+    "gamma": 0.99,
+    "horizon": 120,
+    "goal_cell": [
+      6,
+      6
+    ],
+    "train_steps": 2000,
+    "checkpoint_every": 1000,
+    "eval_episodes_checkpoint": 10,
+    "eval_episodes_final": 20,
+    "success_threshold": 0.0,
+    "n_states": 49,
+    "n_actions": 4,
+    "dp_algorithms": [
+      "VI"
+    ],
+    "rl_algorithms": [
+      "QLearning"
+    ],
+    "ref_policy": "shortest_path",
+    "severity": "sparse_reward",
+    "suite_config_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/weighted_lse_dp/configs/phase2/paper_suite.json"
+  },
+  "suite": "smoke",
+  "storage_mode": "dp_stagewise"
+}

@@ -214,6 +214,16 @@ citing rho*(r,v) = sigma(beta*(r-v) + log(1/gamma)) from the paper.
 
 ---
 
+### 2026-04-18 -- Grouping-key fix that replaces the discriminating key instead of adding metadata
+
+**Pattern**: A review finding (R5-3) asked for family-level calibration grouping so that regime-shift pre/post runs would appear under a single family-level calibration document. The fix replaced the `task` grouping key with `canonical_task_family` in `_discover_runs`, which collapsed pre_shift and post_shift DP runs into the same aggregate group. Their calibration statistics were then averaged together, corrupting the post-change signal that Phase III depends on. The correct approach was to keep `task` as the discriminating key (preserving separate groups) and add `canonical_task_family` as a metadata field for downstream use.
+
+**Prevention rule**: When a review asks for "family-level grouping" or "merge X into Y", distinguish between (a) adding a metadata/tag field that downstream consumers can use to select or combine groups, and (b) replacing the primary grouping key. If the items being "grouped" have semantically different data that must not be averaged (e.g. pre-change vs post-change statistics), the fix must be (a), not (b). Always add a test that asserts the number of groups produced by `_discover_runs` matches the expected count for a regime-shift task family (i.e. 2 groups, not 1).
+
+**Source incident**: Phase II Codex R6 adversarial review (019d9e19-c138) -- `aggregate_phase2.py:208-221` regression from R5-3 fix. Triaged 2026-04-18 as BLOCKER R6-1.
+
+---
+
 ### 2026-04-17 — Aggregation statistics computed from summaries-of-summaries instead of raw data
 
 **Pattern**: Calibration statistics meant to capture distributional properties (quantiles, extremes) were computed from already-aggregated arrays (per-seed means, per-stage means) rather than from the underlying raw data. This appeared in two forms in Phase II R4: (1) margin quantiles computed from `aligned_positive_mean` arrays (percentiles of means, not quantiles of the margin distribution), and (2) `empirical_r_max` derived from `reward_mean + 2*reward_std` instead of `max(|r|)` over actual observations. Both silently produce plausible-looking numbers that are systematically biased, especially for rare-event / heavy-tail families where the whole point is tail behavior.
