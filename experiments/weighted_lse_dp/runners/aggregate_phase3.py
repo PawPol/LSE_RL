@@ -251,7 +251,19 @@ def aggregate_group(
     agg_curves = _aggregate_curves(seed_dirs, algorithm)
 
     # ----- safe per-stage quantiles (Task 36: raw pooling) -----
-    safe_stagewise = _aggregate_safe_stagewise_from_raw(seed_dirs)
+    # Resolve gamma from provenance or first seed's run.json.
+    gamma_for_safe: float = 0.99  # fallback
+    for r in seed_runs:
+        rj = r.get("run_json", {})
+        cfg = rj.get("config", {})
+        if "gamma" in cfg:
+            gamma_for_safe = float(cfg["gamma"])
+            break
+        tc = cfg.get("task_config", {})
+        if "gamma" in tc:
+            gamma_for_safe = float(tc["gamma"])
+            break
+    safe_stagewise = _aggregate_safe_stagewise_from_raw(seed_dirs, gamma=gamma_for_safe)
 
     # ----- provenance (from first seed with data) -----
     provenance = {}
@@ -278,13 +290,33 @@ def aggregate_group(
         "metrics": agg_scalars,
         "provenance": provenance,
     }
-    save_json(summary, out_dir / "summary.json")
+    save_json(out_dir / "summary.json", summary)
 
     if agg_curves:
-        save_npz_with_schema(agg_curves, out_dir / "curves.npz")
+        from experiments.weighted_lse_dp.common.io import make_npz_schema
+        curves_schema = make_npz_schema(
+            phase="phase3",
+            task=task,
+            algorithm=algorithm,
+            seed=-1,
+            storage_mode="aggregated",
+            arrays=list(agg_curves.keys()),
+        )
+        save_npz_with_schema(out_dir / "curves.npz", curves_schema, agg_curves)
 
     if safe_stagewise:
-        save_npz_with_schema(safe_stagewise, out_dir / "safe_stagewise.npz")
+        from experiments.weighted_lse_dp.common.io import make_npz_schema
+        stagewise_schema = make_npz_schema(
+            phase="phase3",
+            task=task,
+            algorithm=algorithm,
+            seed=-1,
+            storage_mode="aggregated",
+            arrays=list(safe_stagewise.keys()),
+        )
+        save_npz_with_schema(
+            out_dir / "safe_stagewise.npz", stagewise_schema, safe_stagewise
+        )
 
     logger.info("Wrote aggregated outputs to %s", out_dir)
     return summary
@@ -389,19 +421,38 @@ def _aggregate_curves(
 
 def _aggregate_safe_stagewise_from_raw(
     seed_dirs: List[Path],
+    *,
+    gamma: float,
 ) -> Dict[str, np.ndarray]:
-    """Compute per-stage quantiles by pooling raw transitions across seeds.
+    """Compute per-stage aggregate safe stats by pooling raw transitions across seeds.
 
-    This is the Task 36 implementation.  For each safe field we:
+    This is the Task 36 implementation.  We:
 
     1. Load ``transitions.npz`` from every seed.
-    2. Concatenate the raw per-transition arrays across all seeds.
-    3. Group by ``safe_stage`` and compute quantiles from the pooled data.
+    2. Concatenate the raw per-transition arrays across all seeds into a
+       single payload dict matching the ``aggregate_safe_stats`` contract.
+    3. Call ``aggregate_safe_stats(payload, T, gamma)`` once to get all
+       per-stage stats.
 
     This avoids the "summary-of-summaries" anti-pattern.
+
+    Parameters
+    ----------
+    seed_dirs : list of Path
+        Directories containing per-seed ``transitions.npz`` files.
+    gamma : float
+        Nominal discount factor (used for underdiscount fraction threshold).
     """
+    # Keys required by aggregate_safe_stats payload
+    _PAYLOAD_KEYS = (
+        "safe_stage",
+        "safe_rho",
+        "safe_effective_discount",
+        "safe_beta_used",
+        "safe_clip_active",
+    )
+
     # Collect raw arrays from all seeds
-    all_stages: List[np.ndarray] = []
     raw_fields: Dict[str, List[np.ndarray]] = defaultdict(list)
 
     for d in seed_dirs:
@@ -427,104 +478,30 @@ def _aggregate_safe_stagewise_from_raw(
             )
             continue
 
-        all_stages.append(npz["safe_stage"].astype(np.int64))
+        for key in _PAYLOAD_KEYS:
+            if key in npz:
+                raw_fields[key].append(npz[key])
 
-        # Collect all safe fields that are present
-        for field in _SAFE_FULL_QUANTILE_FIELDS + _SAFE_REDUCED_QUANTILE_FIELDS:
-            if field in npz:
-                raw_fields[field].append(npz[field])
-
-        # Collect clip-active for mean computation
-        if "safe_clip_active" in npz:
-            raw_fields["safe_clip_active"].append(npz["safe_clip_active"])
-        if "safe_effective_discount" in npz:
-            raw_fields["_safe_ed_for_underdiscount"].append(
-                npz["safe_effective_discount"]
-            )
-
-    if not all_stages:
+    # Need at least safe_stage to proceed
+    if "safe_stage" not in raw_fields or not raw_fields["safe_stage"]:
         return {}
 
-    # Pool across seeds
-    stages_pooled = np.concatenate(all_stages)
-    n_stages = int(stages_pooled.max()) + 1
+    # Pool across seeds into a single payload dict
+    payload: Dict[str, np.ndarray] = {}
+    for key in _PAYLOAD_KEYS:
+        if key in raw_fields:
+            payload[key] = np.concatenate(raw_fields[key])
 
-    result: Dict[str, np.ndarray] = {
-        "stage_indices": np.arange(n_stages),
-    }
+    # Determine T from pooled stages
+    n_stages = int(payload["safe_stage"].max()) + 1
 
-    # --- Full-quantile fields (q05, q25, q50, q75, q95) ---
-    for field in _SAFE_FULL_QUANTILE_FIELDS:
-        if field not in raw_fields:
-            continue
-        pooled = np.concatenate(raw_fields[field])
-        stats = aggregate_safe_stats(
-            stages_pooled, pooled, n_stages, quantiles=_SAFE_QUANTILES
-        )
-        # Map to output keys, e.g. safe_rho_q05, safe_rho_q50, ...
-        prefix = field  # e.g. "safe_rho"
-        # Short alias for effective_discount -> ed
-        out_prefix = prefix.replace("safe_effective_discount", "safe_ed")
-        for q_key, arr in stats.items():
-            if q_key in ("mean", "std"):
-                continue  # only emit quantiles for these fields
-            result[f"{out_prefix}_{q_key}"] = arr
+    # Call aggregate_safe_stats with the correct signature
+    result: Dict[str, np.ndarray] = aggregate_safe_stats(
+        payload, T=n_stages, gamma=gamma
+    )
 
-    # --- Reduced-quantile fields (q05, q50, q95 only) ---
-    for field in _SAFE_REDUCED_QUANTILE_FIELDS:
-        if field not in raw_fields:
-            continue
-        pooled = np.concatenate(raw_fields[field])
-        stats = aggregate_safe_stats(
-            stages_pooled, pooled, n_stages, quantiles=(0.05, 0.50, 0.95)
-        )
-        out_prefix = field
-        for q_key, arr in stats.items():
-            if q_key in ("mean", "std"):
-                continue
-            result[f"{out_prefix}_{q_key}"] = arr
-
-    # --- Per-stage mean of clip fraction ---
-    if "safe_clip_active" in raw_fields:
-        clip_pooled = np.concatenate(raw_fields["safe_clip_active"])
-        clip_mean = np.full(n_stages, np.nan)
-        for t in range(n_stages):
-            mask = stages_pooled == t
-            if np.any(mask):
-                clip_mean[t] = np.mean(clip_pooled[mask])
-        result["safe_clip_fraction_mean"] = clip_mean
-
-    # --- Per-stage underdiscount fraction ---
-    # Fraction of transitions where effective_discount < gamma
-    if "_safe_ed_for_underdiscount" in raw_fields:
-        ed_pooled = np.concatenate(raw_fields["_safe_ed_for_underdiscount"])
-        # We need gamma; try to infer from run metadata
-        # For now, compute fraction < gamma using a placeholder approach:
-        # gamma is typically stored in the run config.  We compute the fraction
-        # as the fraction of ed values strictly below the task gamma.  Since
-        # we don't have gamma here, we store the raw mean and let downstream
-        # consumers apply the threshold.  However, per the spec, we also store
-        # underdiscount_fraction_mean.  We approximate gamma from the maximum
-        # observed ed (classical updates have ed = gamma exactly).
-        # A more robust approach: underdiscount_fraction is already a scalar
-        # in metrics.json aggregated above.  Here we provide per-stage means
-        # of the raw ed for diagnostic use.
-        ed_mean = np.full(n_stages, np.nan)
-        for t in range(n_stages):
-            mask = stages_pooled == t
-            if np.any(mask):
-                ed_mean[t] = np.mean(ed_pooled[mask])
-        result["safe_underdiscount_fraction_mean"] = ed_mean
-        # Note: this is actually ed_mean, not underdiscount fraction.
-        # The true per-stage underdiscount fraction requires gamma.
-        # We rename for clarity and compute the fraction if gamma is available
-        # from any seed's run.json.
-        result["safe_ed_mean"] = ed_mean
-
-    # --- Bellman residual mean (NaN for RL, populated for DP) ---
-    # Bellman residual is typically in calibration_stats or curves, not in
-    # transitions.npz.  Set to NaN array as placeholder per spec.
-    result["safe_bellman_residual_mean"] = np.full(n_stages, np.nan)
+    # Add stage indices for downstream convenience
+    result["stage_indices"] = np.arange(n_stages)
 
     return result
 

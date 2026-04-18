@@ -784,6 +784,12 @@ def run_single(
         )
     schedule = BetaSchedule.from_file(schedule_path)
 
+    if schedule.T != horizon:
+        raise ValueError(
+            f"Schedule T={schedule.T} does not match task horizon={horizon} "
+            f"for task={task!r}. Regenerate the schedule or check the config."
+        )
+
     # -- Task 34: Extract event detection thresholds EXPLICITLY --------------
     event_thresholds = _get_event_thresholds(task, task_config, stress_type)
 

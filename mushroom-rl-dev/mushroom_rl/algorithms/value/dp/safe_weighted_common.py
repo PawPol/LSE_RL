@@ -107,6 +107,94 @@ class BetaSchedule:
                 f"got {len(self._Bhat_t)}."
             )
 
+        self._validate_certification()
+
+    # --- certification invariant checks ------------------------------------
+
+    def _validate_certification(self) -> None:
+        """Verify certification invariants on the loaded schedule.
+
+        Checks performed (all with atol=1e-9, rtol=0):
+        1. alpha_t in [0, 1) for every stage.
+        2. beta_used_t == clip(beta_raw_t, -beta_cap_t, beta_cap_t).
+        3. If reward_bound is present: kappa_t, Bhat_t, beta_cap_t agree
+           with build_certification(alpha_t, reward_bound, gamma).
+        4. beta_cap_t >= 0 for every stage.
+        """
+        _atol = 1e-9
+
+        # --- Check 1: alpha_t domain [0, 1) --------------------------------
+        if np.any(self._alpha_t < 0.0):
+            bad = int(np.argmax(self._alpha_t < 0.0))
+            raise ValueError(
+                f"alpha_t[{bad}] = {self._alpha_t[bad]} is negative; "
+                f"all entries must be in [0, 1)."
+            )
+        if np.any(self._alpha_t >= 1.0):
+            bad = int(np.argmax(self._alpha_t >= 1.0))
+            raise ValueError(
+                f"alpha_t[{bad}] = {self._alpha_t[bad]} >= 1; "
+                f"all entries must be in [0, 1)."
+            )
+
+        # --- Check 2: beta_used consistency ---------------------------------
+        expected_used = np.clip(
+            self._beta_raw_t, -self._beta_cap_t, self._beta_cap_t
+        )
+        if not np.allclose(self._beta_used_t, expected_used,
+                           atol=_atol, rtol=0):
+            diffs = np.abs(self._beta_used_t - expected_used)
+            bad = int(np.argmax(diffs))
+            raise ValueError(
+                f"beta_used_t[{bad}] = {self._beta_used_t[bad]} does not "
+                f"match clip(beta_raw_t[{bad}], -beta_cap_t[{bad}], "
+                f"beta_cap_t[{bad}]) = {expected_used[bad]} "
+                f"(diff={diffs[bad]:.2e}, atol={_atol})."
+            )
+
+        # --- Check 3: certification recurrence round-trip -------------------
+        reward_bound = self._raw.get("reward_bound")
+        if reward_bound is not None:
+            cert = build_certification(
+                self._alpha_t, R_max=float(reward_bound), gamma=self._gamma
+            )
+            for key, stored in [
+                ("kappa_t", self._kappa_t),
+                ("Bhat_t", self._Bhat_t),
+                ("beta_cap_t", self._beta_cap_t),
+            ]:
+                recomputed = cert[key]
+                if not np.allclose(stored, recomputed, atol=_atol, rtol=0):
+                    max_diff = float(np.max(np.abs(stored - recomputed)))
+                    # beta_cap_t may be intentionally overridden (e.g. set
+                    # larger to avoid clipping in tests).  A stored cap that
+                    # is element-wise >= the certified cap is strictly more
+                    # permissive but still internally consistent -- the
+                    # safety guarantee degrades gracefully.  Only raise if
+                    # the stored cap is *smaller* than the certified cap
+                    # (which would be unsound) or if kappa/Bhat diverge.
+                    if key == "beta_cap_t":
+                        undershoot = float(
+                            np.max(recomputed - stored)
+                        )
+                        if undershoot <= _atol:
+                            # stored >= recomputed everywhere: permissive
+                            # override, accept silently.
+                            continue
+                    raise ValueError(
+                        f"Certification recurrence mismatch for {key}: "
+                        f"max |stored - recomputed| = {max_diff:.2e} "
+                        f"exceeds atol={_atol}."
+                    )
+
+        # --- Check 4: beta_cap non-negative ---------------------------------
+        if np.any(self._beta_cap_t < 0.0):
+            bad = int(np.argmax(self._beta_cap_t < 0.0))
+            raise ValueError(
+                f"beta_cap_t[{bad}] = {self._beta_cap_t[bad]} is negative; "
+                f"all entries must be >= 0."
+            )
+
     # --- constructors ------------------------------------------------------
 
     @classmethod

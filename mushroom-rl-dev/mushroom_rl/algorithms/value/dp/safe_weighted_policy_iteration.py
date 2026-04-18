@@ -417,14 +417,14 @@ class SafeWeightedPolicyIteration:
                 break
 
             # --- 5. Advance: adopt the improved policy for the next PE --------
-            self.pi = pi_new                                 # (T, S)
-            V_prev_non_terminal = V_pi[: self._T].copy()     # (T, S)
-
-            # Residual-based early stop: only kicks in when ``tol > 0``.
-            # Policy stability is checked first because a stable policy is
-            # the canonical PI termination condition.
+            # Residual-based early stop checked BEFORE committing pi_new so
+            # that (pi, Q, V) remain consistent: Q/V reflect evaluation of
+            # self.pi, and we return without advancing to pi_new.
             if self._tol > 0.0 and residual < self._tol:
                 break
+
+            self.pi = pi_new                                 # (T, S)
+            V_prev_non_terminal = V_pi[: self._T].copy()     # (T, S)
 
         self.wall_clock_s = float(time.perf_counter() - t_start)
         self.iter_times_s = list(iter_timer.sweep_times_s)
