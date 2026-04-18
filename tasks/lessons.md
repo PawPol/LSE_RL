@@ -231,3 +231,23 @@ citing rho*(r,v) = sigma(beta*(r-v) + log(1/gamma)) from the paper.
 **Prevention rule**: (1) Any statistic that claims to represent a distributional property (quantiles, extremes, CVaR) must be computed from the most granular data available (per-transition, per-episode), never from pre-averaged summaries. (2) Name arrays precisely: `aligned_positive_mean` is a mean, not a sample -- code that treats it as a sample for percentile computation is wrong by construction. (3) Add a unit test that verifies calibration quantiles against a known synthetic distribution with fat tails; the test should fail if quantiles are computed from stage means instead of raw samples.
 
 **Source incident**: Phase II Codex R4 adversarial review (review-mo3l48hq-1ncnzo) — `aggregate_phase2.py:721-776` (margin quantiles from means) and `aggregate_phase2.py:778-792` (r_max from moments). Triaged 2026-04-17 as BLOCKERs R4-3 and R4-4.
+
+---
+
+### 2026-04-17 — Hard-coded state-count constants not updated when task parameters change
+
+**Pattern**: `_N_BASE` in `run_phase2_rl.py` maps task names to base state counts used by `TransitionLogger` for index decomposition (`aug_id // n_base`, `aug_id % n_base`). When `grid_sparse_goal` was changed from 5x5 (25 states) to 7x7 (49 states), the `_N_BASE` entry was not updated. Every transition with `aug_id >= 25` produces wrong timestep and state values, corrupting all downstream transition logs, calibration stats, and visitation heatmaps for this task. The bug is silent: no assertion fires, shapes are correct, values are plausible but wrong.
+
+**Prevention rule**: (1) Never hard-code derived constants (like state counts) separately from the factory that produces the environment. Either compute `n_base` from the environment object at runtime (`mdp.info.observation_space.size`), or have the factory return it alongside the MDP. (2) If a hard-coded lookup table must exist, add an assertion at task creation time that `_N_BASE[task] == mdp.info.observation_space.size`. (3) When changing any task parameter that affects state-space size, grep for all hard-coded references to the old size.
+
+**Source incident**: Phase II Codex R8 reviews (019d9e60) -- `run_phase2_rl.py:122` has `"grid_sparse_goal": 25` for a 49-state MDP. Triaged 2026-04-17 as BLOCKER R8-1.
+
+---
+
+### 2026-04-17 — Event detection thresholds derived from absent config keys (silent default)
+
+**Pattern**: `run_phase2_rl.py:623` reads `task_config.get("jackpot_reward", 10.0)` for the taxi_bonus_shock task, but this config has no `jackpot_reward` field (it has `bonus_reward`). The threshold silently defaults to `10.0 * 0.5 = 5.0`, which happens to work when `bonus_reward=5.0` (total delivery = 6.0 > 5.0). If `bonus_reward` is lowered to 4.0 or below, jackpot events are silently never logged. The `.get()` with a default masks the missing key.
+
+**Prevention rule**: (1) When deriving event detection thresholds from config, use explicit keys that are guaranteed to exist in the task config. If the key might not exist, fail loudly (KeyError) rather than defaulting silently. (2) Add a startup assertion that all required config keys for event detection are present: `assert "bonus_reward" in task_config` before deriving thresholds. (3) Log derived thresholds to `run.json` so post-hoc auditing can catch threshold mismatches.
+
+**Source incident**: Phase II Codex R8 reviews (019d9e60) -- `run_phase2_rl.py:623` uses absent `jackpot_reward` key with silent default. Triaged 2026-04-17 as MAJOR R8-4.

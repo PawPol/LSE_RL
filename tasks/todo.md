@@ -1223,3 +1223,65 @@ DISPUTE: 1  (R6-D1: grid_sparse_goal step_penalty vs spec "no per-step shaping")
 R6-1 is a regression from the R5-3 fix: the implementation used `canonical_task_family` as the grouping key instead of as metadata, causing pre/post DP stats to be averaged together. This corrupts Phase III calibration input and must be fixed before Phase II can close. R6-2 is a new finding: the `margin_quantiles` alias silently drops the negative tail, biasing both the paper figure and the calibration export for catastrophe/hazard families. Both MAJORs are figure-pipeline issues that do not corrupt stored data but prevent regeneration of spec-mandated figures. R6-D1 requires user/spec resolution and cannot be closed by any subagent alone.
 
 Next: fix R6-1 (experiment-runner), R6-2 (calibration-engineer), R6-3 and R6-4 (experiment-runner), then surface R6-D1 to user for spec decision.
+
+---
+
+## Phase II Triage R8 (2026-04-17)
+
+**Sources:**
+- Standard review R8: `results/processed/codex_reviews/phase_II/review_r8.md` (session 019d9e60-94d5-7ff3-a128-e683d2b31dce)
+- Adversarial review R8: `results/processed/codex_reviews/phase_II/adversarial_r8.md`
+
+Triaged by: `review-triage` subagent.
+
+### Findings
+
+- [ ] [BLOCKER] R8-1: Fix `n_base=25` to `n_base=49` for `grid_sparse_goal` in `_N_BASE` dict. All transition logs for this task are corrupted: `TransitionLogger` uses `aug_id // n_base` and `aug_id % n_base`, so every transition with `aug_id >= 25` is mis-binned. Acceptance criterion: `_N_BASE["grid_sparse_goal"] == 49` in `run_phase2_rl.py:122`, and a smoke run of `grid_sparse_goal` produces `transitions.npz` where `base_state < 49` for all entries.
+      (codex-session: 019d9e60, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#5.2.A) -> experiment-runner
+
+- [ ] [MAJOR] R8-2: Fix `make_grid_hazard()` factory: time-augment the `wrapper` (hazard-wrapped MDP), not `mdp_base`, when constructing `mdp_rl`. Direct callers of the factory get an unstressed RL env. The RL runner works around this manually but the contract is broken.
+      (codex-session: 019d9e60, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#4) -> experiment-runner
+      File: `experiments/weighted_lse_dp/tasks/hazard_wrappers.py:232-234`
+
+- [ ] [MAJOR] R8-3: Fix `make_taxi_bonus_shock()` factory: time-augment the `wrapped` MDP, not `mdp_base`, when constructing `mdp_rl`. Same issue as R8-2.
+      (codex-session: 019d9e60, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#4) -> experiment-runner
+      File: `experiments/weighted_lse_dp/tasks/stress_families.py:644-646`
+
+- [ ] [MAJOR] R8-4: Fix `taxi_bonus_shock` jackpot threshold: the code reads `task_config.get("jackpot_reward", 10.0)` but the taxi config has no `jackpot_reward` field. Threshold always defaults to `10.0 * 0.5 = 5.0`. Works by coincidence when `bonus_reward=5.0` (total=6.0 > 5.0) but breaks silently if `bonus_reward <= 4.0`. Derive threshold from `bonus_reward` config field instead.
+      (codex-session: 019d9e60, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#8.1) -> experiment-runner
+      File: `run_phase2_rl.py:623`
+
+- [ ] [MAJOR] R8-5: `chain_sparse_long` and `grid_sparse_goal` have `stress_type=None` in `paper_suite.json`, so no `EventTransitionLogger` is created and no event-conditioned margin statistics are produced. Spec section 12 requires "event-conditioned margin statistics" for every stress task family. Requires discussion: is goal-reach a loggable event for sparse-reward tasks, or should these families be exempted?
+      (codex-session: 019d9e60, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#12) -> experiment-runner / user
+
+- [ ] [MINOR] R8-6: `regime_shift_episode` fallback path key mismatch between `run.json` and aggregator. `_merge_run_json_scalars` looks for `regime_shift_episode` inside `run.json["adaptation_metrics"]`, but `AdaptationMetricsLogger.compute()` returns `change_at_episode` as the key name. The fallback is dead code. **Primary path works correctly**: `calibration_stats.npz` stores `regime_shift_episode` (line 794), `_aggregate_scalar_block` reads it and produces `regime_shift_episode_mean` (line 786+148), and line 1464 reads `regime_shift_episode_mean` successfully. Impact: if `calibration_stats.npz` is missing for a regime-shift run, the change-point is silently dropped.
+      (codex-session: 019d9e60, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#8.2) -> experiment-runner
+      Files: `aggregate_phase2.py:148,439-441,1464`; `run_phase2_rl.py:794`; `callbacks.py:740`
+
+- [ ] [MINOR] R8-7: `AdaptationMetricsLogger.compute()` uses `nanmax(post)` as post-change optimum (callbacks.py:765). Spec section 8.2 says "90% of new optimum or best observed post-change plateau" -- "plateau" implies a smoothed/windowed estimate, not raw maximum. A single lucky episode inflates the optimum, making all lag estimates appear large. Consider `nanpercentile(post, 95)` or rolling-max.
+      (codex-session: 019d9e60, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#8.2) -> experiment-runner
+      File: `callbacks.py:765`
+
+- [ ] [NIT] R8-8: Derived event thresholds (`hazard_reward_thr`, `jackpot_reward_thr`, `catastrophe_reward_thr`) not logged in `run.json`. If config values change after a run, it is impossible to verify what thresholds were used for event detection.
+      (codex-session: 019d9e60, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#8.1) -> experiment-runner
+      File: `run_phase2_rl.py:622-624`
+
+### Disputes
+
+- [DISPUTE] R8-A1: `grid_sparse_goal` stress mechanism. Adversarial review claims this is a "bad stress task" per spec section 1 because it only increases state-space size. Counter-argument: the user explicitly decided (Decision 1 in the R8 session) to use the 7x7 grid with goal-only reward as the stress mechanism. The spec section 5.2.A says "possibly increase grid size modestly." The stress here is sparse reward over a larger grid, not just state-space scaling. This was a deliberate user decision made with full awareness of the spec.
+
+- [DISPUTE] R8-A2: `shortcut_action_taken` semantics. Adversarial review claims `shortcut_risky_path_fraction` conflates "attempt rate" with "catastrophe rate." Counter-argument: the user explicitly decided (Decision 2) that this metric should record the fraction of episodes where the agent ATTEMPTED the risky path, not catastrophized. The current OR-reduction over per-transition flags is correct per that decision. The metric name could be more explicit, but the implementation matches the intended semantics.
+
+### Summary
+
+```
+BLOCKER: 1  (R8-1: n_base=25 for 49-state grid_sparse_goal corrupts transition logs)
+MAJOR:   4  (R8-2: grid_hazard factory contract; R8-3: taxi_bonus_shock factory contract; R8-4: jackpot threshold from absent key; R8-5: no stress_type for chain_sparse_long/grid_sparse_goal)
+MINOR:   2  (R8-6: regime_shift_episode fallback dead code; R8-7: nanmax vs plateau for recovery lag)
+NIT:     1  (R8-8: event thresholds not in run.json)
+DISPUTE: 2  (R8-A1: grid_sparse_goal stress design; R8-A2: shortcut_action_taken semantics)
+```
+
+R8-1 is the only BLOCKER and has a clear fix (single dict value change + verification). R8-2 and R8-3 are recurring instances of the factory contract pattern already logged in `tasks/lessons.md` (2026-04-17 "Wrapper-based stress environments not wired through the training loop"). R8-4 is fragile but non-breaking with current configs. R8-5 requires a design decision from the user on whether sparse-reward tasks need event logging. Both disputes are grounded in explicit user decisions made during the R8 session.
+
+Next: fix R8-1 (experiment-runner, immediate), then R8-2/R8-3/R8-4 (experiment-runner), surface R8-5 to user for decision.
