@@ -125,6 +125,12 @@ class SafeWeightedPolicyEvaluation:
 
         # Safe weighted-LSE helper.
         self._schedule = schedule
+        if schedule.T != self._T:
+            raise ValueError(
+                f"{type(self).__name__}: schedule.T={schedule.T} does not "
+                f"match MDP horizon={self._T}. The schedule must be "
+                "calibrated for this exact horizon."
+            )
         self._safe = SafeWeightedCommon(
             schedule, gamma=self._gamma, n_base=self._S
         )

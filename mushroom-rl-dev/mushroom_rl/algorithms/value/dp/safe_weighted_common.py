@@ -229,6 +229,14 @@ class SafeWeightedCommon:
         self._schedule = schedule
         self._gamma = float(gamma)
         self._n_base = int(n_base)
+
+        # Guard: schedule gamma must match the MDP gamma.
+        if abs(schedule._gamma - self._gamma) > 1e-9:
+            raise ValueError(
+                f"SafeWeightedCommon: schedule.gamma={schedule._gamma} does "
+                f"not match provided gamma={self._gamma}. Schedule must be "
+                "calibrated for this exact discount factor."
+            )
         self._log_gamma = np.log(gamma) if gamma > 0 else -np.inf
         self._log_inv_gamma = -self._log_gamma  # log(1/gamma)
         self._log_1_plus_gamma = np.log(1.0 + gamma)

@@ -93,6 +93,7 @@ def build_schedule_for_family(
     alpha_min: float = 0.02,
     alpha_max: float = 0.10,
     min_freq_threshold: float = 0.01,
+    reward_bound: float | None = None,
 ) -> dict:
     """Build and save a schedule.json for one task family.
 
@@ -104,6 +105,8 @@ def build_schedule_for_family(
     lambda_min, lambda_max : derivative-target interpolation bounds
     alpha_min, alpha_max   : headroom fraction bounds
     min_freq_threshold     : sparse-data fallback threshold
+    reward_bound : explicit reward bound from config; if None, falls back
+        to ``empirical_r_max`` from the calibration JSON with a warning.
 
     Returns
     -------
@@ -115,8 +118,19 @@ def build_schedule_for_family(
 
     family = cal["task_family"]
     gamma = float(cal["nominal_gamma"])
-    R_max = float(cal["empirical_r_max"])
     sign = int(cal["recommended_task_sign"])
+
+    if reward_bound is not None:
+        R_max = float(reward_bound)
+    else:
+        import warnings
+        R_max = float(cal["empirical_r_max"])
+        warnings.warn(
+            f"{family}: reward_bound not provided in config, falling back to "
+            f"empirical_r_max={R_max} from calibration JSON. Set reward_bound "
+            f"in the task config for deterministic results.",
+            stacklevel=2,
+        )
     T = get_authoritative_T(cal)
 
     # --- Extract stagewise arrays (first T entries only) ---
@@ -276,10 +290,24 @@ def main() -> None:
         help="Sparse-data guard: stages with aligned_margin_freq below "
              "this threshold fall back to beta_raw=0.",
     )
+    parser.add_argument(
+        "--suite-config", type=str, default=None,
+        help="Path to paper_suite.json config; if provided, reward_bound "
+             "is read from each task entry.",
+    )
     args = parser.parse_args()
 
     cal_dir = pathlib.Path(args.cal_dir)
     out_dir = pathlib.Path(args.out_dir)
+
+    # Load suite config for reward_bound if provided
+    suite_tasks: dict[str, dict] = {}
+    if args.suite_config is not None:
+        suite_path = pathlib.Path(args.suite_config)
+        with open(suite_path, "r") as f:
+            suite = json.load(f)
+        suite_tasks = suite.get("tasks", {})
+        print(f"Suite config:                  {suite_path}")
 
     print(f"Calibration source directory: {cal_dir}")
     print(f"Output directory:             {out_dir}")
@@ -298,6 +326,9 @@ def main() -> None:
             print(f"WARNING: {cal_path} not found, skipping {family}")
             continue
 
+        # Read reward_bound from suite config if available
+        family_reward_bound = suite_tasks.get(family, {}).get("reward_bound", None)
+
         schedule = build_schedule_for_family(
             cal_path=cal_path,
             out_dir=out_dir,
@@ -307,6 +338,7 @@ def main() -> None:
             alpha_min=args.alpha_min,
             alpha_max=args.alpha_max,
             min_freq_threshold=args.min_freq_threshold,
+            reward_bound=family_reward_bound,
         )
         schedules[family] = schedule
 
