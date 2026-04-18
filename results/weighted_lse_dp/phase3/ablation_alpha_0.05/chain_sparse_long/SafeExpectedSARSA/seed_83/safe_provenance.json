@@ -1,0 +1,6 @@
+{
+  "schedule_path": "results/weighted_lse_dp/phase3/calibration/chain_sparse_long/alpha_0.05.json",
+  "calibration_source_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase2/calibration/chain_sparse_long.json",
+  "calibration_hash": "714a08f718aa6f8e70056fbacf7ec0be05eebe0459b406afea7e8ae60e62d68a",
+  "source_phase": "phase2"
+}

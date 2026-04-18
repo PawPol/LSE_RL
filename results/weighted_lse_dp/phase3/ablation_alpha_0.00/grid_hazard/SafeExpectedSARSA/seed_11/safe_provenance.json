@@ -1,0 +1,6 @@
+{
+  "schedule_path": "results/weighted_lse_dp/phase3/calibration/grid_hazard/alpha_0.00.json",
+  "calibration_source_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase2/calibration/grid_hazard.json",
+  "calibration_hash": "56d3eab07a433e796410cb830a03a3548ef4543c6b850372edbeed96a5c015c7",
+  "source_phase": "phase2"
+}

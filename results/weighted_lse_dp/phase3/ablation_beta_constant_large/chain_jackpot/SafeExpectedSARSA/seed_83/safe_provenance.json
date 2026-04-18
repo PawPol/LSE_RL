@@ -1,0 +1,6 @@
+{
+  "schedule_path": "results/weighted_lse_dp/phase3/calibration/chain_jackpot/beta_constant_large.json",
+  "calibration_source_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase2/calibration/chain_jackpot.json",
+  "calibration_hash": "5adffbf3747c18c848dc07687e1944ef60253e28f69f42d97b3fe10d2c4bf0de",
+  "source_phase": "phase2"
+}

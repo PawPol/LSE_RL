@@ -1,0 +1,103 @@
+{
+  "task": "grid_hazard",
+  "algorithm": "SafeExpectedSARSA",
+  "seed": 29,
+  "gamma": 0.99,
+  "horizon": 80,
+  "n_base": 25,
+  "train_steps": 200000,
+  "checkpoint_every": 5000,
+  "eval_episodes_checkpoint": 50,
+  "success_threshold": 0.8,
+  "epsilon": 0.1,
+  "learning_rate": 0.1,
+  "stress_type": "hazard",
+  "schedule_path": "results/weighted_lse_dp/phase3/calibration/grid_hazard/beta_constant_small.json",
+  "schedule_sign": -1,
+  "schedule_T": 80,
+  "event_thresholds": {
+    "hazard_reward_threshold": -4.0
+  },
+  "task_config": {
+    "reward_bound": 5.0,
+    "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_base_grid.txt",
+    "prob": 0.9,
+    "goal_reward": 1.0,
+    "gamma": 0.99,
+    "horizon": 80,
+    "hazard_states": [
+      12
+    ],
+    "hazard_prob": 0.1,
+    "hazard_reward": -5.0,
+    "hazard_terminates": false,
+    "hazard_threshold": -4.0,
+    "n_states": 25,
+    "n_actions": 4,
+    "train_steps": 200000,
+    "checkpoint_every": 5000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 500,
+    "success_threshold": 0.8,
+    "safe_rl_algorithms": [
+      "SafeQLearning",
+      "SafeExpectedSARSA"
+    ],
+    "ref_policy": "shortest_path",
+    "severity": "hazard",
+    "stress_type": "hazard",
+    "schedule_file": "results/weighted_lse_dp/phase3/calibration/grid_hazard/beta_constant_small.json"
+  },
+  "factory_config": {
+    "task": "grid_hazard",
+    "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_base_grid.txt",
+    "n_rows": 5,
+    "n_cols": 5,
+    "prob": 0.9,
+    "pos_rew": 1.0,
+    "neg_rew": 0.0,
+    "gamma": 0.99,
+    "horizon": 80,
+    "goal_cell": [
+      4,
+      4
+    ],
+    "hazard_states": [
+      12
+    ],
+    "hazard_prob": 0.1,
+    "hazard_reward": -5.0,
+    "hazard_terminates": false,
+    "train_steps": 200000,
+    "checkpoint_every": 5000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 500,
+    "success_threshold": 0.8,
+    "reward_bound": 5.0,
+    "goal_reward": 1.0,
+    "hazard_threshold": -4.0,
+    "n_states": 25,
+    "n_actions": 4,
+    "safe_rl_algorithms": [
+      "SafeQLearning",
+      "SafeExpectedSARSA"
+    ],
+    "ref_policy": "shortest_path",
+    "severity": "hazard",
+    "stress_type": "hazard",
+    "schedule_file": "results/weighted_lse_dp/phase3/calibration/grid_hazard/beta_constant_small.json"
+  },
+  "tail_risk_metrics": {
+    "return_q05": 0.7778213593991467,
+    "return_q25": 0.8097278682212584,
+    "return_q50": 0.8429431933839268,
+    "return_q75": 0.8600583546412884,
+    "return_q95": 0.8600583546412884,
+    "cvar_5pct": 0.7716545430701238,
+    "cvar_10pct": 0.77850920631051,
+    "top5pct_mean": 0.8600583546412885,
+    "top10pct_mean": 0.8600583546412885,
+    "event_rate": 0.0,
+    "event_conditioned_return": NaN
+  }
+}

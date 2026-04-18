@@ -1,0 +1,91 @@
+{
+  "task": "chain_regime_shift",
+  "algorithm": "SafeQLearning",
+  "seed": 83,
+  "gamma": 0.99,
+  "horizon": 60,
+  "n_base": 25,
+  "train_steps": 180000,
+  "checkpoint_every": 6000,
+  "eval_episodes_checkpoint": 50,
+  "success_threshold": 0.8,
+  "epsilon": 0.1,
+  "learning_rate": 0.1,
+  "stress_type": "regime_shift",
+  "schedule_path": "results/weighted_lse_dp/phase3/calibration/chain_regime_shift/alpha_0.20.json",
+  "schedule_sign": 1,
+  "schedule_T": 60,
+  "event_thresholds": {},
+  "task_config": {
+    "reward_bound": 1.0,
+    "state_n": 25,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 60,
+    "shift_type": "goal_flip",
+    "change_at_episode": 300,
+    "post_prob": 0.9,
+    "train_steps": 180000,
+    "checkpoint_every": 6000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 200,
+    "success_threshold": 0.8,
+    "safe_rl_algorithms": [
+      "SafeQLearning",
+      "SafeExpectedSARSA"
+    ],
+    "ref_policy": "always_right",
+    "severity": "regime_shift",
+    "stress_type": "regime_shift",
+    "dp_algorithms": [
+      "SafePE",
+      "SafeVI",
+      "SafePI",
+      "SafeMPI",
+      "SafeAsyncVI"
+    ],
+    "schedule_file": "results/weighted_lse_dp/phase3/calibration/chain_regime_shift/alpha_0.20.json",
+    "warmstart_dp": true
+  },
+  "factory_config": {
+    "task": "chain_regime_shift_goal_flip",
+    "state_n": 25,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 60,
+    "change_at_episode": 300,
+    "shift_type": "goal_flip",
+    "post_prob": 0.9,
+    "reward_bound": 1.0,
+    "train_steps": 180000,
+    "checkpoint_every": 6000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 200,
+    "success_threshold": 0.8,
+    "safe_rl_algorithms": [
+      "SafeQLearning",
+      "SafeExpectedSARSA"
+    ],
+    "ref_policy": "always_right",
+    "severity": "regime_shift",
+    "stress_type": "regime_shift",
+    "dp_algorithms": [
+      "SafePE",
+      "SafeVI",
+      "SafePI",
+      "SafeMPI",
+      "SafeAsyncVI"
+    ],
+    "schedule_file": "results/weighted_lse_dp/phase3/calibration/chain_regime_shift/alpha_0.20.json",
+    "warmstart_dp": true
+  },
+  "adaptation_metrics": {
+    "change_at_episode": 300,
+    "pre_change_auc": 4.688497427188641,
+    "post_change_auc": 15.90115326962797,
+    "lag_to_50pct_recovery": 0,
+    "lag_to_75pct_recovery": 0,
+    "lag_to_90pct_recovery": null,
+    "post_change_optimum": 20.131407951280462
+  }
+}

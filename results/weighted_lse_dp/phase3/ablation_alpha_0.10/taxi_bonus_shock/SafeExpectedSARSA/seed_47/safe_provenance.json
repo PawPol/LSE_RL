@@ -1,0 +1,6 @@
+{
+  "schedule_path": "results/weighted_lse_dp/phase3/calibration/taxi_bonus_shock/alpha_0.10.json",
+  "calibration_source_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase2/calibration/taxi_bonus_shock.json",
+  "calibration_hash": "5216b6f8e3602afa2f51696e708ad47274d729be23197fbc185660bb52c898b3",
+  "source_phase": "phase2"
+}

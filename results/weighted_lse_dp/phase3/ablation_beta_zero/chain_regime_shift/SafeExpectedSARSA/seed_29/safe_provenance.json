@@ -1,0 +1,6 @@
+{
+  "schedule_path": "results/weighted_lse_dp/phase3/calibration/chain_regime_shift/beta_zero.json",
+  "calibration_source_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase2/calibration/chain_regime_shift.json",
+  "calibration_hash": "e5bbaea13fe72a1304efd145532cc89d8dbafeb50e5927168df48c2c6b7b1686",
+  "source_phase": "phase2"
+}
