@@ -1,0 +1,267 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "III",
+  "suite": "ablation_alpha_0.10",
+  "seeds": [
+    11,
+    29,
+    47
+  ],
+  "chain_seeds": [
+    11,
+    29,
+    47,
+    67,
+    83
+  ],
+  "tasks": {
+    "chain_sparse_long": {
+      "reward_bound": 1.0,
+      "state_n": 60,
+      "prob": 0.9,
+      "gamma": 0.99,
+      "horizon": 120,
+      "train_steps": 240000,
+      "checkpoint_every": 8000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 200,
+      "success_threshold": 0.85,
+      "safe_rl_algorithms": [
+        "SafeQLearning",
+        "SafeExpectedSARSA"
+      ],
+      "ref_policy": "always_right",
+      "severity": "sparse_reward",
+      "dp_algorithms": [
+        "SafePE",
+        "SafeVI",
+        "SafePI",
+        "SafeMPI",
+        "SafeAsyncVI"
+      ],
+      "schedule_file": "results/weighted_lse_dp/phase3/calibration/chain_sparse_long/alpha_0.10.json"
+    },
+    "chain_jackpot": {
+      "reward_bound": 10.0,
+      "state_n": 25,
+      "prob": 0.9,
+      "gamma": 0.99,
+      "horizon": 60,
+      "jackpot_state": 20,
+      "jackpot_prob": 0.05,
+      "jackpot_reward": 10.0,
+      "jackpot_terminates": true,
+      "jackpot_threshold": 5.0,
+      "train_steps": 120000,
+      "checkpoint_every": 4000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 500,
+      "success_threshold": 0.9,
+      "safe_rl_algorithms": [
+        "SafeQLearning",
+        "SafeExpectedSARSA"
+      ],
+      "ref_policy": "always_right",
+      "severity": "jackpot",
+      "stress_type": "jackpot",
+      "dp_algorithms": [
+        "SafePE",
+        "SafeVI",
+        "SafePI",
+        "SafeMPI",
+        "SafeAsyncVI"
+      ],
+      "schedule_file": "results/weighted_lse_dp/phase3/calibration/chain_jackpot/alpha_0.10.json"
+    },
+    "chain_catastrophe": {
+      "reward_bound": 10.0,
+      "state_n": 25,
+      "prob": 0.9,
+      "gamma": 0.99,
+      "horizon": 60,
+      "risky_state": 15,
+      "risky_prob": 0.05,
+      "shortcut_jump": 5,
+      "catastrophe_reward": -10.0,
+      "catastrophe_threshold": -5.0,
+      "train_steps": 120000,
+      "checkpoint_every": 4000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 500,
+      "success_threshold": 0.8,
+      "safe_rl_algorithms": [
+        "SafeQLearning",
+        "SafeExpectedSARSA"
+      ],
+      "ref_policy": "always_right",
+      "severity": "catastrophe",
+      "stress_type": "catastrophe",
+      "dp_algorithms": [
+        "SafePE",
+        "SafeVI",
+        "SafePI",
+        "SafeMPI",
+        "SafeAsyncVI"
+      ],
+      "schedule_file": "results/weighted_lse_dp/phase3/calibration/chain_catastrophe/alpha_0.10.json"
+    },
+    "chain_regime_shift": {
+      "reward_bound": 1.0,
+      "state_n": 25,
+      "prob": 0.9,
+      "gamma": 0.99,
+      "horizon": 60,
+      "shift_type": "goal_flip",
+      "change_at_episode": 300,
+      "post_prob": 0.9,
+      "train_steps": 180000,
+      "checkpoint_every": 6000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 200,
+      "success_threshold": 0.8,
+      "safe_rl_algorithms": [
+        "SafeQLearning",
+        "SafeExpectedSARSA"
+      ],
+      "ref_policy": "always_right",
+      "severity": "regime_shift",
+      "stress_type": "regime_shift",
+      "dp_algorithms": [
+        "SafePE",
+        "SafeVI",
+        "SafePI",
+        "SafeMPI",
+        "SafeAsyncVI"
+      ],
+      "schedule_file": "results/weighted_lse_dp/phase3/calibration/chain_regime_shift/alpha_0.10.json",
+      "warmstart_dp": true
+    },
+    "grid_sparse_goal": {
+      "reward_bound": 1.0,
+      "grid_file": "experiments/weighted_lse_dp/assets/grids/phase2_sparse_goal_7x7.txt",
+      "prob": 0.9,
+      "goal_reward": 1.0,
+      "gamma": 0.99,
+      "horizon": 120,
+      "n_rows": 7,
+      "n_cols": 7,
+      "n_states": 49,
+      "n_actions": 4,
+      "train_steps": 200000,
+      "checkpoint_every": 5000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 200,
+      "success_threshold": 0.85,
+      "safe_rl_algorithms": [
+        "SafeQLearning",
+        "SafeExpectedSARSA"
+      ],
+      "ref_policy": "shortest_path",
+      "severity": "sparse_reward",
+      "dp_algorithms": [
+        "SafePE",
+        "SafeVI",
+        "SafePI",
+        "SafeMPI",
+        "SafeAsyncVI"
+      ],
+      "schedule_file": "results/weighted_lse_dp/phase3/calibration/grid_sparse_goal/alpha_0.10.json"
+    },
+    "grid_hazard": {
+      "reward_bound": 5.0,
+      "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_base_grid.txt",
+      "prob": 0.9,
+      "goal_reward": 1.0,
+      "gamma": 0.99,
+      "horizon": 80,
+      "hazard_states": [
+        12
+      ],
+      "hazard_prob": 0.1,
+      "hazard_reward": -5.0,
+      "hazard_terminates": false,
+      "hazard_threshold": -4.0,
+      "n_states": 25,
+      "n_actions": 4,
+      "train_steps": 200000,
+      "checkpoint_every": 5000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 500,
+      "success_threshold": 0.8,
+      "safe_rl_algorithms": [
+        "SafeQLearning",
+        "SafeExpectedSARSA"
+      ],
+      "ref_policy": "shortest_path",
+      "severity": "hazard",
+      "stress_type": "hazard",
+      "schedule_file": "results/weighted_lse_dp/phase3/calibration/grid_hazard/alpha_0.10.json"
+    },
+    "grid_regime_shift": {
+      "reward_bound": 1.0,
+      "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_base_grid.txt",
+      "prob": 0.9,
+      "goal_reward": 1.0,
+      "gamma": 0.99,
+      "horizon": 80,
+      "shift_type": "goal_move",
+      "change_at_episode": 200,
+      "n_states": 25,
+      "n_actions": 4,
+      "train_steps": 250000,
+      "checkpoint_every": 8000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 200,
+      "success_threshold": 0.75,
+      "safe_rl_algorithms": [
+        "SafeQLearning",
+        "SafeExpectedSARSA"
+      ],
+      "ref_policy": "shortest_path",
+      "severity": "regime_shift",
+      "stress_type": "regime_shift",
+      "dp_algorithms": [
+        "SafePE",
+        "SafeVI",
+        "SafePI",
+        "SafeMPI",
+        "SafeAsyncVI"
+      ],
+      "schedule_file": "results/weighted_lse_dp/phase3/calibration/grid_regime_shift/alpha_0.10.json",
+      "warmstart_dp": true
+    },
+    "taxi_bonus_shock": {
+      "reward_bound": 6.0,
+      "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_taxi_grid.txt",
+      "prob": 0.9,
+      "gamma": 0.99,
+      "horizon": 120,
+      "bonus_prob": 0.05,
+      "bonus_reward": 5.0,
+      "goal_reward": 1.0,
+      "jackpot_threshold": 3.5,
+      "n_states": 44,
+      "n_actions": 4,
+      "train_steps": 300000,
+      "checkpoint_every": 10000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 500,
+      "success_threshold": 0.75,
+      "safe_rl_algorithms": [
+        "SafeQLearning",
+        "SafeExpectedSARSA"
+      ],
+      "ref_policy": "pickup_then_deliver",
+      "severity": "jackpot",
+      "stress_type": "jackpot",
+      "schedule_file": "results/weighted_lse_dp/phase3/calibration/taxi_bonus_shock/alpha_0.10.json"
+    }
+  },
+  "notes": {
+    "seed_policy": "Chain tasks use chain_seeds (5 seeds); grid and taxi tasks use seeds (3 seeds).",
+    "stress_type_field": "The stress_type field drives event detection: jackpot -> jackpot_event, catastrophe -> catastrophe_event + shortcut_action_taken, regime_shift -> regime_post_change, hazard -> hazard_cell_hit.",
+    "event_thresholds": "All event detection thresholds (jackpot_threshold, catastrophe_threshold, hazard_threshold) are EXPLICIT config keys. The runner will raise KeyError if a required threshold is missing rather than silently defaulting.",
+    "schedule_dir": "Schedules are loaded from results/weighted_lse_dp/phase3/calibration/<task>/schedule.json. The --schedule-dir CLI flag overrides the base path."
+  },
+  "schedule_dir": "results/weighted_lse_dp/phase3/calibration"
+}

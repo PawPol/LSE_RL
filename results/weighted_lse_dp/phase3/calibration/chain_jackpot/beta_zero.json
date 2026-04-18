@@ -565,7 +565,7 @@
     false,
     false
   ],
-  "calibration_source_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/.claude/worktrees/agent-a54130c9/results/weighted_lse_dp/phase2/calibration/chain_jackpot.json",
-  "calibration_hash": "add677bc4d5c46521ae8844bdcee888a7603e86d8d13e4f089e56d6d937dd16b",
+  "calibration_source_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase2/calibration/chain_jackpot.json",
+  "calibration_hash": "5adffbf3747c18c848dc07687e1944ef60253e28f69f42d97b3fe10d2c4bf0de",
   "notes": "All-zero beta schedule: exact classical collapse. alpha_t=0 => beta_cap=0."
 }
