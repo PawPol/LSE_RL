@@ -253,17 +253,38 @@ def aggregate_group(
     # ----- safe per-stage quantiles (Task 36: raw pooling) -----
     # Resolve gamma from provenance or first seed's run.json.
     gamma_for_safe: float = 0.99  # fallback
+    horizon_for_safe: Optional[int] = None  # authoritative T from config
+    gamma_found = False
     for r in seed_runs:
         rj = r.get("run_json", {})
         cfg = rj.get("config", {})
-        if "gamma" in cfg:
-            gamma_for_safe = float(cfg["gamma"])
-            break
         tc = cfg.get("task_config", {})
-        if "gamma" in tc:
-            gamma_for_safe = float(tc["gamma"])
+        if not gamma_found:
+            if "gamma" in cfg:
+                gamma_for_safe = float(cfg["gamma"])
+                gamma_found = True
+            elif "gamma" in tc:
+                gamma_for_safe = float(tc["gamma"])
+                gamma_found = True
+        # Resolve horizon T from config (Bug R4-std-2 fix).
+        if horizon_for_safe is None:
+            if "horizon" in cfg:
+                horizon_for_safe = int(cfg["horizon"])
+            elif "horizon" in tc:
+                horizon_for_safe = int(tc["horizon"])
+        if gamma_found and horizon_for_safe is not None:
             break
-    safe_stagewise = _aggregate_safe_stagewise_from_raw(seed_dirs, gamma=gamma_for_safe)
+
+    # Detect whether this group is DP or RL by checking the first seed
+    # directory for transitions.npz (RL) vs calibration_stats.npz (DP).
+    is_dp_group = _is_dp_group(seed_dirs)
+
+    if is_dp_group:
+        safe_stagewise = _aggregate_dp_safe_stagewise(seed_dirs, T=horizon_for_safe)
+    else:
+        safe_stagewise = _aggregate_safe_stagewise_from_raw(
+            seed_dirs, gamma=gamma_for_safe, T=horizon_for_safe,
+        )
 
     # ----- provenance (from first seed with data) -----
     provenance = {}
@@ -410,7 +431,138 @@ def _aggregate_curves(
 
 
 # -------------------------------------------------------------------
-# 3c. Safe per-stage aggregation from RAW per-transition data
+# 3c-0. DP vs RL detection
+# -------------------------------------------------------------------
+
+
+def _is_dp_group(seed_dirs: List[Path]) -> bool:
+    """Return True if the group is a DP group (no transitions.npz, has calibration_stats.npz)."""
+    for d in seed_dirs:
+        if (d / "transitions.npz").is_file():
+            return False
+        if (d / "calibration_stats.npz").is_file():
+            return True
+    return False
+
+
+# -------------------------------------------------------------------
+# 3c-1. DP safe per-stage aggregation from calibration_stats.npz
+# -------------------------------------------------------------------
+
+
+def _aggregate_dp_safe_stagewise(
+    seed_dirs: List[Path],
+    *,
+    T: Optional[int] = None,
+) -> Dict[str, np.ndarray]:
+    """Aggregate safe per-stage arrays from DP calibration_stats.npz across seeds.
+
+    DP runners write pre-computed per-stage safe arrays (shape ``(T,)`` each)
+    into ``calibration_stats.npz`` rather than per-transition arrays into
+    ``transitions.npz``.  This function reads those per-stage arrays from
+    each seed, stacks them, and computes mean/std across seeds.
+
+    The output dict is schema-compatible with the RL path
+    (``_aggregate_safe_stagewise_from_raw``): same key names from
+    ``SAFE_CALIBRATION_ARRAYS``, plus ``stage_indices``.
+
+    Parameters
+    ----------
+    seed_dirs : list of Path
+        Directories containing per-seed ``calibration_stats.npz`` files.
+    T : int, optional
+        Authoritative number of stages (horizon).  When provided, arrays
+        are padded or truncated to length T.  When None, T is inferred
+        from the first seed's array lengths.
+    """
+    # Keys from SAFE_CALIBRATION_ARRAYS to aggregate
+    _SAFE_KEYS: Tuple[str, ...] = (
+        "safe_rho_mean",
+        "safe_rho_std",
+        "safe_effective_discount_mean",
+        "safe_effective_discount_std",
+        "safe_beta_used_min",
+        "safe_beta_used_mean",
+        "safe_beta_used_max",
+        "safe_clip_fraction",
+        "safe_underdiscount_fraction",
+        "safe_bellman_residual",
+    )
+
+    # Collect per-seed arrays
+    per_seed: List[Dict[str, np.ndarray]] = []
+
+    for d in seed_dirs:
+        path = d / "calibration_stats.npz"
+        if not path.is_file():
+            logger.warning(
+                "Missing calibration_stats.npz in %s; skipping DP safe stagewise.", d
+            )
+            continue
+
+        try:
+            npz = load_npz(path)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Error loading %s: %s", path, exc)
+            continue
+
+        # Check that at least one safe key is present
+        if not any(k in npz for k in _SAFE_KEYS):
+            logger.warning(
+                "No safe calibration arrays in calibration_stats.npz at %s; skipping.", d
+            )
+            continue
+
+        seed_data: Dict[str, np.ndarray] = {}
+        for key in _SAFE_KEYS:
+            if key in npz:
+                seed_data[key] = np.asarray(npz[key], dtype=np.float64)
+        per_seed.append(seed_data)
+
+    if not per_seed:
+        return {}
+
+    # Determine T from the first seed if not provided
+    if T is None:
+        for key in _SAFE_KEYS:
+            if key in per_seed[0]:
+                T = len(per_seed[0][key])
+                break
+    if T is None:
+        return {}
+
+    def _pad_or_truncate(arr: np.ndarray, length: int) -> np.ndarray:
+        """Pad with NaN or truncate array to exact length."""
+        if len(arr) == length:
+            return arr
+        if len(arr) > length:
+            return arr[:length]
+        padded = np.full(length, np.nan, dtype=np.float64)
+        padded[:len(arr)] = arr
+        return padded
+
+    # Stack across seeds and compute mean/std for each key
+    result: Dict[str, np.ndarray] = {}
+    for key in _SAFE_KEYS:
+        arrays = []
+        for sd in per_seed:
+            if key in sd:
+                arrays.append(_pad_or_truncate(sd[key], T))
+        if not arrays:
+            result[key] = np.full(T, np.nan, dtype=np.float64)
+            continue
+
+        stacked = np.stack(arrays, axis=0)  # (n_seeds, T)
+        # For single-seed groups, mean = the seed's value, std = 0
+        result[key] = np.nanmean(stacked, axis=0)
+        result[f"{key}_cross_seed_std"] = np.nanstd(stacked, axis=0)
+
+    result["stage_indices"] = np.arange(T)
+    return result
+
+
+# -------------------------------------------------------------------
+# 3c-2. Safe per-stage aggregation from RAW per-transition data
 # -------------------------------------------------------------------
 # TASK 36 IMPLEMENTATION
 #
@@ -423,6 +575,7 @@ def _aggregate_safe_stagewise_from_raw(
     seed_dirs: List[Path],
     *,
     gamma: float,
+    T: Optional[int] = None,
 ) -> Dict[str, np.ndarray]:
     """Compute per-stage aggregate safe stats by pooling raw transitions across seeds.
 
@@ -442,6 +595,11 @@ def _aggregate_safe_stagewise_from_raw(
         Directories containing per-seed ``transitions.npz`` files.
     gamma : float
         Nominal discount factor (used for underdiscount fraction threshold).
+    T : int, optional
+        Authoritative number of stages (task horizon).  When provided,
+        this is used instead of inferring n_stages from the maximum
+        observed stage index.  Stages with no observed data get NaN
+        values (handled by ``aggregate_safe_stats``).
     """
     # Keys required by aggregate_safe_stats payload
     _PAYLOAD_KEYS = (
@@ -492,8 +650,12 @@ def _aggregate_safe_stagewise_from_raw(
         if key in raw_fields:
             payload[key] = np.concatenate(raw_fields[key])
 
-    # Determine T from pooled stages
-    n_stages = int(payload["safe_stage"].max()) + 1
+    # Determine n_stages: use authoritative T if provided (Bug R4-std-2 fix),
+    # otherwise fall back to max observed stage + 1 (legacy behavior).
+    if T is not None:
+        n_stages = T
+    else:
+        n_stages = int(payload["safe_stage"].max()) + 1
 
     # Call aggregate_safe_stats with the correct signature
     result: Dict[str, np.ndarray] = aggregate_safe_stats(

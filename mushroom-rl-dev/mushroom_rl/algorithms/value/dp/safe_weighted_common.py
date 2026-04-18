@@ -213,14 +213,59 @@ class BetaSchedule:
                 f"all entries must be >= 0."
             )
 
+    def _validate_certification_strict(self) -> None:
+        """Raise ValueError if stored beta_cap_t exceeds the certified cap.
+
+        Unlike ``_validate_certification`` (which emits a warning for
+        permissive overrides), this method enforces a hard check intended
+        for production schedule loads via ``from_file``.  Test fixtures
+        that construct ``BetaSchedule(dict)`` directly are unaffected.
+        """
+        _atol = 1e-9
+        reward_bound = self._raw.get("reward_bound")
+        if reward_bound is None:
+            return  # no cert data to check against
+        cert = build_certification(
+            self._alpha_t, R_max=float(reward_bound), gamma=self._gamma
+        )
+        recomputed_cap = cert["beta_cap_t"]
+        overshoot = self._beta_cap_t - recomputed_cap
+        if np.any(overshoot > _atol):
+            max_overshoot = float(np.max(overshoot))
+            raise ValueError(
+                f"BetaSchedule.from_file: stored beta_cap_t exceeds the "
+                f"certified cap by up to {max_overshoot:.2e}. This schedule "
+                f"cannot be safely loaded without allow_uncertified_cap=True. "
+                f"Regenerate the schedule or pass allow_uncertified_cap=True "
+                f"for ablation/test use."
+            )
+
     # --- constructors ------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path: str | pathlib.Path) -> BetaSchedule:
-        """Load a schedule from a JSON file."""
+    def from_file(
+        cls,
+        path: str | pathlib.Path,
+        *,
+        allow_uncertified_cap: bool = False,
+    ) -> BetaSchedule:
+        """Load a schedule from a JSON file.
+
+        Parameters
+        ----------
+        path : path to a schedule JSON.
+        allow_uncertified_cap : if False (default), raises ValueError when
+            the stored beta_cap_t exceeds the certified cap.  Set to True
+            only for ablation schedules that intentionally relax the
+            certification bound.
+        """
         with open(path) as f:
             schedule = json.load(f)
-        return cls(schedule)
+        obj = cls(schedule)  # may emit warnings for oversized caps
+        if not allow_uncertified_cap and obj._raw.get("reward_bound") is not None:
+            # Strict check: raise instead of warn
+            obj._validate_certification_strict()
+        return obj
 
     @classmethod
     def zeros(cls, T: int, gamma: float) -> BetaSchedule:
@@ -399,12 +444,36 @@ class SafeWeightedCommon:
             rho = 1.0 / self._one_plus_gamma
             eff_d = self._one_plus_gamma * (1.0 - rho)
         else:
-            # logaddexp form: log(exp(beta*r) + gamma*exp(beta*v))
-            #               = logaddexp(beta*r, beta*v + log(gamma))
-            log_sum = np.logaddexp(beta * r_f, beta * v_f + self._log_gamma)
-            target = (self._one_plus_gamma / beta) * (
-                log_sum - self._log_1_plus_gamma
-            )
+            # Numerically stable safe target computation.
+            #
+            # The naive formula
+            #   g = ((1+gamma)/beta) * (logaddexp(beta*r, beta*v+log(gamma))
+            #                           - log(1+gamma))
+            # suffers catastrophic cancellation for small beta because the
+            # subtraction removes nearly all significant digits before
+            # division by beta amplifies the error.
+            #
+            # Reformulation via expm1/log1p:
+            #   logaddexp(br, bv+log(g)) - log(1+g)
+            #     = log((exp(br) + g*exp(bv)) / (1+g))
+            #     = log1p((expm1(br) + g*expm1(bv)) / (1+g))
+            #
+            # This is stable for small beta since expm1(x) ~ x near 0.
+            # For large |beta*r| or |beta*v| (> 500), expm1 overflows,
+            # so we fall back to the logaddexp form which handles large
+            # arguments correctly via its max-subtract trick.
+            br = beta * r_f
+            bv = beta * v_f
+            if max(abs(br), abs(bv)) > 500.0:
+                # Large arg: original logaddexp formula (stable for |beta*x| >> 1)
+                log_sum = np.logaddexp(br, bv + self._log_gamma)
+                target = (self._one_plus_gamma / beta) * (
+                    log_sum - self._log_1_plus_gamma
+                )
+            else:
+                # Small/medium arg: expm1/log1p (stable for |beta*x| -> 0)
+                inner = (np.expm1(br) + self._gamma * np.expm1(bv)) / self._one_plus_gamma
+                target = (self._one_plus_gamma / beta) * np.log1p(inner)
             rho = float(_sigmoid(
                 beta * (r_f - v_f) + self._log_inv_gamma
             ))
@@ -517,12 +586,23 @@ class SafeWeightedCommon:
             rho = np.full_like(r_arr, 1.0 / self._one_plus_gamma)
             eff_d = np.full_like(r_arr, self._gamma)
         else:
-            log_sum = np.logaddexp(
-                beta * r_arr, beta * v_arr + self._log_gamma
-            )
-            target = (self._one_plus_gamma / beta) * (
+            # Numerically stable target: see compute_safe_target docstring
+            # for the expm1/log1p reformulation rationale.
+            br = beta * r_arr
+            bv = beta * v_arr
+            # Compute both paths; select element-wise based on magnitude.
+            # logaddexp path (stable for large args):
+            log_sum = np.logaddexp(br, bv + self._log_gamma)
+            logaddexp_target = (self._one_plus_gamma / beta) * (
                 log_sum - self._log_1_plus_gamma
             )
+            # expm1/log1p path (stable for small args):
+            inner = (np.expm1(br) + self._gamma * np.expm1(bv)) / self._one_plus_gamma
+            log1p_target = (self._one_plus_gamma / beta) * np.log1p(inner)
+            # Select: use logaddexp where |beta*x| > 500, else log1p
+            large_mask = np.maximum(np.abs(br), np.abs(bv)) > 500.0
+            target = np.where(large_mask, logaddexp_target, log1p_target)
+
             arg = beta * (r_arr - v_arr) + self._log_inv_gamma
             rho = _sigmoid(arg)
             eff_d = self._one_plus_gamma * (1.0 - rho)
