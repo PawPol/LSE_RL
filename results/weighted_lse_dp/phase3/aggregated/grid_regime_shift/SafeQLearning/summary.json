@@ -1,0 +1,168 @@
+{
+  "phase": "III",
+  "task": "grid_regime_shift",
+  "algorithm": "SafeQLearning",
+  "n_seeds": 3,
+  "seeds": [
+    "seed_11",
+    "seed_29",
+    "seed_47"
+  ],
+  "metrics": {
+    "adaptation_metrics_change_at_episode": {
+      "mean": 200.0,
+      "std": 0.0,
+      "median": 200.0,
+      "q25": 200.0,
+      "q75": 200.0,
+      "iqr": 0.0,
+      "ci_low": 200.0,
+      "ci_high": 200.0
+    },
+    "adaptation_metrics_lag_to_50pct_recovery": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "adaptation_metrics_lag_to_75pct_recovery": {
+      "mean": 17.0,
+      "std": 29.444863728670914,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 25.5,
+      "iqr": 25.5,
+      "ci_low": 0.0,
+      "ci_high": 51.0
+    },
+    "adaptation_metrics_lag_to_90pct_recovery": {
+      "mean": 78.33333333333333,
+      "std": 19.731531449264992,
+      "median": 69.0,
+      "q25": 67.0,
+      "q75": 85.0,
+      "iqr": 18.0,
+      "ci_low": 65.0,
+      "ci_high": 101.0
+    },
+    "adaptation_metrics_post_change_auc": {
+      "mean": 0.9075389821058445,
+      "std": 0.02158897397999203,
+      "median": 0.9170698277996001,
+      "q25": 0.8999472758422686,
+      "q75": 0.9198961112162982,
+      "iqr": 0.019948835374029583,
+      "ci_low": 0.882824723884937,
+      "ci_high": 0.9227223946329964
+    },
+    "adaptation_metrics_post_change_optimum": {
+      "mean": 0.9574263666,
+      "std": 0.011148027538004115,
+      "median": 0.9509900498999999,
+      "q25": 0.9509900498999999,
+      "q75": 0.96064452495,
+      "iqr": 0.009654475050000055,
+      "ci_low": 0.9509900499,
+      "ci_high": 0.9702990000000001
+    },
+    "adaptation_metrics_pre_change_auc": {
+      "mean": 0.43568794561238494,
+      "std": 0.03634355103132875,
+      "median": 0.4422341648107651,
+      "q25": 0.41937516921119516,
+      "q75": 0.45527383161276475,
+      "iqr": 0.03589866240156958,
+      "ci_low": 0.3965161736116252,
+      "ci_high": 0.4683134984147644
+    },
+    "auc_disc_return": {
+      "mean": 0.9093964900657072,
+      "std": 0.018298820884826685,
+      "median": 0.9166567961931807,
+      "q25": 0.9026192326309443,
+      "q75": 0.9198039005642068,
+      "iqr": 0.017184667933262454,
+      "ci_low": 0.888581669068708,
+      "ci_high": 0.9229510049352329
+    },
+    "final_10pct_success_rate": {
+      "mean": 1.0,
+      "std": 0.0,
+      "median": 1.0,
+      "q25": 1.0,
+      "q75": 1.0,
+      "iqr": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0
+    },
+    "final_disc_return_mean": {
+      "mean": 0.9335511993710544,
+      "std": 0.021097246503606584,
+      "median": 0.9444155125334479,
+      "q25": 0.9268257624937093,
+      "q75": 0.9457087928295961,
+      "iqr": 0.018883030335886786,
+      "ci_low": 0.9092360124539707,
+      "ci_high": 0.9470020731257444
+    },
+    "n_transitions": {
+      "mean": 250000.0,
+      "std": 0.0,
+      "median": 250000.0,
+      "q25": 250000.0,
+      "q75": 250000.0,
+      "iqr": 0.0,
+      "ci_low": 250000.0,
+      "ci_high": 250000.0
+    },
+    "seed": {
+      "mean": 29.0,
+      "std": 18.0,
+      "median": 29.0,
+      "q25": 20.0,
+      "q75": 38.0,
+      "iqr": 18.0,
+      "ci_low": 11.0,
+      "ci_high": 47.0
+    },
+    "shortcut_risky_path_fraction": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "steps_to_threshold": {
+      "mean": 18666.666666666668,
+      "std": 4618.802153517006,
+      "median": 16000.0,
+      "q25": 16000.0,
+      "q75": 20000.0,
+      "iqr": 4000.0,
+      "ci_low": 16000.0,
+      "ci_high": 24000.0
+    },
+    "train_steps": {
+      "mean": 250000.0,
+      "std": 0.0,
+      "median": 250000.0,
+      "q25": 250000.0,
+      "q75": 250000.0,
+      "iqr": 0.0,
+      "ci_low": 250000.0,
+      "ci_high": 250000.0
+    }
+  },
+  "provenance": {
+    "schedule_path": "results/weighted_lse_dp/phase3/calibration/grid_regime_shift/schedule.json",
+    "calibration_hash": "36c77bf35902d61a532f4db49544460b5bdd846ed8058d89dbe3abd079d843ca",
+    "source_phase": "phase2"
+  }
+}

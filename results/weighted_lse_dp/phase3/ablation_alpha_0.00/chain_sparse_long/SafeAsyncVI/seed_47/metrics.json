@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-18T19:05:44Z",
+  "phase": "phase3",
+  "task": "chain_sparse_long",
+  "algorithm": "SafeAsyncVI",
+  "seed": 47,
+  "final_bellman_residual": 31.778998462373412,
+  "n_sweeps": 1,
+  "wall_clock_s": 0.007877083000494167,
+  "converged": true,
+  "n_states": 60,
+  "schedule_sign": 1,
+  "beta_used_min": 0.0,
+  "beta_used_max": 0.0,
+  "n_stages_clipped": 0,
+  "clip_fraction": 0.0,
+  "sweeps_to_1e-2": null,
+  "sweeps_to_1e-4": null,
+  "sweeps_to_1e-6": null
+}

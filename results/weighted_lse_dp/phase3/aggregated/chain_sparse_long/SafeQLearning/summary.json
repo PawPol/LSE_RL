@@ -1,0 +1,80 @@
+{
+  "phase": "III",
+  "task": "chain_sparse_long",
+  "algorithm": "SafeQLearning",
+  "n_seeds": 5,
+  "seeds": [
+    "seed_11",
+    "seed_29",
+    "seed_47",
+    "seed_67",
+    "seed_83"
+  ],
+  "metrics": {
+    "auc_disc_return": {
+      "mean": 15.327250602337381,
+      "std": 0.4880652490001867,
+      "median": 15.423739115077808,
+      "q25": 14.929257822647159,
+      "q75": 15.728826536954196,
+      "iqr": 0.7995687143070374,
+      "ci_low": 14.944832556101526,
+      "ci_high": 15.709668648573233
+    },
+    "final_10pct_success_rate": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "final_disc_return_mean": {
+      "mean": 15.284711544311511,
+      "std": 0.975864477117706,
+      "median": 14.919609433830232,
+      "q25": 14.626168367875186,
+      "q75": 16.153523116713444,
+      "iqr": 1.527354748838258,
+      "ci_low": 14.53422850872351,
+      "ci_high": 16.040733466589863
+    },
+    "n_transitions": {
+      "mean": 240000.0,
+      "std": 0.0,
+      "median": 240000.0,
+      "q25": 240000.0,
+      "q75": 240000.0,
+      "iqr": 0.0,
+      "ci_low": 240000.0,
+      "ci_high": 240000.0
+    },
+    "seed": {
+      "mean": 47.4,
+      "std": 28.788886744714528,
+      "median": 47.0,
+      "q25": 29.0,
+      "q75": 67.0,
+      "iqr": 38.0,
+      "ci_low": 25.4,
+      "ci_high": 69.4
+    },
+    "train_steps": {
+      "mean": 240000.0,
+      "std": 0.0,
+      "median": 240000.0,
+      "q25": 240000.0,
+      "q75": 240000.0,
+      "iqr": 0.0,
+      "ci_low": 240000.0,
+      "ci_high": 240000.0
+    }
+  },
+  "provenance": {
+    "schedule_path": "results/weighted_lse_dp/phase3/calibration/chain_sparse_long/schedule.json",
+    "calibration_hash": "714a08f718aa6f8e70056fbacf7ec0be05eebe0459b406afea7e8ae60e62d68a",
+    "source_phase": "phase2"
+  }
+}

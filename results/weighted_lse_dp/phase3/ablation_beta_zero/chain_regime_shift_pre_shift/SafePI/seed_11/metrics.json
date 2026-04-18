@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-18T19:05:16Z",
+  "phase": "phase3",
+  "task": "chain_regime_shift_pre_shift",
+  "algorithm": "SafePI",
+  "seed": 11,
+  "final_bellman_residual": 20.12683523155178,
+  "n_sweeps": 2,
+  "wall_clock_s": 0.0017662079771980643,
+  "converged": true,
+  "n_states": 25,
+  "schedule_sign": 0,
+  "beta_used_min": 0.0,
+  "beta_used_max": 0.0,
+  "n_stages_clipped": 0,
+  "clip_fraction": 0.0,
+  "sweeps_to_1e-2": null,
+  "sweeps_to_1e-4": null,
+  "sweeps_to_1e-6": null
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-18T19:06:01Z",
+  "phase": "phase3",
+  "task": "chain_regime_shift_pre_shift",
+  "algorithm": "SafeAsyncVI",
+  "seed": 83,
+  "final_bellman_residual": 20.63202177000576,
+  "n_sweeps": 1,
+  "wall_clock_s": 0.0022117090120445937,
+  "converged": true,
+  "n_states": 25,
+  "schedule_sign": 1,
+  "beta_used_min": 0.0,
+  "beta_used_max": 0.0010050480516522306,
+  "n_stages_clipped": 0,
+  "clip_fraction": 0.0,
+  "sweeps_to_1e-2": null,
+  "sweeps_to_1e-4": null,
+  "sweeps_to_1e-6": null
+}

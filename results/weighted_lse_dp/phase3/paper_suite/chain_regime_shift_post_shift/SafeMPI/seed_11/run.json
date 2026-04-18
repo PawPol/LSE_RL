@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-18T19:02:30Z",
+  "phase": "phase3",
+  "task": "chain_regime_shift_post_shift",
+  "algorithm": "SafeMPI",
+  "seed": 11,
+  "git_sha": "88450283161d756c5da562860b0d881c3866efef",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "task": "chain_regime_shift_goal_flip",
+    "state_n": 25,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 60,
+    "change_at_episode": 300,
+    "shift_type": "goal_flip",
+    "post_prob": 0.9,
+    "reward_bound": 1.0,
+    "train_steps": 180000,
+    "checkpoint_every": 6000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 200,
+    "success_threshold": 0.8,
+    "safe_rl_algorithms": [
+      "SafeQLearning",
+      "SafeExpectedSARSA"
+    ],
+    "ref_policy": "always_right",
+    "severity": "regime_shift",
+    "stress_type": "regime_shift",
+    "dp_algorithms": [
+      "SafePE",
+      "SafeVI",
+      "SafePI",
+      "SafeMPI",
+      "SafeAsyncVI"
+    ],
+    "schedule_file": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase3/calibration/chain_regime_shift/schedule.json",
+    "warmstart_dp": true,
+    "suite_config_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/weighted_lse_dp/configs/phase3/paper_suite.json",
+    "canonical_task_family": "chain_regime_shift",
+    "regime_phase": "post_shift"
+  },
+  "suite": "paper_suite",
+  "storage_mode": "dp_stagewise"
+}

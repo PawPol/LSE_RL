@@ -1,0 +1,88 @@
+{
+  "phase": "III",
+  "task": "grid_sparse_goal",
+  "algorithm": "SafeExpectedSARSA",
+  "n_seeds": 3,
+  "seeds": [
+    "seed_11",
+    "seed_29",
+    "seed_47"
+  ],
+  "metrics": {
+    "auc_disc_return": {
+      "mean": 0.48662464785612963,
+      "std": 0.03595104496622899,
+      "median": 0.47285839602693697,
+      "q25": 0.466224714052143,
+      "q75": 0.5001414557455199,
+      "iqr": 0.03391674169337694,
+      "ci_low": 0.459591032077349,
+      "ci_high": 0.527424515464103
+    },
+    "final_10pct_success_rate": {
+      "mean": 1.0,
+      "std": 0.0,
+      "median": 1.0,
+      "q25": 1.0,
+      "q75": 1.0,
+      "iqr": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0
+    },
+    "final_disc_return_mean": {
+      "mean": 0.6994621275544967,
+      "std": 0.018710608147573485,
+      "median": 0.7022910947630739,
+      "q25": 0.6908946110625984,
+      "q75": 0.7094441276506834,
+      "iqr": 0.018549516588085013,
+      "ci_low": 0.6794981273621229,
+      "ci_high": 0.7165971605382929
+    },
+    "n_transitions": {
+      "mean": 200000.0,
+      "std": 0.0,
+      "median": 200000.0,
+      "q25": 200000.0,
+      "q75": 200000.0,
+      "iqr": 0.0,
+      "ci_low": 200000.0,
+      "ci_high": 200000.0
+    },
+    "seed": {
+      "mean": 29.0,
+      "std": 18.0,
+      "median": 29.0,
+      "q25": 20.0,
+      "q75": 38.0,
+      "iqr": 18.0,
+      "ci_low": 11.0,
+      "ci_high": 47.0
+    },
+    "steps_to_threshold": {
+      "mean": 73333.33333333333,
+      "std": 2886.751345948129,
+      "median": 75000.0,
+      "q25": 72500.0,
+      "q75": 75000.0,
+      "iqr": 2500.0,
+      "ci_low": 70000.0,
+      "ci_high": 75000.0
+    },
+    "train_steps": {
+      "mean": 200000.0,
+      "std": 0.0,
+      "median": 200000.0,
+      "q25": 200000.0,
+      "q75": 200000.0,
+      "iqr": 0.0,
+      "ci_low": 200000.0,
+      "ci_high": 200000.0
+    }
+  },
+  "provenance": {
+    "schedule_path": "results/weighted_lse_dp/phase3/calibration/grid_sparse_goal/schedule.json",
+    "calibration_hash": "8606b7c92579b29e3f4b0a3e4836baa05fbf2f341ebfd85a6e737c754221c71a",
+    "source_phase": "phase2"
+  }
+}

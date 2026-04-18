@@ -1,0 +1,120 @@
+{
+  "phase": "III",
+  "task": "chain_jackpot",
+  "algorithm": "SafePE",
+  "n_seeds": 5,
+  "seeds": [
+    "seed_11",
+    "seed_29",
+    "seed_47",
+    "seed_67",
+    "seed_83"
+  ],
+  "metrics": {
+    "beta_used_max": {
+      "mean": 0.00020100915033383838,
+      "std": 0.0,
+      "median": 0.00020100915033383838,
+      "q25": 0.00020100915033383838,
+      "q75": 0.00020100915033383838,
+      "iqr": 0.0,
+      "ci_low": 0.00020100915033383838,
+      "ci_high": 0.00020100915033383838
+    },
+    "beta_used_min": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "clip_fraction": {
+      "mean": 0.05,
+      "std": 0.0,
+      "median": 0.05,
+      "q25": 0.05,
+      "q75": 0.05,
+      "iqr": 0.0,
+      "ci_low": 0.05,
+      "ci_high": 0.05
+    },
+    "final_bellman_residual": {
+      "mean": 1.464591232094362,
+      "std": 0.0,
+      "median": 1.464591232094362,
+      "q25": 1.464591232094362,
+      "q75": 1.464591232094362,
+      "iqr": 0.0,
+      "ci_low": 1.464591232094362,
+      "ci_high": 1.464591232094362
+    },
+    "n_stages_clipped": {
+      "mean": 3.0,
+      "std": 0.0,
+      "median": 3.0,
+      "q25": 3.0,
+      "q75": 3.0,
+      "iqr": 0.0,
+      "ci_low": 3.0,
+      "ci_high": 3.0
+    },
+    "n_states": {
+      "mean": 26.0,
+      "std": 0.0,
+      "median": 26.0,
+      "q25": 26.0,
+      "q75": 26.0,
+      "iqr": 0.0,
+      "ci_low": 26.0,
+      "ci_high": 26.0
+    },
+    "n_sweeps": {
+      "mean": 1.0,
+      "std": 0.0,
+      "median": 1.0,
+      "q25": 1.0,
+      "q75": 1.0,
+      "iqr": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0
+    },
+    "schedule_sign": {
+      "mean": 1.0,
+      "std": 0.0,
+      "median": 1.0,
+      "q25": 1.0,
+      "q75": 1.0,
+      "iqr": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0
+    },
+    "seed": {
+      "mean": 47.4,
+      "std": 28.788886744714528,
+      "median": 47.0,
+      "q25": 29.0,
+      "q75": 67.0,
+      "iqr": 38.0,
+      "ci_low": 25.4,
+      "ci_high": 69.4
+    },
+    "wall_clock_s": {
+      "mean": 0.0007968418009113521,
+      "std": 3.110393416014446e-05,
+      "median": 0.0008002919785212725,
+      "q25": 0.0007979580259416252,
+      "q75": 0.0008074170036707073,
+      "iqr": 9.458977729082108e-06,
+      "ci_low": 0.0007695420004893095,
+      "ci_high": 0.0008187749946955592
+    }
+  },
+  "provenance": {
+    "schedule_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase3/calibration/chain_jackpot/schedule.json",
+    "calibration_hash": "5adffbf3747c18c848dc07687e1944ef60253e28f69f42d97b3fe10d2c4bf0de",
+    "source_phase": "phase2"
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "phase": "III",
+  "task": "grid_sparse_goal",
+  "algorithm": "SafeQLearning",
+  "n_seeds": 3,
+  "seeds": [
+    "seed_11",
+    "seed_29",
+    "seed_47"
+  ],
+  "metrics": {
+    "auc_disc_return": {
+      "mean": 0.4918934767647496,
+      "std": 0.04121590924190182,
+      "median": 0.48559834779226063,
+      "q25": 0.46989281463230326,
+      "q75": 0.5107465744109514,
+      "iqr": 0.040853759778648135,
+      "ci_low": 0.45418728147234594,
+      "ci_high": 0.5358948010296422
+    },
+    "final_10pct_success_rate": {
+      "mean": 0.9983333333333334,
+      "std": 0.0028867513459481316,
+      "median": 1.0,
+      "q25": 0.9975,
+      "q75": 1.0,
+      "iqr": 0.0024999999999999467,
+      "ci_low": 0.995,
+      "ci_high": 1.0
+    },
+    "final_disc_return_mean": {
+      "mean": 0.7051314470815352,
+      "std": 0.018773491760139566,
+      "median": 0.7080335832157605,
+      "q25": 0.6965547341115197,
+      "q75": 0.7151592281186634,
+      "iqr": 0.0186044940071437,
+      "ci_low": 0.6850758850072788,
+      "ci_high": 0.7222848730215662
+    },
+    "n_transitions": {
+      "mean": 200000.0,
+      "std": 0.0,
+      "median": 200000.0,
+      "q25": 200000.0,
+      "q75": 200000.0,
+      "iqr": 0.0,
+      "ci_low": 200000.0,
+      "ci_high": 200000.0
+    },
+    "seed": {
+      "mean": 29.0,
+      "std": 18.0,
+      "median": 29.0,
+      "q25": 20.0,
+      "q75": 38.0,
+      "iqr": 18.0,
+      "ci_low": 11.0,
+      "ci_high": 47.0
+    },
+    "steps_to_threshold": {
+      "mean": 73333.33333333333,
+      "std": 7637.626158259733,
+      "median": 75000.0,
+      "q25": 70000.0,
+      "q75": 77500.0,
+      "iqr": 7500.0,
+      "ci_low": 65000.0,
+      "ci_high": 80000.0
+    },
+    "train_steps": {
+      "mean": 200000.0,
+      "std": 0.0,
+      "median": 200000.0,
+      "q25": 200000.0,
+      "q75": 200000.0,
+      "iqr": 0.0,
+      "ci_low": 200000.0,
+      "ci_high": 200000.0
+    }
+  },
+  "provenance": {
+    "schedule_path": "results/weighted_lse_dp/phase3/calibration/grid_sparse_goal/schedule.json",
+    "calibration_hash": "8606b7c92579b29e3f4b0a3e4836baa05fbf2f341ebfd85a6e737c754221c71a",
+    "source_phase": "phase2"
+  }
+}

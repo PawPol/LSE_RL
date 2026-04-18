@@ -1,0 +1,200 @@
+{
+  "phase": "III",
+  "task": "chain_catastrophe",
+  "algorithm": "SafeExpectedSARSA",
+  "n_seeds": 5,
+  "seeds": [
+    "seed_11",
+    "seed_29",
+    "seed_47",
+    "seed_67",
+    "seed_83"
+  ],
+  "metrics": {
+    "auc_disc_return": {
+      "mean": 2.0727596906856802,
+      "std": 0.2158833280393861,
+      "median": 1.9910158256232966,
+      "q25": 1.971213125543709,
+      "q75": 2.1219674537356323,
+      "iqr": 0.15075432819192325,
+      "ci_low": 1.9301745967450654,
+      "ci_high": 2.248668538459662
+    },
+    "final_10pct_success_rate": {
+      "mean": 0.03066666666666667,
+      "std": 0.019776529298921767,
+      "median": 0.03333333333333333,
+      "q25": 0.02666666666666667,
+      "q75": 0.04,
+      "iqr": 0.013333333333333332,
+      "ci_low": 0.014666666666666666,
+      "ci_high": 0.04533333333333334
+    },
+    "final_disc_return_mean": {
+      "mean": 0.9473268991034149,
+      "std": 0.9730321386555144,
+      "median": 0.6318679204968837,
+      "q25": 0.3799004580889687,
+      "q75": 1.2325869587276874,
+      "iqr": 0.8526865006387188,
+      "ci_low": 0.27833376733496423,
+      "ci_high": 1.8178649782854523
+    },
+    "n_transitions": {
+      "mean": 120000.0,
+      "std": 0.0,
+      "median": 120000.0,
+      "q25": 120000.0,
+      "q75": 120000.0,
+      "iqr": 0.0,
+      "ci_low": 120000.0,
+      "ci_high": 120000.0
+    },
+    "seed": {
+      "mean": 47.4,
+      "std": 28.788886744714528,
+      "median": 47.0,
+      "q25": 29.0,
+      "q75": 67.0,
+      "iqr": 38.0,
+      "ci_low": 25.4,
+      "ci_high": 69.4
+    },
+    "shortcut_risky_path_fraction": {
+      "mean": 0.055200000000000006,
+      "std": 0.1080518394105348,
+      "median": 0.004,
+      "q25": 0.004,
+      "q75": 0.02,
+      "iqr": 0.016,
+      "ci_low": 0.0024000000000000002,
+      "ci_high": 0.15360000000000001
+    },
+    "tail_risk_metrics_cvar_10pct": {
+      "mean": -0.22000220623183137,
+      "std": 0.4919398883343028,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": -0.6600066186954942,
+      "ci_high": 0.0
+    },
+    "tail_risk_metrics_cvar_5pct": {
+      "mean": -0.44000441246366273,
+      "std": 0.9838797766686056,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": -1.3200132373909883,
+      "ci_high": 0.0
+    },
+    "tail_risk_metrics_event_conditioned_return": {
+      "mean": NaN,
+      "std": NaN,
+      "median": NaN,
+      "q25": NaN,
+      "q75": NaN,
+      "iqr": NaN,
+      "ci_low": NaN,
+      "ci_high": NaN
+    },
+    "tail_risk_metrics_event_rate": {
+      "mean": 0.0036,
+      "std": 0.008049844718999243,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.010799999999999999
+    },
+    "tail_risk_metrics_return_q05": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "tail_risk_metrics_return_q25": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "tail_risk_metrics_return_q50": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "tail_risk_metrics_return_q75": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "tail_risk_metrics_return_q95": {
+      "mean": 0.33838868351834017,
+      "std": 0.7566600991636714,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 1.0151660505550206
+    },
+    "tail_risk_metrics_top10pct_mean": {
+      "mean": 0.4431152310278357,
+      "std": 0.7204964802795838,
+      "median": 0.07098605854282736,
+      "q25": 0.022107339086495405,
+      "q75": 0.428698111731602,
+      "iqr": 0.40659077264510657,
+      "ci_low": 0.023040147343163633,
+      "ci_high": 1.1020104098132726
+    },
+    "tail_risk_metrics_top5pct_mean": {
+      "mean": 0.5478417785373311,
+      "std": 0.7300228312711989,
+      "median": 0.14197211708565471,
+      "q25": 0.04421467817299081,
+      "q75": 0.857396223463204,
+      "iqr": 0.8131815452902131,
+      "ci_low": 0.04608029468632726,
+      "ci_high": 1.1888547690715243
+    },
+    "train_steps": {
+      "mean": 120000.0,
+      "std": 0.0,
+      "median": 120000.0,
+      "q25": 120000.0,
+      "q75": 120000.0,
+      "iqr": 0.0,
+      "ci_low": 120000.0,
+      "ci_high": 120000.0
+    }
+  },
+  "provenance": {
+    "schedule_path": "results/weighted_lse_dp/phase3/calibration/chain_catastrophe/schedule.json",
+    "calibration_hash": "b81a6638fb3a789e46261330a2c31dc9f52a5dfa392db51c1e89e31d41ec26a3",
+    "source_phase": "phase2"
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "phase": "III",
+  "task": "chain_sparse_long",
+  "algorithm": "SafeVI",
+  "n_seeds": 5,
+  "seeds": [
+    "seed_11",
+    "seed_29",
+    "seed_47",
+    "seed_67",
+    "seed_83"
+  ],
+  "metrics": {
+    "beta_used_max": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "beta_used_min": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "clip_fraction": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "final_bellman_residual": {
+      "mean": 31.778998462373416,
+      "std": 3.972054645195637e-15,
+      "median": 31.778998462373412,
+      "q25": 31.778998462373412,
+      "q75": 31.778998462373412,
+      "iqr": 0.0,
+      "ci_low": 31.778998462373416,
+      "ci_high": 31.778998462373416
+    },
+    "n_stages_clipped": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "n_states": {
+      "mean": 60.0,
+      "std": 0.0,
+      "median": 60.0,
+      "q25": 60.0,
+      "q75": 60.0,
+      "iqr": 0.0,
+      "ci_low": 60.0,
+      "ci_high": 60.0
+    },
+    "n_sweeps": {
+      "mean": 1.0,
+      "std": 0.0,
+      "median": 1.0,
+      "q25": 1.0,
+      "q75": 1.0,
+      "iqr": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0
+    },
+    "schedule_sign": {
+      "mean": 1.0,
+      "std": 0.0,
+      "median": 1.0,
+      "q25": 1.0,
+      "q75": 1.0,
+      "iqr": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0
+    },
+    "seed": {
+      "mean": 47.4,
+      "std": 28.788886744714528,
+      "median": 47.0,
+      "q25": 29.0,
+      "q75": 67.0,
+      "iqr": 38.0,
+      "ci_low": 25.4,
+      "ci_high": 69.4
+    },
+    "wall_clock_s": {
+      "mean": 0.001813983399188146,
+      "std": 3.8566665337834086e-05,
+      "median": 0.0018085420015268028,
+      "q25": 0.0017878749931696802,
+      "q75": 0.0018384169961791486,
+      "iqr": 5.054200300946832e-05,
+      "ci_low": 0.0017846583970822394,
+      "ci_high": 0.0018446082016453148
+    }
+  },
+  "provenance": {
+    "schedule_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase3/calibration/chain_sparse_long/schedule.json",
+    "calibration_hash": "714a08f718aa6f8e70056fbacf7ec0be05eebe0459b406afea7e8ae60e62d68a",
+    "source_phase": "phase2"
+  }
+}

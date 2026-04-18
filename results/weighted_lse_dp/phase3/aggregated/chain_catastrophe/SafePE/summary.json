@@ -1,0 +1,120 @@
+{
+  "phase": "III",
+  "task": "chain_catastrophe",
+  "algorithm": "SafePE",
+  "n_seeds": 5,
+  "seeds": [
+    "seed_11",
+    "seed_29",
+    "seed_47",
+    "seed_67",
+    "seed_83"
+  ],
+  "metrics": {
+    "beta_used_max": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "beta_used_min": {
+      "mean": -0.00015408679055458062,
+      "std": 0.0,
+      "median": -0.00015408679055458062,
+      "q25": -0.00015408679055458062,
+      "q75": -0.00015408679055458062,
+      "iqr": 0.0,
+      "ci_low": -0.00015408679055458062,
+      "ci_high": -0.00015408679055458062
+    },
+    "clip_fraction": {
+      "mean": 0.36666666666666664,
+      "std": 0.0,
+      "median": 0.36666666666666664,
+      "q25": 0.36666666666666664,
+      "q75": 0.36666666666666664,
+      "iqr": 0.0,
+      "ci_low": 0.36666666666666664,
+      "ci_high": 0.36666666666666664
+    },
+    "final_bellman_residual": {
+      "mean": 0.9988901220865705,
+      "std": 0.0,
+      "median": 0.9988901220865705,
+      "q25": 0.9988901220865705,
+      "q75": 0.9988901220865705,
+      "iqr": 0.0,
+      "ci_low": 0.9988901220865705,
+      "ci_high": 0.9988901220865705
+    },
+    "n_stages_clipped": {
+      "mean": 22.0,
+      "std": 0.0,
+      "median": 22.0,
+      "q25": 22.0,
+      "q75": 22.0,
+      "iqr": 0.0,
+      "ci_low": 22.0,
+      "ci_high": 22.0
+    },
+    "n_states": {
+      "mean": 26.0,
+      "std": 0.0,
+      "median": 26.0,
+      "q25": 26.0,
+      "q75": 26.0,
+      "iqr": 0.0,
+      "ci_low": 26.0,
+      "ci_high": 26.0
+    },
+    "n_sweeps": {
+      "mean": 1.0,
+      "std": 0.0,
+      "median": 1.0,
+      "q25": 1.0,
+      "q75": 1.0,
+      "iqr": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0
+    },
+    "schedule_sign": {
+      "mean": -1.0,
+      "std": 0.0,
+      "median": -1.0,
+      "q25": -1.0,
+      "q75": -1.0,
+      "iqr": 0.0,
+      "ci_low": -1.0,
+      "ci_high": -1.0
+    },
+    "seed": {
+      "mean": 47.4,
+      "std": 28.788886744714528,
+      "median": 47.0,
+      "q25": 29.0,
+      "q75": 67.0,
+      "iqr": 38.0,
+      "ci_low": 25.4,
+      "ci_high": 69.4
+    },
+    "wall_clock_s": {
+      "mean": 0.0009619415970519185,
+      "std": 0.00012792099279433425,
+      "median": 0.0010232090135104954,
+      "q25": 0.0008284579962491989,
+      "q75": 0.001053999993018806,
+      "iqr": 0.00022554199676960707,
+      "ci_low": 0.0008637581951916218,
+      "ci_high": 0.0010601249989122153
+    }
+  },
+  "provenance": {
+    "schedule_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase3/calibration/chain_catastrophe/schedule.json",
+    "calibration_hash": "b81a6638fb3a789e46261330a2c31dc9f52a5dfa392db51c1e89e31d41ec26a3",
+    "source_phase": "phase2"
+  }
+}

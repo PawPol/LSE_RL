@@ -1,0 +1,6 @@
+{
+  "schedule_path": "results/weighted_lse_dp/phase3/calibration/chain_catastrophe/schedule.json",
+  "calibration_source_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase2/calibration/chain_catastrophe.json",
+  "calibration_hash": "b81a6638fb3a789e46261330a2c31dc9f52a5dfa392db51c1e89e31d41ec26a3",
+  "source_phase": "phase2"
+}

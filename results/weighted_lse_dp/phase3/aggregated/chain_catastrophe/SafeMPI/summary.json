@@ -1,0 +1,150 @@
+{
+  "phase": "III",
+  "task": "chain_catastrophe",
+  "algorithm": "SafeMPI",
+  "n_seeds": 5,
+  "seeds": [
+    "seed_11",
+    "seed_29",
+    "seed_47",
+    "seed_67",
+    "seed_83"
+  ],
+  "metrics": {
+    "beta_used_max": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "beta_used_min": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "clip_fraction": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "final_bellman_residual": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "n_stages_clipped": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "n_states": {
+      "mean": 26.0,
+      "std": 0.0,
+      "median": 26.0,
+      "q25": 26.0,
+      "q75": 26.0,
+      "iqr": 0.0,
+      "ci_low": 26.0,
+      "ci_high": 26.0
+    },
+    "n_sweeps": {
+      "mean": 2.0,
+      "std": 0.0,
+      "median": 2.0,
+      "q25": 2.0,
+      "q75": 2.0,
+      "iqr": 0.0,
+      "ci_low": 2.0,
+      "ci_high": 2.0
+    },
+    "schedule_sign": {
+      "mean": -1.0,
+      "std": 0.0,
+      "median": -1.0,
+      "q25": -1.0,
+      "q75": -1.0,
+      "iqr": 0.0,
+      "ci_low": -1.0,
+      "ci_high": -1.0
+    },
+    "seed": {
+      "mean": 47.4,
+      "std": 28.788886744714528,
+      "median": 47.0,
+      "q25": 29.0,
+      "q75": 67.0,
+      "iqr": 38.0,
+      "ci_low": 25.4,
+      "ci_high": 69.4
+    },
+    "sweeps_to_1e-2": {
+      "mean": 1.0,
+      "std": 0.0,
+      "median": 1.0,
+      "q25": 1.0,
+      "q75": 1.0,
+      "iqr": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0
+    },
+    "sweeps_to_1e-4": {
+      "mean": 1.0,
+      "std": 0.0,
+      "median": 1.0,
+      "q25": 1.0,
+      "q75": 1.0,
+      "iqr": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0
+    },
+    "sweeps_to_1e-6": {
+      "mean": 1.0,
+      "std": 0.0,
+      "median": 1.0,
+      "q25": 1.0,
+      "q75": 1.0,
+      "iqr": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0
+    },
+    "wall_clock_s": {
+      "mean": 0.002499116392573342,
+      "std": 5.823614890187957e-05,
+      "median": 0.0025298750260844827,
+      "q25": 0.002458624978316948,
+      "q75": 0.002534415980335325,
+      "iqr": 7.579100201837718e-05,
+      "ci_low": 0.002450420185195981,
+      "ci_high": 0.002541707793716341
+    }
+  },
+  "provenance": {
+    "schedule_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase3/calibration/chain_catastrophe/schedule.json",
+    "calibration_hash": "b81a6638fb3a789e46261330a2c31dc9f52a5dfa392db51c1e89e31d41ec26a3",
+    "source_phase": "phase2"
+  }
+}

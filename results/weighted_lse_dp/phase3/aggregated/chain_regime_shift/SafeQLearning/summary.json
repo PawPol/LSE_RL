@@ -1,0 +1,150 @@
+{
+  "phase": "III",
+  "task": "chain_regime_shift",
+  "algorithm": "SafeQLearning",
+  "n_seeds": 5,
+  "seeds": [
+    "seed_11",
+    "seed_29",
+    "seed_47",
+    "seed_67",
+    "seed_83"
+  ],
+  "metrics": {
+    "adaptation_metrics_change_at_episode": {
+      "mean": 300.0,
+      "std": 0.0,
+      "median": 300.0,
+      "q25": 300.0,
+      "q75": 300.0,
+      "iqr": 0.0,
+      "ci_low": 300.0,
+      "ci_high": 300.0
+    },
+    "adaptation_metrics_lag_to_50pct_recovery": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "adaptation_metrics_lag_to_75pct_recovery": {
+      "mean": 2.6,
+      "std": 5.272570530585627,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 1.0,
+      "iqr": 1.0,
+      "ci_low": 0.0,
+      "ci_high": 7.4
+    },
+    "adaptation_metrics_post_change_auc": {
+      "mean": 16.097314919798738,
+      "std": 0.5522546161093242,
+      "median": 15.964906572938114,
+      "q25": 15.90115326962797,
+      "q75": 16.549169901824964,
+      "iqr": 0.6480166321969936,
+      "ci_low": 15.691717859778937,
+      "ci_high": 16.525458691041983
+    },
+    "adaptation_metrics_post_change_optimum": {
+      "mean": 20.559949445177665,
+      "std": 0.5335761676853202,
+      "median": 20.457108808609846,
+      "q25": 20.131407951280462,
+      "q75": 20.905746846780485,
+      "iqr": 0.7743388955000228,
+      "ci_low": 20.150870193540797,
+      "ci_high": 20.969028696814533
+    },
+    "adaptation_metrics_pre_change_auc": {
+      "mean": 4.537620262301763,
+      "std": 0.34846673996159044,
+      "median": 4.688497427188641,
+      "q25": 4.545106867830262,
+      "q75": 4.740668215803246,
+      "iqr": 0.1955613479729834,
+      "ci_low": 4.218035910506119,
+      "ci_high": 4.745577696180748
+    },
+    "auc_disc_return": {
+      "mean": 16.610318430763876,
+      "std": 0.618782636694497,
+      "median": 16.525560634037515,
+      "q25": 16.41146728667514,
+      "q75": 17.17740977297363,
+      "iqr": 0.7659424862984885,
+      "ci_low": 16.149308232349313,
+      "ci_high": 17.06324927310382
+    },
+    "final_10pct_success_rate": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "final_disc_return_mean": {
+      "mean": 18.565097488799573,
+      "std": 0.5255060451033459,
+      "median": 18.7804027597807,
+      "q25": 18.180340254412112,
+      "q75": 18.98828007956439,
+      "iqr": 0.8079398251522782,
+      "ci_low": 18.14196267452092,
+      "ci_high": 18.96315258539441
+    },
+    "n_transitions": {
+      "mean": 180000.0,
+      "std": 0.0,
+      "median": 180000.0,
+      "q25": 180000.0,
+      "q75": 180000.0,
+      "iqr": 0.0,
+      "ci_low": 180000.0,
+      "ci_high": 180000.0
+    },
+    "seed": {
+      "mean": 47.4,
+      "std": 28.788886744714528,
+      "median": 47.0,
+      "q25": 29.0,
+      "q75": 67.0,
+      "iqr": 38.0,
+      "ci_low": 25.4,
+      "ci_high": 69.4
+    },
+    "shortcut_risky_path_fraction": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "train_steps": {
+      "mean": 180000.0,
+      "std": 0.0,
+      "median": 180000.0,
+      "q25": 180000.0,
+      "q75": 180000.0,
+      "iqr": 0.0,
+      "ci_low": 180000.0,
+      "ci_high": 180000.0
+    }
+  },
+  "provenance": {
+    "schedule_path": "results/weighted_lse_dp/phase3/calibration/chain_regime_shift/schedule.json",
+    "calibration_hash": "e5bbaea13fe72a1304efd145532cc89d8dbafeb50e5927168df48c2c6b7b1686",
+    "source_phase": "phase2"
+  }
+}

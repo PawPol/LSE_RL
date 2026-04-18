@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-18T19:05:52Z",
+  "phase": "phase3",
+  "task": "chain_catastrophe",
+  "algorithm": "SafePE",
+  "seed": 47,
+  "final_bellman_residual": 0.9988901220865705,
+  "n_sweeps": 1,
+  "wall_clock_s": 0.0008615830156486481,
+  "converged": true,
+  "n_states": 26,
+  "schedule_sign": -1,
+  "beta_used_min": -4.02019801354133e-05,
+  "beta_used_max": 0.0,
+  "n_stages_clipped": 22,
+  "clip_fraction": 0.36666666666666664,
+  "sweeps_to_1e-2": null,
+  "sweeps_to_1e-4": null,
+  "sweeps_to_1e-6": null
+}

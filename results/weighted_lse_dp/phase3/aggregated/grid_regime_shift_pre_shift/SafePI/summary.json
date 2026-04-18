@@ -1,0 +1,148 @@
+{
+  "phase": "III",
+  "task": "grid_regime_shift_pre_shift",
+  "algorithm": "SafePI",
+  "n_seeds": 3,
+  "seeds": [
+    "seed_11",
+    "seed_29",
+    "seed_47"
+  ],
+  "metrics": {
+    "beta_used_max": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "beta_used_min": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "clip_fraction": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "final_bellman_residual": {
+      "mean": 0.9238465933597338,
+      "std": 0.0,
+      "median": 0.9238465933597338,
+      "q25": 0.9238465933597338,
+      "q75": 0.9238465933597338,
+      "iqr": 0.0,
+      "ci_low": 0.9238465933597338,
+      "ci_high": 0.9238465933597338
+    },
+    "n_stages_clipped": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "n_states": {
+      "mean": 25.0,
+      "std": 0.0,
+      "median": 25.0,
+      "q25": 25.0,
+      "q75": 25.0,
+      "iqr": 0.0,
+      "ci_low": 25.0,
+      "ci_high": 25.0
+    },
+    "n_sweeps": {
+      "mean": 9.0,
+      "std": 0.0,
+      "median": 9.0,
+      "q25": 9.0,
+      "q75": 9.0,
+      "iqr": 0.0,
+      "ci_low": 9.0,
+      "ci_high": 9.0
+    },
+    "schedule_sign": {
+      "mean": 1.0,
+      "std": 0.0,
+      "median": 1.0,
+      "q25": 1.0,
+      "q75": 1.0,
+      "iqr": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0
+    },
+    "seed": {
+      "mean": 29.0,
+      "std": 18.0,
+      "median": 29.0,
+      "q25": 20.0,
+      "q75": 38.0,
+      "iqr": 18.0,
+      "ci_low": 11.0,
+      "ci_high": 47.0
+    },
+    "sweeps_to_1e-2": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "sweeps_to_1e-4": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "sweeps_to_1e-6": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "wall_clock_s": {
+      "mean": 0.011125944341377666,
+      "std": 6.994418651172283e-05,
+      "median": 0.011163375020259991,
+      "q25": 0.011104312507086433,
+      "q75": 0.01116629151511006,
+      "iqr": 6.19790080236271e-05,
+      "ci_low": 0.011045249993912876,
+      "ci_high": 0.01116920800996013
+    }
+  },
+  "provenance": {
+    "schedule_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase3/calibration/grid_regime_shift/schedule.json",
+    "calibration_hash": "36c77bf35902d61a532f4db49544460b5bdd846ed8058d89dbe3abd079d843ca",
+    "source_phase": "phase2"
+  }
+}

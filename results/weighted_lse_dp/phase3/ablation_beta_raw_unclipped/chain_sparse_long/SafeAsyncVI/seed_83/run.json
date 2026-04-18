@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-18T19:05:36Z",
+  "phase": "phase3",
+  "task": "chain_sparse_long",
+  "algorithm": "SafeAsyncVI",
+  "seed": 83,
+  "git_sha": "88450283161d756c5da562860b0d881c3866efef",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "task": "chain_sparse_long",
+    "state_n": 60,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 120,
+    "goal_states": [
+      59
+    ],
+    "reward_bound": 1.0,
+    "train_steps": 240000,
+    "checkpoint_every": 8000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 200,
+    "success_threshold": 0.85,
+    "safe_rl_algorithms": [
+      "SafeQLearning",
+      "SafeExpectedSARSA"
+    ],
+    "ref_policy": "always_right",
+    "severity": "sparse_reward",
+    "dp_algorithms": [
+      "SafePE",
+      "SafeVI",
+      "SafePI",
+      "SafeMPI",
+      "SafeAsyncVI"
+    ],
+    "schedule_file": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase3/calibration/chain_sparse_long/schedule.json",
+    "suite_config_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/weighted_lse_dp/configs/phase3/paper_suite.json"
+  },
+  "suite": "ablation_beta_raw_unclipped",
+  "storage_mode": "dp_stagewise"
+}

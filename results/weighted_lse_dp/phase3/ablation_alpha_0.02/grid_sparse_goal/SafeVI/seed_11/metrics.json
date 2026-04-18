@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-18T19:05:54Z",
+  "phase": "phase3",
+  "task": "grid_sparse_goal",
+  "algorithm": "SafeVI",
+  "seed": 11,
+  "final_bellman_residual": 0.9988959558594005,
+  "n_sweeps": 1,
+  "wall_clock_s": 0.00241650000680238,
+  "converged": true,
+  "n_states": 49,
+  "schedule_sign": 1,
+  "beta_used_min": 2.847959719286634e-06,
+  "beta_used_max": 0.000402019801354133,
+  "n_stages_clipped": 120,
+  "clip_fraction": 1.0,
+  "sweeps_to_1e-2": null,
+  "sweeps_to_1e-4": null,
+  "sweeps_to_1e-6": null
+}

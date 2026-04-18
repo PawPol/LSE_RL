@@ -1,0 +1,118 @@
+{
+  "phase": "III",
+  "task": "grid_sparse_goal",
+  "algorithm": "SafeAsyncVI",
+  "n_seeds": 3,
+  "seeds": [
+    "seed_11",
+    "seed_29",
+    "seed_47"
+  ],
+  "metrics": {
+    "beta_used_max": {
+      "mean": 0.002010089582688621,
+      "std": 0.0,
+      "median": 0.002010089582688621,
+      "q25": 0.002010089582688621,
+      "q75": 0.002010089582688621,
+      "iqr": 0.0,
+      "ci_low": 0.002010089582688621,
+      "ci_high": 0.002010089582688621
+    },
+    "beta_used_min": {
+      "mean": 2.8479584804735992e-06,
+      "std": 5.186996290247033e-22,
+      "median": 2.8479584804735997e-06,
+      "q25": 2.8479584804735997e-06,
+      "q75": 2.8479584804735997e-06,
+      "iqr": 0.0,
+      "ci_low": 2.8479584804735992e-06,
+      "ci_high": 2.8479584804735992e-06
+    },
+    "clip_fraction": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "final_bellman_residual": {
+      "mean": 0.9988959609966961,
+      "std": 0.0,
+      "median": 0.9988959609966961,
+      "q25": 0.9988959609966961,
+      "q75": 0.9988959609966961,
+      "iqr": 0.0,
+      "ci_low": 0.9988959609966961,
+      "ci_high": 0.9988959609966961
+    },
+    "n_stages_clipped": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "n_states": {
+      "mean": 49.0,
+      "std": 0.0,
+      "median": 49.0,
+      "q25": 49.0,
+      "q75": 49.0,
+      "iqr": 0.0,
+      "ci_low": 49.0,
+      "ci_high": 49.0
+    },
+    "n_sweeps": {
+      "mean": 1.0,
+      "std": 0.0,
+      "median": 1.0,
+      "q25": 1.0,
+      "q75": 1.0,
+      "iqr": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0
+    },
+    "schedule_sign": {
+      "mean": 1.0,
+      "std": 0.0,
+      "median": 1.0,
+      "q25": 1.0,
+      "q75": 1.0,
+      "iqr": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0
+    },
+    "seed": {
+      "mean": 29.0,
+      "std": 18.0,
+      "median": 29.0,
+      "q25": 20.0,
+      "q75": 38.0,
+      "iqr": 18.0,
+      "ci_low": 11.0,
+      "ci_high": 47.0
+    },
+    "wall_clock_s": {
+      "mean": 0.007289278010527293,
+      "std": 0.00017851844977870778,
+      "median": 0.007204624998848885,
+      "q25": 0.007186729504610412,
+      "q75": 0.00734950001060497,
+      "iqr": 0.00016277050599455833,
+      "ci_low": 0.007168834010371938,
+      "ci_high": 0.007494375022361055
+    }
+  },
+  "provenance": {
+    "schedule_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase3/calibration/grid_sparse_goal/schedule.json",
+    "calibration_hash": "8606b7c92579b29e3f4b0a3e4836baa05fbf2f341ebfd85a6e737c754221c71a",
+    "source_phase": "phase2"
+  }
+}

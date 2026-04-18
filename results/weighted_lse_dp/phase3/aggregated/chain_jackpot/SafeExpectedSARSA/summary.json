@@ -1,0 +1,200 @@
+{
+  "phase": "III",
+  "task": "chain_jackpot",
+  "algorithm": "SafeExpectedSARSA",
+  "n_seeds": 5,
+  "seeds": [
+    "seed_11",
+    "seed_29",
+    "seed_47",
+    "seed_67",
+    "seed_83"
+  ],
+  "metrics": {
+    "auc_disc_return": {
+      "mean": 1.2680254163058209,
+      "std": 0.09908998494173991,
+      "median": 1.3025356922135614,
+      "q25": 1.1963049695212447,
+      "q75": 1.33691614523088,
+      "iqr": 0.14061117570963533,
+      "ci_low": 1.1873529233770912,
+      "ci_high": 1.3432159060759874
+    },
+    "final_10pct_success_rate": {
+      "mean": 0.052000000000000005,
+      "std": 0.017256238807393052,
+      "median": 0.04666666666666666,
+      "q25": 0.04,
+      "q75": 0.06666666666666667,
+      "iqr": 0.026666666666666665,
+      "ci_low": 0.03866666666666667,
+      "ci_high": 0.06533333333333334
+    },
+    "final_disc_return_mean": {
+      "mean": 1.521261024130596,
+      "std": 0.39889617338889927,
+      "median": 1.7730170573124824,
+      "q25": 1.1129700689831457,
+      "q75": 1.7830525915890447,
+      "iqr": 0.6700825226058991,
+      "ci_low": 1.224057908366404,
+      "ci_high": 1.8183273906636086
+    },
+    "n_transitions": {
+      "mean": 120000.0,
+      "std": 0.0,
+      "median": 120000.0,
+      "q25": 120000.0,
+      "q75": 120000.0,
+      "iqr": 0.0,
+      "ci_low": 120000.0,
+      "ci_high": 120000.0
+    },
+    "seed": {
+      "mean": 47.4,
+      "std": 28.788886744714528,
+      "median": 47.0,
+      "q25": 29.0,
+      "q75": 67.0,
+      "iqr": 38.0,
+      "ci_low": 25.4,
+      "ci_high": 69.4
+    },
+    "shortcut_risky_path_fraction": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "tail_risk_metrics_cvar_10pct": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "tail_risk_metrics_cvar_5pct": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "tail_risk_metrics_event_conditioned_return": {
+      "mean": NaN,
+      "std": NaN,
+      "median": NaN,
+      "q25": NaN,
+      "q75": NaN,
+      "iqr": NaN,
+      "ci_low": NaN,
+      "ci_high": NaN
+    },
+    "tail_risk_metrics_event_rate": {
+      "mean": 0.0008,
+      "std": 0.0010954451150103322,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.002,
+      "iqr": 0.002,
+      "ci_low": 0.0,
+      "ci_high": 0.0016
+    },
+    "tail_risk_metrics_return_q05": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "tail_risk_metrics_return_q25": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "tail_risk_metrics_return_q50": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "tail_risk_metrics_return_q75": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "tail_risk_metrics_return_q95": {
+      "mean": 0.0,
+      "std": 0.0,
+      "median": 0.0,
+      "q25": 0.0,
+      "q75": 0.0,
+      "iqr": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "tail_risk_metrics_top10pct_mean": {
+      "mean": 0.07055269977689091,
+      "std": 0.07151535362757298,
+      "median": 0.07003899798359528,
+      "q25": 0.0,
+      "q75": 0.12596472624064645,
+      "iqr": 0.12596472624064645,
+      "ci_low": 0.014007799596719056,
+      "ci_high": 0.12709759995706277
+    },
+    "tail_risk_metrics_top5pct_mean": {
+      "mean": 0.14110539955378182,
+      "std": 0.14303070725514597,
+      "median": 0.14007799596719056,
+      "q25": 0.0,
+      "q75": 0.2519294524812929,
+      "iqr": 0.2519294524812929,
+      "ci_low": 0.02801559919343811,
+      "ci_high": 0.25419519991412554
+    },
+    "train_steps": {
+      "mean": 120000.0,
+      "std": 0.0,
+      "median": 120000.0,
+      "q25": 120000.0,
+      "q75": 120000.0,
+      "iqr": 0.0,
+      "ci_low": 120000.0,
+      "ci_high": 120000.0
+    }
+  },
+  "provenance": {
+    "schedule_path": "results/weighted_lse_dp/phase3/calibration/chain_jackpot/schedule.json",
+    "calibration_hash": "5adffbf3747c18c848dc07687e1944ef60253e28f69f42d97b3fe10d2c4bf0de",
+    "source_phase": "phase2"
+  }
+}
