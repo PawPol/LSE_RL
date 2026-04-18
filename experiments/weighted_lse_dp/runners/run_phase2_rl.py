@@ -682,6 +682,60 @@ def run_single(
                 f"success_rate={eval_result['success_rate']:.4f}"
             )
 
+    # -- Post-training: greedy eval for stress metrics (R4-2 fix) -----------
+    # CVaR, event-conditioned return, and adaptation lag must be measured on
+    # the learned policy (epsilon=0), not the epsilon-greedy training history.
+    eval_episodes_final = int(
+        task_config.get("eval_episodes_final", eval_episodes_checkpoint * 2)
+    )
+
+    # Temporarily set exploration to 0 for greedy evaluation.
+    _saved_eps = None
+    if hasattr(agent, "policy") and hasattr(agent.policy, "set_epsilon"):
+        _saved_eps = agent.policy._epsilon
+        agent.policy.set_epsilon(0.0)
+
+    # Fresh logger for eval (same type as training logger, no history).
+    if stress_type is not None:
+        eval_logger: TransitionLogger = _AutoEventLogger(
+            agent,
+            n_base=n_base,
+            gamma=gamma,
+            stress_type=stress_type,
+            wrapper=wrapper_or_mdp,
+            hazard_reward_threshold=hazard_reward_thr,
+            jackpot_reward_threshold=jackpot_reward_thr,
+            catastrophe_reward_threshold=catastrophe_reward_thr,
+            risky_state=risky_state_for_logger,
+        )
+    else:
+        eval_logger = TransitionLogger(agent, n_base=n_base, gamma=gamma)
+
+    eval_core = Core(agent, mdp_rl, callback_step=eval_logger)
+    try:
+        with rw.timer.phase("eval_final"):
+            eval_core.evaluate(n_episodes=eval_episodes_final, quiet=True)
+        eval_payload = eval_logger.build_payload()
+        eval_episode_returns = _compute_episode_returns(eval_payload, gamma)
+        print(
+            f"[phase2_rl] {task}/{algorithm}/seed_{seed}: "
+            f"greedy eval ({eval_episodes_final} eps): "
+            f"mean_return={float(np.mean(eval_episode_returns)):.4f}"
+            if len(eval_episode_returns) > 0 else
+            f"[phase2_rl] {task}/{algorithm}/seed_{seed}: greedy eval: no episodes"
+        )
+    except Exception as _e:
+        print(
+            f"[phase2_rl] {task}/{algorithm}/seed_{seed}: "
+            f"[WARN] greedy eval failed ({_e}); falling back to training data for stress metrics"
+        )
+        eval_payload = None
+        eval_episode_returns = np.array([], dtype=np.float64)
+    finally:
+        # Restore exploration rate.
+        if _saved_eps is not None:
+            agent.policy._epsilon = _saved_eps
+
     # -- Post-training: build transitions payload ---------------------------
     print(
         f"[phase2_rl] {task}/{algorithm}/seed_{seed}: "
@@ -692,13 +746,17 @@ def run_single(
         transitions_payload = logger.build_payload()
         rw.set_transitions(transitions_payload)
 
-        # Build calibration stats from the transitions.
+        # Build calibration stats from the training transitions.
         calibration_stats = aggregate_calibration_stats(
             transitions_payload, horizon=horizon
         )
 
-        # -- Per-episode returns (needed for tail-risk / adaptation) --------
-        episode_returns = _compute_episode_returns(transitions_payload, gamma)
+        # -- Per-episode returns for stress metrics: use greedy eval data ---
+        # Fall back to training data only if eval failed (shouldn't happen).
+        if len(eval_episode_returns) > 0:
+            episode_returns = eval_episode_returns
+        else:
+            episode_returns = _compute_episode_returns(transitions_payload, gamma)
 
         # -- Phase II event-level scalars ----------------------------------
         if "jackpot_event" in transitions_payload:
@@ -721,6 +779,8 @@ def run_single(
             calibration_stats["regime_shift_episode"] = np.array([-1.0])
 
         # -- Phase II tail-risk scalars ------------------------------------
+        # Use greedy eval payload for event flags so tail risk reflects the
+        # learned policy, not the training exploration history (R4-2).
         tail_risk: dict[str, float] | None = None
         if stress_type in ("jackpot", "catastrophe", "hazard"):
             event_key_map = {
@@ -729,8 +789,13 @@ def run_single(
                 "hazard": "hazard_cell_hit",
             }
             event_key = event_key_map[stress_type]
+            _payload_for_events = (
+                eval_payload
+                if eval_payload is not None and event_key in eval_payload
+                else transitions_payload
+            )
             episode_event_flags = _compute_episode_event_flags(
-                transitions_payload, event_key
+                _payload_for_events, event_key
             )
 
             tail_risk_logger = TailRiskLogger()
@@ -745,11 +810,15 @@ def run_single(
             )
 
         # -- Phase II adaptation scalars -----------------------------------
+        # Adaptation lag measures recovery in the training curve around the
+        # change point — greedy eval data post-training doesn't carry this
+        # temporal structure, so use the full training episode returns here.
         adaptation: dict[str, Any] | None = None
         if stress_type == "regime_shift":
             change_at_episode = int(task_config.get("change_at_episode", 300))
+            _train_episode_returns = _compute_episode_returns(transitions_payload, gamma)
             adaptation_logger = AdaptationMetricsLogger()
-            adaptation = adaptation_logger.compute(episode_returns, change_at_episode)
+            adaptation = adaptation_logger.compute(_train_episode_returns, change_at_episode)
 
             calibration_stats["adaptation_pre_change_auc"] = np.array(
                 [float(adaptation["pre_change_auc"])],

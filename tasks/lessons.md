@@ -211,3 +211,13 @@ citing rho*(r,v) = sigma(beta*(r-v) + log(1/gamma)) from the paper.
 **Prevention rule**: (1) When a caller passes override values through a dict to a callee, the callee must explicitly extract and use those overrides -- add a comment or assertion at the callee showing which keys it consumes. (2) Add an integration test that calls the callee with non-default overrides and asserts the downstream object (agent, optimizer) reflects the overridden values, not the module-level defaults. (3) When recording resolved config, derive values from the same code path that constructs the agent, not from separate constant references.
 
 **Source incident**: Phase II Codex R3 standard review (review-mo2thz1w-kohkfg) — `run_phase2_rl.py:566-567,592` ignores `task_config["epsilon_override"]` and `task_config["lr_multiplier"]`. Triaged 2026-04-17 as BLOCKER R3-1.
+
+---
+
+### 2026-04-17 — Aggregation statistics computed from summaries-of-summaries instead of raw data
+
+**Pattern**: Calibration statistics meant to capture distributional properties (quantiles, extremes) were computed from already-aggregated arrays (per-seed means, per-stage means) rather than from the underlying raw data. This appeared in two forms in Phase II R4: (1) margin quantiles computed from `aligned_positive_mean` arrays (percentiles of means, not quantiles of the margin distribution), and (2) `empirical_r_max` derived from `reward_mean + 2*reward_std` instead of `max(|r|)` over actual observations. Both silently produce plausible-looking numbers that are systematically biased, especially for rare-event / heavy-tail families where the whole point is tail behavior.
+
+**Prevention rule**: (1) Any statistic that claims to represent a distributional property (quantiles, extremes, CVaR) must be computed from the most granular data available (per-transition, per-episode), never from pre-averaged summaries. (2) Name arrays precisely: `aligned_positive_mean` is a mean, not a sample -- code that treats it as a sample for percentile computation is wrong by construction. (3) Add a unit test that verifies calibration quantiles against a known synthetic distribution with fat tails; the test should fail if quantiles are computed from stage means instead of raw samples.
+
+**Source incident**: Phase II Codex R4 adversarial review (review-mo3l48hq-1ncnzo) — `aggregate_phase2.py:721-776` (margin quantiles from means) and `aggregate_phase2.py:778-792` (r_max from moments). Triaged 2026-04-17 as BLOCKERs R4-3 and R4-4.

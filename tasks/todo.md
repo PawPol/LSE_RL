@@ -1086,3 +1086,49 @@ DISPUTE: 0
 All 5 findings are genuinely new. Both BLOCKERs must be resolved before R4 review.
 
 Next: fix BLOCKERs R3-1 and R3-3, then MAJORs R3-2 and R3-4, then re-run `/lse:review II` for R4.
+
+---
+
+## R4 triage
+
+Review sources:
+- Standard: `results/processed/codex_reviews/phase_II/review_r4.md` (session review-mo3l1ks8-jradcp)
+- Adversarial: `results/processed/codex_reviews/phase_II/adversarial_r4.md` (session review-mo3l48hq-1ncnzo)
+
+### Findings
+
+- [ ] [BLOCKER] R4-1: `supnorm_to_exact` uses self-reference instead of VI baseline — `run_phase2_dp.py:470-473` — Compute VI V* once per task/MDP at the start of each algorithm group, then pass it as `v_exact` to every non-VI planner in that group. Acceptance criterion: for every non-VI algorithm (PE, PI, MPI, AsyncVI), `DPCurvesLogger` receives a `v_exact` array produced by a separate VI run on the same MDP, and `supnorm_to_exact` converges to a non-zero residual when the algorithm's fixed point differs from V*.
+      (codex-session: review-mo3l1ks8-jradcp, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#10)
+
+- [ ] [BLOCKER] R4-2: RL stress metrics (CVaR, event-conditioned return, adaptation lag) computed from training trajectories, not eval rollouts — `run_phase2_rl.py:700-752` — After `Core.learn()` completes, run a separate eval rollout with epsilon=0 for `eval_episodes_final` episodes (currently configured but unused) and compute all tail-risk and adaptation metrics from those eval transitions instead of `transitions_payload`. Acceptance criterion: `episode_returns` fed to `TailRiskLogger` and `AdaptationMetricsLogger` comes from a post-training greedy eval, not the epsilon-greedy training callback; the configured `eval_episodes_final` budget is consumed.
+      (codex-session: review-mo3l1ks8-jradcp, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#8.3)
+
+- [ ] [BLOCKER] R4-3: Margin quantiles computed from stage means, not from underlying margin distribution — `aggregate_phase2.py:721-776` — The fallback path (lines 752-776) computes percentiles of `aligned_positive_mean` / `aligned_negative_mean` arrays, which are already per-seed or per-algorithm means. For rare-event families this erases the tails Phase III calibrates against. Fix: compute quantiles from pooled per-transition aligned margins (from `transitions.npz` or per-seed raw arrays in `calibration_stats.npz`). The primary path (lines 731-748) uses `calibration_stacked` which is also seed-level means, not per-transition margins. Acceptance criterion: `pos_margin_quantiles` and `neg_margin_quantiles` in calibration JSON reflect the empirical distribution of per-transition aligned margins, not percentiles of seed-averaged margin profiles.
+      (codex-session: review-mo3l48hq-1ncnzo, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#12)
+
+- [ ] [BLOCKER] R4-4: `empirical_r_max` derived from moment heuristic (mean +/- 2*std), not from observed reward extremes — `aggregate_phase2.py:778-792` — Replace the `reward_mean + 2*reward_std` proxy with the true absolute reward maximum observed across seeds (tracked in `transitions.npz` or computed from exact model reward tables for DP tasks). Acceptance criterion: `empirical_r_max` in calibration JSON equals `max(|r|)` over all observed or model-available rewards for the task, not a moment-based approximation.
+      (codex-session: review-mo3l48hq-1ncnzo, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#12)
+
+- [ ] [MAJOR] R4-5: Summary writer synthesizes learning curves from stagewise calibration means instead of real per-episode returns — `aggregate_phase2.py:1091-1109` — `curves.mean_return` and `curves.episode_returns` are built from `stage`/`reward_mean` arrays (per-stage reward statistics), not actual training return curves. Phase II figures that read `curves.*` show fabricated data. Fix: store actual per-episode or per-checkpoint return arrays during training (they already exist in `transitions_payload`), emit them as `curves.*` in summary.json.
+      (codex-session: review-mo3l1ks8-jradcp, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#11)
+
+- [ ] [MAJOR] R4-6: Event-conditioned stagewise margins merged with unweighted mean-of-means — `aggregate_phase2.py:826-856` — When building task-level `event_conditioned_margins.stagewise`, line 849 averages each group's mean margin with equal weight regardless of event count. A run with 2 event hits and a run with 200 hits influence the exported curve equally. Fix: compute weighted means using `event_conditioned_margin_count` for each stage, or pool the underlying event-conditioned samples across groups.
+      (codex-session: review-mo3l48hq-1ncnzo, spec-ref: docs/specs/phase_II_stress_test_beta0_experiments.md#12)
+
+### Open questions (SPEC-GAP)
+
+(No new SPEC-GAP findings in R4. All findings map to explicit spec sections.)
+
+### Summary
+
+```
+BLOCKER: 4  (R4-1: supnorm self-reference; R4-2: RL metrics from training not eval; R4-3: quantiles from stage means; R4-4: empirical_r_max from moments)
+MAJOR:   2  (R4-5: synthetic learning curves; R4-6: unweighted event-conditioned merge)
+MINOR:   0
+NIT:     0
+DISPUTE: 0
+```
+
+All 6 findings are genuine and new (not duplicates of R3 items). All 4 BLOCKERs must be resolved before Phase II can close. R4-1 and R4-2 are metric correctness issues that invalidate reported results. R4-3 and R4-4 are calibration integrity issues that would propagate bad inputs to Phase III schedule construction.
+
+Next: fix BLOCKERs R4-1 through R4-4, then MAJORs R4-5 and R4-6, then re-run `/lse:review II` for R5.

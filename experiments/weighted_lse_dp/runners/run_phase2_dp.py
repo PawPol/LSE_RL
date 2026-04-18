@@ -465,11 +465,25 @@ def _run_dp_on_mdp(
     # Extract MDP arrays for calibration stats
     p, r, horizon, gamma_mdp = extract_mdp_arrays(mdp)
 
-    # Record per-sweep curves via DPCurvesLogger.
-    # Use v_exact from a prior VI run when available.
+    # Compute V* reference for supnorm_to_exact (R4-1 fix).
+    # For non-VI planners with no provided v_exact, the old code fell back to
+    # planner.V (self-reference), making supnorm always collapse to 0.  Instead,
+    # run VI once to get the true V* and pass it to every planner in the group.
+    if v_exact is not None:
+        _v_exact_ref: np.ndarray | None = v_exact
+    elif algo_name == "VI":
+        # VI is computing V* itself; use its own final table (self-reference
+        # correctly tracks how far each sweep is from the final solution).
+        _v_exact_ref = None  # resolved to planner.V below
+    else:
+        print(f"    [dp] Computing VI reference for supnorm_to_exact ({algo_name})...")
+        _vi_ref = _make_planner("VI", mdp, ref_pi, v_init=None)
+        _vi_ref.run()
+        _v_exact_ref = _vi_ref.V
+
     dp_logger = DPCurvesLogger(
         run_writer=rw,
-        v_exact=v_exact if v_exact is not None else planner.V,
+        v_exact=_v_exact_ref if _v_exact_ref is not None else planner.V,
         task=task_label,
     )
 
