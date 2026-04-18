@@ -1290,11 +1290,21 @@ def _determine_task_sign(
 
     Spec §12: one integer sign per experiment family.
     ``stagewise`` is accepted but used only for optional validation logging.
+
+    Regime-shift DP groups carry a ``_pre_shift`` / ``_post_shift`` suffix on
+    the task label (R5-3: directory uniqueness).  Strip the suffix before
+    lookup so both phases resolve to the canonical family sign.
     """
-    sign = _TASK_FAMILY_SIGNS.get(task_family)
+    canonical = task_family
+    for suffix in ("_pre_shift", "_post_shift"):
+        if task_family.endswith(suffix):
+            canonical = task_family[: -len(suffix)]
+            break
+    sign = _TASK_FAMILY_SIGNS.get(canonical)
     if sign is None:
         raise ValueError(
-            f"_determine_task_sign: unknown task_family={task_family!r}. "
+            f"_determine_task_sign: unknown task_family={task_family!r} "
+            f"(canonical={canonical!r}). "
             f"Add it to _TASK_FAMILY_SIGNS with the correct sign."
         )
     return sign

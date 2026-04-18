@@ -100,6 +100,9 @@ class _RegimeShiftWrapperBase:
         """Step using whichever MDP is currently active."""
         return self._current.step(action)
 
+    def stop(self) -> None:
+        """No-op stop; required by MushroomRL Core/DiscreteTimeAugmentedEnv."""
+
     @property
     def post_change(self) -> bool:
         """True if the regime has shifted."""

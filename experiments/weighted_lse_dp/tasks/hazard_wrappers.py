@@ -94,6 +94,9 @@ class GridHazardWrapper:
         self._current_state = next_state
         return next_state, reward, absorbing, info
 
+    def stop(self) -> None:
+        """No-op stop; required by MushroomRL Core/DiscreteTimeAugmentedEnv."""
+
 
 # ---------------------------------------------------------------------------
 # make_grid_hazard factory  (spec S5.2.B)
