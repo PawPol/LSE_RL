@@ -371,7 +371,10 @@ class _SafeAutoEventLogger(EventTransitionLogger):
 
         safe_target = float(np.asarray(swc.last_target).item())
         self._safe_target.append(safe_target)
-        self._safe_margin.append(reward - v_next)
+        # R6-1: read the margin from swc.last_margin (the exact v_next the
+        # operator used), not from v_next_beta0 which is always the greedy
+        # max-Q bootstrap — wrong for SafeExpectedSARSA.
+        self._safe_margin.append(float(np.asarray(swc.last_margin).item()))
 
         q_current = self._q_current_beta0[-1]
         self._safe_td_error.append(safe_target - q_current)
@@ -764,7 +767,8 @@ def run_single(
     horizon = int(task_config["horizon"])
     stress_type: str | None = task_config.get("stress_type", None)
 
-    # n_base from the registry (same source as Phase II runner).
+    # n_base: preliminary value from registry; validated against the
+    # environment after construction (R6-2).
     n_base = _N_BASE[task]
 
     # -- Read hyperparameter overrides (used by ablation runner) -----------
@@ -836,6 +840,18 @@ def run_single(
 
     # Propagate gamma into the RL env.
     mdp_rl.info.gamma = gamma
+
+    # R6-2: derive n_base from the augmented environment (observation_space.n
+    # = T * n_base for all DiscreteTimeAugmented envs) and validate against
+    # the registry to catch any future task-parameter drift early.
+    n_base_derived = mdp_rl.info.observation_space.n // horizon
+    if n_base_derived != n_base:
+        raise ValueError(
+            f"n_base registry mismatch for {task!r}: _N_BASE={n_base}, "
+            f"env-derived={n_base_derived}. Update _N_BASE or check factory."
+        )
+    n_base = n_base_derived
+    resolved_config["n_base"] = n_base  # update after env-derived value
 
     # -- Create safe agent ---------------------------------------------------
     agent = _make_safe_agent(

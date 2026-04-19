@@ -1,8 +1,46 @@
-# Codex Standard Review — Phase III R5
+# Codex Standard Review — Phase III R6 (post-merge)
 
-Session ID: (r5_standard)
-Base: 4fdbf0d (Phase II close commit)
-Branch: phase-III/closing
+Session ID: 019da2f1-2830-72e0-85cd-06bd5a4f5040
+Base: 859688c (Phase II merge commit)
+Branch: main (phase-III/closing already merged)
+Date: 2026-04-18
+
+## Summary
+
+Two P2 findings. No BLOCKERs. Operator math and certification chain are
+correct. Issues are in observability logging and a hard-coded n_base table
+in the RL runner.
+
+## Findings
+
+### [P2] safe_margin logged as greedy max-Q v_next, not policy-expected v_next
+**File**: experiments/weighted_lse_dp/runners/run_phase3_rl.py:372-374
+
+For stress-task safe RL runs with `SafeExpectedSARSA`, this logs `safe_margin`
+as `reward - v_next`, where `v_next = self._v_next_beta0[-1]` is the greedy
+max-Q bootstrap. The safe operator used the policy-expected bootstrap and
+stored the correct margin in `swc.last_margin`. As a result, `safe_margin`
+quantiles in Phase III aggregation are wrong for all RL ExpectedSARSA runs.
+(The fix was applied in callbacks.py:SafeTransitionLogger but not in the
+inline logger class in run_phase3_rl.py.)
+
+### [P2] n_base hard-coded in _N_BASE lookup table
+**File**: experiments/weighted_lse_dp/runners/run_phase3_rl.py:767-768
+
+`n_base = _N_BASE[task]` uses a hard-coded lookup. If any task's base state
+count differs from the table (config change, absorbing state added/removed),
+safe TD decodes the wrong stage from the augmented state, corrupting safe
+updates and logging. This is the same anti-pattern that was a BLOCKER in
+Phase II R8. Current run values appear correct (64/64 passed), but the
+structural risk remains.
+
+## Previous round findings (R5, all resolved)
+All R5 BLOCKERs resolved before merge to main:
+- expm1/log1p → _EPS_BETA=1e-8 + logaddexp
+- beta_raw_unclipped ablation cert bypass
+- safe_margin source (callbacks.py fixed)
+- schedule_file override honoured
+- DP rho derived from eff_discount
 Round: R5 (post R4-fix commit)
 Status: completed
 

@@ -1,8 +1,80 @@
-# Codex Adversarial Review — Phase III R5
+# Codex Adversarial Review — Phase III R6 (post-merge)
 
-Session ID: 019da1df-cf35-7bc3-aaea-cac5bdf47302
-Base: 4fdbf0d (Phase II close commit)
-Branch: phase-III/closing
+Session ID: manual-subagent-adversarial-r6
+Base: 859688c (Phase II merge commit)
+Branch: main (phase-III/closing already merged)
+Date: 2026-04-18
+Focus: operator correctness, certification-box invariance, β=0 collapse,
+       logaddexp numerical stability, safe margin logging, BetaSchedule cert
+
+## Summary
+
+All 15 adversarial checks PASS. Operator math, certification chain,
+responsibility/rho, β=0 collapse, logaddexp stability, and SafePE convergence
+reference are all correct. No BLOCKERs, MAJORs, or disputed issues.
+
+## Findings
+
+### [CORRECT] Operator closed form g_t^safe
+safe_weighted_common.py: logaddexp(β*r, β*γ*v + log_γ) scaled by (1+γ)/β
+exactly matches the spec formula. Two-path dispatch at _EPS_BETA=1e-8 correct.
+
+### [CORRECT] Responsibility/rho formula
+ρ = sigmoid(β(r−v) + log(1/γ)) implemented via scipy.special.expit — numerically
+stable for all finite β, r, v.
+
+### [CORRECT] Effective discount
+eff_d = (1+γ)(1−ρ). Scalar and batch paths both compute γ exactly for β=0.
+
+### [CORRECT] β=0 collapse
+|β| < 1e-8 returns exactly r + γv. No logaddexp called, no cancellation.
+
+### [CORRECT] logaddexp numerical stability
+For r=v=-40, β=1: logaddexp(-40, -40 + log_γ) is finite. No expm1/log1p
+path exists (removed). Confirmed finite output for all finite inputs.
+
+### [CORRECT] Certification box (κ_t, B̂_t, β_cap_t)
+compute_kappa, compute_certified_radii, compute_beta_cap all match the spec
+derivation. Backward recursion for B̂_t correct. β_cap formula with κ=γ
+special case (→0) handled correctly.
+
+### [CORRECT] Stage extraction from augmented state
+stage_from_augmented_state: t = aug_id // n_base. Correct per finite-horizon
+convention: state = t * n_base + base_state.
+
+### [CORRECT] Safe margin logging (callbacks.py)
+SafeTransitionLogger.after_fit reads swc.last_margin — the exact v_next
+passed to compute_safe_target. Algorithm-specific (max-Q vs E_π[Q] vs V^π)
+correctly captured via the operator's own field.
+NOTE: run_phase3_rl.py inline logger still uses v_next_beta0 (caught by
+standard review as P2).
+
+### [CORRECT] BetaSchedule.from_file cert bypass
+ablation_type key in JSON → strict cert check skipped. Normal schedules
+with reward_bound → strict cert applied. Logic at from_file:275-282 correct.
+
+### [CORRECT] SafePE convergence reference
+SafeWeightedPolicyEvaluation evaluates V^π via Q_safe[t, states, π[t]] —
+the policy-weighted fixed point, not V* from VI. Correct.
+
+### [CORRECT] Beta schedule length validation
+BetaSchedule constructor enforces len(betas)==T and len(Bhat)==T+1. ✓
+
+### [CORRECT] Clip detection tolerance
+clip_active uses 1e-15 tolerance. Reasonable; no false positives at machine
+epsilon.
+
+### [CORRECT] Negative beta support
+Clipping to [-beta_cap, beta_cap] supports pessimistic sign conventions.
+Operator formula valid for negative β.
+
+### [CORRECT] n_steps_per_fit=1 constraint
+RL runner sets n_steps_per_fit=1, so one transition per fit() call and one
+after_fit() logging row per transition. Consistent.
+
+### [CORRECT] Gamma validation at SafeWeightedCommon construction
+schedule.gamma vs provided gamma checked at 1e-9 tolerance. Raises ValueError
+before any computation if mismatched.
 Round: R5 (post R4-fix commit)
 Status: completed
 

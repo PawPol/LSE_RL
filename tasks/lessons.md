@@ -292,3 +292,73 @@ citing rho*(r,v) = sigma(beta*(r-v) + log(1/gamma)) from the paper.
 **Prevention rule**: (1) Before writing a call to any helper function, read the callee's signature (at minimum the `def` line and parameter docstring). Never write calls from memory or assumed convention. (2) After writing aggregation code, add a minimal integration test that exercises the write path with a small synthetic dataset and asserts the output files are loadable. (3) For IO helpers, adopt a consistent convention (path-first or data-first) and document it in the module docstring. When wrapping third-party conventions, name parameters explicitly at call sites (`save_json(path=..., data=...)`).
 
 **Source incident**: Phase III Codex R2 standard review (019da19f, P1+P2) -- `aggregate_phase3.py:281-287` (reversed args) and `:461-463` (wrong API). Triaged 2026-04-18 as BLOCKERs R2-1 and R2-2.
+
+---
+
+### 2026-04-18 — SafePE convergence reference must be V^π (PE fixed point), not V* (VI optimal)
+
+**Pattern**: `SafeWeightedPolicyEvaluation` validated convergence by comparing iterates against `V_star` (the value of the optimal policy, computed by VI). A PE run that correctly converges to `V^π` of a suboptimal policy would therefore never satisfy the stopping criterion, causing PE to either run for max iterations or raise a false convergence failure. Worse, for tasks where the reference policy is far from optimal, the reported Bellman residuals were meaningless (they measured deviation from V*, not from the fixed point).
+
+**Prevention rule**: Safe PE algorithms must converge to V^π (the unique fixed point of the policy-specific Bellman operator). The convergence reference is computed by running the same PE operator to numerical precision, NOT by calling VI. Any test that validates safe PE convergence must use a reference computed by the PE operator itself (e.g., run PE with a very small tolerance), never from VI or the optimal value function.
+
+**Source incident**: Phase III Codex R3 standard + adversarial reviews — `safe_weighted_pe.py` convergence check compared against `V_star`. Fixed 2026-04-18: reference is now own-operator fixed point.
+
+---
+
+### 2026-04-18 — expm1/log1p negative-tail underflow: use _EPS_BETA threshold + logaddexp instead
+
+**Pattern**: A "numerically stable" reformulation of the safe operator used `expm1` and `log1p` to avoid cancellation in `log(1 + x)` for small x. For large negative arguments (e.g. r=v=-40, β=1), `expm1(β*(r-v) + log_γ)` evaluates to `expm1(-∞) = -1.0` exactly in float64, and `log1p(-1.0) = -inf`. The resulting safe target is `-inf` instead of the correct ~-79.6. This is a silent correctness failure: no exception is raised, the shape is correct, only the value is wrong.
+
+**Prevention rule**: (1) Do NOT use `expm1/log1p` in the safe operator implementation. Use a clean two-path dispatch: if `|β| < _EPS_BETA` (set to `1e-8`), use classical `r + γv`; else use `logaddexp(β*r, β*v + log_γ)` scaled by `(1+γ)/β`. `logaddexp` is numerically stable for all finite arguments at any `|β| ≥ 1e-8`. (2) Add a unit test that evaluates the operator at r=v=-40, β=1 and asserts the result matches the closed-form value (≈ -79.6). (3) Never use the threshold `_EPS_BETA` as the stability boundary for expm1 — the correct guard is `|β| < ε`, not `|x| < 500`.
+
+**Source incident**: Phase III Codex R3 adversarial + R5 adversarial reviews — `safe_weighted_common.py` expm1/log1p branch. Fixed 2026-04-18: removed expm1/log1p entirely, replaced with `_EPS_BETA=1e-8` two-path dispatch.
+
+---
+
+### 2026-04-18 — numpy ≥2.0: int(state) TypeError on shape-(1,) arrays in MushroomRL TD agents
+
+**Pattern**: MushroomRL `TD.fit()` passes `state` as `np.ndarray` of shape `(1,)` from `dataset.item()`. In numpy ≥2.0, `int(arr)` raises `TypeError` for non-0-dimensional arrays (numpy 1.x allowed it). Any safe TD `_update()` method that calls `int(state)` to extract the augmented state integer fails at the very first update step with a `TypeError`. The bug is absent in numpy 1.x and invisible in unit tests that pass plain Python ints.
+
+**Prevention rule**: Always extract MushroomRL state/action integers as `int(np.asarray(x).flat[0])`, never `int(x)`. This is safe for scalars, 0-d arrays, and shape-(1,) arrays. Apply to every cast in `_update()`, `_stage_from_state()`, and any MushroomRL TD helper. When adding a new safe TD algorithm, add a smoke test that passes a numpy array (not a Python int) as state and asserts no TypeError.
+
+**Source incident**: Phase III RL main runs (runtime failure) — `safe_q_learning.py`, `safe_expected_sarsa.py`, `safe_td0.py`, `safe_weighted_lse_base.py`. Fixed 2026-04-18. Memory record: `feedback_numpy_state.md`.
+
+---
+
+### 2026-04-18 — Ablation schedule T must be regenerated from the current schedule.json, not copied from an earlier one
+
+**Pattern**: When `generate_ablation_schedules.py` was first run, it read T from a set of schedule.json files that predated the final Phase III horizon decisions. After those main schedules were updated (e.g., chain_sparse_long T=80→120), the ablation schedules retained the old T. Five of eight task families had T mismatches. Ablation runs using the wrong T either index out of bounds at stage T_wrong or silently use a truncated/extended schedule, producing runs that are structurally valid but scientifically invalid.
+
+**Prevention rule**: (1) Always regenerate ablation schedules *after* finalising main schedule.json files — never copy ablation schedules from an earlier draft. (2) Ablation schedule generation scripts should read T directly from the main schedule.json rather than accepting it as a parameter. (3) Add a validation step at ablation runner startup that asserts `ablation_schedule.T == main_schedule.T` for the corresponding task family, failing loudly if mismatched.
+
+**Source incident**: Phase III ablation runs (runtime) — 5 of 8 task families had wrong T in ablation schedules. Fixed 2026-04-18 by rerunning `generate_ablation_schedules.py` from current schedule.json files.
+
+---
+
+### 2026-04-18 — DP rho is derivable from effective_discount; do not leave it as all-NaN
+
+**Pattern**: `run_phase3_dp.py` logged `safe_rho_mean` and `safe_rho_std` filled with `np.full(T, np.nan)` because DP runs have no per-transition rho readout (unlike online RL, which reads `swc.last_rho` per step). The arrays were included in the schema for completeness but never populated. Downstream table generators and verifiers reported NaN in rho columns for all DP runs, making cross-modality comparisons (DP vs RL rho distributions) impossible.
+
+**Prevention rule**: For DP runs, rho is exactly derivable from effective_discount via `ρ = 1 − eff_d/(1+γ)` (a linear transformation with no approximation). Always compute `rho_mean = 1 - eff_discount_mean / (1+γ)` and `rho_std = eff_discount_std / (1+γ)` and write these to the output — do not fill with NaN. Add an assertion in the DP aggregator that `safe_rho_mean` is not all-NaN for any DP run.
+
+**Source incident**: Phase III DP runs (runtime) — `run_phase3_dp.py` rho columns all-NaN. Fixed 2026-04-18 using `ρ = 1 − eff_d/(1+γ)` derivation.
+
+---
+
+### 2026-04-18 — safe_margin must read swc.last_margin, not v_next_beta0 (greedy max)
+
+**Pattern**: `SafeTransitionLogger.after_fit` computed `safe_margin` as `reward - v_next_beta0`, where `v_next_beta0` was the greedy `max_a Q(s', a)` value. This is the correct formula for Q-learning (`v_next = max Q`), but wrong for SafeExpectedSARSA and SafeTD0, where `v_next` is the policy-weighted expectation. For those algorithms, `safe_margin` was systematically higher than the actual margin used by the operator, making the logged certification bounds look tighter than the deployed ones.
+
+**Prevention rule**: Always read `safe_margin` from `swc.last_margin` — the exact `v_next` value that was passed to `compute_safe_target()`. Never recompute `v_next` outside the operator call and use it for margin logging. The `SafeWeightedCommon` mixin stores `last_margin` precisely for this purpose. Any callback that logs margin, rho, or certification quantities must read them from `swc.last_*` fields, not recompute them independently.
+
+**Source incident**: Phase III Codex R4 adversarial review — `callbacks.py:SafeTransitionLogger.after_fit` using `v_next_beta0` for safe_margin. Fixed 2026-04-18: reads `float(np.asarray(swc.last_margin).item())`.
+
+---
+
+### 2026-04-18 — aggregate() requires per-key 1-D numpy arrays, not a List[Dict]
+
+**Pattern**: `aggregate_phase3.py` accumulated per-seed scalar stats as `List[Dict[str, float]]` and then called `aggregate(per_seed_scalars)` directly, passing the list. The `aggregate()` helper from `common/statistics.py` expects a 1-D numpy array of floats and returns a dict of aggregation statistics. Passing a list of dicts causes a `TypeError` or produces silently nonsensical results (e.g., treating dict keys as array elements). The error only surfaces at runtime when seeds are aggregated.
+
+**Prevention rule**: (1) When aggregating per-seed scalar statistics, collect values per key: `vals = [d[key] for d in per_seed_dicts]`, convert to `np.array(vals, dtype=np.float64)`, then call `aggregate(arr)`. Never pass a list of dicts to `aggregate()`. (2) Add an integration test that passes at least two seed dicts through the aggregator and asserts the output contains `mean`, `std`, and `n` keys for every scalar field. (3) When writing new aggregation code, check the `aggregate()` signature before use — do not assume it accepts dict inputs.
+
+**Source incident**: Phase III RL main runs (runtime) — `aggregate_phase3.py` scalar aggregation path calling `aggregate(List[Dict])`. Fixed 2026-04-18: per-key iteration with `np.array(vals)`.
