@@ -1,0 +1,70 @@
+[
+  {
+    "family": "chain_sparse_credit",
+    "tag": "chain_sparse_credit_0",
+    "global_gate_pass": false,
+    "individual_checks": {
+      "mean_abs_u_ge_5e3": false,
+      "frac_abs_u_ge_5e3_ge_0.10": false,
+      "mean_abs_delta_d_ge_1e3": false,
+      "mean_abs_target_gap_normed_ge_5e3": false
+    },
+    "values": {
+      "mean_abs_u": 1.1891654223280791e-05,
+      "frac_active": 0.0005,
+      "mean_abs_delta_d": 5.7937387213048695e-06,
+      "normalized_mean_abs_target_gap": 4.470060714496137e-06
+    }
+  },
+  {
+    "family": "chain_sparse_credit",
+    "tag": "chain_sparse_credit_1",
+    "global_gate_pass": false,
+    "individual_checks": {
+      "mean_abs_u_ge_5e3": false,
+      "frac_abs_u_ge_5e3_ge_0.10": false,
+      "mean_abs_delta_d_ge_1e3": false,
+      "mean_abs_target_gap_normed_ge_5e3": false
+    },
+    "values": {
+      "mean_abs_u": 9.960183019477818e-06,
+      "frac_active": 0.0005,
+      "mean_abs_delta_d": 4.852767744086791e-06,
+      "normalized_mean_abs_target_gap": 1.8683844756404076e-06
+    }
+  },
+  {
+    "family": "grid_hazard",
+    "tag": "grid_hazard_2",
+    "global_gate_pass": false,
+    "individual_checks": {
+      "mean_abs_u_ge_5e3": false,
+      "frac_abs_u_ge_5e3_ge_0.10": false,
+      "mean_abs_delta_d_ge_1e3": false,
+      "mean_abs_target_gap_normed_ge_5e3": false
+    },
+    "values": {
+      "mean_abs_u": 5.723082865322786e-06,
+      "frac_active": 0.0,
+      "mean_abs_delta_d": 2.7882262693518365e-06,
+      "normalized_mean_abs_target_gap": 1.791513076705248e-06
+    }
+  },
+  {
+    "family": "grid_hazard",
+    "tag": "grid_hazard_3",
+    "global_gate_pass": false,
+    "individual_checks": {
+      "mean_abs_u_ge_5e3": false,
+      "frac_abs_u_ge_5e3_ge_0.10": false,
+      "mean_abs_delta_d_ge_1e3": false,
+      "mean_abs_target_gap_normed_ge_5e3": false
+    },
+    "values": {
+      "mean_abs_u": 3.552481725966305e-06,
+      "frac_active": 0.0,
+      "mean_abs_delta_d": 1.7306914505160837e-06,
+      "normalized_mean_abs_target_gap": 1.1592357765781974e-06
+    }
+  }
+]

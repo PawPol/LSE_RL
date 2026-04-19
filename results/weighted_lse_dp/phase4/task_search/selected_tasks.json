@@ -1,0 +1,166 @@
+[
+  {
+    "idx": 25,
+    "family": "chain_sparse_credit",
+    "cfg": {
+      "family": "chain_sparse_credit",
+      "state_n": 30,
+      "gamma": 0.95,
+      "horizon": 20,
+      "step_cost": -0.01,
+      "reward_bound": 1.0
+    },
+    "scoring": {
+      "raw_metrics": {
+        "mean_abs_u_pred": 0.007412869852782643,
+        "mean_abs_delta_d_pred": 0.0036113981334069275,
+        "mean_abs_target_gap_norm": 3.299670972027913e-06,
+        "informative_stage_frac": 0.9,
+        "frac_u_ge_5e3": 0.9
+      },
+      "score_components": {
+        "w1_x_mean_abs_u": 0.007412869852782643,
+        "w2_x_mean_abs_delta_d": 0.0036113981334069275,
+        "w3_x_mean_abs_target_gap_norm": 3.299670972027913e-06,
+        "w4_x_informative_stage_frac": 0.45,
+        "z_mean_abs_u_pred": 1.9192509686779187,
+        "z_mean_abs_delta_d_pred": 1.9043733805229572,
+        "z_mean_abs_target_gap_norm": 5.286399349170827,
+        "z_informative_stage_frac": 1.2714452526670232
+      },
+      "total_score": 9.745746324705213
+    },
+    "acceptance_status": "accepted",
+    "selected_reason": "Rank 1/18 in family 'chain_sparse_credit' (score=9.745746)",
+    "schedule_summary": {
+      "gamma_base": 0.95,
+      "schedule_id": "",
+      "sign": null,
+      "n_stages": 20
+    }
+  },
+  {
+    "idx": 3,
+    "family": "chain_sparse_credit",
+    "cfg": {
+      "family": "chain_sparse_credit",
+      "state_n": 18,
+      "gamma": 0.95,
+      "horizon": 30,
+      "step_cost": -0.01,
+      "reward_bound": 1.0
+    },
+    "scoring": {
+      "raw_metrics": {
+        "mean_abs_u_pred": 0.00751267909879478,
+        "mean_abs_delta_d_pred": 0.0036600231506948924,
+        "mean_abs_target_gap_norm": 1.8581514419006385e-06,
+        "informative_stage_frac": 0.9333333333333333,
+        "frac_u_ge_5e3": 0.9333333333333333
+      },
+      "score_components": {
+        "w1_x_mean_abs_u": 0.00751267909879478,
+        "w2_x_mean_abs_delta_d": 0.0036600231506948924,
+        "w3_x_mean_abs_target_gap_norm": 1.8581514419006385e-06,
+        "w4_x_informative_stage_frac": 0.4666666666666667,
+        "z_mean_abs_u_pred": 1.9549441151462963,
+        "z_mean_abs_delta_d_pred": 1.93986444561233,
+        "z_mean_abs_target_gap_norm": 2.7952142259247363,
+        "z_informative_stage_frac": 1.3486321436726585
+      },
+      "total_score": 7.364338858519692
+    },
+    "acceptance_status": "accepted",
+    "selected_reason": "Rank 2/18 in family 'chain_sparse_credit' (score=7.364339)",
+    "schedule_summary": {
+      "gamma_base": 0.95,
+      "schedule_id": "",
+      "sign": null,
+      "n_stages": 30
+    }
+  },
+  {
+    "idx": 108,
+    "family": "grid_hazard",
+    "cfg": {
+      "family": "grid_hazard",
+      "hazard_reward": -1.0,
+      "hazard_prob": 0.1,
+      "gamma": 0.95,
+      "horizon": 20,
+      "n_rows": 5,
+      "n_cols": 5,
+      "reward_bound": 1.0
+    },
+    "scoring": {
+      "raw_metrics": {
+        "mean_abs_u_pred": 0.00502777099609375,
+        "mean_abs_delta_d_pred": 0.0024494268955328525,
+        "mean_abs_target_gap_norm": 3.3008217085415926e-06,
+        "informative_stage_frac": 0.95,
+        "frac_u_ge_5e3": 0.7
+      },
+      "score_components": {
+        "w1_x_mean_abs_u": 0.00502777099609375,
+        "w2_x_mean_abs_delta_d": 0.0024494268955328525,
+        "w3_x_mean_abs_target_gap_norm": 3.3008217085415926e-06,
+        "w4_x_informative_stage_frac": 0.475,
+        "z_mean_abs_u_pred": 1.0663071159310034,
+        "z_mean_abs_delta_d_pred": 1.0562585800460609,
+        "z_mean_abs_target_gap_norm": 5.28838801295494,
+        "z_informative_stage_frac": 1.387225589175476
+      },
+      "total_score": 8.104566503519742
+    },
+    "acceptance_status": "accepted",
+    "selected_reason": "Rank 1/36 in family 'grid_hazard' (score=8.104567)",
+    "schedule_summary": {
+      "gamma_base": 0.95,
+      "schedule_id": "",
+      "sign": null,
+      "n_stages": 20
+    }
+  },
+  {
+    "idx": 112,
+    "family": "grid_hazard",
+    "cfg": {
+      "family": "grid_hazard",
+      "hazard_reward": -1.0,
+      "hazard_prob": 0.2,
+      "gamma": 0.95,
+      "horizon": 20,
+      "n_rows": 5,
+      "n_cols": 5,
+      "reward_bound": 1.0
+    },
+    "scoring": {
+      "raw_metrics": {
+        "mean_abs_u_pred": 0.005204200744628906,
+        "mean_abs_delta_d_pred": 0.0025353798499474158,
+        "mean_abs_target_gap_norm": 1.4947600762908718e-06,
+        "informative_stage_frac": 1.0,
+        "frac_u_ge_5e3": 0.55
+      },
+      "score_components": {
+        "w1_x_mean_abs_u": 0.005204200744628906,
+        "w2_x_mean_abs_delta_d": 0.0025353798499474158,
+        "w3_x_mean_abs_target_gap_norm": 1.4947600762908718e-06,
+        "w4_x_informative_stage_frac": 0.5,
+        "z_mean_abs_u_pred": 1.1294007982044734,
+        "z_mean_abs_delta_d_pred": 1.118995049252545,
+        "z_mean_abs_target_gap_norm": 2.1672136022750497,
+        "z_informative_stage_frac": 1.503005925683929
+      },
+      "total_score": 5.167112412574033
+    },
+    "acceptance_status": "accepted",
+    "selected_reason": "Rank 2/36 in family 'grid_hazard' (score=5.167112)",
+    "schedule_summary": {
+      "gamma_base": 0.95,
+      "schedule_id": "",
+      "sign": null,
+      "n_stages": 20
+    }
+  }
+]

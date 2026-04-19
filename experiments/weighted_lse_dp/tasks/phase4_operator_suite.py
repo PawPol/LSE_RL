@@ -93,16 +93,16 @@ def make_p4_chain_sparse_credit(
         horizon=horizon,
     )
 
-    # Apply step cost by modifying the reward matrix for non-goal transitions.
+    # Apply step cost by modifying only the base MDP reward matrix.
+    # mdp_rl is a DiscreteTimeAugmentedEnv and has no .r attribute.
     if step_cost != 0.0:
-        for mdp in (mdp_base, mdp_rl):
-            r = mdp.r
-            goal = state_n - 1
-            for s in range(r.shape[0]):
-                for a in range(r.shape[1]):
-                    for s_next in range(r.shape[2]):
-                        if s_next != goal and mdp.p[s, a, s_next] > 0 and r[s, a, s_next] == 0.0:
-                            r[s, a, s_next] = step_cost
+        r = mdp_base.r
+        goal = state_n - 1
+        for s in range(r.shape[0]):
+            for a in range(r.shape[1]):
+                for s_next in range(r.shape[2]):
+                    if s_next != goal and mdp_base.p[s, a, s_next] > 0 and r[s, a, s_next] == 0.0:
+                        r[s, a, s_next] = step_cost
 
     resolved = dict(
         family="chain_sparse_credit",
@@ -417,7 +417,7 @@ def make_p4_taxi_bonus(
     """
     taxi_grid = os.path.join(_GRIDS_DIR, "phase1_taxi_grid.txt")
     mdp_base = generate_taxi(taxi_grid, prob=0.9,
-                             rew=(0, 1, 3, 15),
+                             rew=(0, 1),  # matches phase1_taxi_grid.txt (2 pickup locations)
                              gamma=gamma, horizon=horizon)
 
     wrapper = TaxiBonusShockWrapper(
