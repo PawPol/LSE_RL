@@ -362,3 +362,15 @@ citing rho*(r,v) = sigma(beta*(r-v) + log(1/gamma)) from the paper.
 **Prevention rule**: (1) When aggregating per-seed scalar statistics, collect values per key: `vals = [d[key] for d in per_seed_dicts]`, convert to `np.array(vals, dtype=np.float64)`, then call `aggregate(arr)`. Never pass a list of dicts to `aggregate()`. (2) Add an integration test that passes at least two seed dicts through the aggregator and asserts the output contains `mean`, `std`, and `n` keys for every scalar field. (3) When writing new aggregation code, check the `aggregate()` signature before use — do not assume it accepts dict inputs.
 
 **Source incident**: Phase III RL main runs (runtime) — `aggregate_phase3.py` scalar aggregation path calling `aggregate(List[Dict])`. Fixed 2026-04-18: per-key iteration with `np.array(vals)`.
+
+---
+
+### 2026-04-19 — MushroomRL edit: compute_safe_target_ev_batch (correct stochastic Bellman backup)
+
+**Pattern**: The Phase III DP runners were calling `compute_safe_target_batch(r_bar, E[V(s')])`, i.e., evaluating the nonlinear safe TAB operator at the *expected* next-state value. This is incorrect when beta != 0 and the MDP is stochastic: the correct Bellman backup is `E_{s'}[g_safe(r, V(s'))]` (expectation *after* the nonlinearity). The Phase III code audit (phase3_code_audit.json) flagged `compute_safe_target_ev_batch` as missing. The Phase II/III rerun (job b0ao4zigu) added the method and switched all DP runners to use it.
+
+**Justification for mushroom-rl-dev edit**: The existing `compute_safe_target_batch` signature does not support per-next-state evaluation (it takes scalar `v_next`). Adding `compute_safe_target_ev_batch(r_bar, V_next, p, t)` — which takes the full transition tensor `p` and next-value vector `V_next` — is the minimal change that makes the backup correct. No other MushroomRL algorithm is affected; the new method is additive. The `< _EPS_BETA` → `<= _EPS_BETA` boundary fix is a one-character correctness improvement.
+
+**Prevention rule**: When the safe operator is nonlinear (beta != 0) and transitions are stochastic, always use `compute_safe_target_ev_batch` for DP backups. Never pass `E[V(s')]` to `compute_safe_target_batch` as a substitute — this conflates E[g(r, V)] with g(r, E[V]), which are equal only when g is linear (beta = 0). Document any MushroomRL edit in this file immediately, not retroactively.
+
+**Source incident**: Phase III code audit (results/weighted_lse_dp/phase4/audit/phase3_code_audit.json) — observability_gaps field. Edit applied by Phase II/III rerun 2026-04-19. Committed to phase-iv-a/closing.

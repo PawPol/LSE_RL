@@ -428,10 +428,13 @@ class SafeWeightedCommon:
 
         rho = sigmoid(beta * (r - v_next) + log(1/gamma))
 
-        When beta == 0 the sigmoid argument is log(1/gamma), giving
-        rho = 1 / (1 + gamma).
+        When |beta| <= _EPS_BETA the classical value 1/(1+gamma) is
+        returned directly, matching the tiny-beta shortcut in
+        :meth:`compute_safe_target`.
         """
         beta = self._schedule.beta_used_at(t)
+        if beta == 0.0 or abs(beta) <= _EPS_BETA:
+            return 1.0 / self._one_plus_gamma
         arg = beta * (float(r) - float(v_next)) + self._log_inv_gamma
         return float(_sigmoid(arg))
 
@@ -453,9 +456,9 @@ class SafeWeightedCommon:
         self.last_clip_active = abs(self.last_beta_raw) > abs(beta) + 1e-15
         self.last_margin = r_f - v_f
 
-        if beta == 0.0 or abs(beta) < _EPS_BETA:
+        if beta == 0.0 or abs(beta) <= _EPS_BETA:
             # Classical collapse: exact when beta==0; O(beta*|r-gamma*v|)
-            # error (negligible at beta < 1e-8) avoids catastrophic
+            # error (negligible at beta <= 1e-8) avoids catastrophic
             # cancellation in the logaddexp form at tiny nonzero beta.
             target = r_f + self._gamma * v_f
             rho = 1.0 / self._one_plus_gamma
@@ -549,6 +552,8 @@ class SafeWeightedCommon:
         beta = self._schedule.beta_used_at(t)
         r_arr = np.asarray(r_bar, dtype=np.float64)
         v_arr = np.asarray(v_next, dtype=np.float64)
+        if beta == 0.0 or abs(beta) <= _EPS_BETA:
+            return np.full_like(r_arr, 1.0 / self._one_plus_gamma)
         arg = beta * (r_arr - v_arr) + self._log_inv_gamma
         return _sigmoid(arg)
 
@@ -577,7 +582,7 @@ class SafeWeightedCommon:
         self.last_clip_active = abs(self.last_beta_raw) > abs(beta) + 1e-15
         self.last_margin = r_arr - v_arr
 
-        if beta == 0.0 or abs(beta) < _EPS_BETA:
+        if beta == 0.0 or abs(beta) <= _EPS_BETA:
             # Classical collapse (see compute_safe_target for rationale).
             target = r_arr + self._gamma * v_arr
             rho = np.full_like(r_arr, 1.0 / self._one_plus_gamma)
@@ -605,6 +610,83 @@ class SafeWeightedCommon:
         """Vectorised effective discount, shape same as inputs."""
         rho = self.compute_rho_batch(r_bar, v_next, t)
         return self._one_plus_gamma * (1.0 - rho)
+
+    def compute_safe_target_ev_batch(
+        self,
+        r_bar: np.ndarray,
+        V_next: np.ndarray,
+        p: np.ndarray,
+        t: int,
+    ) -> np.ndarray:
+        """E_{s' ~ P(·|s,a)}[g_t^safe(r_bar[s,a], V_next[s'])].
+
+        Computes the correct finite-horizon safe Bellman Q-value::
+
+            Q[s, a] = sum_{s'} P[s, a, s'] * g_t^safe(r_bar[s, a], V_next[s'])
+
+        This differs from :meth:`compute_safe_target_batch` when ``beta != 0``
+        and the transition is stochastic: the nonlinear target is averaged
+        *after* evaluating it at each next state, not before.
+
+        For ``|beta| <= _EPS_BETA`` the operator is linear (classical target
+        ``r + gamma * v``) so the two formulations coincide exactly and the
+        cheap ``E_v_next`` path is taken.
+
+        Args:
+            r_bar:  Expected reward array, shape ``(S, A)``.
+            V_next: Next-stage value vector ``V[t+1]``, shape ``(S,)``.
+            p:      Transition tensor, shape ``(S, A, S)``.
+            t:      Current stage index.
+
+        Returns:
+            Q_t array of shape ``(S, A)``.
+        """
+        r_arr = np.asarray(r_bar, dtype=np.float64)   # (S, A)
+        v_arr = np.asarray(V_next, dtype=np.float64)  # (S',)
+        p_arr = np.asarray(p, dtype=np.float64)       # (S, A, S')
+        beta = self._schedule.beta_used_at(t)
+
+        # --- instrumentation bookkeeping ---
+        self.last_stage = t
+        self.last_beta_raw = self._schedule.beta_raw_at(t)
+        self.last_beta_cap = self._schedule.beta_cap_at(t)
+        self.last_beta_used = beta
+        self.last_clip_active = abs(self.last_beta_raw) > abs(beta) + 1e-15
+
+        if beta == 0.0 or abs(beta) <= _EPS_BETA:
+            # Linear case: E[g(r,V')] = r + gamma*E[V'].  Identical to the
+            # naive path; no 3-D allocation needed.
+            E_v_next = np.einsum("ijk,k->ij", p_arr, v_arr)  # (S, A)
+            target = r_arr + self._gamma * E_v_next
+            rho = np.full_like(r_arr, 1.0 / self._one_plus_gamma)
+            eff_d = np.full_like(r_arr, self._gamma)
+            self.last_margin = r_arr - E_v_next
+        else:
+            # Broadcast r[s,a] and V'[s'] to (S, A, S') then apply g.
+            r_3d = r_arr[:, :, np.newaxis]           # (S, A, 1)
+            v_3d = v_arr[np.newaxis, np.newaxis, :]  # (1, 1, S')
+            # g_3d[s, a, s'] = g_t^safe(r_bar[s,a], V_next[s'])
+            log_sum = np.logaddexp(
+                beta * r_3d, beta * v_3d + self._log_gamma
+            )  # (S, A, S')
+            g_3d = (self._one_plus_gamma / beta) * (
+                log_sum - self._log_1_plus_gamma
+            )  # (S, A, S')
+            # Q[s,a] = E_{s'}[g(...)] = sum_{s'} P[s,a,s'] * g_3d[s,a,s']
+            target = np.einsum("ijk,ijk->ij", p_arr, g_3d)  # (S, A)
+
+            # Diagnostics: P-weighted average of per-transition rho and d.
+            arg_3d = beta * (r_3d - v_3d) + self._log_inv_gamma
+            rho_3d = _sigmoid(arg_3d)                          # (S, A, S')
+            rho = np.einsum("ijk,ijk->ij", p_arr, rho_3d)     # (S, A)
+            eff_d = self._one_plus_gamma * (1.0 - rho)
+            # Margin proxy: r[s,a] - E[V'|s,a]
+            self.last_margin = r_arr - np.einsum("ijk,k->ij", p_arr, v_arr)
+
+        self.last_rho = rho
+        self.last_effective_discount = eff_d
+        self.last_target = target
+        return target
 
 
 # ---------------------------------------------------------------------------

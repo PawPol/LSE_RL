@@ -205,15 +205,9 @@ class SafeWeightedPolicyEvaluation:
 
         # Backward induction: t = T-1, T-2, ..., 0.
         for t in range(self._T - 1, -1, -1):
-            # Step 1: expected next-state value for all (s, a).
-            # E_v_next[s, a] = sum_{s'} P[s, a, s'] * V[t+1, s']
-            E_v_next = np.einsum(
-                "ijk,k->ij", self._p, self.V[t + 1]
-            )  # (S, A)
-
-            # Step 2: safe Q table for all actions via the safe operator.
-            Q_safe = self._safe.compute_safe_target_batch(
-                self._r_bar, E_v_next, t
+            # Safe Q table: E_{s'}[g_t^safe(r_bar, V[t+1,s'])].
+            Q_safe = self._safe.compute_safe_target_ev_batch(
+                self._r_bar, self.V[t + 1], self._p, t
             )  # (S, A)
 
             # Step 3: store Q and extract policy-consistent V.
