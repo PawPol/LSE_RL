@@ -13,6 +13,7 @@
 \usepackage{aliascnt}
 \usepackage[shortlabels]{enumitem}
 \usepackage{booktabs}
+\usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{array}
 \usepackage{tabularx}
@@ -1766,6 +1767,154 @@ See Appendix~\ref{app:async}.
 
 % =====================================================================
 \clearpage
+\section{Experiments}
+\label{sec:experiments}
+% =====================================================================
+
+The theory in the preceding sections establishes the certified safe family in the abstract.
+The experiments serve three specific validation purposes.
+First, they verify that the end-to-end calibration pipeline---from empirical Phase~I/II data to a stagewise $\beta$ schedule---produces certified schedules that pass all structural checks.
+Second, they confirm that the deployed safe algorithms reproduce the safe Bellman operator exactly at runtime and that the per-stage certification invariant holds throughout training and planning.
+Third, they establish a quantitative baseline: how much clipping the certification requires in practice, and how the safe algorithms compare to classical dynamic programming when the deployed $\beta$ is near zero due to tight certification.
+
+\subsection{Setup}
+\label{sec:exp-setup}
+
+\paragraph{Task families.}
+We use eight tabular finite-horizon environments spanning three structural axes of interest to the theory.
+\emph{Sparse-reward}: \texttt{chain\_sparse\_long} ($|\mathcal{S}|=60$, $T=120$, $\gamma=0.99$, a right-biased chain with a single terminal reward) and \texttt{grid\_sparse\_goal} ($|\mathcal{S}|=49$, $T=120$, a 7$\times$7 grid with a sparse terminal reward).
+\emph{Tail-dominated}: \texttt{chain\_jackpot} ($|\mathcal{S}|=26$, $T=60$, absorbing jackpot at state~20 with probability 0.05) and \texttt{chain\_catastrophe} ($|\mathcal{S}|=26$, $T=60$, absorbing catastrophe with $R_{\max}=10$).
+\emph{Nonstationary}: \texttt{chain\_regime\_shift} ($|\mathcal{S}|=25$, $T=60$, goal reversal at episode~500) and \texttt{grid\_regime\_shift} ($|\mathcal{S}|=25$, $T=80$, goal-move shift at episode~200).
+\emph{Stress}: \texttt{grid\_hazard} ($|\mathcal{S}|=25$, $T=80$, hazard states with penalty $-5$) and \texttt{taxi\_bonus\_shock} ($|\mathcal{S}|=44$, $T=120$, delivery bonus with regime shift at episode~500).
+All eight families were also used to collect the Phase~I/II classical $\beta=0$ baseline data that drives schedule calibration.
+
+\paragraph{Algorithms.}
+For DP planning on the exact model (available for the six non-wrapper tasks), we run
+$\{$\texttt{VI}, \texttt{PE}, \texttt{PI}, \texttt{MPI}, \texttt{AsyncVI}$\}$ (classical) and their safe counterparts
+$\{$\texttt{SafeVI}, \texttt{SafePE}, \texttt{SafePI}, \texttt{SafeMPI}, \texttt{SafeAsyncVI}$\}$.
+For online RL we run \texttt{QLearning} and \texttt{ExpectedSARSA} (classical) against \texttt{SafeQLearning} and \texttt{SafeExpectedSARSA} on all eight families.
+All algorithms share $\gamma=0.99$, $\varepsilon$-greedy exploration with $\varepsilon=0.1$, a fixed learning rate of $10^{-2}$ for RL, and seeds $\{11, 29, 47\}$ (DP) or $\{11, 29, 47\}$ for three-seed families and $\{11, 29\}$ for two-seed families.
+
+\paragraph{Calibration pipeline.}
+For each task family the pipeline runs as follows.
+(i)~Phase~I/II classical runs collect per-transition logs with $\beta=0$.
+(ii)~A calibration script extracts stagewise aligned-margin statistics and informativeness weights from those logs.
+(iii)~For each stage~$t$, the raw temperature $\beta_t^{\mathrm{raw}}$ is chosen so that the local derivative of $g_t^{\safe}$ matches a target effective discount derived from the empirical informativeness profile.
+(iv)~Certification levels $\kappa_t$, box radii $\hat{B}_t$, and caps $\overline\beta_t$ are computed from \Cref{thm:safe-calibration} with reward bound $R_{\max}$ taken from the task configuration (not from empirical statistics), and with headroom fractions $\alpha_t=0.10$.
+(v)~The clipped schedule $\widetilde\beta_t = \clip(\beta_t^{\mathrm{raw}},\,-\overline\beta_t,\,\overline\beta_t)$ is emitted to a \texttt{schedule.json} file.
+The sign of $\beta$ is set per family: optimistic ($\beta>0$) for sparse-reward and jackpot tasks where the aligned region has $r>V$; pessimistic ($\beta<0$) for catastrophe and hazard tasks.
+
+\subsection{Planning efficiency}
+\label{sec:exp-dp}
+
+\Cref{tab:dp-planning} reports sweep counts, final Bellman residuals, and wall-clock time for the six DP task families.
+The safe planners use the clipped schedule from the calibration pipeline, so they are not a priori guaranteed to behave identically to classical planners.
+The table shows that in all cases the sweep counts and terminal residuals match the classical counterparts exactly.
+Wall-clock times are comparable (within 8\,ms across all tasks and algorithms), confirming that the safe Bellman backup---which evaluates a \texttt{logaddexp} and a sigmoid in addition to the classical linear op---does not introduce meaningful computational overhead at tabular scale.
+
+\begin{table}[t]
+\centering
+\small
+\caption{DP planning: sweep counts, final Bellman residual, and wall-clock time (mean $\pm$ std across seeds). Safe algorithms use the calibrated clipped schedule. Residuals are identical to classical because the deployed $\widetilde\beta_t$ is in the near-zero regime.}
+\label{tab:dp-planning}
+\input{../figures/phase3/tables/P3-B_dp_planning.tex}
+\end{table}
+
+\subsection{Online RL performance}
+\label{sec:exp-rl}
+
+\Cref{tab:rl-returns} reports AUC discounted return and final episode discounted return for all eight RL task families (mean $\pm$ std across seeds).
+On base tasks (\texttt{chain\_sparse\_long}, \texttt{grid\_sparse\_goal}) the safe algorithms match the classical baseline to within the seed-level variance.
+On tail-dominated and stress tasks the safe algorithms are within one standard deviation of classical in all comparisons, with slight improvements on \texttt{chain\_catastrophe} (SafeQL: $2.13\pm0.39$ vs.\ QL: $1.99\pm0.51$) and \texttt{taxi\_bonus\_shock} (SafeQL: $0.860\pm0.013$ vs.\ QL: $0.816\pm0.040$).
+These differences are not statistically significant at the seed counts used; their interpretation is deferred to the discussion below.
+
+\Cref{fig:learning-curves} shows learning curves on representative families.
+
+\begin{table}[t]
+\centering
+\small
+\caption{RL returns: AUC discounted return and final-episode discounted return (mean $\pm$ std across seeds). Classical and safe algorithms are within one standard deviation across all task families.}
+\label{tab:rl-returns}
+\input{../figures/phase3/tables/P3-A_main_performance.tex}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{../figures/phase3/fig45_learning_curves.pdf}
+\caption{Learning curves (discounted return vs.\ training steps, mean $\pm$ std across seeds) for four representative RL task families. Solid: safe algorithms; dashed: classical baselines. Differences are within seed-level variance.}
+\label{fig:learning-curves}
+\end{figure}
+
+\subsection{Calibration and clipping diagnostics}
+\label{sec:exp-calib}
+
+\Cref{tab:clip-activity,fig:clip-activity,fig:eff-discount} report the per-stage certification diagnostics.
+
+\paragraph{Certified cap values.}
+The certified cap $\overline\beta_t$ depends on the reward bound $R_{\max}$ and the box radius $\hat{B}_t$ through $\overline\beta_t = \log(\kappa_t / [\gamma(1+\gamma-\kappa_t)]) / (R_{\max}+\hat{B}_{t+1})$.
+With $R_{\max}\in\{1,5,6,10\}$ across the task families, the denominator is large and the resulting caps are small: $\overline\beta_t\in[4\times10^{-7},\,2\times10^{-3}]$ across all tasks.
+The raw schedule produced by step~(iii) of the calibration pipeline exceeds these caps at many stages, producing the clip fractions reported in \Cref{tab:clip-activity}: from 0\% (chain\_sparse\_long, whose sparse reward with $R_{\max}=1$ is the mildest) to 79\% (grid\_hazard, where the $-5$ hazard penalty sets a tight certification bound).
+
+\paragraph{Deployed $\widetilde\beta_t$ and effective discount.}
+Because $\overline\beta_t$ is of order $10^{-5}$--$10^{-4}$, the deployed temperature is near zero at every stage.
+\Cref{fig:eff-discount} confirms that the empirical effective discount $\hat{d}_t = (1+\gamma)(1-\hat\rho_t)$ matches $\gamma=0.99$ throughout all runs to within $10^{-4}$.
+This means the deployed operator is in the $\beta\approx 0$ regime: the safe Bellman target coincides with the classical target to numerical precision, and the local improvement mechanism from \Cref{thm:aligned-contraction} is not activated.
+The experiments therefore confirm that the certification machinery works correctly as a \emph{guardrail}---it correctly identifies the expansive region and clips the schedule---but that the certified $\overline\beta_t$ is tight enough that the clipped schedule lies in the linear/classical regime.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Clipping diagnostics: per-task-family mean clip fraction, mean effective discount, and mean deployed $|\widetilde\beta|$ (averaged over stages and seeds).}
+\label{tab:clip-activity}
+\input{../figures/phase3/tables/P3-D_clip_activity.tex}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\includegraphics[width=\linewidth]{../figures/phase3/fig48_clip_activity.pdf}
+\caption{Clip activity $\mathbf{1}[\widetilde\beta_t < \beta_t^{\mathrm{raw}}]$ by stage for all task families. Stage indices are normalized to $[0,1]$. Clipping is concentrated in later stages where $\hat{B}_t$ is smallest.}
+\label{fig:clip-activity}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\includegraphics[width=\linewidth]{../figures/phase3/fig43_effective_discount.pdf}
+\caption{Empirical effective discount $\hat{d}_t$ vs.\ stage for all RL task families (median $\pm$ IQR across seeds). The dashed line is $\gamma=0.99$. All families match $\gamma$ to within $10^{-4}$.}
+\label{fig:eff-discount}
+\end{minipage}
+\end{figure}
+
+\subsection{Ablations}
+\label{sec:exp-ablation}
+
+\Cref{tab:ablation} compares the main calibrated safe schedule against two key ablations: \textsc{beta-zero} (classical $\beta\equiv 0$, the exact classical baseline) and \textsc{beta-constant-small} (a constant small positive/negative $\beta$ without stagewise calibration).
+On all task families the main schedule and \textsc{beta-zero} produce indistinguishable AUC returns, which is consistent with the near-zero deployed $\widetilde\beta$ observed in \Cref{tab:clip-activity}.
+The \textsc{beta-constant-small} ablation also matches, showing that the return equivalence is not specific to the calibration procedure.
+\Cref{fig:ablation-appendix} shows the full ablation suite including raw-unclipped schedules, wrong-sign schedules, and $\alpha$-headroom sweeps.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Ablation: AUC discounted return for the main calibrated schedule vs.\ $\beta\equiv 0$ (classical) and constant-small-$\beta$ (no stagewise calibration), mean $\pm$ std across seeds. All three conditions are within one standard deviation.}
+\label{tab:ablation}
+\input{../figures/phase3/tables/P3-E_ablation_summary.tex}
+\end{table}
+
+\subsection{Discussion of experimental findings}
+\label{sec:exp-discussion}
+
+The experiments establish three points.
+First, the calibration and certification pipeline is mechanically correct: certified schedules are produced, clip fractions are non-trivial (0--79\%), and the safe algorithms run to completion with correct operator semantics across all 1940 runs.
+Second, the deployed operator is effectively classical in all current tasks because $R_{\max}$ is large relative to the task's value range, forcing $\overline\beta_t$ into the near-zero regime.
+This is expected from the theory: the certified $\overline\beta_t$ is a worst-case global bound, and it will be tightest when the reward scale is large.
+Third, returning to \Cref{thm:aligned-contraction}, the local improvement regime requires $\beta(r-V)\ge\eta>0$ with a positive margin $\eta$; in the current experiments $\widetilde\beta$ is too small to produce a detectable margin.
+Activating the improvement mechanism in practice will require either tasks with tighter reward scales (where $R_{\max}$ is smaller relative to the value range) or a refinement of the calibration objective that trades off headroom against expressivity more aggressively.
+Both directions are natural extensions of the current framework.
+
+% =====================================================================
+\clearpage
 \section{Summary of Results}
 \label{sec:summary}
 % =====================================================================
@@ -1850,6 +1999,45 @@ Those questions are outside the scope of the present manuscript.
 What the paper does establish is that weighted log-sum-exp dynamic programming can be made simultaneously variationally expressive, classically calibrated, and globally stable, with a coherent finite-horizon theory in the main text and a detailed appendix of proofs.
 
 \appendix
+\section{Additional Experimental Figures}
+\label{app:exp-figures}
+% =====================================================================
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{../figures/phase3/fig49_ablation_appendix.pdf}
+\caption{Full ablation suite across four task families.
+\emph{Top row}: \textsc{beta-zero} (classical), \textsc{beta-constant-small}, \textsc{beta-raw-unclipped}, and \textsc{wrong-sign} ablations.
+\emph{Bottom row}: $\alpha$-headroom sweep ($\alpha\in\{0.00,0.02,0.05,0.10,0.20\}$).
+All ablations produce statistically indistinguishable AUC returns because the deployed $\widetilde\beta$ is in the near-zero regime in all cases.}
+\label{fig:ablation-appendix}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\includegraphics[width=\linewidth]{../figures/phase3/fig46_regime_shift.pdf}
+\caption{Regime-shift adaptation: discounted return before and after the goal change (dashed vertical line) for \texttt{chain\_regime\_shift} and \texttt{grid\_regime\_shift}. Solid: safe algorithms; dashed: classical. Post-shift recovery is statistically equivalent.}
+\label{fig:regime-shift}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\includegraphics[width=\linewidth]{../figures/phase3/fig47_return_distribution.pdf}
+\caption{Return distributions for tail-dominated tasks (\texttt{chain\_catastrophe}, \texttt{chain\_jackpot}). KDE over all evaluation episodes, pooled across seeds. The deployed $\widetilde\beta\approx 0$ makes the distributions statistically identical between safe and classical algorithms.}
+\label{fig:return-dist}
+\end{minipage}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{../figures/phase3/fig44_planning_residuals.pdf}
+\caption{DP planning residual curves (sup-norm Bellman residual vs.\ sweep index) for safe and classical planners on four task families. Residuals are identical: the clipped $\widetilde\beta\approx 0$ makes the safe backup numerically equivalent to the classical backup.}
+\label{fig:planning-residuals}
+\end{figure}
+
+% =====================================================================
 \section{Detailed Proofs}
 \label{app:proofs}
 % =====================================================================
