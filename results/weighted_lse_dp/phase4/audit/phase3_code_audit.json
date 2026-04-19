@@ -1,0 +1,21 @@
+{
+  "compatible": false,
+  "observability_gaps": [
+    "safe_weighted_common.py missing compute_safe_target_ev_batch (Issue 1 fix not applied)"
+  ],
+  "required_changes": [],
+  "schedule_files_found": [
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/.claude/worktrees/agent-a9240aec/results/weighted_lse_dp/phase3/calibration/chain_sparse_long/schedule.json",
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/.claude/worktrees/agent-a9240aec/results/weighted_lse_dp/phase3/calibration/chain_jackpot/schedule.json",
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/.claude/worktrees/agent-a9240aec/results/weighted_lse_dp/phase3/calibration/chain_catastrophe/schedule.json",
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/.claude/worktrees/agent-a9240aec/results/weighted_lse_dp/phase3/calibration/chain_regime_shift/schedule.json",
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/.claude/worktrees/agent-a9240aec/results/weighted_lse_dp/phase3/calibration/grid_sparse_goal/schedule.json",
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/.claude/worktrees/agent-a9240aec/results/weighted_lse_dp/phase3/calibration/grid_hazard/schedule.json",
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/.claude/worktrees/agent-a9240aec/results/weighted_lse_dp/phase3/calibration/grid_regime_shift/schedule.json",
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/.claude/worktrees/agent-a9240aec/results/weighted_lse_dp/phase3/calibration/taxi_bonus_shock/schedule.json"
+  ],
+  "reward_bound_missing": [],
+  "notes": "chain_sparse_long: T=120 (from beta_used_t length); chain_jackpot: T=60 (from beta_used_t length); chain_catastrophe: T=60 (from beta_used_t length); chain_regime_shift: T=60 (from beta_used_t length); grid_sparse_goal: T=120 (from beta_used_t length); grid_hazard: T=80 (from beta_used_t length); grid_regime_shift: T=80 (from beta_used_t length); taxi_bonus_shock: T=120 (from beta_used_t length); run_phase3_rl.py: _N_BASE dict with env-derived n_base validation (R6-2 compliant); All tasks in paper_suite.json have reward_bound",
+  "git_sha": "04ae83ce0ad58e01ae067f48c8d6b1da9f9e8ac7",
+  "timestamp": "2026-04-19T04:29:14.903714+00:00"
+}

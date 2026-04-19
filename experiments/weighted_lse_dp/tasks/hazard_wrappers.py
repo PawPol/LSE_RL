@@ -16,6 +16,7 @@ from pathlib import Path
 
 import numpy as np
 
+from mushroom_rl.environments.finite_mdp import FiniteMDP
 from mushroom_rl.environments.generators.grid_world import generate_grid_world
 from mushroom_rl.environments.time_augmented_env import (
     DiscreteTimeAugmentedEnv,
@@ -27,6 +28,8 @@ from experiments.weighted_lse_dp.common.seeds import seed_everything
 __all__: list[str] = [
     "GridHazardWrapper",
     "make_grid_hazard",
+    "select_hazard_states",
+    "build_hazard_mdp",
 ]
 
 
@@ -67,6 +70,12 @@ class GridHazardWrapper:
     def __getattr__(self, name: str):
         """Delegate attribute access to the base MDP for anything not
         explicitly defined on the wrapper (e.g., ``p``, ``r``, etc.)."""
+        # Guard: if a private attribute (_base, _hazard_set, etc.) is not
+        # found in __dict__, raise AttributeError rather than delegating.
+        # This prevents infinite recursion during copy.deepcopy, which
+        # calls __getattr__ before __dict__ is fully populated.
+        if name.startswith("_"):
+            raise AttributeError(name)
         return getattr(self._base, name)
 
     def reset(self, state=None):
@@ -240,3 +249,89 @@ def make_grid_hazard(
         mdp_rl = wrapper
 
     return wrapper, mdp_rl, resolved
+
+
+# ---------------------------------------------------------------------------
+# Phase IV-A helpers
+# ---------------------------------------------------------------------------
+
+
+def select_hazard_states(
+    grid_file: str | None = None,
+    n_rows: int = 5,
+    n_cols: int = 5,
+    detour_len: int = 3,
+) -> list[int]:
+    """Select hazard states along the shortest path in a row-major grid.
+
+    Returns ``detour_len`` state indices distributed along the diagonal
+    connecting (0,0) to (n_rows-1, n_cols-1), skipping start/goal cells.
+    Does not require ``grid_file`` — uses simple row-major arithmetic.
+
+    Parameters
+    ----------
+    grid_file:
+        Ignored (kept for API compatibility with worktree version).
+    n_rows, n_cols:
+        Grid dimensions.
+    detour_len:
+        Number of hazard cells to place.
+
+    Returns
+    -------
+    list[int]
+        State indices in row-major order.
+    """
+    hazard_states: list[int] = []
+    for i in range(1, detour_len + 2):
+        frac = i / (detour_len + 2)
+        row = int(round(frac * (n_rows - 1)))
+        col = int(round(frac * (n_cols - 1)))
+        state_idx = row * n_cols + col
+        # Skip start (0) and goal (n_rows*n_cols-1) states
+        if state_idx not in (0, n_rows * n_cols - 1) and state_idx not in hazard_states:
+            hazard_states.append(state_idx)
+        if len(hazard_states) >= detour_len:
+            break
+    return hazard_states
+
+
+def build_hazard_mdp(
+    base_mdp: "FiniteMDP",
+    hazard_states: list[int],
+    hazard_prob: float,
+    hazard_reward: float,
+) -> "FiniteMDP":
+    """Build a new FiniteMDP with hazard reward baked into the reward matrix.
+
+    For each transition (s, a, s') where s' is a hazard state,
+    the reward becomes ``hazard_prob * hazard_reward + (1-hazard_prob) * r[s,a,s']``.
+    The transition matrix ``p`` is unchanged.
+
+    Parameters
+    ----------
+    base_mdp:
+        Source MDP with original ``p``, ``r``, ``mu``.
+    hazard_states:
+        State indices that are hazardous.
+    hazard_prob:
+        Probability the hazard fires on entry.
+    hazard_reward:
+        Reward (negative) received when hazard fires.
+
+    Returns
+    -------
+    FiniteMDP
+        New MDP with modified reward matrix.
+    """
+    p = base_mdp.p.copy()
+    r = base_mdp.r.copy()
+    for h in hazard_states:
+        for s in range(r.shape[0]):
+            for a in range(r.shape[1]):
+                if p[s, a, h] > 0:
+                    r[s, a, h] = (
+                        hazard_prob * hazard_reward
+                        + (1.0 - hazard_prob) * r[s, a, h]
+                    )
+    return FiniteMDP(p, r, base_mdp.mu, base_mdp.info.gamma, base_mdp.info.horizon)

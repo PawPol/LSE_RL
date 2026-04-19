@@ -1,0 +1,23 @@
+{
+  "started_at": "2026-04-19T04:14:10Z",
+  "current_phase": "IV-A",
+  "phase_status": {
+    "IV-A": "pending",
+    "IV-B": "pending",
+    "IV-C": "pending"
+  },
+  "task_queue": [],
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "failure_count": 0,
+  "failure_budget": 3,
+  "gate_results": {},
+  "codex_sessions": [],
+  "last_checkpoint": "2026-04-19T04:14:10Z",
+  "auto_resolutions": [
+    {
+      "question": "Phase II/III rerun (job b0ao4zigu) is still running concurrently with Phase IV-A initialization",
+      "resolution": "Proceed with Phase IV-A. The work is additive (writes to results/weighted_lse_dp/phase4/). The audit step will use Phase III results that exist at audit time. Phase IV-A code path is independent of Phase III outputs except for the compatibility audit."
+    }
+  ]
+}
