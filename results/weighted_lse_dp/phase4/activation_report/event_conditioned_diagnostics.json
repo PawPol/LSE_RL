@@ -1,0 +1,71 @@
+{
+  "event_reward_fraction": 0.3,
+  "notes": "Event stage = |mean stage margin| > 0.3 * reward_bound. Aggregated across all mainline candidates per family.",
+  "families": [
+    {
+      "family": "chain_catastrophe",
+      "event_stages": {
+        "mean_abs_u": 0.0,
+        "frac_ge5e3": 0.0,
+        "n_stages": 132
+      },
+      "non_event_stages": {
+        "mean_abs_u": 0.0,
+        "frac_ge5e3": 0.0,
+        "n_stages": 48
+      }
+    },
+    {
+      "family": "chain_jackpot",
+      "event_stages": {
+        "mean_abs_u": 0.0025271678316420403,
+        "frac_ge5e3": 0.2536231884057971,
+        "n_stages": 138
+      },
+      "non_event_stages": {
+        "mean_abs_u": 0.0,
+        "frac_ge5e3": 0.0,
+        "n_stages": 42
+      }
+    },
+    {
+      "family": "chain_sparse_credit",
+      "event_stages": {
+        "mean_abs_u": 0.0012077887852986653,
+        "frac_ge5e3": 0.1,
+        "n_stages": 120
+      },
+      "non_event_stages": {
+        "mean_abs_u": 0.0,
+        "frac_ge5e3": 0.0,
+        "n_stages": 0
+      }
+    },
+    {
+      "family": "grid_hazard",
+      "event_stages": {
+        "mean_abs_u": 0.003763914108276367,
+        "frac_ge5e3": 0.35,
+        "n_stages": 180
+      },
+      "non_event_stages": {
+        "mean_abs_u": 0.0,
+        "frac_ge5e3": 0.0,
+        "n_stages": 0
+      }
+    },
+    {
+      "family": "regime_shift",
+      "event_stages": {
+        "mean_abs_u": 0.0,
+        "frac_ge5e3": 0.0,
+        "n_stages": 0
+      },
+      "non_event_stages": {
+        "mean_abs_u": 0.0,
+        "frac_ge5e3": 0.0,
+        "n_stages": 20
+      }
+    }
+  ]
+}

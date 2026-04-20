@@ -1,0 +1,63 @@
+{
+  "total_stages_evaluated": 680,
+  "trust_clip_stages": 680,
+  "safe_clip_stages": 0,
+  "neither_stages": 0,
+  "trust_clip_fraction": 1.0,
+  "u_tr_cap_median": 0.0,
+  "U_safe_ref_median": 0.011272568999788972,
+  "U_safe_over_u_tr_median_ratio": 1.9441028472899213,
+  "conclusion": "Trust-region cap is binding on 100.0% of stages. U_safe_ref median (0.0113) is 1.9x larger than u_tr_cap median (0.0000).",
+  "by_family": [
+    {
+      "family": "chain_catastrophe",
+      "trust_clip_stages": 180,
+      "safe_clip_stages": 0,
+      "neither_stages": 0,
+      "total_stages": 180,
+      "trust_clip_fraction": 1.0,
+      "u_tr_cap_median": 0.0,
+      "U_safe_ref_median": 0.009682847789032504
+    },
+    {
+      "family": "chain_jackpot",
+      "trust_clip_stages": 180,
+      "safe_clip_stages": 0,
+      "neither_stages": 0,
+      "total_stages": 180,
+      "trust_clip_fraction": 1.0,
+      "u_tr_cap_median": 0.0,
+      "U_safe_ref_median": 0.007537066926015494
+    },
+    {
+      "family": "chain_sparse_credit",
+      "trust_clip_stages": 120,
+      "safe_clip_stages": 0,
+      "neither_stages": 0,
+      "total_stages": 120,
+      "trust_clip_fraction": 1.0,
+      "u_tr_cap_median": 0.0,
+      "U_safe_ref_median": 0.011272568999788972
+    },
+    {
+      "family": "grid_hazard",
+      "trust_clip_stages": 180,
+      "safe_clip_stages": 0,
+      "neither_stages": 0,
+      "total_stages": 180,
+      "trust_clip_fraction": 1.0,
+      "u_tr_cap_median": 0.001392364501953125,
+      "U_safe_ref_median": 0.013405737731986682
+    },
+    {
+      "family": "regime_shift",
+      "trust_clip_stages": 20,
+      "safe_clip_stages": 0,
+      "neither_stages": 0,
+      "total_stages": 20,
+      "trust_clip_fraction": 1.0,
+      "u_tr_cap_median": 0.0,
+      "U_safe_ref_median": 0.00022545137999577944
+    }
+  ]
+}

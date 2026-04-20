@@ -435,6 +435,35 @@ class TestRunFixedPoint:
 
         assert result["bhat"][-1] == 0.0
 
+    def test_run_fixed_point_bhat_uses_operator_recursion(
+        self, gamma_base, r_max
+    ):
+        """Bhat returned by run_fixed_point satisfies the canonical recursion.
+
+        The loop's heuristic mutates alpha_t after recording the chain, so
+        we cannot assert self-consistency between the returned alpha_t and
+        bhat without modifying the heuristic (explicitly out of scope per
+        the operator-theorist boundary fix).
+
+        What we CAN verify is that the returned (kappa_t, bhat) pair
+        satisfies the canonical recursion
+        ``Bhat[t] = (1+gamma)*R_max + kappa_t*Bhat[t+1]``. The old
+        geometric-series formula violated this identity; the fixed
+        implementation upholds it.
+        """
+        T = 6
+        xi_ref = np.linspace(0.05, 0.30, T)
+        p_align = np.linspace(0.60, 0.95, T)
+
+        result = run_fixed_point(xi_ref, p_align, r_max, gamma_base)
+
+        kappa_t = result["kappa_t"]
+        bhat = result["bhat"]
+        assert bhat[T] == 0.0
+        for t in range(T - 1, -1, -1):
+            expected = (1.0 + gamma_base) * r_max + kappa_t[t] * bhat[t + 1]
+            np.testing.assert_allclose(bhat[t], expected, rtol=0, atol=1e-12)
+
 
 # ---------------------------------------------------------------------------
 # Adaptive headroom: individual components
@@ -473,15 +502,103 @@ class TestAdaptiveHeadroomComponents:
         expected = gamma_base + alpha * (1.0 - gamma_base)
         np.testing.assert_allclose(kappa, expected, rtol=1e-12)
 
-    def test_bhat_backward_monotone(self, r_max):
+    def test_bhat_backward_monotone(self, r_max, gamma_base):
         """Bhat is non-increasing backward from T (it grows going backward)."""
         T = 5
         kappa = np.full(T, 0.95)
-        bhat = compute_bhat_backward(kappa, r_max, T)
+        bhat = compute_bhat_backward(kappa, r_max, T, gamma_base)
         # Bhat[T] = 0, Bhat[T-1] > 0, ..., Bhat[0] >= Bhat[1]
         assert bhat[-1] == 0.0
         for t in range(T - 1):
             assert bhat[t] >= bhat[t + 1] - 1e-10
+
+    def test_bhat_backward_matches_operator_recursion(self, r_max, gamma_base):
+        """Geometry-layer Bhat equals the operator-layer certified radius.
+
+        The two code paths MUST produce bit-for-bit identical arrays:
+        geometry.compute_bhat_backward delegates to
+        safe_weighted_common.compute_certified_radii, so any drift would
+        indicate a regression in the geometry fix introduced alongside
+        this test.
+        """
+        from mushroom_rl.algorithms.value.dp.safe_weighted_common import (
+            compute_certified_radii,
+        )
+
+        T = 7
+        kappa = np.linspace(gamma_base, gamma_base + 0.02, T)
+        bhat_geom = compute_bhat_backward(kappa, r_max, T, gamma_base)
+        bhat_op = compute_certified_radii(T, kappa, r_max, gamma_base)
+        np.testing.assert_array_equal(bhat_geom, bhat_op)
+
+    def test_bhat_backward_closed_form_recursion(self, r_max, gamma_base):
+        """Bhat satisfies Bhat[t] = (1+gamma)*R_max + kappa[t]*Bhat[t+1].
+
+        Verifies the operator's canonical recursion (Phase III spec §5)
+        step-by-step on a non-constant schedule.
+        """
+        T = 4
+        kappa = np.array([0.95, 0.96, 0.97, 0.98])
+        bhat = compute_bhat_backward(kappa, r_max, T, gamma_base)
+        assert bhat.shape == (T + 1,)
+        assert bhat[T] == 0.0
+        for t in range(T - 1, -1, -1):
+            expected = (1.0 + gamma_base) * r_max + kappa[t] * bhat[t + 1]
+            np.testing.assert_allclose(bhat[t], expected, rtol=0, atol=1e-12)
+
+    def test_bhat_backward_wrong_arity_signals_breaking_change(
+        self, r_max
+    ):
+        """Removing gamma_base must be a hard TypeError, not silent success.
+
+        Phase IV-A fix: compute_bhat_backward now requires gamma_base. Any
+        caller missing the argument must fail loudly, not silently resurrect
+        the old (incorrect) geometric-series recursion.
+        """
+        T = 3
+        kappa = np.full(T, 0.95)
+        with pytest.raises(TypeError):
+            compute_bhat_backward(kappa, r_max, T)  # type: ignore[call-arg]
+
+    def test_bhat_backward_rejects_length_mismatch(self, r_max, gamma_base):
+        """Wrong kappa length must raise ValueError, not truncate silently."""
+        kappa = np.full(5, 0.95)
+        with pytest.raises(ValueError):
+            compute_bhat_backward(kappa, r_max, 3, gamma_base)
+
+    @pytest.mark.parametrize(
+        "cfg",
+        [
+            {"gamma_base": 0.95, "r_max": 1.0, "T": 20},   # chain_sparse_credit / grid_hazard
+            {"gamma_base": 0.95, "r_max": 1.0, "T": 30},   # grid_hazard long
+            {"gamma_base": 0.97, "r_max": 1.0, "T": 67},   # regime_shift
+            {"gamma_base": 0.97, "r_max": 1.5, "T": 40},   # taxi_bonus
+        ],
+    )
+    def test_bhat_backward_on_phase4_task_configs(self, cfg):
+        """Round-trip on Phase IV-A selected-task configs.
+
+        Synthetic pilot inputs driven by (gamma_base, r_max, horizon)
+        from results/weighted_lse_dp/phase4/task_search/selected_tasks.json.
+        The geometry-layer Bhat must agree exactly with the operator layer.
+        """
+        from mushroom_rl.algorithms.value.dp.safe_weighted_common import (
+            compute_certified_radii,
+            compute_kappa as op_compute_kappa,
+        )
+
+        T = cfg["T"]
+        gamma_base = cfg["gamma_base"]
+        r_max = cfg["r_max"]
+        # Synthetic alpha schedule in the spec's [alpha_min, alpha_max] band.
+        alpha_t = np.linspace(0.05, 0.20, T)
+        kappa_t = op_compute_kappa(alpha_t, gamma_base)
+        bhat_geom = compute_bhat_backward(kappa_t, r_max, T, gamma_base)
+        bhat_op = compute_certified_radii(T, kappa_t, r_max, gamma_base)
+        np.testing.assert_array_equal(bhat_geom, bhat_op)
+        # Non-negativity + terminal-0 invariants.
+        assert bhat_geom[T] == 0.0
+        assert np.all(bhat_geom >= 0.0)
 
     def test_compute_a_t_formula(self, r_max):
         """A_t = r_max + bhat[t+1]."""
@@ -509,3 +626,62 @@ class TestAdaptiveHeadroomComponents:
         xi = np.array([0.1, 0.2, 0.3])
         result = compute_u_safe_ref(theta, xi)
         np.testing.assert_allclose(result, theta * xi, rtol=1e-15)
+
+
+# ---------------------------------------------------------------------------
+# Regression: Bhat backward recursion bug fix
+# ---------------------------------------------------------------------------
+
+def test_bhat_backward_regression_known_value():
+    """Regression: Bhat[0] matches the closed-form geometric sum, not ~1e26.
+
+    Old (buggy) formula:
+        bhat[t] = kappa * (r_max + bhat[t+1]) / (1 - kappa)
+    For kappa=0.96 and T=20 this gives ~1e26, not ~27.
+
+    Correct recursion (Phase III spec §5):
+        Bhat[T] = 0,
+        Bhat[t] = (1 + gamma_base) * r_max + kappa_t * Bhat[t+1].
+    For constant kappa, the closed-form sum is
+        Bhat[0] = (1 + gamma_base) * r_max * (1 - kappa**T) / (1 - kappa).
+    With T=20, gamma_base=0.95, kappa=0.96, r_max=1.0, this yields ~27.20.
+
+    Invariant guarded: the geometric-series bug that produced astronomical
+    certified radii (Bhat[0] ~ 1e26 for kappa=0.96) stays dead.
+    """
+    # docs/specs/phase_IV_A_activation_audit_and_counterfactual.md S6
+    T = 20
+    gamma_base = 0.95
+    r_max = 1.0
+    # alpha = (kappa - gamma_base) / (1 - gamma_base) = (0.96 - 0.95) / 0.05 = 0.20
+    alpha = (0.96 - gamma_base) / (1.0 - gamma_base)
+    np.testing.assert_allclose(alpha, 0.20, rtol=0, atol=1e-15)
+
+    alpha_t = np.full(T, alpha)
+    kappa_t = compute_kappa(alpha_t, gamma_base)
+    # Sanity: confirm the alpha -> kappa mapping yields exactly 0.96.
+    np.testing.assert_allclose(kappa_t, 0.96, rtol=0, atol=1e-14)
+
+    bhat = compute_bhat_backward(kappa_t, r_max, T, gamma_base)
+
+    # Shape and terminal boundary condition.
+    assert bhat.shape == (T + 1,)
+    assert bhat[T] == 0.0
+
+    # Closed-form geometric sum for constant kappa.
+    kappa_const = 0.96
+    expected_bhat0 = (
+        (1.0 + gamma_base) * r_max * (1.0 - kappa_const**T) / (1.0 - kappa_const)
+    )
+    np.testing.assert_allclose(bhat[0], expected_bhat0, rtol=0, atol=1e-8)
+
+    # Bhat[0] is O(10), specifically ~27.20 for this config.
+    assert 20.0 < float(bhat[0]) < 40.0, (
+        f"Bhat[0] = {bhat[0]:.6e} outside expected O(10) band [20, 40]."
+    )
+
+    # Bhat[0] is NOT astronomical (old buggy formula gave ~1e26).
+    assert float(bhat[0]) < 1e6, (
+        f"Bhat[0] = {bhat[0]:.6e} is astronomical; "
+        "the old geometric-series bug may have resurfaced."
+    )

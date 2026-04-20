@@ -168,3 +168,105 @@ The operator is effectively classical at these task parameters.
 
 See tasks/lessons.md — random-policy pilot violation of §S5.1 spec, certification A_t blowup.
 
+
+---
+
+## Certification Geometry Audit — 2026-04-20 (resumed session)
+
+### Audit script: `scripts/overnight/cert_audit.py`
+
+Ran `python3 scripts/overnight/cert_audit.py` → exit code 0.
+
+Output: `results/weighted_lse_dp/phase4/audit/certification_geometry_audit.json`
+
+### Known-value check
+
+| Quantity | Computed | Expected | Error |
+|---|---|---|---|
+| Bhat[0] (T=20, γ=0.95, κ=0.96, R=1) | 27.2024 | 27.2024 | 7.1e-15 |
+
+Bhat bug confirmed fixed. Old formula gave ~1e26 (fixed-point form, diverges as κ→1). New recursion: Bhat_t = (1+γ)R_max + κ_t·Bhat_{t+1}, correct per Phase III spec §5.
+
+### All 5 invariants PASS on all 7 audit tasks
+
+| Task | κ_0 | Bhat[0] | A_t0 | θ_safe | u_tr_cap@200ep | u_tr_cap@2000ep |
+|---|---|---|---|---|---|---|
+| chain_sparse_credit (T=20, γ=0.95) | 0.9600 | 27.20 | 27.30 | 0.0205 | 0.00183 | 0.00485 |
+| grid_hazard (T=20, γ=0.97) | 0.9760 | 31.59 | 31.35 | 0.0122 | 0.00183 | 0.00485 |
+| short_horizon (T=5, γ=0.95) | 0.9600 | 9.00 | 8.34 | 0.0205 | 0.00343 | 0.00687 |
+| long_horizon (T=50, γ=0.95) | 0.9600 | 42.42 | 43.15 | 0.0205 | 0.00114 | 0.00343 |
+
+### Corrected gate failure root cause
+
+**NOT** the Bhat blowup (which is now fixed). The binding constraint is the trust-region cap.
+
+Chain: n_t = n_ep / T samples/stage → c_t = (n_t/(n_t+τ_n))·√p_align → eps_tr = c_t·eps_design → u_tr_cap
+
+With 200 episodes, T=20:
+- n_t ≈ 10 samples/stage
+- c_t ≈ (10/210)·√0.5 ≈ 0.034  
+- u_tr_cap ≈ 0.00183 << 0.005 gate threshold
+
+With 2000 episodes, T=20:
+- n_t ≈ 100 samples/stage
+- c_t ≈ (100/300)·√0.5 ≈ 0.236
+- u_tr_cap ≈ 0.00485 (still below for γ=0.97 tasks, marginally below for γ=0.95)
+
+With 2000 episodes, T=5:
+- u_tr_cap ≈ 0.00687 > 0.005 → gate passes
+
+### Scientific conclusion
+
+Phase IV-A gate failure is **not a fundamental operator failure**. The operator CAN produce certified activation above the 5e-3 threshold, but requires more pilot data than the 200 episodes used:
+- T=5 tasks with 2000 pilot episodes: u_tr_cap ≈ 0.0069 → gate passes
+- T=20 tasks require ~500-1000 pilot episodes depending on γ
+
+The previous root-cause message ("A_t grows as ~24^T") was a pre-fix artefact. Post-fix A_t[0] ≈ 27-32 (not 10^26). The operator is NOT "effectively classical" — beta_used ≈ 1.55e-4 with correct Bhat, which is physically meaningful. The gate fails only because τ_n=200 demands many samples before releasing the trust region.
+
+### Updated checkpoint
+
+Gate status: FAIL (10/11) — same condition, new mechanistic explanation.
+
+---
+
+## Phase IV-A Pilot-Budget Sensitivity Study — 2026-04-20
+
+### Study output: `results/weighted_lse_dp/phase4/pilot_budget_sensitivity/`
+
+Grid: 204 conditions × {chain_sparse_credit, grid_hazard, regime_shift, taxi_bonus} × T∈{5,10,20,30,40,50,60,67} × n_ep∈{200,500,1000,2000} × tau_n∈{50,100,200}.
+
+### Key result: binding cap is ALWAYS trust_clip (204/204 conditions)
+
+Certification geometry (U_safe_ref) is never binding. The constraint is purely the trust-region cap driven by pilot sample count.
+
+### Mainline tau_n=200, chain_sparse_credit, T=20
+
+| n_ep | mean_abs_u | frac≥5e-3 | c_t_med | u_tr_cap_med | Gate |
+|---|---|---|---|---|---|
+| 200 | 0.00356 | 0.350 | 0.180 | 0.00231 | FAIL |
+| 500 | 0.00444 | 0.400 | 0.223 | 0.00331 | FAIL |
+| **1000** | **0.00517** | **0.450** | **0.276** | **0.00392** | **PASS** |
+| 2000 | 0.00547 | 0.450 | 0.299 | 0.00395 | PASS |
+
+### tau_n ablation, chain_sparse_credit, T=20, n_ep=200
+
+| tau_n | mean_abs_u | Gate |
+|---|---|---|
+| 200 | 0.00356 | FAIL |
+| 100 | 0.00411 | FAIL |
+| 50 | 0.00450 | FAIL |
+
+(tau_n=50 passes only at n_ep≥500: 0.00501)
+
+### Short-horizon variants, tau_n=200
+
+| T | n_ep=200 | n_ep=500 | Gate |
+|---|---|---|---|
+| 5 | 0.01259 | 0.01503 | **PASS at all budgets** |
+| 10 | 0.01067 | 0.01248 | **PASS at all budgets** |
+
+grid_hazard, regime_shift, taxi_bonus: FAIL at all settings (zero-signal pilot for short T; sparse alignment for long T).
+
+### Regression test added
+
+`tests/algorithms/test_phase4_natural_shift_geometry.py::test_bhat_backward_regression_known_value` — PASSES. Verifies Bhat[0]=27.2024 (not ~1e26) for T=20, γ=0.95, κ=0.96.

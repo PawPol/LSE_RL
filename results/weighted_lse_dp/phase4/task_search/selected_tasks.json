@@ -1,286 +1,264 @@
-[
-  {
-    "idx": 25,
-    "family": "chain_sparse_credit",
-    "cfg": {
+{
+  "suite_type": "mainline",
+  "n_pilot_episodes": 1000,
+  "tau_n": 200,
+  "seed": 42,
+  "generated_at": "2026-04-20T01:31:49Z",
+  "git_sha": "7d6234eaaa60355dcd546c9e515f2b9758024554",
+  "selected_families": [
+    "chain_jackpot",
+    "chain_sparse_credit",
+    "grid_hazard"
+  ],
+  "tasks": [
+    {
+      "idx": 8,
+      "family": "chain_jackpot",
+      "cfg": {
+        "family": "chain_jackpot",
+        "jackpot_reward": 1.5,
+        "jackpot_prob": 0.2,
+        "gamma": 0.95,
+        "horizon": 20,
+        "state_n": 24,
+        "reward_bound": 1.5
+      },
+      "scoring": {
+        "raw_metrics": {
+          "mean_abs_u_pred": 0.0024094581604003906,
+          "mean_abs_delta_d_pred": 0.0011738385909642927,
+          "mean_abs_target_gap_norm": 0.0004333877894229826,
+          "informative_stage_frac": 0.4,
+          "frac_u_ge_5e3": 0.3
+        },
+        "score_components": {
+          "w1_x_mean_abs_u": 0.0024094581604003906,
+          "w2_x_mean_abs_delta_d": 0.0011738385909642927,
+          "w3_x_mean_abs_target_gap_norm": 0.0004333877894229826,
+          "w4_x_informative_stage_frac": 0.2,
+          "z_mean_abs_u_pred": 0.4163166246736497,
+          "z_mean_abs_delta_d_pred": 0.4163166246736492,
+          "z_mean_abs_target_gap_norm": 2.238140309166815,
+          "z_informative_stage_frac": 0.48043515894708066
+        },
+        "total_score": 3.310991137987654
+      },
+      "acceptance_status": "accepted",
+      "selected_reason": "Rank 1/3 in family 'chain_jackpot' (score=3.310991)",
+      "schedule_summary": {
+        "gamma_base": 0.95,
+        "schedule_id": "",
+        "sign": null,
+        "n_stages": 20
+      }
+    },
+    {
+      "idx": 11,
+      "family": "chain_jackpot",
+      "cfg": {
+        "family": "chain_jackpot",
+        "jackpot_reward": 2.0,
+        "jackpot_prob": 0.2,
+        "gamma": 0.95,
+        "horizon": 20,
+        "state_n": 24,
+        "reward_bound": 2.0
+      },
+      "scoring": {
+        "raw_metrics": {
+          "mean_abs_u_pred": 0.0024094581604003906,
+          "mean_abs_delta_d_pred": 0.0011738385909642927,
+          "mean_abs_target_gap_norm": 0.00024764929621608737,
+          "informative_stage_frac": 0.4,
+          "frac_u_ge_5e3": 0.3
+        },
+        "score_components": {
+          "w1_x_mean_abs_u": 0.0024094581604003906,
+          "w2_x_mean_abs_delta_d": 0.0011738385909642927,
+          "w3_x_mean_abs_target_gap_norm": 0.00024764929621608737,
+          "w4_x_informative_stage_frac": 0.2,
+          "z_mean_abs_u_pred": 0.4163166246736497,
+          "z_mean_abs_delta_d_pred": 0.4163166246736492,
+          "z_mean_abs_target_gap_norm": 0.9934131464072082,
+          "z_informative_stage_frac": 0.48043515894708066
+        },
+        "total_score": 2.0662639752280474
+      },
+      "acceptance_status": "accepted",
+      "selected_reason": "Rank 2/3 in family 'chain_jackpot' (score=2.066264)",
+      "schedule_summary": {
+        "gamma_base": 0.95,
+        "schedule_id": "",
+        "sign": null,
+        "n_stages": 20
+      }
+    },
+    {
+      "idx": 5,
       "family": "chain_sparse_credit",
-      "state_n": 30,
-      "gamma": 0.95,
-      "horizon": 20,
-      "step_cost": -0.01,
-      "reward_bound": 1.0
-    },
-    "scoring": {
-      "raw_metrics": {
-        "mean_abs_u_pred": 0.003559112548828125,
-        "mean_abs_delta_d_pred": 0.0017339266263521635,
-        "mean_abs_target_gap_norm": 5.472606724779598e-15,
-        "informative_stage_frac": 0.6,
-        "frac_u_ge_5e3": 0.35
+      "cfg": {
+        "family": "chain_sparse_credit",
+        "state_n": 30,
+        "gamma": 0.95,
+        "horizon": 20,
+        "step_cost": -0.01,
+        "reward_bound": 1.0
       },
-      "score_components": {
-        "w1_x_mean_abs_u": 0.003559112548828125,
-        "w2_x_mean_abs_delta_d": 0.0017339266263521635,
-        "w3_x_mean_abs_target_gap_norm": 5.472606724779598e-15,
-        "w4_x_informative_stage_frac": 0.3,
-        "z_mean_abs_u_pred": 2.462317865417122,
-        "z_mean_abs_delta_d_pred": 2.4404605747470196,
-        "z_mean_abs_target_gap_norm": -0.5596755838022676,
-        "z_informative_stage_frac": 1.7823434663353768
+      "scoring": {
+        "raw_metrics": {
+          "mean_abs_u_pred": 0.005174875259399414,
+          "mean_abs_delta_d_pred": 0.0025210930750920223,
+          "mean_abs_target_gap_norm": 0.0006937177393579552,
+          "informative_stage_frac": 0.75,
+          "frac_u_ge_5e3": 0.45
+        },
+        "score_components": {
+          "w1_x_mean_abs_u": 0.005174875259399414,
+          "w2_x_mean_abs_delta_d": 0.0025210930750920223,
+          "w3_x_mean_abs_target_gap_norm": 0.0006937177393579552,
+          "w4_x_informative_stage_frac": 0.375,
+          "z_mean_abs_u_pred": 2.0918393622134355,
+          "z_mean_abs_delta_d_pred": 2.091839362213435,
+          "z_mean_abs_target_gap_norm": 3.9827423804399964,
+          "z_informative_stage_frac": 1.8920841444952925
+        },
+        "total_score": 9.112463177114513
       },
-      "total_score": 5.234274589529562
+      "acceptance_status": "accepted",
+      "selected_reason": "Rank 1/2 in family 'chain_sparse_credit' (score=9.112463)",
+      "schedule_summary": {
+        "gamma_base": 0.95,
+        "schedule_id": "",
+        "sign": null,
+        "n_stages": 20
+      }
     },
-    "acceptance_status": "accepted",
-    "selected_reason": "Rank 1/1 in family 'chain_sparse_credit' (score=5.234275)",
-    "schedule_summary": {
-      "gamma_base": 0.95,
-      "schedule_id": "",
-      "sign": null,
-      "n_stages": 20
-    }
-  },
-  {
-    "idx": 116,
-    "family": "grid_hazard",
-    "cfg": {
+    {
+      "idx": 3,
+      "family": "chain_sparse_credit",
+      "cfg": {
+        "family": "chain_sparse_credit",
+        "state_n": 24,
+        "gamma": 0.95,
+        "horizon": 20,
+        "step_cost": -0.01,
+        "reward_bound": 1.0
+      },
+      "scoring": {
+        "raw_metrics": {
+          "mean_abs_u_pred": 0.002071857452392578,
+          "mean_abs_delta_d_pred": 0.001009366451165615,
+          "mean_abs_target_gap_norm": 0.00026087193499293337,
+          "informative_stage_frac": 0.4,
+          "frac_u_ge_5e3": 0.15
+        },
+        "score_components": {
+          "w1_x_mean_abs_u": 0.002071857452392578,
+          "w2_x_mean_abs_delta_d": 0.001009366451165615,
+          "w3_x_mean_abs_target_gap_norm": 0.00026087193499293337,
+          "w4_x_informative_stage_frac": 0.2,
+          "z_mean_abs_u_pred": 0.21176966404287664,
+          "z_mean_abs_delta_d_pred": 0.21176966404287662,
+          "z_mean_abs_target_gap_norm": 1.0820247064814323,
+          "z_informative_stage_frac": 0.48043515894708066
+        },
+        "total_score": 1.745781614040726
+      },
+      "acceptance_status": "accepted",
+      "selected_reason": "Rank 2/2 in family 'chain_sparse_credit' (score=1.745782)",
+      "schedule_summary": {
+        "gamma_base": 0.95,
+        "schedule_id": "",
+        "sign": null,
+        "n_stages": 20
+      }
+    },
+    {
+      "idx": 26,
       "family": "grid_hazard",
-      "hazard_reward": -1.0,
-      "hazard_prob": 0.3,
-      "gamma": 0.95,
-      "horizon": 20,
-      "n_rows": 5,
-      "n_cols": 5,
-      "reward_bound": 1.0
-    },
-    "scoring": {
-      "raw_metrics": {
-        "mean_abs_u_pred": 0.002335304761873205,
-        "mean_abs_delta_d_pred": 0.0011377125762972024,
-        "mean_abs_target_gap_norm": 0.00014803116227153575,
-        "informative_stage_frac": 0.45,
-        "frac_u_ge_5e3": 0.2
+      "cfg": {
+        "family": "grid_hazard",
+        "hazard_reward": -1.0,
+        "hazard_prob": 0.3,
+        "gamma": 0.95,
+        "horizon": 20,
+        "n_rows": 5,
+        "n_cols": 5,
+        "reward_bound": 1.0
       },
-      "score_components": {
-        "w1_x_mean_abs_u": 0.002335304761873205,
-        "w2_x_mean_abs_delta_d": 0.0011377125762972024,
-        "w3_x_mean_abs_target_gap_norm": 0.00014803116227153575,
-        "w4_x_informative_stage_frac": 0.225,
-        "z_mean_abs_u_pred": 1.2749226074316615,
-        "z_mean_abs_delta_d_pred": 1.2606386914056398,
-        "z_mean_abs_target_gap_norm": 3.5648193632777887,
-        "z_informative_stage_frac": 1.0756051912034943
+      "scoring": {
+        "raw_metrics": {
+          "mean_abs_u_pred": 0.003763914108276367,
+          "mean_abs_delta_d_pred": 0.0018337017450577174,
+          "mean_abs_target_gap_norm": 7.870608454333445e-05,
+          "informative_stage_frac": 0.55,
+          "frac_u_ge_5e3": 0.35
+        },
+        "score_components": {
+          "w1_x_mean_abs_u": 0.003763914108276367,
+          "w2_x_mean_abs_delta_d": 0.0018337017450577174,
+          "w3_x_mean_abs_target_gap_norm": 7.870608454333445e-05,
+          "w4_x_informative_stage_frac": 0.275,
+          "z_mean_abs_u_pred": 1.2369601863568571,
+          "z_mean_abs_delta_d_pred": 1.236960186356857,
+          "z_mean_abs_target_gap_norm": -0.1387603783272698,
+          "z_informative_stage_frac": 1.085427581324886
+        },
+        "total_score": 2.877873785048887
       },
-      "total_score": 6.638183257716836
+      "acceptance_status": "accepted",
+      "selected_reason": "Rank 1/9 in family 'grid_hazard' (score=2.877874)",
+      "schedule_summary": {
+        "gamma_base": 0.95,
+        "schedule_id": "",
+        "sign": null,
+        "n_stages": 20
+      }
     },
-    "acceptance_status": "accepted",
-    "selected_reason": "Rank 1/36 in family 'grid_hazard' (score=6.638183)",
-    "schedule_summary": {
-      "gamma_base": 0.95,
-      "schedule_id": "",
-      "sign": null,
-      "n_stages": 20
-    }
-  },
-  {
-    "idx": 117,
-    "family": "grid_hazard",
-    "cfg": {
+    {
+      "idx": 25,
       "family": "grid_hazard",
-      "hazard_reward": -1.0,
-      "hazard_prob": 0.3,
-      "gamma": 0.95,
-      "horizon": 30,
-      "n_rows": 5,
-      "n_cols": 5,
-      "reward_bound": 1.0
-    },
-    "scoring": {
-      "raw_metrics": {
-        "mean_abs_u_pred": 0.002335304761873205,
-        "mean_abs_delta_d_pred": 0.0011377125762972024,
-        "mean_abs_target_gap_norm": 0.00014803116227153575,
-        "informative_stage_frac": 0.45,
-        "frac_u_ge_5e3": 0.2
+      "cfg": {
+        "family": "grid_hazard",
+        "hazard_reward": -1.0,
+        "hazard_prob": 0.2,
+        "gamma": 0.95,
+        "horizon": 20,
+        "n_rows": 5,
+        "n_cols": 5,
+        "reward_bound": 1.0
       },
-      "score_components": {
-        "w1_x_mean_abs_u": 0.002335304761873205,
-        "w2_x_mean_abs_delta_d": 0.0011377125762972024,
-        "w3_x_mean_abs_target_gap_norm": 0.00014803116227153575,
-        "w4_x_informative_stage_frac": 0.225,
-        "z_mean_abs_u_pred": 1.2749226074316615,
-        "z_mean_abs_delta_d_pred": 1.2606386914056398,
-        "z_mean_abs_target_gap_norm": 3.5648193632777887,
-        "z_informative_stage_frac": 1.0756051912034943
+      "scoring": {
+        "raw_metrics": {
+          "mean_abs_u_pred": 0.003763914108276367,
+          "mean_abs_delta_d_pred": 0.0018337017450577174,
+          "mean_abs_target_gap_norm": 7.846443293965159e-05,
+          "informative_stage_frac": 0.55,
+          "frac_u_ge_5e3": 0.35
+        },
+        "score_components": {
+          "w1_x_mean_abs_u": 0.003763914108276367,
+          "w2_x_mean_abs_delta_d": 0.0018337017450577174,
+          "w3_x_mean_abs_target_gap_norm": 7.846443293965159e-05,
+          "w4_x_informative_stage_frac": 0.275,
+          "z_mean_abs_u_pred": 1.2369601863568571,
+          "z_mean_abs_delta_d_pred": 1.236960186356857,
+          "z_mean_abs_target_gap_norm": -0.14037980739571512,
+          "z_informative_stage_frac": 1.085427581324886
+        },
+        "total_score": 2.876254355980442
       },
-      "total_score": 6.638183257716836
-    },
-    "acceptance_status": "accepted",
-    "selected_reason": "Rank 2/36 in family 'grid_hazard' (score=6.638183)",
-    "schedule_summary": {
-      "gamma_base": 0.95,
-      "schedule_id": "",
-      "sign": null,
-      "n_stages": 20
+      "acceptance_status": "accepted",
+      "selected_reason": "Rank 2/9 in family 'grid_hazard' (score=2.876254)",
+      "schedule_summary": {
+        "gamma_base": 0.95,
+        "schedule_id": "",
+        "sign": null,
+        "n_stages": 20
+      }
     }
-  },
-  {
-    "idx": 149,
-    "family": "regime_shift",
-    "cfg": {
-      "family": "regime_shift",
-      "gamma": 0.97,
-      "horizon": 67,
-      "state_n": 24,
-      "reward_bound": 1.0
-    },
-    "scoring": {
-      "raw_metrics": {
-        "mean_abs_u_pred": 0.0027942657470703125,
-        "mean_abs_delta_d_pred": 0.0013758567384051794,
-        "mean_abs_target_gap_norm": 2.455075023359441e-07,
-        "informative_stage_frac": 0.6716417910447762,
-        "frac_u_ge_5e3": 0.11940298507462686
-      },
-      "score_components": {
-        "w1_x_mean_abs_u": 0.0027942657470703125,
-        "w2_x_mean_abs_delta_d": 0.0013758567384051794,
-        "w3_x_mean_abs_target_gap_norm": 2.455075023359441e-07,
-        "w4_x_informative_stage_frac": 0.3358208955223881,
-        "z_mean_abs_u_pred": 1.720227910464069,
-        "z_mean_abs_delta_d_pred": 1.7318917486240797,
-        "z_mean_abs_target_gap_norm": -0.5528351698327877,
-        "z_informative_stage_frac": 2.1198901052043357
-      },
-      "total_score": 3.9592295418575287
-    },
-    "acceptance_status": "accepted",
-    "selected_reason": "Rank 1/4 in family 'regime_shift' (score=3.959230)",
-    "schedule_summary": {
-      "gamma_base": 0.97,
-      "schedule_id": "",
-      "sign": null,
-      "n_stages": 67
-    }
-  },
-  {
-    "idx": 148,
-    "family": "regime_shift",
-    "cfg": {
-      "family": "regime_shift",
-      "gamma": 0.97,
-      "horizon": 50,
-      "state_n": 24,
-      "reward_bound": 1.0
-    },
-    "scoring": {
-      "raw_metrics": {
-        "mean_abs_u_pred": 0.00257415771484375,
-        "mean_abs_delta_d_pred": 0.0012674786717758566,
-        "mean_abs_target_gap_norm": 2.3898442512553314e-07,
-        "informative_stage_frac": 0.56,
-        "frac_u_ge_5e3": 0.2
-      },
-      "score_components": {
-        "w1_x_mean_abs_u": 0.00257415771484375,
-        "w2_x_mean_abs_delta_d": 0.0012674786717758566,
-        "w3_x_mean_abs_target_gap_norm": 2.3898442512553314e-07,
-        "w4_x_informative_stage_frac": 0.28,
-        "z_mean_abs_u_pred": 1.506668856096033,
-        "z_mean_abs_delta_d_pred": 1.5174271370106531,
-        "z_mean_abs_target_gap_norm": -0.5530169180443257,
-        "z_informative_stage_frac": 1.5938799263002084
-      },
-      "total_score": 3.2680190382124645
-    },
-    "acceptance_status": "accepted",
-    "selected_reason": "Rank 2/4 in family 'regime_shift' (score=3.268019)",
-    "schedule_summary": {
-      "gamma_base": 0.97,
-      "schedule_id": "",
-      "sign": null,
-      "n_stages": 50
-    }
-  },
-  {
-    "idx": 154,
-    "family": "taxi_bonus",
-    "cfg": {
-      "family": "taxi_bonus",
-      "bonus_reward": 1.5,
-      "bonus_prob": 0.15,
-      "gamma": 0.97,
-      "horizon": 40,
-      "reward_bound": 1.5,
-      "appendix_only": true
-    },
-    "scoring": {
-      "raw_metrics": {
-        "mean_abs_u_pred": 0.00222945382585664,
-        "mean_abs_delta_d_pred": 0.0010977513761832186,
-        "mean_abs_target_gap_norm": 4.044597950644973e-05,
-        "informative_stage_frac": 0.5,
-        "frac_u_ge_5e3": 0.2
-      },
-      "score_components": {
-        "w1_x_mean_abs_u": 0.00222945382585664,
-        "w2_x_mean_abs_delta_d": 0.0010977513761832186,
-        "w3_x_mean_abs_target_gap_norm": 4.044597950644973e-05,
-        "w4_x_informative_stage_frac": 0.25,
-        "z_mean_abs_u_pred": 1.1722211041244095,
-        "z_mean_abs_delta_d_pred": 1.181561221871475,
-        "z_mean_abs_target_gap_norm": 0.5672441507172242,
-        "z_informative_stage_frac": 1.311184616247455
-      },
-      "total_score": 3.576618784836836
-    },
-    "acceptance_status": "accepted",
-    "selected_reason": "Rank 1/18 in family 'taxi_bonus' (score=3.576619)",
-    "schedule_summary": {
-      "gamma_base": 0.97,
-      "schedule_id": "",
-      "sign": null,
-      "n_stages": 20
-    }
-  },
-  {
-    "idx": 155,
-    "family": "taxi_bonus",
-    "cfg": {
-      "family": "taxi_bonus",
-      "bonus_reward": 1.5,
-      "bonus_prob": 0.15,
-      "gamma": 0.97,
-      "horizon": 60,
-      "reward_bound": 1.5,
-      "appendix_only": true
-    },
-    "scoring": {
-      "raw_metrics": {
-        "mean_abs_u_pred": 0.00222945382585664,
-        "mean_abs_delta_d_pred": 0.0010977513761832186,
-        "mean_abs_target_gap_norm": 4.044597950644973e-05,
-        "informative_stage_frac": 0.5,
-        "frac_u_ge_5e3": 0.2
-      },
-      "score_components": {
-        "w1_x_mean_abs_u": 0.00222945382585664,
-        "w2_x_mean_abs_delta_d": 0.0010977513761832186,
-        "w3_x_mean_abs_target_gap_norm": 4.044597950644973e-05,
-        "w4_x_informative_stage_frac": 0.25,
-        "z_mean_abs_u_pred": 1.1722211041244095,
-        "z_mean_abs_delta_d_pred": 1.181561221871475,
-        "z_mean_abs_target_gap_norm": 0.5672441507172242,
-        "z_informative_stage_frac": 1.311184616247455
-      },
-      "total_score": 3.576618784836836
-    },
-    "acceptance_status": "accepted",
-    "selected_reason": "Rank 2/18 in family 'taxi_bonus' (score=3.576619)",
-    "schedule_summary": {
-      "gamma_base": 0.97,
-      "schedule_id": "",
-      "sign": null,
-      "n_stages": 20
-    }
-  }
-]
+  ],
+  "T_target": 20,
+  "gamma": 0.95,
+  "label": "mainline T=20 activation suite"
+}

@@ -1,223 +1,106 @@
-# Phase IV-A Activation Search Report
+# Phase IV-A Activation Search Report (mainline rerun)
 
 - Seed: 42
-- Pilot episodes: 200
-- Total candidates: 168
-- Selected: 7
-- Generated: 2026-04-20T00:48:10Z
+- Mainline pilot episodes: 1000
+- Appendix pilot episodes: 200
+- Mainline horizon: T = 20
+- Appendix horizons: T in [5, 10]
+- Mainline candidates scored: 34
+- Mainline selected: 6
+- Appendix candidates scored: 68
+- Appendix selected: 4
+- Generated: 2026-04-20T01:31:49Z
 
-## Family: `chain_catastrophe`
-- Candidates: 36
+## What changed vs. the 200-episode run
+
+The original activation search used `n_pilot_episodes = 200`. At that budget, the trust-region confidence factor `c_t = (n_t / (n_t + tau_n)) * sqrt(p_align_t)` never releases enough for `u_tr_cap` to clear the `|u| >= 5e-3` gate: the best observed value was `mean_abs_u = 0.00356`, giving a FAILED activation gate (10/11 conditions).
+
+This rerun uses `n_pilot_episodes = 1000` on the T=20 mainline subset of the search grid, keeping `tau_n = 200`. The extra pilot budget is the only change — the operator, schedule geometry, and gate threshold are unchanged.
+
+## Gate status
+
+- Best mainline `mean_abs_u_pred` = **0.00517** (threshold 0.005)
+- Best mainline `frac(|u| >= 5e-3)` = **0.450** (threshold 0.1)
+- Gate status: **PASS** (before rerun: FAIL)
+
+## Suites
+
+- Mainline families (3): `chain_jackpot, chain_sparse_credit, grid_hazard`
+- Appendix families (2): `chain_sparse_credit, grid_hazard`
+- See `activation_report/binding_cap_summary.json` for the per-family breakdown of trust-region vs safe-reference clipping.
+
+## Mainline per-family ranking
+
+### Family: `chain_catastrophe`
+- Candidates: 9
 - Selected: 0
 - Errors: 0
 
-| Rank | Idx | Score | mean|u| | frac_active | Status |
-|------|-----|-------|---------|-------------|--------|
-| 1 | 72 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 2 | 73 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 3 | 74 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 4 | 75 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 5 | 76 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 6 | 77 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 7 | 78 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 8 | 79 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 9 | 80 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 10 | 81 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 11 | 82 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 12 | 83 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 13 | 84 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 14 | 85 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 15 | 86 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 16 | 87 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 17 | 88 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 18 | 89 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 19 | 90 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 20 | 91 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 21 | 92 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 22 | 93 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 23 | 94 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 24 | 95 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 25 | 96 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 26 | 97 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 27 | 98 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 28 | 99 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 29 | 100 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 30 | 101 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 31 | 102 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 32 | 103 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 33 | 104 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 34 | 105 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 35 | 106 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 36 | 107 | -3.0636 | 0.000000 | 0.0000 | rejected |
+| Rank | Idx | Score | mean_abs_u | frac(|u|>=5e-3) | Status |
+|------|-----|-------|-----------|-----------------|--------|
+| 1 | 15 | -3.3197 | 0.000000 | 0.0000 | rejected |
+| 2 | 16 | -3.3197 | 0.000000 | 0.0000 | rejected |
+| 3 | 17 | -3.3197 | 0.000000 | 0.0000 | rejected |
+| 4 | 18 | -3.3197 | 0.000000 | 0.0000 | rejected |
+| 5 | 19 | -3.3197 | 0.000000 | 0.0000 | rejected |
+| 6 | 20 | -3.3197 | 0.000000 | 0.0000 | rejected |
+| 7 | 21 | -3.3197 | 0.000000 | 0.0000 | rejected |
+| 8 | 22 | -3.3197 | 0.000000 | 0.0000 | rejected |
+| 9 | 23 | -3.3197 | 0.000000 | 0.0000 | rejected |
 
-## Family: `chain_jackpot`
-- Candidates: 36
-- Selected: 0
-- Errors: 0
-
-| Rank | Idx | Score | mean|u| | frac_active | Status |
-|------|-----|-------|---------|-------------|--------|
-| 1 | 36 | 3.1406 | 0.000912 | 0.0500 | rejected |
-| 2 | 40 | 3.1122 | 0.001184 | 0.0500 | rejected |
-| 3 | 52 | 1.8266 | 0.001184 | 0.0500 | rejected |
-| 4 | 48 | 1.5095 | 0.000912 | 0.0500 | rejected |
-| 5 | 64 | 1.3064 | 0.001300 | 0.0500 | rejected |
-| 6 | 68 | 0.9752 | 0.001629 | 0.1500 | rejected |
-| 7 | 44 | 0.9607 | 0.001550 | 0.1500 | rejected |
-| 8 | 56 | 0.8731 | 0.001550 | 0.1500 | rejected |
-| 9 | 60 | 0.3443 | 0.000915 | 0.0500 | rejected |
-| 10 | 45 | -0.0008 | 0.001177 | 0.0667 | rejected |
-| 11 | 57 | -0.0008 | 0.001177 | 0.0667 | rejected |
-| 12 | 69 | -0.0008 | 0.001177 | 0.0667 | rejected |
-| 13 | 46 | -0.0412 | 0.001224 | 0.1212 | rejected |
-| 14 | 58 | -0.0412 | 0.001224 | 0.1212 | rejected |
-| 15 | 70 | -0.0412 | 0.001224 | 0.1212 | rejected |
-| 16 | 41 | -0.5145 | 0.000993 | 0.1000 | rejected |
-| 17 | 53 | -0.5145 | 0.000993 | 0.1000 | rejected |
-| 18 | 65 | -0.5145 | 0.000993 | 0.1000 | rejected |
-| 19 | 47 | -1.0554 | 0.000790 | 0.0800 | rejected |
-| 20 | 59 | -1.0554 | 0.000790 | 0.0800 | rejected |
-| 21 | 71 | -1.0554 | 0.000790 | 0.0800 | rejected |
-| 22 | 37 | -1.1019 | 0.000771 | 0.0000 | rejected |
-| 23 | 49 | -1.1019 | 0.000771 | 0.0000 | rejected |
-| 24 | 61 | -1.1019 | 0.000771 | 0.0000 | rejected |
-| 25 | 43 | -1.1626 | 0.000711 | 0.0400 | rejected |
-| 26 | 55 | -1.1626 | 0.000711 | 0.0400 | rejected |
-| 27 | 67 | -1.1626 | 0.000711 | 0.0400 | rejected |
-| 28 | 42 | -1.2084 | 0.000697 | 0.0606 | rejected |
-| 29 | 54 | -1.2084 | 0.000697 | 0.0606 | rejected |
-| 30 | 66 | -1.2084 | 0.000697 | 0.0606 | rejected |
-| 31 | 38 | -1.7755 | 0.000479 | 0.0000 | rejected |
-| 32 | 50 | -1.7755 | 0.000479 | 0.0000 | rejected |
-| 33 | 62 | -1.7755 | 0.000479 | 0.0000 | rejected |
-| 34 | 39 | -2.5061 | 0.000214 | 0.0200 | rejected |
-| 35 | 51 | -2.5061 | 0.000214 | 0.0200 | rejected |
-| 36 | 63 | -2.5061 | 0.000214 | 0.0200 | rejected |
-
-## Family: `chain_sparse_credit`
-- Candidates: 36
-- Selected: 1
-- Errors: 0
-
-| Rank | Idx | Score | mean|u| | frac_active | Status |
-|------|-----|-------|---------|-------------|--------|
-| 1 | 25 | 5.2343 | 0.003559 | 0.3500 | SELECTED |
-| 2 | 13 | 0.0526 | 0.001307 | 0.1500 | rejected |
-| 3 | 27 | -2.2886 | 0.000319 | 0.0333 | rejected |
-| 4 | 0 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 5 | 1 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 6 | 2 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 7 | 3 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 8 | 4 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 9 | 5 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 10 | 6 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 11 | 7 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 12 | 8 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 13 | 9 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 14 | 10 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 15 | 11 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 16 | 12 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 17 | 14 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 18 | 15 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 19 | 16 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 20 | 17 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 21 | 18 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 22 | 19 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 23 | 20 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 24 | 21 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 25 | 22 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 26 | 23 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 27 | 24 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 28 | 26 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 29 | 28 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 30 | 29 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 31 | 30 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 32 | 31 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 33 | 32 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 34 | 33 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 35 | 34 | -3.0636 | 0.000000 | 0.0000 | rejected |
-| 36 | 35 | -3.0636 | 0.000000 | 0.0000 | rejected |
-
-## Family: `grid_hazard`
-- Candidates: 36
+### Family: `chain_jackpot`
+- Candidates: 9
 - Selected: 2
 - Errors: 0
 
-| Rank | Idx | Score | mean|u| | frac_active | Status |
-|------|-----|-------|---------|-------------|--------|
-| 1 | 116 | 6.6382 | 0.002335 | 0.2000 | SELECTED |
-| 2 | 117 | 6.6382 | 0.002335 | 0.2000 | SELECTED |
-| 3 | 112 | 6.6382 | 0.002335 | 0.2000 | rejected |
-| 4 | 113 | 6.6382 | 0.002335 | 0.2000 | rejected |
-| 5 | 108 | 6.6382 | 0.002335 | 0.2000 | rejected |
-| 6 | 109 | 6.6382 | 0.002335 | 0.2000 | rejected |
-| 7 | 118 | 4.9077 | 0.002284 | 0.2000 | rejected |
-| 8 | 119 | 4.9077 | 0.002284 | 0.2000 | rejected |
-| 9 | 114 | 4.9077 | 0.002284 | 0.2000 | rejected |
-| 10 | 115 | 4.9077 | 0.002284 | 0.2000 | rejected |
-| 11 | 110 | 4.9077 | 0.002284 | 0.2000 | rejected |
-| 12 | 111 | 4.9077 | 0.002284 | 0.2000 | rejected |
-| 13 | 128 | 4.4141 | 0.002336 | 0.2000 | rejected |
-| 14 | 129 | 4.4141 | 0.002336 | 0.2000 | rejected |
-| 15 | 124 | 4.4141 | 0.002336 | 0.2000 | rejected |
-| 16 | 125 | 4.4141 | 0.002336 | 0.2000 | rejected |
-| 17 | 120 | 4.4141 | 0.002336 | 0.2000 | rejected |
-| 18 | 121 | 4.4141 | 0.002336 | 0.2000 | rejected |
-| 19 | 140 | 3.6213 | 0.002336 | 0.2000 | rejected |
-| 20 | 141 | 3.6213 | 0.002336 | 0.2000 | rejected |
-| 21 | 136 | 3.6213 | 0.002336 | 0.2000 | rejected |
-| 22 | 137 | 3.6213 | 0.002336 | 0.2000 | rejected |
-| 23 | 132 | 3.6213 | 0.002336 | 0.2000 | rejected |
-| 24 | 133 | 3.6213 | 0.002336 | 0.2000 | rejected |
-| 25 | 130 | 3.5746 | 0.002284 | 0.2000 | rejected |
-| 26 | 131 | 3.5746 | 0.002284 | 0.2000 | rejected |
-| 27 | 126 | 3.5746 | 0.002284 | 0.2000 | rejected |
-| 28 | 127 | 3.5746 | 0.002284 | 0.2000 | rejected |
-| 29 | 122 | 3.5746 | 0.002284 | 0.2000 | rejected |
-| 30 | 123 | 3.5746 | 0.002284 | 0.2000 | rejected |
-| 31 | 142 | 3.0996 | 0.002284 | 0.2000 | rejected |
-| 32 | 143 | 3.0996 | 0.002284 | 0.2000 | rejected |
-| 33 | 138 | 3.0996 | 0.002284 | 0.2000 | rejected |
-| 34 | 139 | 3.0996 | 0.002284 | 0.2000 | rejected |
-| 35 | 134 | 3.0996 | 0.002284 | 0.2000 | rejected |
-| 36 | 135 | 3.0996 | 0.002284 | 0.2000 | rejected |
+| Rank | Idx | Score | mean_abs_u | frac(|u|>=5e-3) | Status |
+|------|-----|-------|-----------|-----------------|--------|
+| 1 | 8 | 3.3110 | 0.002409 | 0.3000 | SELECTED |
+| 2 | 11 | 2.0663 | 0.002409 | 0.3000 | SELECTED |
+| 3 | 7 | 1.4982 | 0.001704 | 0.1500 | rejected |
+| 4 | 6 | 1.3633 | 0.001623 | 0.1000 | rejected |
+| 5 | 14 | 1.3493 | 0.002454 | 0.3000 | rejected |
+| 6 | 10 | 0.6553 | 0.001704 | 0.1500 | rejected |
+| 7 | 9 | 0.4882 | 0.001623 | 0.1000 | rejected |
+| 8 | 13 | 0.3790 | 0.001881 | 0.2500 | rejected |
+| 9 | 12 | -0.0733 | 0.001629 | 0.1000 | rejected |
 
-## Family: `regime_shift`
+### Family: `chain_sparse_credit`
 - Candidates: 6
 - Selected: 2
 - Errors: 0
 
-| Rank | Idx | Score | mean|u| | frac_active | Status |
-|------|-----|-------|---------|-------------|--------|
-| 1 | 149 | 3.9592 | 0.002794 | 0.1194 | SELECTED |
-| 2 | 148 | 3.2680 | 0.002574 | 0.2000 | SELECTED |
-| 3 | 146 | 2.5897 | 0.002343 | 0.2000 | rejected |
-| 4 | 147 | 1.9560 | 0.002125 | 0.2727 | rejected |
-| 5 | 145 | 1.0383 | 0.001724 | 0.2000 | rejected |
-| 6 | 144 | -3.0636 | 0.000000 | 0.0000 | rejected |
+| Rank | Idx | Score | mean_abs_u | frac(|u|>=5e-3) | Status |
+|------|-----|-------|-----------|-----------------|--------|
+| 1 | 5 | 9.1125 | 0.005175 | 0.4500 | SELECTED |
+| 2 | 3 | 1.7458 | 0.002072 | 0.1500 | SELECTED |
+| 3 | 0 | -3.3197 | 0.000000 | 0.0000 | rejected |
+| 4 | 1 | -3.3197 | 0.000000 | 0.0000 | rejected |
+| 5 | 2 | -3.3197 | 0.000000 | 0.0000 | rejected |
+| 6 | 4 | -3.3197 | 0.000000 | 0.0000 | rejected |
 
-## Family: `taxi_bonus`
-- Candidates: 18
+### Family: `grid_hazard`
+- Candidates: 9
 - Selected: 2
 - Errors: 0
 
-| Rank | Idx | Score | mean|u| | frac_active | Status |
-|------|-----|-------|---------|-------------|--------|
-| 1 | 154 | 3.5766 | 0.002229 | 0.2000 | SELECTED |
-| 2 | 155 | 3.5766 | 0.002229 | 0.2000 | SELECTED |
-| 3 | 152 | 3.5766 | 0.002229 | 0.2000 | rejected |
-| 4 | 153 | 3.5766 | 0.002229 | 0.2000 | rejected |
-| 5 | 150 | 3.5766 | 0.002229 | 0.2000 | rejected |
-| 6 | 151 | 3.5766 | 0.002229 | 0.2000 | rejected |
-| 7 | 160 | 3.1041 | 0.002230 | 0.2000 | rejected |
-| 8 | 161 | 3.1041 | 0.002230 | 0.2000 | rejected |
-| 9 | 158 | 3.1040 | 0.002230 | 0.2000 | rejected |
-| 10 | 159 | 3.1040 | 0.002230 | 0.2000 | rejected |
-| 11 | 156 | 3.1040 | 0.002230 | 0.2000 | rejected |
-| 12 | 157 | 3.1040 | 0.002230 | 0.2000 | rejected |
-| 13 | 166 | 2.5127 | 0.002103 | 0.1500 | rejected |
-| 14 | 167 | 2.5127 | 0.002103 | 0.1500 | rejected |
-| 15 | 164 | 2.5127 | 0.002103 | 0.1500 | rejected |
-| 16 | 165 | 2.5127 | 0.002103 | 0.1500 | rejected |
-| 17 | 162 | 2.5127 | 0.002103 | 0.1500 | rejected |
-| 18 | 163 | 2.5127 | 0.002103 | 0.1500 | rejected |
+| Rank | Idx | Score | mean_abs_u | frac(|u|>=5e-3) | Status |
+|------|-----|-------|-----------|-----------------|--------|
+| 1 | 26 | 2.8779 | 0.003764 | 0.3500 | SELECTED |
+| 2 | 25 | 2.8763 | 0.003764 | 0.3500 | SELECTED |
+| 3 | 24 | 2.8748 | 0.003764 | 0.3500 | rejected |
+| 4 | 29 | 2.7038 | 0.003764 | 0.3500 | rejected |
+| 5 | 28 | 2.7021 | 0.003764 | 0.3500 | rejected |
+| 6 | 27 | 2.7005 | 0.003764 | 0.3500 | rejected |
+| 7 | 32 | 2.6170 | 0.003764 | 0.3500 | rejected |
+| 8 | 31 | 2.6150 | 0.003764 | 0.3500 | rejected |
+| 9 | 30 | 2.6133 | 0.003764 | 0.3500 | rejected |
+
+### Family: `regime_shift`
+- Candidates: 1
+- Selected: 0
+- Errors: 0
+
+| Rank | Idx | Score | mean_abs_u | frac(|u|>=5e-3) | Status |
+|------|-----|-------|-----------|-----------------|--------|
+| 1 | 33 | -3.3197 | 0.000000 | 0.0000 | rejected |

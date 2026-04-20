@@ -108,31 +108,57 @@ def compute_bhat_backward(
     kappa_t: NDArray[np.float64],
     r_max: float,
     T: int,
+    gamma_base: float,
 ) -> NDArray[np.float64]:
-    """Backward recursion for certified radius Bhat.
+    """Backward recursion for certified radius Bhat (Phase III spec §5).
 
-    Bhat[T] = 0
-    Bhat[t] = kappa_t[t] * (r_max + Bhat[t+1]) / (1 - kappa_t[t])
+    The canonical recursion from the safe weighted-LSE operator contract is
+
+    .. math::
+
+        \\hat B_T = 0, \\quad
+        \\hat B_t = (1 + \\gamma_{\\text{base}}) R_{\\max}
+                    + \\kappa_t\\, \\hat B_{t+1}.
+
+    This function delegates to
+    ``mushroom_rl.algorithms.value.dp.safe_weighted_common.compute_certified_radii``
+    so the geometry layer and the operator layer remain bit-for-bit identical.
 
     Parameters
     ----------
     kappa_t : NDArray[np.float64], shape (T,)
         Contraction rate per stage.
     r_max : float
-        Maximum reward magnitude.
+        Maximum reward magnitude (``R_max``).
     T : int
         Number of stages (horizon length).
+    gamma_base : float
+        Nominal discount factor used by the safe operator.
 
     Returns
     -------
     NDArray[np.float64], shape (T+1,)
-        Certified radius Bhat[0..T] with Bhat[T] = 0.
+        Certified radius ``Bhat[0..T]`` with ``Bhat[T] = 0``.
+
+    Notes
+    -----
+    The previous geometric-series form
+    ``Bhat[t] = kappa_t * (r_max + Bhat[t+1]) / (1 - kappa_t)`` does NOT
+    match the operator's contraction argument and was replaced in-place.
+    See ``docs/specs/phase_IV_A_activation_audit_and_counterfactual.md``
+    §6 and Phase III spec §5.
     """
-    kappa_t = np.asarray(kappa_t, dtype=np.float64)
-    bhat = np.zeros(T + 1, dtype=np.float64)
-    for t in range(T - 1, -1, -1):
-        bhat[t] = kappa_t[t] * (r_max + bhat[t + 1]) / (1.0 - kappa_t[t])
-    return bhat
+    # Local import avoids pulling mushroom-rl at module load time.
+    from mushroom_rl.algorithms.value.dp.safe_weighted_common import (
+        compute_certified_radii,
+    )
+
+    kappa_arr = np.asarray(kappa_t, dtype=np.float64)
+    if len(kappa_arr) != T:
+        raise ValueError(
+            f"kappa_t has length {len(kappa_arr)}, expected T={T}."
+        )
+    return compute_certified_radii(T, kappa_arr, float(r_max), float(gamma_base))
 
 
 def compute_a_t(
@@ -275,7 +301,7 @@ def run_fixed_point(
 
         # Compute the chain
         kappa_t = compute_kappa(alpha_t, gamma_base)
-        bhat = compute_bhat_backward(kappa_t, r_max, T)
+        bhat = compute_bhat_backward(kappa_t, r_max, T, gamma_base)
         a_t_arr = compute_a_t(r_max, bhat)
         theta_safe_t = compute_theta_safe(kappa_t, gamma_base)
         u_safe_ref_t = compute_u_safe_ref(theta_safe_t, xi_ref_t)
