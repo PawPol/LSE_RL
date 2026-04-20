@@ -68,8 +68,17 @@ def _run_pilot_with_transitions(
     cfg: dict[str, Any],
     seed: int,
     n_episodes: int,
+    prebuilt_env: tuple[Any, Any, dict[str, Any]] | None = None,
 ) -> tuple[dict[str, Any], list[tuple[float, float, int]]]:
     """Run classical pilot AND collect frozen (r, v_next, stage) transitions.
+
+    A single rollout drives both the standard pilot statistics AND the
+    counterfactual replay diagnostics. This guarantees that the transitions
+    used for the safe-target computation are bit-identical to those that
+    produced the schedule (no second sampler, no second env build, no
+    second seed). The ``v_next`` convention matches ``run_classical_pilot``:
+    zero only on absorbing transitions; horizon exhaustion does NOT zero
+    v_next (per lessons.md margin formula).
 
     Returns
     -------
@@ -78,92 +87,14 @@ def _run_pilot_with_transitions(
     transitions : list of (r, v_next, stage)
         One entry per transition across all episodes.
     """
-    # Run the standard pilot to get margins and schedule-building data
-    pilot_data = run_classical_pilot(cfg, seed=seed, n_episodes=n_episodes)
-
-    # Re-run to collect (r, v_next, stage) transitions using the same DP V*
-    # value function that run_classical_pilot used (no random-policy bias).
-    seed_everything(seed)
-    rng = np.random.default_rng(seed)
-
-    mdp_base, mdp_rl, resolved_cfg = build_phase4_task(cfg, seed=seed)
-
-    gamma = float(resolved_cfg.get("gamma", mdp_rl.info.gamma))
-    horizon = int(resolved_cfg.get("horizon", mdp_rl.info.horizon))
-
-    # Detect time-augmented env
-    try:
-        from mushroom_rl.environments.time_augmented_env import (
-            DiscreteTimeAugmentedEnv,
-        )
-        time_aug = isinstance(mdp_rl, DiscreteTimeAugmentedEnv)
-    except ImportError:
-        time_aug = hasattr(mdp_rl, "n_base_states")
-
-    if hasattr(mdp_base, "p"):
-        n_base = int(mdp_base.p.shape[0])
-    else:
-        n_base = int(mdp_base.info.observation_space.n)
-
-    n_actions = int(mdp_rl.info.action_space.n)
-
-    # Compute V* via backward VI (same as in run_classical_pilot — use DP V*)
-    V_star = np.zeros(0)
-    Q_star = np.zeros((0, n_actions))
-    if hasattr(mdp_base, "p") and hasattr(mdp_base, "r"):
-        P = np.asarray(mdp_base.p, dtype=np.float64)
-        R_raw = np.asarray(mdp_base.r, dtype=np.float64)
-        R = np.einsum("ijk,ijk->ij", P, R_raw) if R_raw.ndim == 3 else R_raw
-        S_base, A_base = R.shape[:2]
-        V = np.zeros(S_base, dtype=np.float64)
-        for _ in range(horizon):
-            Q = R + gamma * np.einsum("ijk,k->ij", P, V)
-            V = Q.max(axis=1)
-        V_star = V
-        Q_star = R + gamma * np.einsum("ijk,k->ij", P, V_star)
-
-    EPS_GREEDY = 0.1
-    transitions: list[tuple[float, float, int]] = []
-
-    for ep in range(n_episodes):
-        state, _ = mdp_rl.reset()
-        ep_steps: list[tuple[float, float, int]] = []  # (r, v_next_base, stage)
-
-        for step_idx in range(horizon):
-            if time_aug:
-                state_idx = int(np.asarray(state).flat[0])
-                stage = state_idx // n_base
-                base_state = state_idx % n_base
-            else:
-                stage = step_idx
-                base_state = int(np.asarray(state).flat[0])
-
-            # Epsilon-greedy using Q* (same policy as pilot)
-            if len(Q_star) > base_state and rng.random() > EPS_GREEDY:
-                action = np.array([int(Q_star[base_state].argmax())])
-            else:
-                action = np.array([rng.integers(0, n_actions)])
-
-            next_state, reward, absorbing, info = mdp_rl.step(action)
-
-            # v_next from V*(next base state) — no gamma, per lessons.md
-            if time_aug:
-                ns_idx = int(np.asarray(next_state).flat[0])
-                nb = ns_idx % n_base
-            else:
-                nb = int(np.asarray(next_state).flat[0])
-            if absorbing or (i := step_idx) == horizon - 1:
-                v_next = 0.0
-            else:
-                v_next = float(V_star[nb]) if (len(V_star) > 0 and nb < len(V_star)) else 0.0
-
-            ep_steps.append((float(reward), v_next, stage))
-            state = next_state
-            if absorbing:
-                break
-
-        transitions.extend(ep_steps)
-
+    pilot_data = run_classical_pilot(
+        cfg,
+        seed=seed,
+        n_episodes=n_episodes,
+        prebuilt_env=prebuilt_env,
+        collect_transitions=True,
+    )
+    transitions = pilot_data.pop("transitions", [])
     return pilot_data, transitions
 
 
@@ -188,9 +119,17 @@ def _replay_task(
 
     logger.info("=== Replaying task %s (idx=%d) ===", family, task_idx)
 
-    # Step 1-2: pilot + transitions
+    # Build the Phase IV task ONCE per (task, seed) so the pilot and the
+    # replay share the exact same environment instance and seed lineage.
+    # Without this, ``build_phase4_task`` runs twice and any global RNG
+    # consumption between the two builds would shift trajectories,
+    # breaking counterfactual isolation.
+    seed_everything(seed)
+    prebuilt_env = build_phase4_task(cfg, seed=seed)
+
+    # Step 1-2: pilot + transitions (single rollout driving both)
     pilot_data, transitions = _run_pilot_with_transitions(
-        cfg, seed=seed, n_episodes=n_episodes,
+        cfg, seed=seed, n_episodes=n_episodes, prebuilt_env=prebuilt_env,
     )
 
     gamma_val = float(cfg.get("gamma", 0.97))

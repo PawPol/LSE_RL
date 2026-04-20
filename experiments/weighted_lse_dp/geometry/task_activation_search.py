@@ -104,6 +104,8 @@ def run_classical_pilot(
     seed: int = 42,
     n_episodes: int = 50,
     max_steps: int | None = None,
+    prebuilt_env: tuple[Any, Any, dict[str, Any]] | None = None,
+    collect_transitions: bool = False,
 ) -> dict[str, Any]:
     """Run a classical pilot using exact DP V* as the value proxy.
 
@@ -121,18 +123,35 @@ def run_classical_pilot(
         Number of pilot episodes to run.
     max_steps : int or None
         Maximum steps per episode.  If None, uses the MDP horizon.
+    prebuilt_env : tuple or None
+        Optional ``(mdp_base, mdp_rl, resolved_cfg)`` to use instead of
+        rebuilding via ``build_phase4_task``. When supplied, the caller is
+        responsible for having seeded the environment construction; this
+        function still calls ``seed_everything(seed)`` to make trajectory
+        sampling reproducible. Used by the counterfactual replay runner
+        to guarantee idempotent build across pilot and replay.
+    collect_transitions : bool
+        If True, additionally include a ``"transitions"`` key in the
+        returned dict containing the per-step ``(r, v_next, stage)``
+        tuples used to compute margins. Used by the counterfactual replay
+        runner so the same trajectories drive both pilot stats and the
+        replay diagnostics (no second rollout needed).
 
     Returns
     -------
     dict
         Pilot data with keys: margins_by_stage, p_align_by_stage,
         n_by_stage, episode_returns, event_rate, n_episodes, gamma,
-        horizon, reward_bound.
+        horizon, reward_bound. When ``collect_transitions`` is True,
+        also includes ``transitions`` (list of ``(r, v_next, stage)``).
     """
     seed_everything(seed)
     rng = np.random.default_rng(seed)
 
-    mdp_base, mdp_rl, resolved_cfg = build_phase4_task(cfg, seed=seed)
+    if prebuilt_env is not None:
+        mdp_base, mdp_rl, resolved_cfg = prebuilt_env
+    else:
+        mdp_base, mdp_rl, resolved_cfg = build_phase4_task(cfg, seed=seed)
 
     gamma = float(resolved_cfg.get("gamma", mdp_rl.info.gamma))
     horizon = int(resolved_cfg.get("horizon", mdp_rl.info.horizon))
@@ -208,6 +227,7 @@ def run_classical_pilot(
     # Compute margin = r_t - V*(s_{t+1})  (no gamma — per lessons.md)
     # -----------------------------------------------------------------
     margins_by_stage: dict[int, list[float]] = defaultdict(list)
+    transitions: list[tuple[float, float, int]] = []  # (r, v_next, stage)
 
     for ep_rewards, ep_stages, ep_next_bases in zip(
         all_episode_rewards, all_episode_stages, all_episode_next_bases
@@ -221,12 +241,20 @@ def run_classical_pilot(
             nb = ep_next_bases[i]
             # V*(terminal) = 0; guard against out-of-bound index
             v_next = float(V_star[nb]) if (len(V_star) > 0 and nb < len(V_star)) else 0.0
-            # terminal step: V*(s') = 0 (absorbing)
+            # terminal step: V*(s') = 0 ONLY when episode ended via the
+            # environment marking the transition absorbing. Horizon
+            # exhaustion (len(ep_rewards) == max_steps) does NOT zero
+            # v_next. The pilot loop above breaks on `absorbing`, so an
+            # episode shorter than max_steps was absorbing on its last
+            # step; equal length means the episode hit the horizon while
+            # the next state was non-absorbing.
             if i == T_ep - 1 and len(ep_rewards) < max_steps:
                 v_next = 0.0
             margin = r_t - v_next   # no gamma (lessons.md: margin formula)
             stage = ep_stages[i]
             margins_by_stage[stage].append(margin)
+            if collect_transitions:
+                transitions.append((float(r_t), float(v_next), int(stage)))
 
     # -----------------------------------------------------------------
     # Aggregate per-stage statistics
@@ -267,7 +295,7 @@ def run_classical_pilot(
             event_count += 1
     event_rate = event_count / max(n_episodes, 1)
 
-    return {
+    out: dict[str, Any] = {
         "margins_by_stage": margins_by_stage_list,
         "p_align_by_stage": p_align_by_stage_list,
         "n_by_stage": n_by_stage_list,
@@ -280,6 +308,9 @@ def run_classical_pilot(
         "family": resolved_cfg.get("family", cfg.get("family", "unknown")),
         "resolved_cfg": resolved_cfg,
     }
+    if collect_transitions:
+        out["transitions"] = transitions
+    return out
 
 
 # ---------------------------------------------------------------------------

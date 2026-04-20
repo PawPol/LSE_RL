@@ -117,11 +117,21 @@ def load_selected_task_cfgs() -> list[dict[str, Any]]:
     with open(SELECTED_TASKS_JSON) as f:
         raw = json.load(f)
 
+    # The selected_tasks.json schema is a dict with a top-level "tasks" key
+    # (or, on legacy variants, "selected_tasks" or a bare list). Iterating
+    # over the dict directly yields keys (strings), not entries.
+    if isinstance(raw, list):
+        entries = raw
+    elif isinstance(raw, dict):
+        entries = raw.get("tasks") or raw.get("selected_tasks") or []
+    else:
+        entries = []
+
     # One representative cfg per (family, horizon) pair — take the first
     # (highest-ranked) entry per unique key.
     seen: set[tuple] = set()
     cfgs: list[dict[str, Any]] = []
-    for entry in raw:
+    for entry in entries:
         cfg = dict(entry["cfg"])
         key = (cfg.get("family"), cfg.get("horizon"), cfg.get("gamma"))
         if key in seen:
