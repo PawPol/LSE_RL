@@ -19,6 +19,8 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -47,22 +49,197 @@ def _dir_nonempty(path: Path, description: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# IV-A: Activation gate (spec §13)
+# IV-A: Activation gate (spec §13) — Option C, three-condition design
 # ---------------------------------------------------------------------------
 
-def check_gate_iva(results_dir: Path, configs_dir: Path) -> list[dict]:
-    """Phase IV-A activation gate.
+GATE_VERSION = "option_c_v1"
+U_THRESHOLD = 5e-3
+FRAC_THRESHOLD = 0.10
 
-    Conditions (from spec §13 + §15):
-    1. Phase III compatibility tests pass (checked via verifier, not here).
-    2. Audit artifacts exist.
-    3. Activation search has frozen a suite → selected_tasks.json exists and is non-empty.
-    4. Counterfactual replay directory is non-empty.
-    5. Activation metrics meet thresholds:
-       - mean_abs_u >= 5e-3 on at least one family.
-       - frac(|u| >= 5e-3) >= 10% on at least one family.
-    6. Mandatory configs exist.
-    7. Matched classical controls exist.
+
+def _read_candidate_predictions(scores_file: Path) -> dict[str, list[float]]:
+    """Return {family: [mean_abs_u_pred, ...]} from candidate_scores.csv."""
+    out: dict[str, list[float]] = defaultdict(list)
+    if not scores_file.exists():
+        return out
+    import csv
+    with open(scores_file) as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            fam = row.get("family", "").strip()
+            if not fam:
+                continue
+            try:
+                v = float(row.get("mean_abs_u_pred", 0.0) or 0.0)
+            except ValueError:
+                v = 0.0
+            out[fam].append(v)
+    return out
+
+
+def _family_eligibility(
+    replay_tasks: list[dict],
+    predictions_by_family: dict[str, list[float]],
+) -> list[dict]:
+    """Build the per-family eligibility records (Option C, v1).
+
+    For each family observed in the replay, evaluate conditions 1/2a/2b and
+    tag IV-B eligibility. For families present in the prediction CSV but not
+    in the replay, the record still appears (with gate_pass=false for the
+    replay-side conditions) so the report is honest.
+    """
+    # Group replay entries by family; best-by-metric within each group.
+    by_family: dict[str, list[dict]] = defaultdict(list)
+    for t in replay_tasks:
+        fam = str(t.get("family", "unknown"))
+        by_family[fam].append(t)
+
+    families = sorted(set(list(by_family.keys()) + list(predictions_by_family.keys())))
+    records: list[dict] = []
+    for fam in families:
+        preds = predictions_by_family.get(fam, [])
+        # Design-point prediction: best (max) over all candidates for the
+        # family, matching the activation-search convention.
+        mean_abs_u_pred = max(preds) if preds else 0.0
+        c1_pass = mean_abs_u_pred >= U_THRESHOLD
+
+        tasks = by_family.get(fam, [])
+        if tasks:
+            # Pick the task with the strongest informative mean to report.
+            best = max(
+                tasks,
+                key=lambda t: float(t.get("mean_abs_u_replay_informative", 0.0)),
+            )
+            mean_info = float(best.get("mean_abs_u_replay_informative", 0.0))
+            median_info = float(best.get("median_abs_u_replay_informative", 0.0))
+            frac_info_u = float(best.get("frac_informative_u_ge_5e3", 0.0))
+            n_info = int(best.get("n_informative_transitions", 0))
+            frac_info = float(best.get("frac_informative_transitions", 0.0))
+            mean_global = float(best.get("mean_abs_u_replay_global",
+                                         best.get("mean_abs_u", 0.0)))
+            mean_topq = float(best.get("mean_abs_u_replay_topquartile", 0.0))
+            frac_topq_u = float(best.get("frac_topquartile_u_ge_5e3", 0.0))
+            n_topq = int(best.get("n_topquartile_transitions", 0))
+            c2a_pass = (mean_info >= U_THRESHOLD) or (median_info >= U_THRESHOLD)
+            c2b_pass = frac_info_u >= FRAC_THRESHOLD
+            iv_b_eligible = bool(c1_pass and c2a_pass and c2b_pass)
+            reason_parts = []
+            if not c1_pass:
+                reason_parts.append(
+                    f"design-point {mean_abs_u_pred:.6f} < {U_THRESHOLD:.0e}"
+                )
+            if not c2a_pass:
+                reason_parts.append(
+                    f"informative mean={mean_info:.6f} median={median_info:.6f} "
+                    f"both < {U_THRESHOLD:.0e}"
+                )
+            if not c2b_pass:
+                reason_parts.append(
+                    f"informative frac(|u|>={U_THRESHOLD:.0e})={frac_info_u:.4f} "
+                    f"< {FRAC_THRESHOLD:.2f}"
+                )
+            reason = (
+                "all three conditions pass"
+                if iv_b_eligible
+                else "; ".join(reason_parts)
+            )
+            rec = {
+                "family": fam,
+                "design_point": {
+                    "mean_abs_u_pred": mean_abs_u_pred,
+                    "gate_pass": bool(c1_pass),
+                },
+                "informative_replay": {
+                    "mean_abs_u": mean_info,
+                    "median_abs_u": median_info,
+                    "frac_u_ge_5e3": frac_info_u,
+                    "n_informative": n_info,
+                    "frac_informative": frac_info,
+                    "gate_pass_mean_or_median": bool(c2a_pass),
+                    "gate_pass_frac": bool(c2b_pass),
+                },
+                "topquartile_replay": {
+                    "mean_abs_u": mean_topq,
+                    "frac_u_ge_5e3": frac_topq_u,
+                    "n_topquartile": n_topq,
+                },
+                "global_replay": {
+                    "mean_abs_u": mean_global,
+                    "is_dilution_only": True,
+                },
+                "iv_b_eligible": iv_b_eligible,
+                "eligibility_reason": reason,
+                "tag": str(best.get("tag", "")),
+            }
+        else:
+            rec = {
+                "family": fam,
+                "design_point": {
+                    "mean_abs_u_pred": mean_abs_u_pred,
+                    "gate_pass": bool(c1_pass),
+                },
+                "informative_replay": {
+                    "mean_abs_u": 0.0,
+                    "median_abs_u": 0.0,
+                    "frac_u_ge_5e3": 0.0,
+                    "n_informative": 0,
+                    "frac_informative": 0.0,
+                    "gate_pass_mean_or_median": False,
+                    "gate_pass_frac": False,
+                },
+                "topquartile_replay": {
+                    "mean_abs_u": 0.0,
+                    "frac_u_ge_5e3": 0.0,
+                    "n_topquartile": 0,
+                },
+                "global_replay": {
+                    "mean_abs_u": 0.0,
+                    "is_dilution_only": True,
+                },
+                "iv_b_eligible": False,
+                "eligibility_reason": "no replay entry for this family",
+                "tag": "",
+            }
+        records.append(rec)
+    return records
+
+
+def _write_eligibility_report(
+    results_dir: Path,
+    records: list[dict],
+) -> Path:
+    """Persist the Option C eligibility report to JSON and return the path."""
+    report_dir = results_dir / "activation_report"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "gate_version": GATE_VERSION,
+        "thresholds": {
+            "mean_abs_u": U_THRESHOLD,
+            "frac_informative_u_ge_5e3": FRAC_THRESHOLD,
+        },
+        "families": records,
+    }
+    out_path = report_dir / "family_eligibility.json"
+    out_path.write_text(json.dumps(payload, indent=2) + "\n")
+    return out_path
+
+
+def check_gate_iva(results_dir: Path, configs_dir: Path) -> list[dict]:
+    """Phase IV-A activation gate (Option C, v1).
+
+    Three-condition activation gate:
+
+    * Condition 1 — design-point activation: at least one family has
+      ``mean_abs_u_pred >= 5e-3`` in ``task_search/candidate_scores.csv``.
+    * Condition 2a — informative-conditioned replay activation: at least one
+      replay task has ``mean_abs_u_replay_informative >= 5e-3`` OR
+      ``median_abs_u_replay_informative >= 5e-3``.
+    * Condition 2b — informative active fraction: at least one replay task
+      has ``frac_informative_u_ge_5e3 >= 0.10``.
+
+    The global replay mean is reported as an ``[INFO]`` dilution diagnostic
+    only; it is not a pass/fail condition.
     """
     checks: list[dict] = []
     audit_dir = results_dir / "audit"
@@ -96,123 +273,166 @@ def check_gate_iva(results_dir: Path, configs_dir: Path) -> list[dict]:
     # 3. Counterfactual replay
     checks.append(_dir_nonempty(replay_dir, "Counterfactual replay results"))
 
-    # 4. Activation threshold check
-    # Spec §13 requires the gate to be evaluated on ACTUAL counterfactual
-    # replay results, not on schedule predictions. The replay JSON is the
-    # authoritative metric source; the candidate_scores.csv predictions are
-    # informative only and degrade to a [WARN] (never [FAIL]).
+    # 4. Three-condition activation gate (Option C, v1)
     replay_summary_file = replay_dir / "all_replay_summaries.json"
     scores_file = search_dir / "candidate_scores.csv"
 
+    predictions_by_family = _read_candidate_predictions(scores_file)
+
+    # Condition 1: design-point activation (always evaluated against the
+    # prediction CSV — this is authoritative for the upstream schedule).
+    best_design = max(
+        (v for vs in predictions_by_family.values() for v in vs),
+        default=0.0,
+    )
+    c1_pass = best_design >= U_THRESHOLD
+    if scores_file.exists():
+        checks.append(_check(
+            c1_pass,
+            "[GATE 1] Design-point: any family mean_abs_u_pred >= 5e-3",
+            f"best={best_design:.6f} across "
+            f"{sum(len(v) for v in predictions_by_family.values())} candidates",
+        ))
+    else:
+        checks.append(_check(
+            False,
+            "[GATE 1] Design-point: any family mean_abs_u_pred >= 5e-3",
+            f"candidate_scores.csv not found at {scores_file}",
+        ))
+
+    replay_tasks: list[dict] = []
+    replay_parse_error: str | None = None
     if replay_summary_file.exists():
         try:
             with open(replay_summary_file) as f:
                 replay_data = json.load(f)
-            tasks = replay_data.get("tasks", []) if isinstance(replay_data, dict) else []
-            if tasks:
-                has_mean_abs_u = any(
-                    float(t.get("mean_abs_u", 0.0)) >= 5e-3 for t in tasks
-                )
-                has_frac_active = any(
-                    float(t.get("frac_u_ge_5e3", t.get("frac_active", 0.0))) >= 0.1
-                    for t in tasks
-                )
-                best_mean_abs_u = max(
-                    (float(t.get("mean_abs_u", 0.0)) for t in tasks), default=0.0
-                )
-                best_frac = max(
-                    (
-                        float(t.get("frac_u_ge_5e3", t.get("frac_active", 0.0)))
-                        for t in tasks
-                    ),
-                    default=0.0,
-                )
-                checks.append(_check(
-                    has_mean_abs_u,
-                    "At least one family has replay mean_abs_u >= 5e-3",
-                    f"best={best_mean_abs_u:.6f} across {len(tasks)} replay tasks",
-                ))
-                checks.append(_check(
-                    has_frac_active,
-                    "At least one family has replay frac(|u|>=5e-3) >= 10%",
-                    f"best={best_frac:.4f} across {len(tasks)} replay tasks",
-                ))
-            else:
-                checks.append(_check(
-                    False,
-                    "At least one family has replay mean_abs_u >= 5e-3",
-                    "No tasks in all_replay_summaries.json",
-                ))
-                checks.append(_check(
-                    False,
-                    "At least one family has replay frac(|u|>=5e-3) >= 10%",
-                    "No tasks in all_replay_summaries.json",
-                ))
+            replay_tasks = (
+                replay_data.get("tasks", [])
+                if isinstance(replay_data, dict) else []
+            )
         except Exception as e:
-            checks.append(_check(
-                False,
-                "Replay summaries parseable",
-                str(e),
-            ))
-            checks.append(_check(
-                False,
-                "At least one family has replay mean_abs_u >= 5e-3",
-                str(e),
-            ))
-            checks.append(_check(
-                False,
-                "At least one family has replay frac(|u|>=5e-3) >= 10%",
-                str(e),
-            ))
-    elif scores_file.exists():
-        # Fresh-run fallback: no replay yet; report PASS-with-warning based
-        # on schedule predictions so the pipeline can degrade gracefully.
-        # Predictions inform but MUST NOT gate (spec §13).
-        try:
-            import csv
-            with open(scores_file) as f:
-                reader = csv.DictReader(f)
-                rows = list(reader)
-            if rows:
-                has_mean_abs_u = any(
-                    float(r.get("mean_abs_u_pred", r.get("mean_abs_u", 0))) >= 5e-3
-                    for r in rows
+            replay_parse_error = str(e)
+            replay_tasks = []
+
+    if replay_summary_file.exists() and replay_parse_error is None:
+        if replay_tasks:
+            # Condition 2a
+            has_2a = any(
+                (
+                    float(t.get("mean_abs_u_replay_informative", 0.0)) >= U_THRESHOLD
+                    or float(t.get("median_abs_u_replay_informative", 0.0)) >= U_THRESHOLD
                 )
-                has_frac_active = any(
-                    float(r.get("frac_u_ge_5e3", r.get("frac_active", 0))) >= 0.1
-                    for r in rows
-                )
-                # Always pass these conditions (they are warnings only).
-                checks.append(_check(
-                    True,
-                    "[WARN] No replay yet; predicted mean_abs_u >= 5e-3"
-                    + (" (yes)" if has_mean_abs_u else " (no)"),
-                    f"Checked {len(rows)} candidate predictions; replay JSON missing",
-                ))
-                checks.append(_check(
-                    True,
-                    "[WARN] No replay yet; predicted frac(|u|>=5e-3) >= 10%"
-                    + (" (yes)" if has_frac_active else " (no)"),
-                    f"Checked {len(rows)} candidate predictions; replay JSON missing",
-                ))
-            else:
-                checks.append(_check(
-                    False,
-                    "Replay summaries OR candidate scores present",
-                    "Replay JSON missing and candidate_scores.csv has no rows",
-                ))
-        except Exception as e:
-            checks.append(_check(False, "Candidate scores parseable", str(e)))
-            checks.append(_check(False, "Activation thresholds", str(e)))
+                for t in replay_tasks
+            )
+            best_mean_info = max(
+                (float(t.get("mean_abs_u_replay_informative", 0.0))
+                 for t in replay_tasks),
+                default=0.0,
+            )
+            best_median_info = max(
+                (float(t.get("median_abs_u_replay_informative", 0.0))
+                 for t in replay_tasks),
+                default=0.0,
+            )
+            checks.append(_check(
+                has_2a,
+                "[GATE 2a] Informative replay: mean OR median >= 5e-3",
+                f"best_mean={best_mean_info:.6f} best_median={best_median_info:.6f} "
+                f"across {len(replay_tasks)} replay tasks",
+            ))
+
+            # Condition 2b
+            has_2b = any(
+                float(t.get("frac_informative_u_ge_5e3", 0.0)) >= FRAC_THRESHOLD
+                for t in replay_tasks
+            )
+            best_frac_info = max(
+                (float(t.get("frac_informative_u_ge_5e3", 0.0))
+                 for t in replay_tasks),
+                default=0.0,
+            )
+            checks.append(_check(
+                has_2b,
+                "[GATE 2b] Informative replay: frac(|u|>=5e-3) >= 10%",
+                f"best={best_frac_info:.4f} across {len(replay_tasks)} replay tasks",
+            ))
+
+            # [INFO] line (not a gate) — global replay diagnostic.
+            best_global = max(
+                (float(t.get("mean_abs_u_replay_global",
+                             t.get("mean_abs_u", 0.0)))
+                 for t in replay_tasks),
+                default=0.0,
+            )
+            checks.append(_check(
+                True,
+                f"[INFO] Global replay mean_abs_u (dilution diagnostic, not gated)"
+                f" best={best_global:.6f}",
+                f"Global mean is diluted across non-informative stages; "
+                f"use informative-conditioned metrics for gating.",
+            ))
+        else:
+            checks.append(_check(
+                False,
+                "[GATE 2a] Informative replay: mean OR median >= 5e-3",
+                "No tasks in all_replay_summaries.json",
+            ))
+            checks.append(_check(
+                False,
+                "[GATE 2b] Informative replay: frac(|u|>=5e-3) >= 10%",
+                "No tasks in all_replay_summaries.json",
+            ))
+            checks.append(_check(
+                True,
+                "[INFO] Global replay mean_abs_u (dilution diagnostic, not gated)",
+                "No replay tasks to report.",
+            ))
+    elif replay_parse_error is not None:
+        checks.append(_check(False, "Replay summaries parseable", replay_parse_error))
+        checks.append(_check(
+            False,
+            "[GATE 2a] Informative replay: mean OR median >= 5e-3",
+            replay_parse_error,
+        ))
+        checks.append(_check(
+            False,
+            "[GATE 2b] Informative replay: frac(|u|>=5e-3) >= 10%",
+            replay_parse_error,
+        ))
     else:
         checks.append(_check(
             False,
-            "Replay summaries exist",
-            f"Neither {replay_summary_file} nor {scores_file}",
+            "[GATE 2a] Informative replay: mean OR median >= 5e-3",
+            f"{replay_summary_file} missing",
         ))
-        checks.append(_check(False, "Activation thresholds", "No replay or scores"))
+        checks.append(_check(
+            False,
+            "[GATE 2b] Informative replay: frac(|u|>=5e-3) >= 10%",
+            f"{replay_summary_file} missing",
+        ))
 
-    # 5. Configs
+    # 5. Per-family eligibility: build records, persist, and attach as an
+    # [INFO] check block so the output surfaces them alongside the gates.
+    eligibility_records = _family_eligibility(replay_tasks, predictions_by_family)
+    try:
+        eligibility_path = _write_eligibility_report(results_dir, eligibility_records)
+        checks.append(_check(
+            True,
+            f"[INFO] Wrote per-family eligibility report",
+            str(eligibility_path),
+        ))
+    except Exception as e:
+        checks.append(_check(
+            False,
+            "Write per-family eligibility report",
+            str(e),
+        ))
+
+    # Attach the records to the last [INFO] check via a magic key so main()
+    # can render them without a second pass through disk.
+    checks[-1]["_eligibility_records"] = eligibility_records
+
+    # 6. Configs
     checks.append(_file_exists(configs_dir / "activation_suite.json", "Frozen activation suite config"))
     checks.append(_file_exists(configs_dir / "gamma_matched_controls.json", "Matched controls config"))
 
@@ -378,9 +598,20 @@ def main() -> None:
 
     checks = GATE_MAP[args.phase](args.results_dir, args.configs_dir)
 
-    passed = all(c["passed"] for c in checks)
-    n_pass = sum(1 for c in checks if c["passed"])
-    n_total = len(checks)
+    # [INFO] checks are diagnostic and do not contribute to pass/fail.
+    def _is_info(c: dict) -> bool:
+        return c.get("condition", "").lstrip().startswith("[INFO]")
+
+    gated = [c for c in checks if not _is_info(c)]
+    passed = all(c["passed"] for c in gated)
+    n_pass = sum(1 for c in gated if c["passed"])
+    n_total = len(gated)
+
+    # Eligibility payload (attached to the info check that wrote the report).
+    eligibility_records: list[dict] = []
+    for c in checks:
+        if "_eligibility_records" in c:
+            eligibility_records = c.pop("_eligibility_records")
 
     result = {
         "phase": args.phase,
@@ -388,22 +619,69 @@ def main() -> None:
         "passed": n_pass,
         "total": n_total,
         "checks": checks,
+        "eligibility": eligibility_records if args.phase == "IV-A" else [],
     }
 
     if args.json:
         print(json.dumps(result, indent=2))
     else:
         status = "PASS" if passed else "FAIL"
-        print(f"Gate {args.phase}: {status} ({n_pass}/{n_total} conditions met)")
+        print(f"Gate {args.phase}: {status} ({n_pass}/{n_total} gated conditions met)")
         print()
         for c in checks:
-            icon = "PASS" if c["passed"] else "FAIL"
+            if _is_info(c):
+                icon = "INFO"
+            else:
+                icon = "PASS" if c["passed"] else "FAIL"
             print(f"  [{icon}] {c['condition']}")
-            if c.get("details") and not c["passed"]:
+            # Print details for failures AND for [INFO] lines (the info is
+            # the whole point of those rows).
+            if c.get("details") and (not c["passed"] or _is_info(c)):
                 print(f"         {c['details']}")
 
+        if args.phase == "IV-A" and eligibility_records:
+            print()
+            print("Per-family eligibility report:")
+            print()
+            for rec in eligibility_records:
+                dp = rec["design_point"]
+                info = rec["informative_replay"]
+                glob = rec["global_replay"]
+                topq = rec.get("topquartile_replay", {})
+                print(f"Family: {rec['family']}"
+                      + (f"  (replay tag: {rec['tag']})" if rec.get("tag") else ""))
+                print(
+                    f"  Design-point:  mean_abs_u_pred={dp['mean_abs_u_pred']:.6f}"
+                    f"  [{'PASS' if dp['gate_pass'] else 'FAIL'}]"
+                )
+                print(
+                    f"  Informative:   mean={info['mean_abs_u']:.6f}"
+                    f"  median={info['median_abs_u']:.6f}"
+                    f"  frac_ge5e3={info['frac_u_ge_5e3']:.4f}"
+                    f"  n_informative={info['n_informative']}"
+                    f" ({100.0*info['frac_informative']:.2f}%)"
+                    f"  [2a={'PASS' if info['gate_pass_mean_or_median'] else 'FAIL'},"
+                    f" 2b={'PASS' if info['gate_pass_frac'] else 'FAIL'}]"
+                )
+                if topq:
+                    print(
+                        f"  TopQuartile:   mean={topq.get('mean_abs_u', 0.0):.6f}"
+                        f"  frac_ge5e3={topq.get('frac_u_ge_5e3', 0.0):.4f}"
+                        f"  n_topQ={topq.get('n_topquartile', 0)}  [fallback]"
+                    )
+                print(
+                    f"  Global:        mean_abs_u={glob['mean_abs_u']:.6f}"
+                    f"  [INFO - dilution diagnostic]"
+                )
+                print(
+                    f"  IV-B Eligible: "
+                    f"{'YES' if rec['iv_b_eligible'] else 'NO'}"
+                    f"  ({rec['eligibility_reason']})"
+                )
+                print()
+
         if not passed:
-            failed = [c for c in checks if not c["passed"]]
+            failed = [c for c in gated if not c["passed"]]
             print(f"\n{len(failed)} condition(s) not met. Fix before proceeding.")
 
     sys.exit(0 if passed else 1)

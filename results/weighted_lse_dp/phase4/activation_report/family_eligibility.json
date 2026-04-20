@@ -1,0 +1,150 @@
+{
+  "generated_at": "2026-04-20T02:13:12Z",
+  "gate_version": "option_c_v1",
+  "thresholds": {
+    "mean_abs_u": 0.005,
+    "frac_informative_u_ge_5e3": 0.1
+  },
+  "families": [
+    {
+      "family": "chain_catastrophe",
+      "design_point": {
+        "mean_abs_u_pred": 0.0,
+        "gate_pass": false
+      },
+      "informative_replay": {
+        "mean_abs_u": 0.0,
+        "median_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_informative": 0,
+        "frac_informative": 0.0,
+        "gate_pass_mean_or_median": false,
+        "gate_pass_frac": false
+      },
+      "topquartile_replay": {
+        "mean_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_topquartile": 0
+      },
+      "global_replay": {
+        "mean_abs_u": 0.0,
+        "is_dilution_only": true
+      },
+      "iv_b_eligible": false,
+      "eligibility_reason": "no replay entry for this family",
+      "tag": ""
+    },
+    {
+      "family": "chain_jackpot",
+      "design_point": {
+        "mean_abs_u_pred": 0.00245428,
+        "gate_pass": false
+      },
+      "informative_replay": {
+        "mean_abs_u": 0.0,
+        "median_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_informative": 0,
+        "frac_informative": 0.0,
+        "gate_pass_mean_or_median": false,
+        "gate_pass_frac": false
+      },
+      "topquartile_replay": {
+        "mean_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_topquartile": 0
+      },
+      "global_replay": {
+        "mean_abs_u": 0.0,
+        "is_dilution_only": true
+      },
+      "iv_b_eligible": false,
+      "eligibility_reason": "no replay entry for this family",
+      "tag": ""
+    },
+    {
+      "family": "chain_sparse_credit",
+      "design_point": {
+        "mean_abs_u_pred": 0.00517488,
+        "gate_pass": true
+      },
+      "informative_replay": {
+        "mean_abs_u": 4.588826461958229e-05,
+        "median_abs_u": 5.110814969915526e-05,
+        "frac_u_ge_5e3": 0.0,
+        "n_informative": 1949,
+        "frac_informative": 0.09745,
+        "gate_pass_mean_or_median": false,
+        "gate_pass_frac": false
+      },
+      "topquartile_replay": {
+        "mean_abs_u": 0.0011131204601741882,
+        "frac_u_ge_5e3": 0.0,
+        "n_topquartile": 5221
+      },
+      "global_replay": {
+        "mean_abs_u": 0.0006502675524420903,
+        "is_dilution_only": true
+      },
+      "iv_b_eligible": false,
+      "eligibility_reason": "informative mean=0.000046 median=0.000051 both < 5e-03; informative frac(|u|>=5e-03)=0.0000 < 0.10",
+      "tag": "chain_sparse_credit_0"
+    },
+    {
+      "family": "grid_hazard",
+      "design_point": {
+        "mean_abs_u_pred": 0.00376391,
+        "gate_pass": false
+      },
+      "informative_replay": {
+        "mean_abs_u": 0.000553449669463066,
+        "median_abs_u": 0.000540790006594578,
+        "frac_u_ge_5e3": 0.0,
+        "n_informative": 999,
+        "frac_informative": 0.1011543134872418,
+        "gate_pass_mean_or_median": false,
+        "gate_pass_frac": false
+      },
+      "topquartile_replay": {
+        "mean_abs_u": 0.0003744853657900884,
+        "frac_u_ge_5e3": 0.0,
+        "n_topquartile": 3546
+      },
+      "global_replay": {
+        "mean_abs_u": 0.00015039352269012666,
+        "is_dilution_only": true
+      },
+      "iv_b_eligible": false,
+      "eligibility_reason": "design-point 0.003764 < 5e-03; informative mean=0.000553 median=0.000541 both < 5e-03; informative frac(|u|>=5e-03)=0.0000 < 0.10",
+      "tag": "grid_hazard_1"
+    },
+    {
+      "family": "regime_shift",
+      "design_point": {
+        "mean_abs_u_pred": 0.0,
+        "gate_pass": false
+      },
+      "informative_replay": {
+        "mean_abs_u": 0.0,
+        "median_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_informative": 0,
+        "frac_informative": 0.0,
+        "gate_pass_mean_or_median": false,
+        "gate_pass_frac": false
+      },
+      "topquartile_replay": {
+        "mean_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_topquartile": 0
+      },
+      "global_replay": {
+        "mean_abs_u": 0.0,
+        "is_dilution_only": true
+      },
+      "iv_b_eligible": false,
+      "eligibility_reason": "no replay entry for this family",
+      "tag": ""
+    }
+  ]
+}

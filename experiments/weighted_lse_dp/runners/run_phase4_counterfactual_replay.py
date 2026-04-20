@@ -163,6 +163,22 @@ def _replay_task(
     trust_clip_active_t = schedule["trust_clip_active_t"]
     safe_clip_active_t = schedule["safe_clip_active_t"]
 
+    # Informativeness per stage: xi_ref_t * sqrt(p_align_t) >= 0.05.
+    # The pilot's p_align_by_stage aligns 1:1 with the schedule's xi_ref_t
+    # (both derive from the same margins_by_stage); pad/truncate defensively
+    # so lengths match.
+    p_align_list = pilot_data.get("p_align_by_stage", [])
+    p_align_arr = np.asarray(p_align_list, dtype=np.float64)
+    T_info = min(len(xi_ref_t), len(p_align_arr)) if len(p_align_arr) > 0 else 0
+    if T_info == 0:
+        informative_stage_mask = np.zeros(len(xi_ref_t), dtype=bool)
+    else:
+        info_score_t = np.zeros(len(xi_ref_t), dtype=np.float64)
+        info_score_t[:T_info] = xi_ref_t[:T_info] * np.sqrt(
+            np.maximum(p_align_arr[:T_info], 0.0)
+        )
+        informative_stage_mask = info_score_t >= 0.05
+
     # A_t: from schedule or recompute
     A_t_list = schedule.get("A_t")
     Bhat_t_list = schedule.get("Bhat_t")
@@ -269,7 +285,7 @@ def _replay_task(
 
     np.savez_compressed(
         task_dir / "replay_diagnostics.npz",
-        schema_version="1.0",
+        schema_version="1.1",
         r=r_all,
         v_next=v_next_all,
         stage=stage_all,
@@ -291,13 +307,52 @@ def _replay_task(
         u_ref_used=u_ref_used_all,
         trust_clip_active=trust_clip_all,
         safe_clip_active=safe_clip_all,
+        informative_stage_mask=informative_stage_mask.astype(np.bool_),
+        p_align_by_stage=p_align_arr.astype(np.float64)
+        if len(p_align_arr) > 0
+        else np.zeros(0, dtype=np.float64),
     )
 
     # Compute summary
     abs_u = np.abs(natural_shift)
     abs_dd = np.abs(delta_eff_discount)
     abs_tg = np.abs(target_gap)
+    abs_margin = np.abs(margin_all)
     rb = max(r_max, 1e-8)
+
+    # Informative-conditioned subset:
+    #   transition i is informative iff
+    #     informative_stage_mask[stage_i] AND (margin_i > 0)
+    # Stage indices are clamped to schedule length (same convention used
+    # above when writing NPZ arrays).
+    stage_clamped = np.minimum(stage_all, max(len(informative_stage_mask) - 1, 0))
+    if len(informative_stage_mask) == 0:
+        informative_mask = np.zeros(N, dtype=bool)
+    else:
+        informative_mask = informative_stage_mask[stage_clamped] & (margin_all > 0.0)
+    n_informative = int(np.sum(informative_mask))
+    frac_informative = float(n_informative) / float(N)
+
+    # Top-quartile fallback (|margin| >= Q75 of all |margins|).
+    q75_margin = float(np.percentile(abs_margin, 75))
+    topquartile_mask = abs_margin >= q75_margin
+    n_topquartile = int(np.sum(topquartile_mask))
+
+    def _safe_mean(x: NDArray[np.float64], mask: NDArray[np.bool_]) -> float:
+        if not np.any(mask):
+            return 0.0
+        return float(np.mean(x[mask]))
+
+    def _safe_median(x: NDArray[np.float64], mask: NDArray[np.bool_]) -> float:
+        if not np.any(mask):
+            return 0.0
+        return float(np.median(x[mask]))
+
+    def _safe_frac(x: NDArray[np.float64], mask: NDArray[np.bool_],
+                   threshold: float) -> float:
+        if not np.any(mask):
+            return 0.0
+        return float(np.mean(x[mask] >= threshold))
 
     summary: dict[str, Any] = {
         "family": family,
@@ -313,22 +368,42 @@ def _replay_task(
         "p25_natural_shift": float(np.percentile(natural_shift, 25)),
         "p75_natural_shift": float(np.percentile(natural_shift, 75)),
         "mean_abs_u": float(np.mean(abs_u)),
+        # Global replay diagnostic (alias for clarity). Kept identical to
+        # mean_abs_u for backward compat; the suffix '_global' marks it
+        # explicitly as the diluted whole-task mean.
+        "mean_abs_u_replay_global": float(np.mean(abs_u)),
         # delta_effective_discount
         "mean_delta_effective_discount": float(np.mean(delta_eff_discount)),
         "std_delta_effective_discount": float(np.std(delta_eff_discount)),
         "p25_delta_effective_discount": float(np.percentile(delta_eff_discount, 25)),
         "p75_delta_effective_discount": float(np.percentile(delta_eff_discount, 75)),
         "mean_abs_delta_d": float(np.mean(abs_dd)),
+        "mean_abs_delta_discount_global": float(np.mean(abs_dd)),
         # target_gap_same_gamma_base
         "mean_target_gap_same_gamma_base": float(np.mean(target_gap)),
         "std_target_gap_same_gamma_base": float(np.std(target_gap)),
         "p25_target_gap_same_gamma_base": float(np.percentile(target_gap, 25)),
         "p75_target_gap_same_gamma_base": float(np.percentile(target_gap, 75)),
         "mean_abs_target_gap": float(np.mean(abs_tg)),
-        # Fractions
+        "target_gap_norm_global": float(np.mean(abs_tg / rb)),
+        # Fractions (global)
         "frac_u_ge_5e3": float(np.mean(abs_u >= 5e-3)),
         "frac_delta_d_ge_1e3": float(np.mean(abs_dd >= 1e-3)),
         "frac_target_gap_ge_5e3_normed": float(np.mean(abs_tg / rb >= 5e-3)),
+        # Informative-conditioned metrics
+        "n_informative_transitions": n_informative,
+        "frac_informative_transitions": frac_informative,
+        "mean_abs_u_replay_informative": _safe_mean(abs_u, informative_mask),
+        "median_abs_u_replay_informative": _safe_median(abs_u, informative_mask),
+        "frac_informative_u_ge_5e3": _safe_frac(abs_u, informative_mask, 5e-3),
+        "mean_abs_delta_discount_informative": _safe_mean(abs_dd, informative_mask),
+        "target_gap_norm_informative": _safe_mean(abs_tg / rb, informative_mask),
+        # Top-quartile fallback metrics
+        "n_topquartile_transitions": n_topquartile,
+        "frac_topquartile": float(n_topquartile) / float(N),
+        "q75_abs_margin": q75_margin,
+        "mean_abs_u_replay_topquartile": _safe_mean(abs_u, topquartile_mask),
+        "frac_topquartile_u_ge_5e3": _safe_frac(abs_u, topquartile_mask, 5e-3),
         # Other
         "mean_beta_used": float(np.mean(beta_used_all)),
         "mean_KL_to_prior": float(np.mean(kl_to_prior_all)),
@@ -339,14 +414,20 @@ def _replay_task(
 
     # Print summary
     logger.info(
-        "Task %s: %d transitions | mean|u|=%.6f frac(|u|>=5e-3)=%.4f "
-        "mean|delta_d|=%.6f frac(|delta_d|>=1e-3)=%.4f "
-        "mean|tg|/r_max=%.6f frac(|tg/r_max|>=5e-3)=%.4f "
-        "mean_beta=%.6f mean_KL=%.8f",
+        "Task %s: %d transitions | global: mean|u|=%.6f frac(|u|>=5e-3)=%.4f "
+        "mean|delta_d|=%.6f | informative: n=%d (%.2f%%) mean|u|=%.6f "
+        "median|u|=%.6f frac(|u|>=5e-3)=%.4f | topQ: n=%d mean|u|=%.6f "
+        "| mean_beta=%.6f mean_KL=%.8f",
         tag, N,
-        summary["mean_abs_u"], summary["frac_u_ge_5e3"],
-        summary["mean_abs_delta_d"], summary["frac_delta_d_ge_1e3"],
-        summary["mean_abs_target_gap"] / rb, summary["frac_target_gap_ge_5e3_normed"],
+        summary["mean_abs_u_replay_global"], summary["frac_u_ge_5e3"],
+        summary["mean_abs_delta_d"],
+        summary["n_informative_transitions"],
+        100.0 * summary["frac_informative_transitions"],
+        summary["mean_abs_u_replay_informative"],
+        summary["median_abs_u_replay_informative"],
+        summary["frac_informative_u_ge_5e3"],
+        summary["n_topquartile_transitions"],
+        summary["mean_abs_u_replay_topquartile"],
         summary["mean_beta_used"], summary["mean_KL_to_prior"],
     )
 
