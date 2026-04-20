@@ -81,9 +81,8 @@ def _run_pilot_with_transitions(
     # Run the standard pilot to get margins and schedule-building data
     pilot_data = run_classical_pilot(cfg, seed=seed, n_episodes=n_episodes)
 
-    # Re-run to collect raw transitions with the value proxy
-    # (the pilot already ran episodes; we replay its logic to extract
-    #  per-transition v_next using the same seed)
+    # Re-run to collect (r, v_next, stage) transitions using the same DP V*
+    # value function that run_classical_pilot used (no random-policy bias).
     seed_everything(seed)
     rng = np.random.default_rng(seed)
 
@@ -108,46 +107,62 @@ def _run_pilot_with_transitions(
 
     n_actions = int(mdp_rl.info.action_space.n)
 
+    # Compute V* via backward VI (same as in run_classical_pilot — use DP V*)
+    V_star = np.zeros(0)
+    Q_star = np.zeros((0, n_actions))
+    if hasattr(mdp_base, "p") and hasattr(mdp_base, "r"):
+        P = np.asarray(mdp_base.p, dtype=np.float64)
+        R_raw = np.asarray(mdp_base.r, dtype=np.float64)
+        R = np.einsum("ijk,ijk->ij", P, R_raw) if R_raw.ndim == 3 else R_raw
+        S_base, A_base = R.shape[:2]
+        V = np.zeros(S_base, dtype=np.float64)
+        for _ in range(horizon):
+            Q = R + gamma * np.einsum("ijk,k->ij", P, V)
+            V = Q.max(axis=1)
+        V_star = V
+        Q_star = R + gamma * np.einsum("ijk,k->ij", P, V_star)
+
+    EPS_GREEDY = 0.1
     transitions: list[tuple[float, float, int]] = []
 
     for ep in range(n_episodes):
         state, _ = mdp_rl.reset()
-        ep_rewards: list[float] = []
-        ep_stages: list[int] = []
+        ep_steps: list[tuple[float, float, int]] = []  # (r, v_next_base, stage)
 
         for step_idx in range(horizon):
             if time_aug:
                 state_idx = int(np.asarray(state).flat[0])
                 stage = state_idx // n_base
+                base_state = state_idx % n_base
             else:
                 stage = step_idx
+                base_state = int(np.asarray(state).flat[0])
 
-            ep_stages.append(stage)
-            action = np.array([rng.integers(0, n_actions)])
+            # Epsilon-greedy using Q* (same policy as pilot)
+            if len(Q_star) > base_state and rng.random() > EPS_GREEDY:
+                action = np.array([int(Q_star[base_state].argmax())])
+            else:
+                action = np.array([rng.integers(0, n_actions)])
+
             next_state, reward, absorbing, info = mdp_rl.step(action)
-            ep_rewards.append(float(reward))
+
+            # v_next from V*(next base state) — no gamma, per lessons.md
+            if time_aug:
+                ns_idx = int(np.asarray(next_state).flat[0])
+                nb = ns_idx % n_base
+            else:
+                nb = int(np.asarray(next_state).flat[0])
+            if absorbing or (i := step_idx) == horizon - 1:
+                v_next = 0.0
+            else:
+                v_next = float(V_star[nb]) if (len(V_star) > 0 and nb < len(V_star)) else 0.0
+
+            ep_steps.append((float(reward), v_next, stage))
             state = next_state
             if absorbing:
                 break
 
-        T_ep = len(ep_rewards)
-        if T_ep == 0:
-            continue
-
-        # Compute discounted returns from each step onward
-        value_proxies = np.zeros(T_ep, dtype=np.float64)
-        running = 0.0
-        for i in range(T_ep - 1, -1, -1):
-            running = ep_rewards[i] + gamma * running
-            value_proxies[i] = running
-
-        for i in range(T_ep):
-            r_t = ep_rewards[i]
-            if i + 1 < T_ep:
-                v_next = value_proxies[i + 1]
-            else:
-                v_next = 0.0
-            transitions.append((r_t, v_next, ep_stages[i]))
+        transitions.extend(ep_steps)
 
     return pilot_data, transitions
 

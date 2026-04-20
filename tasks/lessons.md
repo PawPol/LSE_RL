@@ -374,3 +374,23 @@ citing rho*(r,v) = sigma(beta*(r-v) + log(1/gamma)) from the paper.
 **Prevention rule**: When the safe operator is nonlinear (beta != 0) and transitions are stochastic, always use `compute_safe_target_ev_batch` for DP backups. Never pass `E[V(s')]` to `compute_safe_target_batch` as a substitute — this conflates E[g(r, V)] with g(r, E[V]), which are equal only when g is linear (beta = 0). Document any MushroomRL edit in this file immediately, not retroactively.
 
 **Source incident**: Phase III code audit (results/weighted_lse_dp/phase4/audit/phase3_code_audit.json) — observability_gaps field. Edit applied by Phase II/III rerun 2026-04-19. Committed to phase-iv-a/closing.
+
+---
+
+### 2026-04-20 — Activation pilot must use DP V* (spec §S5.1), not random policy
+
+**Pattern**: `task_activation_search.py` and `run_phase4_counterfactual_replay.py` both used random-policy episodes to collect pilot margins and compute the value proxy (discounted Monte Carlo return). On sparse-reward MDPs, random policy rarely reaches the goal, so nearly all margins are zero (r_t - 0 = 0 or r_t - MC_return ≈ 0). This made xi_ref ≈ 0, u_target ≈ u_min, and the gate metrics 2–3 orders of magnitude below threshold.
+
+**Prevention rule**: Spec §S5.1 explicitly requires "a fresh Phase I/II calibration pilot (classical QL/ESARSA)" or "Phase III safe pilot logs." For tabular MDPs with exact (P, R), use backward VI to compute V* and run epsilon-greedy Q* episodes. Compute margins as r_t - V*(s') (no gamma — per lessons.md 2026-04-16). Always use DP V* when available; random-policy pilots produce zero margins on sparse-reward tasks and violate the spec.
+
+**Source incident**: Phase IV-A overnight run — activation gate FAIL (0/11 → 10/11) after fixing pilot. Gate still fails due to certification A_t blowup; see next entry.
+
+---
+
+### 2026-04-20 — Certification Bhat_t exponential blowup prevents activation for T≥20, γ≥0.95
+
+**Pattern**: The certification recursion `Bhat[t] = kappa_t * (r_max + Bhat[t+1]) / (1 - kappa_t)` grows as ~((kappa/(1-kappa))^T). With kappa=0.96 (from alpha=0.20, gamma=0.95), the ratio is 24. For T=20, Bhat[0] ~ 24^20 ~ 10^26. A_t = r_max + Bhat[t+1] ~ 10^26. Since beta = u_ref_used / (A_t * xi_ref) ≈ 6e-3 / 10^26 ≈ 1e-29, the operator is indistinguishable from classical. The gate threshold mean_abs_u ≥ 5e-3 cannot be met.
+
+**Prevention rule**: Before designing Phase IV-A task configurations, check whether the certification recursion produces finite A_t values. A rule of thumb: kappa^T < 10^6 for tractable activation. With kappa = gamma + alpha*(1-gamma), this means: T * log(kappa) < 6*ln(10). For gamma=0.95 and alpha=0.20 (kappa=0.96): T < 6*ln(10)/ln(1/0.96) = 13.8*25.6 = 354 — so T=20 is fine? NO! The recursion uses the full expansion `kappa/(1-kappa)` which grows much faster. The correct bound is T * log(kappa/(1-kappa)) < 13.8, giving T < 13.8/ln(24) = 4.3 for kappa=0.96. **Maximum safe horizon at gamma=0.95 is T=4.**
+
+**Source incident**: Phase IV-A gate analysis — `mean_abs_u_pred = 0.00356` vs threshold `0.005` after fixing pilot. Use T≤4 for gamma=0.95, or T≤10 for gamma=0.5.

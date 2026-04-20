@@ -1,23 +1,39 @@
 {
   "started_at": "2026-04-19T04:14:10Z",
+  "finished_at": "2026-04-20T00:50:00Z",
   "current_phase": "IV-A",
   "phase_status": {
-    "IV-A": "pending",
-    "IV-B": "pending",
-    "IV-C": "pending"
+    "IV-A": "gate_failed",
+    "IV-B": "not_started",
+    "IV-C": "not_started"
   },
   "task_queue": [],
-  "completed_tasks": [],
+  "completed_tasks": [56, 57, 58, 60, 61, 62, 63, 64, 65, 70, 72, 74, 76, 77, 78, 79, 80, 81, 83],
   "failed_tasks": [],
   "failure_count": 0,
   "failure_budget": 3,
-  "gate_results": {},
+  "gate_results": {
+    "IV-A": {
+      "result": "FAIL",
+      "conditions_met": 10,
+      "conditions_total": 11,
+      "failing_condition": "mean_abs_u >= 5e-3",
+      "best_value": 0.00356,
+      "threshold": 0.005,
+      "timestamp": "2026-04-20T00:49:00Z",
+      "root_cause": "A_t = r_max + Bhat[t+1] grows as ~24^T for T=20, gamma=0.95. beta = u_ref_used/(A_t*xi_ref) ~ 1e-29. Operator is effectively classical under certification constraints."
+    }
+  },
   "codex_sessions": [],
-  "last_checkpoint": "2026-04-19T04:14:10Z",
+  "last_checkpoint": "2026-04-20T00:50:00Z",
   "auto_resolutions": [
     {
       "question": "Phase II/III rerun (job b0ao4zigu) is still running concurrently with Phase IV-A initialization",
       "resolution": "Proceed with Phase IV-A. The work is additive (writes to results/weighted_lse_dp/phase4/). The audit step will use Phase III results that exist at audit time. Phase IV-A code path is independent of Phase III outputs except for the compatibility audit."
+    },
+    {
+      "question": "Activation search used random-policy pilot (non-spec-compliant)",
+      "resolution": "Fixed: replaced with DP backward-VI V* pilot (spec §S5.1 compliance). Re-ran with 200 episodes. Gate improved from 0/11 passing to 10/11 passing but mean_abs_u still below threshold."
     }
   ]
 }
