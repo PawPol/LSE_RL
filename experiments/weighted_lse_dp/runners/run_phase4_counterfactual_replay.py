@@ -432,7 +432,18 @@ def main(args: argparse.Namespace) -> None:
     with open(suite_path) as f:
         suite = json.load(f)
 
-    selected_tasks = suite["selected_tasks"]
+    # Support three schema variants:
+    # 1. top-level "selected_tasks" (legacy)
+    # 2. top-level "tasks" (selected_tasks.json v2)
+    # 3. nested "mainline.tasks" (activation_suite.json)
+    if "selected_tasks" in suite:
+        selected_tasks = suite["selected_tasks"]
+    elif "tasks" in suite:
+        selected_tasks = suite["tasks"]
+    elif "mainline" in suite:
+        selected_tasks = suite["mainline"].get("tasks", [])
+    else:
+        selected_tasks = []
     logger.info(
         "Loaded activation suite with %d tasks from %s",
         len(selected_tasks), suite_path,
