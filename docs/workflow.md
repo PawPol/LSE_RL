@@ -163,3 +163,70 @@ If any of these happen, STOP:
 4. A spec section appears to contradict observed code behavior.
 
 In all four cases, re-plan with the user. Do not push through.
+
+## 7. Overnight autonomous mode (`/lse:overnight`)
+
+For long-running phase pipelines (Phase IV-A → B → C), the orchestrator
+supports fully autonomous execution via `/lse:overnight`.
+
+### 7.1 Key differences from interactive mode
+
+| Aspect                | Interactive              | Overnight                      |
+|-----------------------|--------------------------|--------------------------------|
+| Plan approval         | User approves            | Auto-approved, logged          |
+| Open questions        | Surfaced to user         | Conservative default, logged   |
+| Failure handling      | User decides             | Retry once, then failure budget|
+| Phase gates           | User reviews             | Automated gate checks          |
+| Codex reviews         | User reads triage        | Auto-triage, auto-fix BLOCKERs|
+| Merge                 | User merges              | Local branches only, no push   |
+
+### 7.2 Safety mechanisms
+
+1. **Failure budget**: 3 task-level failures per sub-phase. Budget
+   exhaustion stops the pipeline.
+2. **Gate-or-stop**: Each sub-phase must pass its exit gate before the
+   next begins. Failed gates stop the pipeline.
+3. **Checkpoint persistence**: State written to
+   `tasks/overnight_checkpoint.json` after every action. Crash recovery
+   via `--resume`.
+4. **Full logging**: Every action, decision, and auto-resolution logged
+   to `tasks/overnight_log.md` with timestamps.
+5. **No remote push**: All work stays on local branches.
+6. **Additive only**: Phase I/II/III outputs are never modified.
+
+### 7.3 Checkpoint state machine
+
+```
+scripts/overnight/checkpoint.py  — state tracker (init, get, update,
+                                   task-done, task-fail, gate, finish)
+scripts/overnight/check_gate.py  — artifact-based gate verification
+                                   (IV-A activation, IV-B translation,
+                                   IV-C completion)
+```
+
+### 7.4 Usage
+
+```
+# Full pipeline from IV-A:
+/lse:overnight
+
+# Resume after crash:
+/lse:overnight --resume
+
+# Start from specific phase (if earlier phases complete):
+/lse:overnight --phase IV-B
+
+# Fast iteration without Codex (development only):
+/lse:overnight --skip-review
+
+# Plan-only mode:
+/lse:overnight --dry-run
+```
+
+### 7.5 Gate definitions
+
+| Sub-phase | Gate name          | Key conditions |
+|-----------|--------------------|----------------|
+| IV-A      | Activation gate    | `selected_tasks.json` non-empty, `mean_abs_u >= 5e-3` and `frac_active >= 10%` on ≥1 family, all audit artifacts present |
+| IV-B      | Translation gate   | All matched comparisons complete, diagnostic sweep done, 5-step analysis pipeline done, nulls reported |
+| IV-C      | Completion gate    | All 3 estimator variants tested, scheduler + geometry-DP comparisons done, all 7 ablation types run, attribution analysis done |

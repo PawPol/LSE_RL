@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "phase4C",
+  "task": "dense_chain_cost_0",
+  "algorithm": "safe_q_scheduler_stagewise_baseline",
+  "scheduler_type": "stagewise_baseline",
+  "seed": 456,
+  "train_steps": 20000,
+  "n_transitions": 20000,
+  "mean_return": -0.2565901396781632,
+  "final_disc_return_mean": -0.25660563103658296
+}

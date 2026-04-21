@@ -1,0 +1,6 @@
+{
+  "schedule_path": "results/weighted_lse_dp/phase4/diagnostic_sweep_4a2_umax_0.0000/dense_chain_cost_0/safe_q_stagewise/seed_123/schedule_v3.json",
+  "calibration_source_path": "",
+  "calibration_hash": "",
+  "source_phase": "phase4_diagnostic_sweep"
+}

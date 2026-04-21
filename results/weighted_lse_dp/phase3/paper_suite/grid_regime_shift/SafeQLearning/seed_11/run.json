@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T19:08:01Z",
+  "created_at": "2026-04-20T12:26:03Z",
   "phase": "phase3",
   "task": "grid_regime_shift",
   "algorithm": "SafeQLearning",
   "seed": 11,
-  "git_sha": "b7a609cf7674f7780e1f2d57fdf6ebdbcc8d1f92",
+  "git_sha": "01a22b9945b1a74a643b82b1f38fefc5e36ee5f8",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "task": "grid_regime_shift",
@@ -107,12 +107,12 @@
     },
     "adaptation_metrics": {
       "change_at_episode": 200,
-      "pre_change_auc": 0.3965161736116252,
-      "post_change_auc": 0.9170698277996001,
-      "lag_to_50pct_recovery": 0,
-      "lag_to_75pct_recovery": 0,
-      "lag_to_90pct_recovery": 65,
-      "post_change_optimum": 0.9509900498999999
+      "pre_change_auc": 0.46725808100553584,
+      "post_change_auc": 0.8261089181214153,
+      "lag_to_50pct_recovery": 306,
+      "lag_to_75pct_recovery": 752,
+      "lag_to_90pct_recovery": 757,
+      "post_change_optimum": 0.96059601
     }
   },
   "suite": "paper_suite",

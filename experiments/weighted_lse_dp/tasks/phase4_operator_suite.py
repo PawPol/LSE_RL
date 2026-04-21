@@ -44,6 +44,11 @@ from experiments.weighted_lse_dp.tasks.hazard_wrappers import (
 from experiments.weighted_lse_dp.tasks.nonstationary_wrappers import (
     make_chain_regime_shift,
 )
+from experiments.weighted_lse_dp.tasks.phase4a2_families import (
+    PHASE4A2_FAMILIES,
+    build_phase4a2_task,
+    get_phase4a2_search_grid,
+)
 from experiments.weighted_lse_dp.common.seeds import seed_everything
 
 _GRIDS_DIR = os.path.join(os.path.dirname(__file__), os.pardir, "assets", "grids")
@@ -573,10 +578,19 @@ def build_phase4_task(
     family = cfg.get("family")
     if family is None:
         raise ValueError("cfg must contain a 'family' key.")
+
+    # Phase IV-A2 families: dense_chain_cost, shaped_chain, two_path_chain,
+    # dense_grid_hazard. Dispatched to the phase4a2 module because they
+    # follow their own factory convention (no wrapper-based stress).
+    if family in PHASE4A2_FAMILIES:
+        seed_everything(seed)
+        return build_phase4a2_task(cfg, seed=seed)
+
     if family not in _FAMILY_DISPATCH:
         raise ValueError(
             f"Unknown family '{family}'. "
-            f"Available: {sorted(_FAMILY_DISPATCH.keys())}"
+            f"Available: "
+            f"{sorted(set(_FAMILY_DISPATCH.keys()) | set(PHASE4A2_FAMILIES))}"
         )
 
     seed_everything(seed)
@@ -607,4 +621,8 @@ __all__ = [
     "make_p4_taxi_bonus",
     "get_search_grid",
     "build_phase4_task",
+    # Phase IV-A2 re-exports (see phase4a2_families.py).
+    "PHASE4A2_FAMILIES",
+    "build_phase4a2_task",
+    "get_phase4a2_search_grid",
 ]

@@ -79,25 +79,32 @@ def compute_representative_margin(
 ) -> np.ndarray:
     """Representative aligned margin ``m_t^*`` per stage.
 
-    Uses the mean of positive aligned margins as a proxy for Q75
-    (the raw Q75 is not available in the Phase II summary JSON).
+    ``aligned_positive_mean`` stores ``E[max(m, 0)] = P(m>0) * E[m | m>0]``.
+    The representative margin is the *conditional* mean ``E[m | m>0]``,
+    obtained by dividing out the frequency::
 
-    Where ``aligned_margin_freq[t] < min_freq_threshold``, the margin is
-    set to 0.0 and downstream code must fall back to ``beta_raw_t = 0``.
+        m_star_t = aligned_positive_mean_t / aligned_margin_freq_t
+
+    Where ``aligned_margin_freq[t] < min_freq_threshold`` the margin is
+    set to 0.0 and downstream code falls back to ``beta_raw_t = 0``.
 
     Parameters
     ----------
-    aligned_positive_mean : (T,)
-    aligned_margin_freq   : (T,)
+    aligned_positive_mean : (T,)  stores E[max(m,0)] = P(m>0)*E[m|m>0]
+    aligned_margin_freq   : (T,)  stores P(m>0)
     min_freq_threshold    : float
 
     Returns
     -------
-    m_star : np.ndarray, shape (T,)
+    m_star : np.ndarray, shape (T,)  conditional mean E[m|m>0]
     """
-    m_star = aligned_positive_mean.copy()
-    sparse_mask = aligned_margin_freq < min_freq_threshold
-    m_star[sparse_mask] = 0.0
+    _eps = 1e-10
+    freq = np.asarray(aligned_margin_freq, dtype=np.float64)
+    apm = np.asarray(aligned_positive_mean, dtype=np.float64)
+    # Conditional mean: E[m|m>0] = E[max(m,0)] / P(m>0)
+    m_star = np.where(freq >= min_freq_threshold,
+                      apm / np.maximum(freq, _eps),
+                      0.0)
     return m_star
 
 
@@ -107,23 +114,33 @@ def compute_informativeness(
 ) -> np.ndarray:
     """Normalized informativeness score ``I_t`` in [0, 1].
 
-    .. math::
-        \\text{raw}_t = \\text{aligned\\_positive\\_mean}[t]
-                        \\cdot \\sqrt{\\text{aligned\\_margin\\_freq}[t]}
+    ``aligned_positive_mean`` stores ``E[max(m,0)] = P(m>0) * E[m|m>0]``.
+    The intended score is::
+
+        raw_t = E[m | m>0] * sqrt(P(m>0))
+              = aligned_positive_mean_t / sqrt(aligned_margin_freq_t)
+
+    This correctly weights rare-but-large stages by ``sqrt(freq)`` rather
+    than by ``freq^{3/2}`` (which the naive ``apm * sqrt(freq)`` formula
+    would produce).  Stages with zero frequency receive ``raw = 0``.
 
     Then min-max normalize to [0, 1].  If the raw scores are flat
     (max == min), all stages receive ``I_t = 0.5``.
 
     Parameters
     ----------
-    aligned_positive_mean : (T,)
-    aligned_margin_freq   : (T,)
+    aligned_positive_mean : (T,)  stores E[max(m,0)] = P(m>0)*E[m|m>0]
+    aligned_margin_freq   : (T,)  stores P(m>0)
 
     Returns
     -------
     I_t : np.ndarray, shape (T,), values in [0, 1]
     """
-    raw = aligned_positive_mean * np.sqrt(aligned_margin_freq)
+    _eps = 1e-10
+    freq = np.asarray(aligned_margin_freq, dtype=np.float64)
+    apm = np.asarray(aligned_positive_mean, dtype=np.float64)
+    # E[m|m>0] * sqrt(P(m>0)) = apm / sqrt(freq), zero where freq≈0
+    raw = np.where(freq > _eps, apm / np.sqrt(np.maximum(freq, _eps)), 0.0)
     r_min = raw.min()
     r_max = raw.max()
     eps = 1e-10

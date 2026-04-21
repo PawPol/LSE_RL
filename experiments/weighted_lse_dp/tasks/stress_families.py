@@ -520,6 +520,9 @@ class TaxiBonusShockWrapper:
     def __getattr__(self, name: str):
         """Delegate attribute access to the base MDP for anything not
         explicitly defined on the wrapper (e.g., ``p``, ``r``, etc.)."""
+        # Guard private attrs to prevent infinite recursion during deepcopy.
+        if name.startswith("_"):
+            raise AttributeError(name)
         return getattr(self._base, name)
 
     def reset(self, state=None):

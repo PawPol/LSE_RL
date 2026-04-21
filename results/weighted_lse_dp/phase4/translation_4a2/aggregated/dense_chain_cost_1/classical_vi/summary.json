@@ -1,0 +1,71 @@
+{
+  "algorithm": "classical_vi",
+  "metrics": {
+    "final_bellman_residual": {
+      "max": 0.6027856815417814,
+      "mean": 0.6027856815417814,
+      "min": 0.6027856815417814,
+      "n": 3,
+      "std": 0.0
+    },
+    "n_states": {
+      "max": 21.0,
+      "mean": 21.0,
+      "min": 21.0,
+      "n": 3,
+      "std": 0.0
+    },
+    "n_sweeps": {
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 3,
+      "std": 0.0
+    },
+    "wall_clock_s": {
+      "max": 0.00010720899445004761,
+      "mean": 9.905599775568892e-05,
+      "min": 9.200000204145908e-05,
+      "n": 3,
+      "std": 7.663610173014323e-06
+    }
+  },
+  "n_seeds": 3,
+  "per_seed": [
+    {
+      "final_bellman_residual": 0.6027856815417814,
+      "n_states": 21.0,
+      "n_sweeps": 1.0,
+      "run_dir": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_1/classical_vi/seed_123",
+      "seed": 123,
+      "status": "unknown",
+      "wall_clock_s": 9.200000204145908e-05
+    },
+    {
+      "final_bellman_residual": 0.6027856815417814,
+      "n_states": 21.0,
+      "n_sweeps": 1.0,
+      "run_dir": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_1/classical_vi/seed_42",
+      "seed": 42,
+      "status": "unknown",
+      "wall_clock_s": 9.795899677556008e-05
+    },
+    {
+      "final_bellman_residual": 0.6027856815417814,
+      "n_states": 21.0,
+      "n_sweeps": 1.0,
+      "run_dir": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_1/classical_vi/seed_456",
+      "seed": 456,
+      "status": "unknown",
+      "wall_clock_s": 0.00010720899445004761
+    }
+  ],
+  "schema_version": "1.0.0",
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "suite": "translation_4a2",
+  "task_tag": "dense_chain_cost_1"
+}

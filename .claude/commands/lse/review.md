@@ -1,12 +1,12 @@
 ---
-description: Phase-boundary Codex gate. Runs /codex:review and /codex:adversarial-review in the background, polls, aggregates, and triages. Usage: /lse:review <I | II | III> [--base <ref>]
-argument-hint: <I | II | III> [--base <ref>]
+description: Phase-boundary Codex gate. Runs /codex:review and /codex:adversarial-review in the background, polls, aggregates, and triages. Usage: /lse:review <I | II | III | IV-A | IV-B | IV-C> [--base <ref>]
+argument-hint: <I | II | III | IV-A | IV-B | IV-C> [--base <ref>]
 ---
 
 # /lse:review
 
-Arguments: `$ARGUMENTS` — phase (`I`, `II`, or `III`) and optional
-`--base <ref>` (default `main`).
+Arguments: `$ARGUMENTS` — phase (`I`, `II`, `III`, `IV-A`, `IV-B`, or
+`IV-C`) and optional `--base <ref>` (default `main`).
 
 ## Preconditions
 
@@ -31,6 +31,24 @@ Arguments: `$ARGUMENTS` — phase (`I`, `II`, or `III`) and optional
      (kappa_t, B_hat_t, beta_cap), β=0 collapse, and logaddexp
      numerical stability, per
      docs/specs/phase_III_safe_weighted_lse_experiments.md."
+   - `IV-A` — "challenge Phase III backward compatibility, natural-shift
+     geometry correctness (u = beta*(r-v) = theta*xi), activation-search
+     ex-ante purity (no safe-return leakage in task selection),
+     counterfactual replay isolation, matched-control completeness, and
+     activation gate thresholds (mean_abs_u >= 5e-3, frac_active >= 10%),
+     per docs/specs/phase_IV_A_activation_audit_and_counterfactual.md."
+   - `IV-B` — "challenge whether activation diagnostics translate into
+     outcome improvements, whether matched-control pairing is statistically
+     valid, whether diagnostic-strength sweep shows monotone correlation,
+     whether null results are reported honestly, and whether the five-step
+     mandatory translation analysis is complete, per
+     docs/specs/phase_IV_B_translation_experiments.md."
+   - `IV-C` — "challenge estimator-stabilization correctness (dual Q-tables,
+     target networks, evaluation-side bootstrap), state-dependent scheduler
+     freeze discipline and hierarchical backoff, geometry-priority scoring,
+     trust-region and wrong-sign ablation isolation, and whether gains are
+     attributable to the claimed mechanism vs confounds, per
+     docs/specs/phase_IV_C_advanced_stabilization_and_geometry_ablations.md."
 3. Run `/codex:adversarial-review --base $BASE --background "<focus>"`.
    Capture session id.
 4. Poll `/codex:status` until both jobs complete. Do NOT busy-wait in

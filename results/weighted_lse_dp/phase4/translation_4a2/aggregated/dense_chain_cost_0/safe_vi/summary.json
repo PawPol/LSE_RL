@@ -1,0 +1,121 @@
+{
+  "algorithm": "safe_vi",
+  "metrics": {
+    "beta_used_max": {
+      "max": 0.25218510149490725,
+      "mean": 0.2459118430124055,
+      "min": 0.2395782876552357,
+      "n": 3,
+      "std": 0.006303623210650726
+    },
+    "beta_used_min": {
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 3,
+      "std": 0.0
+    },
+    "clip_fraction": {
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 3,
+      "std": 0.0
+    },
+    "final_bellman_residual": {
+      "max": 0.23769146164096067,
+      "mean": 0.23766346664773094,
+      "min": 0.23764942107819936,
+      "n": 3,
+      "std": 2.4244422976324522e-05
+    },
+    "n_stages_clipped": {
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 3,
+      "std": 0.0
+    },
+    "n_states": {
+      "max": 21.0,
+      "mean": 21.0,
+      "min": 21.0,
+      "n": 3,
+      "std": 0.0
+    },
+    "n_sweeps": {
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 3,
+      "std": 0.0
+    },
+    "schedule_sign": {
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n": 3,
+      "std": 0.0
+    },
+    "wall_clock_s": {
+      "max": 0.0006838340050308034,
+      "mean": 0.0006495556687392915,
+      "min": 0.0006202910008141771,
+      "n": 3,
+      "std": 3.206682084467849e-05
+    }
+  },
+  "n_seeds": 3,
+  "per_seed": [
+    {
+      "beta_used_max": 0.2459721398870735,
+      "beta_used_min": 0.0,
+      "clip_fraction": 0.0,
+      "final_bellman_residual": 0.23764951722403277,
+      "n_stages_clipped": 0.0,
+      "n_states": 21.0,
+      "n_sweeps": 1.0,
+      "run_dir": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_vi/seed_123",
+      "schedule_sign": 1.0,
+      "seed": 123,
+      "status": "unknown",
+      "wall_clock_s": 0.0006838340050308034
+    },
+    {
+      "beta_used_max": 0.2395782876552357,
+      "beta_used_min": 0.0,
+      "clip_fraction": 0.0,
+      "final_bellman_residual": 0.23764942107819936,
+      "n_stages_clipped": 0.0,
+      "n_states": 21.0,
+      "n_sweeps": 1.0,
+      "run_dir": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_vi/seed_42",
+      "schedule_sign": 1.0,
+      "seed": 42,
+      "status": "unknown",
+      "wall_clock_s": 0.0006445420003728941
+    },
+    {
+      "beta_used_max": 0.25218510149490725,
+      "beta_used_min": 0.0,
+      "clip_fraction": 0.0,
+      "final_bellman_residual": 0.23769146164096067,
+      "n_stages_clipped": 0.0,
+      "n_states": 21.0,
+      "n_sweeps": 1.0,
+      "run_dir": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_vi/seed_456",
+      "schedule_sign": 1.0,
+      "seed": 456,
+      "status": "unknown",
+      "wall_clock_s": 0.0006202910008141771
+    }
+  ],
+  "schema_version": "1.0.0",
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "suite": "translation_4a2",
+  "task_tag": "dense_chain_cost_0"
+}

@@ -1,0 +1,18 @@
+{
+  "_description": "Phase IV-C: geometry-prioritized asynchronous DP experiments.",
+  "phase": "IV-C",
+  "priority_modes": [
+    "residual_only",
+    "geometry_gain_only",
+    "combined"
+  ],
+  "activation_suite_path": "experiments/weighted_lse_dp/configs/phase4/activation_suite_4a2.json",
+  "metrics": [
+    "backup_count",
+    "wall_time",
+    "residual_curve",
+    "value_error"
+  ],
+  "seeds": [42, 123, 456],
+  "n_pilot_episodes": 200
+}

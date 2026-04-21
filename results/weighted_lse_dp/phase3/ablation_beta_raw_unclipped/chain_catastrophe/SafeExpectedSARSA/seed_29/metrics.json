@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T19:34:52Z",
+  "created_at": "2026-04-19T04:58:28Z",
   "phase": "phase3",
   "task": "chain_catastrophe",
   "algorithm": "SafeExpectedSARSA",
@@ -8,8 +8,8 @@
   "train_steps": 120000,
   "n_transitions": 120000,
   "steps_to_threshold": null,
-  "auc_disc_return": 1.802592077455132,
-  "final_disc_return_mean": 0.0,
+  "auc_disc_return": 1.8557467277213169,
+  "final_disc_return_mean": -0.22406208837435168,
   "final_10pct_success_rate": 0.0,
   "tail_risk_metrics": {
     "return_q05": 0.0,
@@ -24,7 +24,7 @@
     "event_rate": 0.0,
     "event_conditioned_return": NaN
   },
-  "shortcut_risky_path_fraction": 0.0,
+  "shortcut_risky_path_fraction": 0.02,
   "episode_returns": [
     0.0,
     0.0,

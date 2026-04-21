@@ -1,0 +1,156 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "phase4C",
+  "advanced_rl": [
+    {
+      "algorithm": "safe_double_q",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_final_return": -0.44905985431402023,
+      "mean_mean_return": -0.44905469052788033,
+      "mean_beta_used": 0.059971679347555755,
+      "mean_double_gap": 0.001769558841514149,
+      "mean_q_target_gap": null
+    },
+    {
+      "algorithm": "safe_target_q",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_final_return": -0.44905985431402023,
+      "mean_mean_return": -0.44905985431402023,
+      "mean_beta_used": 0.059971679347555755,
+      "mean_double_gap": null,
+      "mean_q_target_gap": 7.38161519817785e-05
+    },
+    {
+      "algorithm": "safe_target_q_polyak",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_final_return": -0.44905985431402023,
+      "mean_mean_return": -0.4490508176882753,
+      "mean_beta_used": 0.059971679347555755,
+      "mean_double_gap": null,
+      "mean_q_target_gap": 4.7171199325863365e-06
+    },
+    {
+      "algorithm": "safe_target_expected_sarsa",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_final_return": -0.44905985431402023,
+      "mean_mean_return": -0.44904178106253045,
+      "mean_beta_used": 0.059971679347555755,
+      "mean_double_gap": null,
+      "mean_q_target_gap": 6.65048049411141e-05
+    }
+  ],
+  "ablations": [
+    {
+      "ablation": "trust_region_off",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_final_return": -0.44905985431402023,
+      "mean_mean_return": -0.4490508176882753
+    },
+    {
+      "ablation": "trust_region_tighter",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_final_return": -0.44905985431402023,
+      "mean_mean_return": -0.44905985431402023
+    },
+    {
+      "ablation": "adaptive_headroom_off",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_final_return": -0.44905985431402023,
+      "mean_mean_return": -0.4490554518553241
+    },
+    {
+      "ablation": "adaptive_headroom_aggressive",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_final_return": -0.4490305045893786,
+      "mean_mean_return": -0.449055451855324
+    },
+    {
+      "ablation": "wrong_sign",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_final_return": -0.44905985431402023,
+      "mean_mean_return": -0.44905985431402023
+    },
+    {
+      "ablation": "constant_u",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_final_return": -0.44905985431402023,
+      "mean_mean_return": -0.4490508176882753
+    },
+    {
+      "ablation": "raw_unclipped",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_final_return": -0.44899961014238743,
+      "mean_mean_return": -0.4490508176882753
+    }
+  ],
+  "geometry_priority_dp": [
+    {
+      "mode": "residual_only",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_n_sweeps": 21.333333333333332,
+      "mean_final_residual": 0.0,
+      "mean_wall_clock_s": 0.029236479162743006,
+      "mean_frac_high_act": 0.9726242011956298
+    },
+    {
+      "mode": "geometry_gain_only",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_n_sweeps": 20.0,
+      "mean_final_residual": 0.0,
+      "mean_wall_clock_s": 0.02726305583443415,
+      "mean_frac_high_act": 0.9728571428571429
+    },
+    {
+      "mode": "combined",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_n_sweeps": 19.0,
+      "mean_final_residual": 0.0,
+      "mean_wall_clock_s": 0.02589644433707387,
+      "mean_frac_high_act": 0.9722639933166248
+    }
+  ],
+  "scheduler_ablations": [
+    {
+      "scheduler": "stagewise_baseline",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_final_return": -0.44905985431402023,
+      "mean_mean_return": -0.4490508176882753
+    },
+    {
+      "scheduler": "state_bin_uniform",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_final_return": -0.44899961014238726,
+      "mean_mean_return": -0.44902370781104056
+    },
+    {
+      "scheduler": "state_bin_hazard_proximity",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_final_return": -0.4490305045893786,
+      "mean_mean_return": -0.449055451855324
+    },
+    {
+      "scheduler": "state_bin_reward_region",
+      "status": "aggregated",
+      "n_runs": 6,
+      "mean_final_return": -0.44905985431402023,
+      "mean_mean_return": -0.44905985431402023
+    }
+  ]
+}

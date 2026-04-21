@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-19T05:11:19Z",
+  "phase": "phase2",
+  "task": "chain_regime_shift_pre_shift",
+  "algorithm": "PI",
+  "seed": 67,
+  "git_sha": "209303bcbf621d95a65493ae456d72b00dcddaeb",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "task": "chain_regime_shift_goal_flip",
+    "state_n": 25,
+    "prob": 0.9,
+    "gamma": 0.95,
+    "horizon": 60,
+    "change_at_episode": 300,
+    "shift_type": "goal_flip",
+    "post_prob": 0.9,
+    "train_steps": 180000,
+    "checkpoint_every": 6000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 200,
+    "success_threshold": 0.8,
+    "dp_algorithms": [
+      "PE",
+      "VI",
+      "PI",
+      "MPI",
+      "AsyncVI"
+    ],
+    "rl_algorithms": [
+      "QLearning",
+      "ExpectedSARSA"
+    ],
+    "ref_policy": "always_right",
+    "severity": "regime_shift",
+    "stress_type": "regime_shift",
+    "warmstart_dp": true,
+    "gamma_prime_override": 0.95,
+    "suite_config_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/weighted_lse_dp/configs/phase2/paper_suite.json",
+    "canonical_task_family": "chain_regime_shift",
+    "regime_phase": "pre_shift"
+  },
+  "suite": "ablation/gamma0.95",
+  "storage_mode": "dp_stagewise"
+}

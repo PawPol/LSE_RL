@@ -198,14 +198,14 @@ def build_schedule_v3(
     r_denom = max(r_max, 1e-8)
 
     # ------------------------------------------------------------------
-    # Step 1: Compute xi_ref per stage from raw margins
+    # Step 1: Compute xi_ref per stage (pass 1) using r_max as denominator.
+    # This is a bootstrap estimate; pass 2 below refines using true A_t.
     # ------------------------------------------------------------------
     xi_ref_arr = np.zeros(T, dtype=np.float64)
     for t in range(T):
         a_t = sign_family * np.asarray(margins_by_stage[t], dtype=np.float64) / r_denom
         q75 = _quantile_positive(a_t, 0.75)
         xi_ref_arr[t] = float(np.clip(q75, xi_min, xi_max))
-        # Fallback if no positive aligned margins
         if q75 == 0.0:
             xi_ref_arr[t] = xi_min
 
@@ -213,7 +213,7 @@ def build_schedule_v3(
     n_arr = np.asarray(n_by_stage, dtype=np.float64)
 
     # ------------------------------------------------------------------
-    # Step 2: Fixed-point headroom iteration
+    # Step 2: Fixed-point headroom iteration (pass 1 — bootstrap xi_ref)
     # ------------------------------------------------------------------
     fp_result = run_fixed_point(
         xi_ref_t=xi_ref_arr,
@@ -225,6 +225,37 @@ def build_schedule_v3(
         alpha_budget_max=alpha_budget_max,
         max_iters=max_fixed_point_iters,
     )
+    A_t_pass1 = fp_result["A_t"]          # shape (T,)
+
+    # ------------------------------------------------------------------
+    # Step 2b: Refine xi_ref using natural coordinates (pass 2).
+    # Spec: xi_ref_t = Q75(sign * margin / A_t, margin > 0).
+    # A_t was not available for pass 1; now recompute with true A_t.
+    # ------------------------------------------------------------------
+    xi_ref_arr_refined = np.zeros(T, dtype=np.float64)
+    for t in range(T):
+        a_denom = max(float(A_t_pass1[t]), 1e-8)
+        a_t = sign_family * np.asarray(margins_by_stage[t], dtype=np.float64) / a_denom
+        q75 = _quantile_positive(a_t, 0.75)
+        xi_ref_arr_refined[t] = float(np.clip(q75, xi_min, xi_max))
+        if q75 == 0.0:
+            xi_ref_arr_refined[t] = xi_min
+
+    # Only use refined xi_ref if it differs meaningfully (avoids churn when
+    # A_t ≈ r_max, e.g. at horizon boundary where Bhat=0).
+    if not np.allclose(xi_ref_arr_refined, xi_ref_arr, atol=1e-6):
+        xi_ref_arr = xi_ref_arr_refined
+        fp_result = run_fixed_point(
+            xi_ref_t=xi_ref_arr,
+            p_align_t=p_align_arr,
+            r_max=r_max,
+            gamma_base=gamma_base,
+            alpha_min=alpha_min,
+            alpha_max=alpha_max,
+            alpha_budget_max=alpha_budget_max,
+            max_iters=max_fixed_point_iters,
+        )
+
     alpha_t = fp_result["alpha_t"]
     kappa_t = fp_result["kappa_t"]
     bhat = fp_result["bhat"]        # shape (T+1,)

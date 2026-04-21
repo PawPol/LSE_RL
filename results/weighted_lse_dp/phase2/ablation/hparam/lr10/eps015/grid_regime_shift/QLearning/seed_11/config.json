@@ -1,0 +1,104 @@
+{
+  "task": "grid_regime_shift",
+  "algorithm": "QLearning",
+  "seed": 11,
+  "gamma": 0.99,
+  "horizon": 80,
+  "n_base": 25,
+  "train_steps": 250000,
+  "checkpoint_every": 8000,
+  "eval_episodes_checkpoint": 50,
+  "success_threshold": 0.75,
+  "epsilon": 0.15,
+  "learning_rate": 0.1,
+  "stress_type": "regime_shift",
+  "task_config": {
+    "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_base_grid.txt",
+    "prob": 0.9,
+    "goal_reward": 1.0,
+    "gamma": 0.99,
+    "horizon": 80,
+    "shift_type": "goal_move",
+    "change_at_episode": 200,
+    "n_states": 25,
+    "n_actions": 4,
+    "train_steps": 250000,
+    "checkpoint_every": 8000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 200,
+    "success_threshold": 0.75,
+    "dp_algorithms": [
+      "PE",
+      "VI",
+      "PI",
+      "MPI",
+      "AsyncVI"
+    ],
+    "rl_algorithms": [
+      "QLearning",
+      "ExpectedSARSA"
+    ],
+    "ref_policy": "shortest_path",
+    "severity": "regime_shift",
+    "stress_type": "regime_shift",
+    "warmstart_dp": true,
+    "lr_multiplier": 1.0,
+    "epsilon_override": 0.15
+  },
+  "factory_config": {
+    "task": "grid_regime_shift_goal_move",
+    "change_at_episode": 200,
+    "shift_type": "goal_move",
+    "post_prob": 0.7,
+    "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_base_grid.txt",
+    "n_rows": 5,
+    "n_cols": 5,
+    "prob": 0.9,
+    "pos_rew": 1.0,
+    "neg_rew": 0.0,
+    "gamma": 0.99,
+    "horizon": 80,
+    "goal_cell": [
+      4,
+      4
+    ],
+    "goal_reward": 1.0,
+    "n_states": 25,
+    "n_actions": 4,
+    "train_steps": 250000,
+    "checkpoint_every": 8000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 200,
+    "success_threshold": 0.75,
+    "dp_algorithms": [
+      "PE",
+      "VI",
+      "PI",
+      "MPI",
+      "AsyncVI"
+    ],
+    "rl_algorithms": [
+      "QLearning",
+      "ExpectedSARSA"
+    ],
+    "ref_policy": "shortest_path",
+    "severity": "regime_shift",
+    "stress_type": "regime_shift",
+    "warmstart_dp": true,
+    "lr_multiplier": 1.0,
+    "epsilon_override": 0.15,
+    "post_goal_cell": [
+      4,
+      0
+    ]
+  },
+  "adaptation_metrics": {
+    "change_at_episode": 200,
+    "pre_change_auc": 0.5071844551002865,
+    "post_change_auc": 0.917928305019601,
+    "lag_to_50pct_recovery": 1,
+    "lag_to_75pct_recovery": 76,
+    "lag_to_90pct_recovery": 101,
+    "post_change_optimum": 0.970299
+  }
+}

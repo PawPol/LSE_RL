@@ -1,0 +1,36 @@
+{
+  "n_total_candidates": 34,
+  "n_families": 5,
+  "per_family": {
+    "chain_catastrophe": {
+      "n_candidates": 9,
+      "mean_score": -3.31972084,
+      "max_score": -3.31972084,
+      "min_score": -3.31972084
+    },
+    "chain_jackpot": {
+      "n_candidates": 9,
+      "mean_score": 1.2263573433333332,
+      "max_score": 3.31099114,
+      "min_score": -0.07327731
+    },
+    "chain_sparse_credit": {
+      "n_candidates": 6,
+      "mean_score": -0.40343976166666656,
+      "max_score": 9.11246318,
+      "min_score": -3.31972084
+    },
+    "grid_hazard": {
+      "n_candidates": 9,
+      "mean_score": 2.731181213333333,
+      "max_score": 2.87787379,
+      "min_score": 2.61333952
+    },
+    "regime_shift": {
+      "n_candidates": 1,
+      "mean_score": -3.31972084,
+      "max_score": -3.31972084,
+      "min_score": -3.31972084
+    }
+  }
+}

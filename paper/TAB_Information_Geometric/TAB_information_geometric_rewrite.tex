@@ -1,0 +1,3525 @@
+\documentclass{article}
+
+\PassOptionsToPackage{numbers,sort&compress}{natbib}
+\usepackage[preprint]{neurips_2026}
+
+% =====================================================================
+% Packages
+% =====================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{aliascnt}
+\usepackage[shortlabels]{enumitem}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{caption}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage{cancel}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage[capitalize,noabbrev,nameinlink]{cleveref}
+
+% =====================================================================
+% Theorem environments
+% =====================================================================
+\newtheorem{theorem}{Theorem}[section]
+\newaliascnt{proposition}{theorem}
+\newtheorem{proposition}[proposition]{Proposition}
+\aliascntresetthe{proposition}
+\newaliascnt{lemma}{theorem}
+\newtheorem{lemma}[lemma]{Lemma}
+\aliascntresetthe{lemma}
+\newaliascnt{corollary}{theorem}
+\newtheorem{corollary}[corollary]{Corollary}
+\aliascntresetthe{corollary}
+\newaliascnt{definition}{theorem}
+\newtheorem{definition}[definition]{Definition}
+\aliascntresetthe{definition}
+\theoremstyle{remark}
+\newaliascnt{remark}{theorem}
+\newtheorem{remark}[remark]{Remark}
+\aliascntresetthe{remark}
+\newaliascnt{example}{theorem}
+\newtheorem{example}[example]{Example}
+\aliascntresetthe{example}
+
+% Proper names for cleveref
+\crefname{theorem}{theorem}{theorems}
+\Crefname{theorem}{Theorem}{Theorems}
+\crefname{proposition}{proposition}{propositions}
+\Crefname{proposition}{Proposition}{Propositions}
+\crefname{lemma}{lemma}{lemmas}
+\Crefname{lemma}{Lemma}{Lemmas}
+\crefname{corollary}{corollary}{corollaries}
+\Crefname{corollary}{Corollary}{Corollaries}
+\crefname{definition}{definition}{definitions}
+\Crefname{definition}{Definition}{Definitions}
+\crefname{remark}{remark}{remarks}
+\Crefname{remark}{Remark}{Remarks}
+\crefname{example}{example}{examples}
+\Crefname{example}{Example}{Examples}
+
+% =====================================================================
+% Macros
+% =====================================================================
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator{\sigmoid}{sigmoid}
+\DeclareMathOperator{\Bern}{Bern}
+\DeclareMathOperator{\Var}{Var}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\KL}{\mathrm{KL}}
+\newcommand{\Hbin}{H_{\mathrm{bin}}}
+\newcommand{\defeq}{\coloneqq}
+\newcommand{\cS}{\mathcal{S}}
+\newcommand{\cA}{\mathcal{A}}
+\newcommand{\cT}{\mathcal{T}}
+\newcommand{\cB}{\mathcal{B}}
+\newcommand{\cF}{\mathcal{F}}
+\newcommand{\cK}{\mathcal{K}}
+\newcommand{\hbg}{h_{\beta,\gamma}}
+\newcommand{\fbg}{f_{\beta,\gamma}}
+\newcommand{\gbg}{g_{\beta,\gamma}}
+\newcommand{\pprior}{p_0}
+\newcommand{\KLbin}[2]{\KL\!\left(\Bern(#1)\,\middle\|\,\Bern(#2)\right)}
+\newcommand{\Lip}{\mathrm{Lip}}
+\newcommand{\bgL}[1]{L_{\beta,\gamma}(#1)}
+\DeclareMathOperator{\PL}{PL}
+\DeclareMathOperator{\clip}{clip}
+\newcommand{\safe}{\mathrm{safe}}
+\newcommand{\Ksafe}{\widehat{\mathcal K}}
+\newcommand{\betacap}{\overline\beta}
+\newcommand{\Bhat}{\widehat B}
+
+% =====================================================================
+\title{TAB: Temporal Allocation Bellman Operators as Information-Geometric Temporal Filters}
+\author{%
+Pawe\l\ Polak \quad David Rosenberg \quad Jason Bohne \quad Gary Kazantsev\\
+Bloomberg\\
+\texttt{\{ppolak6,drosenberg44,jbohne5,gkazantsev\}@bloomberg.net}
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Classical discounted dynamic programming propagates value through a fixed temporal filter: every Bellman backup applies the same continuation weight $\gamma$, even when temporal salience is heterogeneous across transitions. We study Bellman-local operators that instead choose a regularized present-versus-continuation allocation inside each backup. The resulting \emph{temporal allocation Bellman} (TAB) target is a KL-regularized entropic certainty equivalent around the classical prior $p_0=1/(1+\gamma)$. We show that the usual raw/centered/scaled split is not cosmetic: no continuous translation-equivariant family can converge directly to the classical Bellman target $r+\gamma v$, so Bellman calibration must be separated from the certainty-equivalent composition law. We further show that TAB has a precise information-geometric interpretation on the Bernoulli manifold of present-versus-continuation allocations: the classical discount prior is the base point, the Bellman advantage $r-v$ induces the affine natural-coordinate update $\eta^*=\eta_0+\beta(r-v)$, and the KL penalty is locally the Fisher quadratic form around that prior. Reparameterized by its realized continuation coefficient, TAB is exactly the Bellman solution of a recursive regularized adaptive-discount control problem, and locally it acts as an adaptive temporal filter whose impulse-response kernel is determined by the posterior allocation. Its continuation derivative is smaller than $\gamma$ precisely on aligned regions; we give both envelope-based structural alignment conditions and an occupancy-weighted criterion showing when this local gain survives mixed regimes. Because the raw operator can be expansive elsewhere, we introduce a calibrated \emph{safe TAB} family that clips a deterministic stagewise temperature schedule against certification levels and interpret this safe layer as local-pole stabilization of the Bellman filter. We also relate TAB to a Bernoulli KL trust region, show why that trust region alone does not universally certify contraction, and derive inverse-design rules linking $\beta$, reward scale, and desired local continuation coefficients. The safe family retains the adaptive-discount mechanism while yielding globally contractive Bellman operators on a certified stagewise box, after which the usual finite-horizon DP/RL consequences follow as completeness results.
+\end{abstract}
+
+% =====================================================================
+\section{Introduction}
+
+Classical discounted dynamic programming hard-codes a single temporal tradeoff: every Bellman backup propagates one unit of continuation with the same coefficient $\gamma$. That is the right primitive when temporal relevance is homogeneous. But many control problems are temporally heterogeneous: some transitions are dominated by immediate liquidation or execution payoffs, some by continuation, and some by sparse terminal bonuses, regime switches, or catastrophic tails. In those settings the Bellman-local question is not only which action to take, but also how much of a one-step backup should be assigned to present reward versus future value.
+
+This paper studies that question at the operator level. We introduce \emph{temporal allocation Bellman (TAB) operators}, a Bellman-local family that replaces the fixed target $r+\gamma V$ with a KL-regularized allocation between immediate reward and continuation. In the concrete family developed here, the allocation is centered around the classical prior $p_0=1/(1+\gamma)$, so each backup solves an exact binary temporal-allocation problem rather than using a heuristic interpolation. The result is a recursive operator that changes value propagation itself rather than action selection.
+
+The cleanest way to read that construction is as a one-dimensional information-geometric update. The temporal-allocation variable lives on the Bernoulli manifold $\mathcal B=\{\Bern(\rho):\rho\in(0,1)\}$, the classical discount prior $p_0=1/(1+\gamma)$ is the Bellman base point, and the optimizer moves away from that base point by shifting the natural coordinate $\eta=\log(\rho/(1-\rho))$ according to the Bellman advantage $r-V$. In that sense TAB is not merely a nonlinear Bellman operator. It is a KL/Fisher-geometric perturbation of the classical temporal filter induced by discounting \citep{amari2000methods,amari2016information}. The main paper uses only this narrow Bernoulli geometry; no broader abstract machinery is required.
+The novelty claim is deliberately narrower than ``TAB solves credit assignment'' or ``TAB dominates classical dynamic programming.'' TAB is a theory paper about a new Bellman-local primitive. The sharp claims are instead the following. First, the operator is not introduced as an arbitrary smooth perturbation. The paper shows that the raw/centered/scaled construction is mathematically forced by Bellman-local control desiderata: one cannot impose certainty-equivalent translation symmetry directly on a family that converges to the classical Bellman target $r+\gamma v$. Second, after reparameterization by its realized continuation coefficient, TAB is exactly the Bellman solution of a recursive \emph{regularized adaptive-discount control problem}. Third, the induced continuation coefficient is smaller than $\gamma$ exactly on aligned regions, and the paper develops both structural and occupancy-weighted criteria for when that local gain is operationally relevant.
+
+This positioning also clarifies the relation to adjacent literatures. TAB is not introduced as the first exponential or risk-sensitive Bellman operator; those already appear in risk-sensitive control, recursive utility, and dynamic risk-measure work. Nor is the main distinction simply that TAB regularizes over time rather than over actions, although that axis is important. The sharper distinction is that TAB regularizes the \emph{present-versus-continuation split} around the classical Bellman prior $p_0=1/(1+\gamma)$, yields an explicit adaptive continuation coefficient, and admits an exact comparison to the classical coefficient $\gamma$. A more precise comparison to risk-sensitive and regularized reinforcement-learning literatures appears in \Cref{sec:related}.
+
+The main mechanism is the adaptive continuation coefficient
+\[
+\begin{aligned}
+d_{\beta,\gamma}(r,V)&=\partial_V g_{\beta,\gamma}(r,V)=(1+\gamma)(1-\rho^*(r,V)),\\
+a_{\beta,\gamma}(r,V)&=\partial_r g_{\beta,\gamma}(r,V)=(1+\gamma)\rho^*(r,V).
+\end{aligned}
+\]
+Classical dynamic programming fixes these local gains at $(a,d)=(1,\gamma)$ everywhere. TAB makes them depend on the signed Bellman advantage and therefore turns the Bellman recursion into an adaptive temporal filter. \Cref{prop:effective-discount} shows that $d_{\beta,\gamma}(r,V)\le \gamma$ exactly when $\beta(r-V)\ge 0$, \Cref{thm:aligned-contraction} turns that into a local strict-improvement theorem, and \Cref{thm:adaptive-impulse-response} shows that the resulting impulse response is the product of the realized continuation gains. The paper goes further than the original local statement in two directions. First, \Cref{prop:structural-alignment} gives envelope-based sufficient conditions under which alignment is certified from problem data and stagewise value bounds rather than from learned values. Second, \Cref{prop:occupancy-improvement} gives an occupancy-weighted criterion showing that safe TAB can still be \emph{more contractive on average} than classical discounting when aligned transitions carry enough Bellman mass even if alignment is not universal.
+The same flexibility that creates this improvement regime also creates instability: on misaligned regions the raw continuation coefficient can exceed one. We therefore separate analysis from deployment. The raw TAB family is the analytic object used to derive the variational representation, adaptive-discount control interpretation, and comparator theorems. The deployed object is a calibrated \emph{safe TAB} family obtained by clipping a deterministic stagewise temperature schedule against certification levels on a certified stagewise box. The clipping rule is transparent rather than ad hoc: it is the inverse-design rule obtained by asking for a target worst-case continuation coefficient at the certified reward/value scale. This also clarifies the role of $\beta$ beyond the earlier monotonicity discussion. Its sign should be chosen to align with the dominant Bellman-advantage mass, its magnitude has inverse reward units and is best specified in normalized stagewise coordinates, a constant normalized schedule already provides the right horizon dependence, clipping is inactive exactly on an explicit feasible-design region, and exogenous state-dependent schedules remain safe when clipped pointwise. In that sense $\beta$ is not merely an optimism/pessimism label; it is a programmable adaptive-discount knob with explicit calibration and sensitivity guarantees.
+
+A second important scope clarification is that TAB is recursive, not pathwise. The paper does \emph{not} claim that the recursive TAB value equals the expectation of a nonlinear functional of the whole trajectory. Instead, the Bellman recursion itself is the normative object. \Cref{thm:adaptive-discount-control} makes this exact: TAB solves a recursive regularized control problem over adaptive continuation coefficients. In that precise sense TAB addresses temporal credit assignment by modifying the propagation of value through the Bellman system, not by postulating a trajectory-level risk functional.
+
+The practical implication is therefore falsifiable rather than universal. The theory predicts that safe TAB should differ materially from classical dynamic programming when three conditions hold simultaneously: the sign of $\beta$ matches the dominant event type, aligned transitions occupy enough Bellman mass, and clipping is not forcing the deployed schedule back toward zero. It also says what to measure: the aligned-occupancy proxy, the clipping rate, the normalized schedule, and the realized continuation coefficients. If those conditions fail, the theory predicts that safe TAB should collapse toward classical behavior. This is exactly the empirical question the current experiments are designed to test.
+
+The contributions of the paper are as follows.
+\begin{enumerate}[leftmargin=1.5em,itemsep=2pt]
+    \item \textbf{Bellman-local control foundations rather than post hoc axioms.}
+    \Cref{prop:no-single-normalization,prop:weighted-basic,thm:uniqueness,thm:prior-characterization} show that the raw/centered/scaled split is mathematically necessary, not decorative: no continuous translation-equivariant family can converge directly to $r+\gamma v$, and within the discount-aware quasi-sum class the weighted log-sum-exp form is canonical.
+    \item \textbf{A Bernoulli information-geometric formulation of temporal allocation.}
+    \Cref{def:bernoulli-manifold,prop:natural-coordinate-update,prop:fisher-local-kl} show that the classical discount prior is a base point on the present-versus-continuation manifold, TAB performs an affine natural-coordinate update driven by the Bellman advantage, and the KL regularizer is locally the Fisher quadratic form around that prior.
+    \item \textbf{An external adaptive-discount and adaptive-filter interpretation.}
+    \Cref{thm:recursive-decomposition,prop:adaptive-discount-reparam,thm:adaptive-discount-control,thm:adaptive-impulse-response} show that TAB is exactly the recursive optimum of a KL-regularized control problem over stagewise continuation coefficients and, equivalently, an adaptive temporal filter with a state-dependent local pole.
+    \item \textbf{Sharper theory for when TAB can help and how to deploy it safely.}
+    \Cref{prop:effective-discount,thm:aligned-contraction,prop:structural-alignment,prop:occupancy-improvement,prop:trust-region-dual,prop:trust-region-safety,prop:sign-selection,prop:normalized-invariance,cor:feasible-design} characterize the local continuation mechanism, give structural and occupancy-weighted alignment criteria, explain the trust-region interpretation, show why trust-region geometry alone does not universally certify contraction, and turn $\beta$ into an explicit operational design parameter.
+    \item \textbf{Standard finite-horizon DP/RL consequences for completeness.}
+    Sections~\ref{sec:policy-eval}--\ref{sec:stochastic} deliberately do not claim new contraction theory beyond the safe layer. They record that once \Cref{thm:safe-calibration} is established, the safe family supports the usual backward-induction, policy/value-iteration, and projected stochastic-approximation toolbox.
+\end{enumerate}
+
+The paper is organized accordingly. Sections~\ref{sec:prelim}--\ref{sec:safe} contain the conceptual core: the Bellman-local foundations, the recursive and adaptive-discount interpretations, the alignment theory, and the safe deployment rule. Readers interested mainly in the novel ideas can stop there. Sections~\ref{sec:policy-eval}--\ref{sec:stochastic} are intentionally conservative completeness results showing that the safe deployed family plugs into the standard finite-horizon DP/RL machinery.
+
+
+\section{Preliminaries}
+\label{sec:prelim}
+% =====================================================================
+
+\noindent\textbf{Temporal Allocation Bellman (TAB) Operators.}
+The paper uses three closely related one-step objects constructed from an immediate reward $r$ and a continuation value $v$. The raw discount-aware log-partition is
+\[
+ h_{\beta,\gamma}(r,v)
+ =
+ \frac{1}{\beta}\log\!\bigl(e^{\beta r}+\gamma e^{\beta v}\bigr),
+ \qquad \beta\neq 0,
+\]
+where $\gamma\in(0,1)$ is the classical discount factor. The centered operator is
+\begin{equation}
+\fbg(r,v)
+=
+\begin{cases}
+\dfrac{1}{\beta}\log\!\left(\dfrac{e^{\beta r}+\gamma e^{\beta v}}{1+\gamma}\right), & \beta\neq 0,\\[1.2ex]
+\dfrac{r+\gamma v}{1+\gamma}, & \beta = 0,
+\end{cases}
+\label{eq:weighted-lse}
+\end{equation}
+and the corresponding scaled Bellman target is
+\begin{equation}
+\gbg(r,v) \defeq (1+\gamma)\fbg(r,v).
+\label{eq:weighted-target}
+\end{equation}
+Thus $\gbg$ is the object that enters the Bellman recursion. In particular, $g_{0,\gamma}(r,v)=r+\gamma v,$ so the classical discounted Bellman target is recovered exactly at the zero-temperature member of the family.
+
+For a deterministic stagewise schedule $(\beta_t)_{t=0}^{T-1}$, the TAB one-step targets are
+\[
+g_t^{\mathrm{TAB}}(r,v) \defeq g_{\beta_t,\gamma}(r,v).
+\]
+The calibrated safe theory introduced in Section~\ref{sec:safe} replaces the raw schedule by a clipped schedule $(\widetilde\beta_t)_{t=0}^{T-1}$ and uses
+\[
+g_t^{\safe}(r,v) \defeq g_{\widetilde\beta_t,\gamma}(r,v).
+\]
+We use \emph{TAB operators} for the full temporal-allocation Bellman family, and \emph{safe TAB operators} for the calibrated clipped subclass that satisfies certified stagewise contraction on the designated domain.
+
+The distinction between $h_{\beta,\gamma}$, $f_{\beta,\gamma}$, and $g_{\beta,\gamma}$ is useful throughout the paper. The raw family $h_{\beta,\gamma}$ is the algebraic backbone: it satisfies the discount-aware composition law developed in Section~\ref{sec:axioms}. The centered operator $f_{\beta,\gamma}$ is the normalized certainty-equivalent form with a Bernoulli/KL temporal-allocation interpretation. The scaled target $g_{\beta,\gamma}$ is the Bellman object used from Section~\ref{sec:bellman} onward, because it recovers $r+\gamma v$ exactly at $\beta=0$. The parameter $\beta$ controls the direction and strength of the deviation from the classical target: $\beta<0$ gives a pessimistic or risk-averse aggregation, $\beta>0$ gives an optimistic or risk-seeking aggregation, and $\beta=0$ gives classical discounted dynamic programming.
+
+\medskip
+\noindent\textbf{Classical vs.\ (Safe) TAB Dynamic Programming.}
+For comparison, the classical finite-horizon discounted objective is
+\begin{align}
+G^\pi &= \sum_{t=0}^{T-1} \gamma^t r_t,
+&
+V^\pi_t(s) &= \E_\pi\Bigl[\sum_{k=t}^{T-1}\gamma^{k-t}r_k\,\Big|\, s_t=s\Bigr],
+\label{eq:additive-return}
+\end{align}
+with Bellman evaluation equations
+\begin{align}
+Q^\pi_t(s,a)
+&=
+\hat r(s,a)
++
+\gamma \sum_{s'}P(s'\mid s,a)V^\pi_{t+1}(s'),
+&
+V^\pi_t(s)
+&=
+\sum_a \pi_t(a\mid s)Q^\pi_t(s,a).
+\label{eq:additive-bellman}
+\end{align}
+The corresponding optimality equation is
+\[
+Q^*_t(s,a)
+=
+\hat r(s,a)
++
+\gamma\sum_{s'}P(s'\mid s,a)\max_{a'}Q^*_{t+1}(s',a').
+\]
+To place classical DP, TAB DP, and safe TAB DP on the same footing, let $\bar g_t$ denote a generic stagewise one-step target on the time-augmented horizon. The three cases are
+\[
+\bar g_t(r,v)=r+\gamma v
+\quad\text{for classical DP,}
+\]
+\[
+\bar g_t(r,v)=g_t^{\mathrm{TAB}}(r,v)
+\quad\text{for TAB DP,}\quad
+\text{and}\quad 
+\bar g_t(r,v)=g_t^{\safe}(r,v)
+\quad\text{for safe TAB DP.}
+\]
+For any such stagewise target, the (Safe) TAB Bellman evaluation system is
+\begin{align}
+Q^{\pi,\bar g}_{t}(s,a)
+&=
+\E_{s'\sim P(\cdot\mid s,a)}
+\Bigl[
+\bar g_t\bigl(\hat r(s,a),V^{\pi,\bar g}_{t+1}(s')\bigr)
+\Bigr],
+\nonumber\\
+V^{\pi,\bar g}_{t}(s)
+&=
+\sum_a \pi_t(a\mid s)Q^{\pi,\bar g}_{t}(s,a),
+\qquad
+V^{\pi,\bar g}_{T}(s)=0.
+\label{eq:safe-bellman-prelim}
+\end{align}
+The associated optimality equation is
+\[
+Q^{*,\bar g}_{t}(s,a)
+=
+\E_{s'\sim P(\cdot\mid s,a)}
+\Bigl[
+\bar g_t\bigl(\hat r(s,a),\max_{a'}Q^{*,\bar g}_{t+1}(s',a')\bigr)
+\Bigr].
+\]
+Thus classical DP, TAB DP, and safe TAB DP differ only in the choice of the one-step target $\bar g_t$. When $\bar g_t(r,v)=r+\gamma v$, \eqref{eq:safe-bellman-prelim} reduces to the classical Bellman equations in \eqref{eq:additive-bellman}. When $\bar g_t=g_t^{\mathrm{TAB}}$, it defines TAB dynamic programming. When $\bar g_t=g_t^{\safe}$, it defines safe TAB dynamic programming. The safe TAB case has the same one-step structure as TAB, but with the raw stagewise temperature replaced by the clipped deployed temperature introduced in Section~\ref{sec:safe}.
+
+The terminology \emph{temporal allocation} reflects two facts proved later. First, each backup is Bellman-local: the operator modifies only the one-step aggregation of immediate reward and continuation value. Second, each TAB one-step target solves a local KL-regularized allocation problem between the present reward and the future continuation value. Safe TAB satisfies the same temporal-allocation representation after replacing $g_t^{\mathrm{TAB}}$ by $g_t^{\safe}$. Thus the framework changes how value is propagated through time, not how actions are regularized or selected.
+
+Unlike the classical objective \eqref{eq:additive-return}, the TAB and safe TAB recursions do not collapse to a closed-form discounted sum. The closest return-side analogue is the recursive pathwise functional
+\begin{equation}
+G_{T}^{\pi,\bar g,\mathrm{path}}(\tau)=0,
+\qquad
+G_{t}^{\pi,\bar g,\mathrm{path}}(\tau)
+=
+\bar g_t\bigl(r_t,G_{t+1}^{\pi,\bar g,\mathrm{path}}(\tau)\bigr).
+\label{eq:safe-path-return-prelim}
+\end{equation}
+Under the classical choice $\bar g_t(r,v)=r+\gamma v$, this recursion reduces to the discounted sum in \eqref{eq:additive-return}. For TAB and safe TAB choices, however, the return-side analogue remains genuinely recursive and nonlinear. In stochastic MDPs, the theory below is therefore built from the recursive Bellman system \eqref{eq:safe-bellman-prelim}, rather than from the expectation of the nonlinear pathwise functional \eqref{eq:safe-path-return-prelim}. This is the precise sense in which TAB and safe TAB dynamic programming remain direct Bellman analogues of classical discounted dynamic programming while departing from additive discounted-sum recursion. \Cref{tab:bellman-comparison} summarizes these relations for the classical and TAB one-step targets; the safe TAB target has the same entries as the TAB column with $\beta_t$ replaced by the clipped temperature $\widetilde\beta_t$.
+
+\begin{table}[h!]
+\centering
+\small
+\begingroup
+\renewcommand{\arraystretch}{1.1}
+\caption{Classical Bellman structure versus TAB structure. The classical target uses a fixed continuation coefficient $\gamma$ and has no temporal-allocation variable. The TAB target replaces this fixed split with a KL-regularized local allocation $\rho$ between immediate reward $r$ and continuation value $V$, centered around the classical prior $1/(1+\gamma)$. This same allocation admits a Bernoulli information-geometric view: the classical prior is the base point, and TAB shifts the natural coordinate by the Bellman advantage. The resulting continuation coefficient becomes state- and advantage-dependent, while the classical Bellman target is recovered exactly in the limit $\beta\to 0$. Safe TAB has the same one-step structure as TAB, with the raw temperature replaced by the clipped deployed temperature used to enforce certified contraction.}
+\label{tab:bellman-comparison}
+\begin{tabularx}{\textwidth}{
+@{}
+>{\raggedright\arraybackslash}p{0.18\textwidth}
+>{\raggedright\arraybackslash}p{0.17\textwidth}
+>{\raggedright\arraybackslash}X
+@{}}
+\toprule
+ & Classical discounted DP & TAB Bellman target \\
+\midrule
+One-step target
+& $r+\gamma V$
+& $\gbg(r,V)$ \\
+\addlinespace[0.15em]
+
+Variational form
+& none
+& $(1+\gamma)\bigl[\rho r +(1-\rho)V - \beta^{-1}\KLbin{\rho}{1/(1+\gamma)}\bigr]$ \\
+\addlinespace[0.15em]
+
+Responsibility
+& not present
+& $\rho=\sigma\bigl(\beta(r-V)+\log(1/\gamma)\bigr)$ \\
+\addlinespace[0.15em]
+
+Natural coordinate
+& fixed base log-odds $\eta_0=\log(1/\gamma)$
+& $\eta^*=\eta_0+\beta(r-V)$ \\
+\addlinespace[0.15em]
+
+Continuation coefficient
+& fixed $\gamma$
+& $(1+\gamma)(1-\rho)$ \\
+\addlinespace[0.15em]
+
+$\beta\to 0$ limit
+& ---
+& recovers the classical column exactly \\
+\addlinespace[0.15em]
+
+Ordering in $\beta$
+& not applicable
+& increasing in $\beta$ \\
+\addlinespace[0.15em]
+
+Interpretation
+& additive recursion
+& information-geometric credit reallocation on the Bernoulli manifold around the classical prior \\
+\bottomrule
+\end{tabularx}
+\endgroup
+\end{table}
+
+\newpage
+
+\section{Discount-Aware Axioms and Variational Foundations}
+\label{sec:axioms}
+% =====================================================================
+The axiomatic question in this paper is Bellman-local and control-theoretic: what one-step compressor should a recursive control problem use when its second argument is already a continuation value? The desired properties are not axioms about arbitrary utility over whole paths. They are the properties one wants from a one-step Bellman primitive.
+
+From that perspective four requirements are natural. First, the compressor should be \emph{Bellman-local}: it acts on an immediate certainty equivalent and a continuation certainty equivalent. Second, it should be \emph{time-consistent under regrouping}: compressing a three-step stream by first summarizing the tail or first summarizing the head should agree once the additional step of continuation is accounted for. Third, it should be expressed in \emph{certainty-equivalent units}: shifting both arguments by the same sure amount should shift the aggregate by that amount. Fourth, the deployed Bellman target should admit an exact \emph{classical boundary} at $\beta=0$, namely $r+\gamma v$.
+
+A central subtlety is that the last two requirements cannot live in the same normalization. The Bellman target $r+\gamma v$ is not translation equivariant, whereas certainty-equivalent one-step aggregators are. Hence the paper separates three closely related objects: the raw compositional family $h_{\beta,\gamma}$, the centered certainty-equivalent form $f_{\beta,\gamma}$, and the Bellman-calibrated target $g_{\beta,\gamma}=(1+\gamma)f_{\beta,\gamma}$. This split is not a matter of taste. The next proposition shows that it is forced by continuity at the classical boundary.
+
+\begin{proposition}[Why the axioms cannot live directly on the Bellman target]
+\label{prop:no-single-normalization}
+Let $\{A_{\beta,\gamma}:\R^2\to\R\}_{\beta\in I}$ be a family indexed by a set $I\subset\R$ with $0$ as an accumulation point. Assume that $A_{\beta,\gamma}$ is translation equivariant for every $\beta\in I\setminus\{0\}$ and that $A_{\beta,\gamma}(a,b)\to A_{0,\gamma}(a,b)$ pointwise as $\beta\to 0$. Then $A_{0,\gamma}$ is also translation equivariant. Consequently, for $\gamma\in(0,1)$ no such family can satisfy
+\[
+A_{0,\gamma}(r,v)=r+\gamma v,
+\]
+because the classical Bellman target is not translation equivariant.
+\end{proposition}
+
+Thus the paper does not impose axioms on $g_{\beta,\gamma}$ directly because that would make the certainty-equivalent requirement incompatible with the classical Bellman boundary. The correct question is instead: what raw Bellman-local compressor has the right discounted composition law and certainty-equivalent units, after which a deterministic centering and scaling can calibrate it back to the Bellman target? The answer is the weighted log-partition family below.
+
+To our knowledge, the exact Bellman-local multiplicative composition law used below is not standard as a standalone control axiom. It is closest in spirit to Koopmans-style stationarity for discounted utility and to recursive formulations of dynamic choice and recursive utility \citep{koopmans1960stationary,kreps1978temporal,epstein1989substitution}. The point here is narrower and more local: we identify the binary one-step aggregator compatible with discounted Bellman-style composition when the second argument already stands for a continuation value.
+
+\begin{definition}[Axioms for discount-aware temporal aggregation]
+\label{def:axioms}
+A family of binary aggregators $\{A_w:\R^2\to\R\}_{w>0}$ satisfies:
+\begin{enumerate}[label=(A\arabic*),leftmargin=1.5em]
+    \item \textbf{Monotonicity:} for every $w>0$, $A_w$ is strictly increasing in each argument.
+    \item \textbf{Translation equivariance:} $A_w(a+c,b+c)=A_w(a,b)+c$ for all $a,b,c\in\R$ and all $w>0$.
+    \item \textbf{Smoothness:} $(a,b)\mapsto A_w(a,b)$ is $C^2$ for every $w>0$, and the family depends continuously on $w$.
+    \item \textbf{Discounted associativity:}
+    \begin{equation}
+    A_{w_1}\bigl(a,A_{w_2}(b,c)\bigr)
+    =
+    A_{w_1w_2}\bigl(A_{w_1}(a,b),c\bigr)
+    \qquad \forall a,b,c\in\R,\ \forall w_1,w_2>0.
+    \label{eq:discounted-assoc-axiom}
+    \end{equation}
+\end{enumerate}
+\end{definition}
+
+The first three conditions impose standard regularity and scale requirements. Monotonicity says that
+improving either the immediate payoff or the continuation value should improve the aggregate.
+Translation equivariance says that the aggregator is evaluated on a certainty-equivalent scale: shifting
+both arguments upward by the same sure amount shifts the aggregate by that same amount. This is
+the usual cash-invariance property from risk-measure and certainty-equivalent theory
+\citep{artzner1999coherent,follmer2016stochastic}; it should not be confused with present-value
+discounting. Smoothness rules out discontinuous switching rules and ensures that marginal temporal
+weights are well defined.
+
+The substantive condition is discounted associativity. It is a Bellman-local consistency requirement
+for compressing a three-period stream. One can first aggregate the tail $(b,c)$ and then combine the
+result with $a$, or first aggregate $(a,b)$ and then attach the remaining payoff $c$. These two ways of
+parenthesizing the same stream should agree after accounting for the fact that $c$ is one additional
+step farther away. Therefore the continuation weights multiply: the effective weight on the third
+payoff is $w_1w_2$. This is the discounted analogue of associativity. Ordinary associativity would
+treat the two arguments symmetrically and would miss the distinction between a payoff one step
+ahead and a payoff two steps ahead.
+
+This also clarifies why the axioms are imposed on the raw aggregator rather than directly on the
+Bellman-calibrated target. The raw aggregator is the object in which the multiplicative continuation
+weights appear without extra normalizing constants. The Bellman target used later is obtained only
+after centering and scaling, so that the zero-temperature limit is exactly $r+\gamma v$. In this sense,
+the classical Bellman target is recovered by calibration at the boundary of the family, while the raw
+axioms identify the nonlinear temporal-aggregation mechanism before that calibration is applied.
+
+It is useful to contrast the two limiting linear objects. The unnormalized Bellman form
+$G_w(a,b)=a+wb$ has the correct discounted semigroup structure: it is monotone, smooth, and
+satisfies discounted associativity. However, it is not translation equivariant, since
+\[
+G_w(a+c,b+c)=G_w(a,b)+(1+w)c.
+\]
+Conversely, the normalized certainty-equivalent form
+$F_w(a,b)=(a+wb)/(1+w)$ is monotone, smooth, and translation equivariant, but the normalization
+by $1+w$ breaks the clean discounted semigroup law.
+
+The weighted log-sum-exp family provides a nonlinear bridge between these two requirements. In
+its raw form, it preserves the multiplicative continuation-weight algebra needed for discounted
+composition. After centering and scaling, the same family becomes calibrated to the classical
+Bellman target. The following proposition records these two facts explicitly.
+
+\begin{proposition}[Basic properties of the raw and centered weighted families]
+\label{prop:weighted-basic}
+For every $\beta\neq 0$, the raw family
+\[
+ h_{\beta,w}(a,b)=\frac{1}{\beta}\log\!\bigl(e^{\beta a}+w e^{\beta b}\bigr),
+ \qquad w>0,
+\]
+satisfies \textnormal{(A1)--(A4)}. More precisely,
+\begin{equation}
+ h_{\beta,w_1}\bigl(a,h_{\beta,w_2}(b,c)\bigr)
+ =
+ h_{\beta,w_1w_2}\bigl(h_{\beta,w_1}(a,b),c\bigr)
+ =
+ \frac{1}{\beta}\log\!\bigl(e^{\beta a}+w_1 e^{\beta b}+w_1w_2 e^{\beta c}\bigr).
+\label{eq:discounted-assoc-weighted-lse}
+\end{equation}
+For the reinforcement-learning specialization $w=\gamma\in(0,1)$, the centered operator
+$f_{\beta,\gamma}$ is strictly monotone, translation equivariant, and smooth for $\beta\neq 0$.
+Moreover, the scaled target satisfies
+\[
+\lim_{\beta\to 0} g_{\beta,\gamma}(r,v)=r+\gamma v.
+\]
+\end{proposition}
+
+\Cref{prop:weighted-basic} is the basic compatibility result for the construction. The raw
+log-partition has the desired discounted composition law: when a payoff is pushed one additional
+step into the future, its weight is multiplied by the additional continuation weight. The centered and
+scaled form, in turn, has the desired Bellman calibration: its zero-temperature limit is exactly
+$r+\gamma v$. Thus the raw form exposes the algebra of discounted temporal composition, while
+the centered and scaled form is the dynamic-programming target used in the Bellman recursion.
+
+\begin{definition}[Discount-aware quasi-sum class]
+\label{def:discounted-quasi-sum}
+A family $\{A_w\}_{w>0}$ belongs to the \emph{discount-aware quasi-sum class} if there exists a
+continuous strictly monotone chart $\phi:\R\to(0,\infty)$ such that
+\begin{equation}
+A_w(a,b)=\phi^{-1}\!\bigl(\phi(a)+w\phi(b)\bigr)
+\qquad \text{for all } a,b\in\R,\ w>0.
+\label{eq:discounted-quasi-sum-def}
+\end{equation}
+\end{definition}
+
+This class is a natural discounted analogue of the classical quasi-sum or quasi-arithmetic-mean
+form \citep{pales1987quasi}. The chart $\phi$ changes scale, the two transformed arguments are
+combined additively, and the continuation argument is assigned weight $w$. In this representation,
+discounted associativity is not an accidental identity: it is the semigroup property of the continuation
+weight inside the transformed scale. The next theorem shows that once translation equivariance is
+also imposed, this class becomes essentially pinned down.
+
+\begin{theorem}[Translation-equivariant discounted quasi-sums are weighted log-sum-exp]
+\label{thm:uniqueness}
+Let $\{A_w\}_{w>0}$ be a discount-aware quasi-sum family in the sense of
+\Cref{def:discounted-quasi-sum}. If every $A_w$ is translation equivariant, then there exist
+$\beta\neq 0$ and $C>0$ such that $\phi(t)=Ce^{\beta t}$ and hence
+\begin{equation}
+A_w(a,b)=\frac{1}{\beta}\log\!\bigl(e^{\beta a}+w e^{\beta b}\bigr)
+\qquad \text{for all } a,b\in\R,\ w>0.
+\label{eq:discount-aware-quasi-sum}
+\end{equation}
+\end{theorem}
+
+Together, \Cref{prop:weighted-basic} and \Cref{thm:uniqueness} give a structural reason for using the
+weighted log-sum-exp form. \Cref{prop:weighted-basic} shows that this family has the desired
+discounted composition property. \Cref{thm:uniqueness} shows that, within the discount-aware
+quasi-sum class, translation equivariance forces the chart to be exponential and therefore forces the
+aggregator to be weighted log-sum-exp. Thus the raw weighted log-partition is not introduced as an
+arbitrary smooth perturbation of a Bellman backup; it is the canonical member of this discounted
+quasi-sum class compatible with translation equivariance.
+
+\begin{theorem}[Responsibility-decomposable discount-aware aggregators]
+\label{thm:broad-class}
+Fix $w>0$ and let $A_w$ satisfy \textnormal{(A1)--(A3)}. Translation equivariance implies
+$A_w(a,b)=b+h_w(a-b)$ for a one-variable link $h_w$. If $h_w$ is strictly convex, then
+\begin{equation}
+A_w(a,b)
+=
+\max_{\rho\in h_w'(\R)}
+\Bigl[\rho a +(1-\rho)b-h_w^*(\rho)\Bigr],
+\label{eq:broad-decomp}
+\end{equation}
+where $h_w^*$ is the Legendre conjugate of $h_w$, and the unique maximizer is
+$\rho^*(a,b)=h_w'(a-b)$. For strictly concave $h_w$, the maximum becomes a minimum.
+\end{theorem}
+
+\Cref{thm:broad-class} explains why a temporal-allocation variable appears at all. Translation
+equivariance reduces any such aggregator to a function of the advantage $a-b$, plus the baseline
+continuation value $b$. If that advantage link is convex, Fenchel duality rewrites the aggregator as
+an optimization over a scalar weight $\rho$ assigned to the first argument, with $1-\rho$ assigned to
+the second. Thus the allocation variable is not a special trick of the TAB formula. It is the generic
+dual variable associated with a smooth certainty-equivalent aggregator on the advantage scale. What
+will distinguish the TAB family is the particular choice of dual penalty: a Bernoulli KL divergence
+around the classical discount prior.
+
+\begin{theorem}[KL-prior characterization of the centered weighted family]
+\label{thm:prior-characterization}
+Fix a prior weight $p\in(0,1)$ and define, for $\beta\neq 0$,
+\[
+\Psi_{\beta,p}(a,b)
+\defeq
+\underset{\rho\in[0,1]}{\mathrm{opt}}
+\Bigl[\rho a +(1-\rho)b - \beta^{-1}\KLbin{\rho}{p}\Bigr],
+\]
+where \textnormal{opt} is \textnormal{max} for $\beta>0$ and \textnormal{min} for $\beta<0$.
+Then
+\begin{equation}
+\Psi_{\beta,p}(a,b)=\frac{1}{\beta}\log\bigl(p e^{\beta a}+(1-p)e^{\beta b}\bigr).
+\label{eq:prior-characterization}
+\end{equation}
+Conversely, any binary aggregator admitting this KL-regularized variational representation with a
+$\beta$-independent Bernoulli prior $p$ is exactly the centered weighted log-sum-exp
+family~\eqref{eq:prior-characterization}. In particular, choosing $p=1/(1+\gamma)$ gives
+$f_{\beta,\gamma}$.
+\end{theorem}
+
+\Cref{thm:prior-characterization} connects the general dual representation to the particular Bellman
+target used in the paper. The prior weight $p$ is the baseline allocation assigned to the first argument,
+and the KL term penalizes deviations from that prior. In the Bellman specialization, the two arguments
+are the immediate reward and the continuation value. Choosing
+\[
+p_0=\frac{1}{1+\gamma},
+\qquad
+1-p_0=\frac{\gamma}{1+\gamma},
+\]
+encodes the classical one-step split between present reward and discounted continuation. The nonlinear
+operator then allows the local allocation to move away from this classical split, while charging the
+exact relative-entropy cost of doing so.
+
+Equivalently, after setting $p=p_0$ and writing the arguments as $(r,v)$, the centered operator
+$f_{\beta,\gamma}(r,v)$ is the exponential-utility certainty equivalent of a two-point object that pays
+the current reward $r$ with prior weight $p_0$ and the continuation value $v$ with prior weight
+$1-p_0$. The optimizer $\rho$ is the posterior temporal allocation between ``present'' and ``future.''
+The sign and magnitude of $\beta$ determine how strongly this allocation responds to the advantage
+$r-v$: positive $\beta$ emphasizes favorable deviations, negative $\beta$ emphasizes unfavorable
+ones, and the zero-temperature limit returns the classical split.
+
+This interpretation also situates the construction relative to familiar objects. In recursive-utility
+language, it is a local exponential-certainty-equivalent aggregator; in risk-measure, finance, and
+insurance language, it is the entropic or exponential premium principle with a KL penalty
+\citep{kreps1978temporal,epstein1989substitution,follmer2016stochastic,denuit1999exponential}.
+The centered operator $f_{\beta,\gamma}$ is therefore the KL-calibrated version of the raw
+discount-aware log-partition, and
+\[
+g_{\beta,\gamma}=(1+\gamma)f_{\beta,\gamma}
+\]
+is the Bellman-normalized target used in the subsequent dynamic-programming theory.
+
+\begin{remark}[Raw composition versus Bellman calibration]
+\label{rem:raw-vs-centered}
+The raw family and the centered Bellman target differ only by a deterministic normalization:
+\[
+ h_{\beta,\gamma}(r,v)=f_{\beta,\gamma}(r,v)+\frac{\log(1+\gamma)}{\beta},
+ \qquad
+ g_{\beta,\gamma}(r,v)=(1+\gamma)f_{\beta,\gamma}(r,v).
+\]
+The raw family is the natural object for discount-aware composition because its continuation weights
+compose multiplicatively without additional normalizing constants. The centered operator is the
+natural certainty-equivalent form because it uses the classical prior weights
+$1/(1+\gamma)$ and $\gamma/(1+\gamma)$. The scaled target is the natural Bellman object because
+it recovers $r+\gamma v$ exactly at $\beta=0$. The rest of the paper keeps these roles separate:
+raw composition explains the algebraic form, while centered and scaled calibration gives the dynamic-
+programming operator.
+\end{remark}
+
+
+\section{Temporal Allocation Bellman Equations, Bernoulli Geometry, and the Classical Limit}
+\label{sec:bellman}
+% =====================================================================
+
+We formulate the TAB recursion on the time-augmented finite-horizon state space. Throughout,
+\[
+\pprior=\frac{1}{1+\gamma},
+\qquad
+1-\pprior=\frac{\gamma}{1+\gamma}.
+\]
+
+\begin{theorem}[Recursive variational decomposition]
+\label{thm:recursive-decomposition}
+For $\beta\neq 0$,
+\begin{equation}
+\fbg(r,v)
+=
+\underset{\rho\in[0,1]}{\mathrm{opt}}
+\Bigl[
+\rho r + (1-\rho)v - \beta^{-1}\KLbin{\rho}{\pprior}
+\Bigr],
+\label{eq:recursive-var}
+\end{equation}
+where \textnormal{opt} is \textnormal{max} for $\beta>0$ and \textnormal{min} for $\beta<0$.
+The unique optimizer is
+\[
+\rho^*(r,v)
+=
+\sigma\!\bigl(\beta(r-v)+\log(1/\gamma)\bigr)
+=
+\frac{e^{\beta r}}{e^{\beta r}+\gamma e^{\beta v}}.
+\]
+Consequently,
+\[
+\gbg(r,v)
+=
+(1+\gamma)
+\Bigl[
+\rho^* r + (1-\rho^*)v - \beta^{-1}\KLbin{\rho^*}{\pprior}
+\Bigr].
+\]
+\end{theorem}
+
+The identity in \eqref{eq:recursive-var} is the one-step variational form used throughout the paper.
+It says that the centered TAB target is obtained by choosing a local allocation $\rho$ between the
+current reward and the continuation value, penalized by the KL distance from the classical prior
+$\pprior$. Bellman equations, comparator inequalities, and the safe clipping construction are obtained
+by substituting the appropriate continuation value into this same one-step identity.
+
+The information geometry used in the paper is exactly the one-dimensional Bernoulli geometry of this temporal-allocation variable \citep{amari2000methods,amari2016information}. No broader geometric machinery is needed for the Bellman theory developed here.
+
+\begin{definition}[Bernoulli temporal-allocation manifold]
+\label{def:bernoulli-manifold}
+Let
+\[
+\cB
+=
+\{\Bern(\rho): \rho\in(0,1)\}.
+\]
+We call $\rho$ the mixture coordinate on $\cB$, and
+\[
+\eta(\rho) \defeq \log\frac{\rho}{1-\rho}
+\]
+its natural coordinate. The classical discounted Bellman prior is the base point $\Bern(\pprior)$ with
+\[
+\eta_0 \defeq \eta(\pprior)=\log\frac{\pprior}{1-\pprior}=\log(1/\gamma).
+\]
+\end{definition}
+
+\begin{proposition}[Natural-coordinate update from the classical prior]
+\label{prop:natural-coordinate-update}
+For every $r,v\in\R$ and every $\beta\in\R$, the TAB posterior allocation from \Cref{thm:recursive-decomposition} satisfies
+\[
+\eta^*(r,v)
+\defeq
+\log\frac{\rho^*(r,v)}{1-\rho^*(r,v)}
+=
+\eta_0 + \beta(r-v).
+\]
+Equivalently, TAB translates the classical temporal-allocation prior by the Bellman advantage $r-v$ in natural coordinates on $\cB$.
+\end{proposition}
+
+\begin{proposition}[Fisher metric and local KL geometry at the classical prior]
+\label{prop:fisher-local-kl}
+On the Bernoulli manifold $\cB$, the Fisher--Rao metric in the mixture coordinate $\rho$ is
+\[
+g_{\cB}(\rho)=\frac{1}{\rho(1-\rho)}.
+\]
+Consequently, as $\rho\to \pprior$,
+\[
+\KLbin{\rho}{\pprior}
+=
+\frac{1}{2}g_{\cB}(\pprior)(\rho-\pprior)^2 + O\bigl((\rho-\pprior)^3\bigr)
+=
+\frac{(\rho-\pprior)^2}{2\pprior(1-\pprior)} + O\bigl((\rho-\pprior)^3\bigr).
+\]
+Thus the TAB regularizer is, to second order around the classical prior, the Fisher-metric quadratic form on the temporal-allocation manifold.
+\end{proposition}
+
+These two facts are the exact information-geometric content used in the main paper. The first says that TAB is an affine update in the natural coordinate of the Bernoulli present-versus-continuation manifold. The second says that the KL penalty is locally the intrinsic Fisher quadratic form around the classical Bellman prior. Together they turn the weighted Bellman target into an information-geometric perturbation of the classical temporal filter rather than an ad hoc nonlinear penalty.
+
+\begin{definition}[Recursive TAB value functions]
+\label{def:lse-value}
+For a policy $\pi=(\pi_0,\dots,\pi_{T-1})$, define recursively on the time-augmented state space:
+\begin{align}
+Q_{\beta,\gamma,t}^\pi(s,a)
+&\defeq
+\E_{s'\sim P(\cdot\mid s,a)}
+\Bigl[
+\gbg\bigl(\hat r(s,a),V_{\beta,\gamma,t+1}^\pi(s')\bigr)
+\Bigr],
+\label{eq:lse-q-pi}\\
+V_{\beta,\gamma,t}^\pi(s)
+&\defeq
+\sum_{a'}\pi_t(a'\mid s)Q_{\beta,\gamma,t}^\pi(s,a'),
+\label{eq:lse-v-pi}
+\end{align}
+with terminal condition $V_{\beta,\gamma,T}^\pi(s)=0$ for all $s\in\cS$.
+The optimal value functions are defined by
+\[
+V^*_{\beta,\gamma,t}(s)=\max_a Q^*_{\beta,\gamma,t}(s,a).
+\]
+\end{definition}
+
+The recursive values in \Cref{def:lse-value} are the dynamic-programming objects studied below.
+They are defined directly by Bellman recursion on the time-augmented horizon. They should therefore
+be distinguished from the expectation of a nonlinear pathwise return. This distinction is important:
+the recursive definition preserves the Bellman structure needed for exact backward induction,
+optimality equations, and policy-improvement arguments.
+
+
+\begin{remark}[Normative scope: recursive control, not pathwise utility]
+\label{rem:recursive-scope}
+The recursive TAB values are the primary decision object of the paper. They should not be read as a notational proxy for the expectation of a nonlinear pathwise functional of the entire trajectory. Instead, TAB defines a \emph{Bellman-local} recursive control problem: at each backup, the operator decides how much continuation weight to allocate relative to the classical prior. \Cref{thm:adaptive-discount-control} makes this external decision problem explicit by reparameterizing the operator in terms of adaptive continuation coefficients. This is the precise sense in which TAB targets temporal credit assignment: it changes the propagation of value through the recursive system, not the pathwise objective class.
+\end{remark}
+
+\begin{theorem}[Weighted-LSE Bellman expectation equation]
+\label{thm:lse-bellman-expectation}
+Under policy $\pi$, the recursive TAB $Q$-function satisfies
+\begin{equation}
+\begin{aligned}
+Q_{\beta,\gamma,t}^\pi(s,a)
+&=
+(1+\gamma)
+\E_{s'}\Bigl[
+\rho_{t}^{\pi}(s,a,s')\hat r(s,a) \\
+&\qquad+
+\bigl(1-\rho_{t}^{\pi}(s,a,s')\bigr)
+V_{\beta,\gamma,t+1}^\pi(s')
+-
+\beta^{-1}\KLbin{\rho_t^{\pi}(s,a,s')}{\pprior}
+\Bigr],
+\end{aligned}
+\label{eq:lse-bellman-exp}
+\end{equation}
+where
+\[
+\rho_t^{\pi}(s,a,s')
+=
+\sigma\!\bigl(
+\beta(\hat r(s,a)-V_{\beta,\gamma,t+1}^\pi(s'))
++\log(1/\gamma)
+\bigr).
+\]
+At $\beta=0$, this equation reduces exactly to the classical discounted Bellman equation
+\eqref{eq:additive-bellman}.
+\end{theorem}
+
+\Cref{thm:lse-bellman-expectation} rewrites the TAB backup as three terms: an allocated reward
+term, an allocated continuation term, and a KL correction. The allocation is computed after the
+candidate next-state continuation value is specified. As a result, the effective continuation coefficient
+is no longer the fixed scalar $\gamma$; it depends on the current state-action pair, the realized
+next state, and the one-step advantage between reward and continuation.
+
+\begin{theorem}[Weighted-LSE Bellman optimality equation]
+\label{thm:lse-bellman-optimality}
+The optimal TAB $Q$-function satisfies
+\begin{equation}
+Q^*_{\beta,\gamma,t}(s,a)
+=
+\E_{s'\sim P(\cdot\mid s,a)}
+\Bigl[
+\gbg\bigl(\hat r(s,a),V^*_{\beta,\gamma,t+1}(s')\bigr)
+\Bigr],
+\label{eq:lse-bellman-opt}
+\end{equation}
+where $V^*_{\beta,\gamma,t}(s)=\max_a Q^*_{\beta,\gamma,t}(s,a)$.
+Equivalently,
+\begin{equation}
+\begin{aligned}
+Q^*_{\beta,\gamma,t}(s,a)
+&=
+(1+\gamma)
+\E_{s'}\Bigl[
+\rho_t^*(s,a,s')\hat r(s,a) \\
+&\qquad+
+\bigl(1-\rho_t^*(s,a,s')\bigr)
+V^*_{\beta,\gamma,t+1}(s')
+-
+\beta^{-1}\KLbin{\rho_t^*(s,a,s')}{\pprior}
+\Bigr],
+\end{aligned}
+\label{eq:lse-bellman-opt-expanded}
+\end{equation}
+with
+\[
+\rho_t^*(s,a,s')
+=
+\sigma\!\bigl(
+\beta(\hat r(s,a)-V^*_{\beta,\gamma,t+1}(s'))
++\log(1/\gamma)
+\bigr).
+\]
+\end{theorem}
+
+The optimality equation has the same temporal-allocation structure as the policy-evaluation equation.
+The only change is the standard dynamic-programming replacement of policy averaging by maximization
+over the next action. No entropy term or regularizer is introduced over actions; the regularization
+acts only inside the Bellman target, between the immediate reward and the continuation value.
+
+\begin{theorem}[Recovery of classical discounted dynamic programming]
+\label{thm:recovery-classical}
+Fix $\beta_0>0$. For every policy $\pi$ and every stage $t$, there exists a finite constant
+$C_t(\beta_0)$ such that for all $|\beta|\le \beta_0$,
+\begin{equation}
+\bigl\|Q_{\beta,\gamma,t}^\pi - Q_{0,\gamma,t}^\pi\bigr\|_\infty
++
+\bigl\|V_{\beta,\gamma,t}^\pi - V_{0,\gamma,t}^\pi\bigr\|_\infty
+\le C_t(\beta_0)|\beta|.
+\label{eq:recovery-rate}
+\end{equation}
+The same statement holds for the optimal value functions:
+\[
+\bigl\|Q_{\beta,\gamma,t}^* - Q_{0,\gamma,t}^*\bigr\|_\infty
++
+\bigl\|V_{\beta,\gamma,t}^* - V_{0,\gamma,t}^*\bigr\|_\infty
+\le C_t^*(\beta_0)|\beta|.
+\]
+In particular, the TAB recursion converges uniformly to the classical discounted Bellman recursion
+as $\beta\to 0$.
+\end{theorem}
+
+\Cref{thm:recovery-classical} gives the calibration guarantee for the TAB family. On bounded
+finite-horizon problems, the recursive value functions converge uniformly to their classical discounted
+counterparts as the temperature parameter goes to zero. Thus the classical Bellman recursion is not
+only analogous to the TAB recursion; it is the limiting member of the family. The safe construction
+introduced later preserves this limit, because the clipping rule is inactive for sufficiently small
+temperatures.
+
+\begin{corollary}[Action-gap policy stability for small $|\beta|$]
+\label{cor:small-beta-policy-stability}
+Assume that a deterministic classical optimal policy $\pi^0$ has a uniform action gap
+\[
+\Delta
+\defeq
+\min_{t,s}
+\Bigl(
+Q^*_{0,\gamma,t}(s,\pi_t^0(s))
+-
+\max_{a\neq \pi_t^0(s)}Q^*_{0,\gamma,t}(s,a)
+\Bigr)
+>0.
+\]
+Then there exists $\beta_*>0$ such that for all $|\beta|\le \beta_*$, the policy $\pi^0$ is also
+optimal for the TAB problem.
+\end{corollary}
+
+The corollary converts the value-level continuity in \Cref{thm:recovery-classical} into a policy-level
+statement. If the classical optimal policy is separated from all competing actions by a uniform gap,
+then sufficiently small TAB perturbations do not change the optimal policy. Thus the family is
+locally stable not only in value functions but also in the induced optimizer, under the usual
+action-gap condition.
+
+\begin{proposition}[Monotonicity in the risk parameter $\beta$]
+\label{prop:beta-monotone}
+For every fixed $r,v\in\R$, the one-step target $\beta\mapsto \gbg(r,v)$ is nondecreasing on
+$\R$ and is strictly increasing unless $r=v$. Consequently, if $\beta_1<\beta_2$, then for every
+policy $\pi$ and every stage $t$,
+\[
+Q_{\beta_1,\gamma,t}^\pi \le Q_{\beta_2,\gamma,t}^\pi,
+\qquad
+V_{\beta_1,\gamma,t}^\pi \le V_{\beta_2,\gamma,t}^\pi,
+\qquad
+Q_{\beta_1,\gamma,t}^* \le Q_{\beta_2,\gamma,t}^*.
+\]
+In particular,
+\[
+\beta<0 \implies Q_{\beta,\gamma,t}^\pi \le Q_{0,\gamma,t}^\pi,
+\qquad
+\beta>0 \implies Q_{\beta,\gamma,t}^\pi \ge Q_{0,\gamma,t}^\pi,
+\]
+and likewise for the optimal values.
+\end{proposition}
+
+This monotonicity fixes the sign convention for $\beta$. Increasing $\beta$ increases the one-step
+target and, by backward induction, increases both policy-evaluation and optimal value functions.
+Negative values of $\beta$ therefore define the pessimistic side of the family relative to classical
+discounting, while positive values define the optimistic side.
+
+\begin{remark}[Risk-premium expansion]
+\label{rem:risk-premium}
+The weighted operator is the entropic certainty equivalent of the two-point random variable that
+takes value $r$ with probability $\pprior$ and $v$ with probability $1-\pprior$. A second-order
+Taylor expansion at $\beta=0$ gives
+\begin{equation}
+\gbg(r,v)
+=
+r+\gamma v
++
+\frac{\beta\gamma}{2(1+\gamma)}(r-v)^2
++
+O(\beta^2).
+\label{eq:risk-premium}
+\end{equation}
+Thus the first nonlinear correction is a quadratic term in the one-step advantage $r-v$. For
+$\beta>0$ this term raises the classical Bellman target, while for $\beta<0$ it lowers it.
+\end{remark}
+
+The previous results fix the sign convention for $\beta$ but do not yet explain how to choose its magnitude. The next two propositions isolate the key facts. First, $\beta$ has inverse reward units, so only the dimensionless product $\beta(r-v)$ matters. Second, one can choose $\beta$ directly by targeting a desired local continuation coefficient at a reference advantage scale.
+
+\begin{proposition}[Scale covariance and the units of $\beta$]
+\label{prop:beta-scale}
+For every $c>0$ and every $r,v\in\R$,
+\[
+g_{\beta/c,\gamma}(cr,cv)=c\,g_{\beta,\gamma}(r,v),
+\qquad
+\rho^*_{\beta/c,\gamma}(cr,cv)=\rho^*_{\beta,\gamma}(r,v),
+\qquad
+d_{\beta/c,\gamma}(cr,cv)=d_{\beta,\gamma}(r,v).
+\]
+Hence $\beta$ carries inverse reward units, and the operator depends on $(r,v)$ only through the scale-free score $\beta(r-v)$ together with $\gamma$.
+\end{proposition}
+
+\begin{proposition}[Inverse design of $\beta$ from a desired local continuation coefficient]
+\label{prop:beta-inverse-design}
+Fix a reference Bellman advantage $\Delta\neq 0$ and a target continuation coefficient $\lambda\in(0,1+\gamma)$. There is a unique temperature that satisfies
+\[
+d_{\beta,\gamma}(v+\Delta,v)=\lambda.
+\]
+It is given by
+\begin{equation}
+\beta(\Delta,\lambda)
+=
+\frac{1}{\Delta}
+\log\!\left(\frac{\gamma(1+\gamma-\lambda)}{\lambda}\right).
+\label{eq:beta-inverse-design}
+\end{equation}
+If $\lambda<\gamma$, then $\beta(\Delta,\lambda)\Delta>0$, so the design point lies on the aligned side of the operator. If $\lambda>\gamma$, then $\beta(\Delta,\lambda)\Delta<0$, so the design point lies on the misaligned side. The safe temperature cap in \Cref{def:safe-calibration} is exactly the worst-case version of \eqref{eq:beta-inverse-design} obtained by setting $\lambda=\kappa_t$ and $|\Delta|=R_{\max}+\Bhat_{t+1}$.
+\end{proposition}
+
+These two facts resolve the first part of the practical ambiguity around $\beta$. Its sign is not arbitrary: it should match the event type on which one wants faster temporal propagation. Positive $\beta$ contracts more on reward-dominant spikes and liquidation events; negative $\beta$ contracts more on continuation-dominant bad futures and catastrophe states. And its magnitude should be chosen in normalized units relative to a reference Bellman-advantage scale, not as a raw dimensionful hyperparameter. The next proposition adds the missing robustness statement: moderate changes in $\beta$ produce controlled changes in the one-step target.
+
+\begin{proposition}[One-step sensitivity to the temperature parameter]
+\label{prop:beta-sensitivity}
+For every fixed $r,v\in\R$, the map $\beta\mapsto g_{\beta,\gamma}(r,v)$ is continuously differentiable on $\R$ and satisfies
+\begin{equation}
+0\le \partial_\beta g_{\beta,\gamma}(r,v)\le \frac{1+\gamma}{8}(r-v)^2.
+\label{eq:beta-sensitivity-derivative}
+\end{equation}
+Consequently, for any $\beta_1,\beta_2\in\R$,
+\begin{equation}
+|g_{\beta_1,\gamma}(r,v)-g_{\beta_2,\gamma}(r,v)|
+\le
+\frac{1+\gamma}{8}(r-v)^2|\beta_1-\beta_2|.
+\label{eq:beta-sensitivity-target}
+\end{equation}
+In particular, on any box $|r|\le R_{\max}$, $|v|\le B$,
+\begin{equation}
+|g_{\beta_1,\gamma}(r,v)-g_{\beta_2,\gamma}(r,v)|
+\le
+\frac{1+\gamma}{8}(R_{\max}+B)^2|\beta_1-\beta_2|.
+\label{eq:beta-sensitivity-box}
+\end{equation}
+\end{proposition}
+
+This is a genuine robustness statement rather than only a local Taylor expansion. On every bounded reward/value box the one-step TAB target is globally Lipschitz in $\beta$, with a constant determined by the squared Bellman-advantage scale. \Cref{prop:schedule-sensitivity} later lifts the same idea to full recursive safe value functions.
+
+
+% =====================================================================
+
+% =====================================================================
+\section{Information-Geometric Temporal Filtering, Adaptive Discounts, and Comparator Theorems}
+\label{sec:temporal-regret}
+% =====================================================================
+
+Sections~\ref{sec:prelim}--\ref{sec:bellman} described TAB as a recursive certainty-equivalent Bellman target. This section adds the decision-theoretic interpretation that the review correctly asks for. The comparator is not only an internal auxiliary variable $\rho_t$. After a change of variables it becomes a stagewise continuation coefficient $\lambda_t$, i.e. an \emph{adaptive discount schedule}. In that form TAB solves an exact regularized control problem over how much continuation to propagate at each Bellman step. The same reparameterization also turns TAB into an adaptive temporal filter whose local gain is controlled by the Bernoulli posterior allocation.
+
+Throughout this section, let $(\beta_t)_{t=0}^{T-1}$ be any deterministic stagewise schedule with a common sign and write
+\[
+ g_t(r,v) \defeq g_{\beta_t,\gamma}(r,v).
+\]
+When we move to the calibrated safe theory in Section~\ref{sec:safe}, the same results apply with $\beta_t$ replaced by the clipped deployed schedule. The first proposition records the original posterior-odds form in $\rho_t$; the second reparameterizes the same object directly in terms of the realized continuation coefficient.
+
+\begin{proposition}[Closed-form optimizer and posterior-odds form]
+\label{prop:ew-update}
+For every stage $t$ and every $r,v\in\R$ with $\beta_t\neq 0$, the optimizer of
+\[
+\rho \mapsto \rho r + (1-\rho)v - \beta_t^{-1}\KLbin{\rho}{\pprior}
+\]
+is
+\begin{equation}
+\rho_t^*(r,v)=\frac{\pprior e^{\beta_t r}}{\pprior e^{\beta_t r} + (1-\pprior)e^{\beta_t v}}
+=\sigma\!\bigl(\beta_t(r-v)+\log(1/\gamma)\bigr).
+\label{eq:exp-weights-rho}
+\end{equation}
+Equivalently,
+\begin{equation}
+\frac{\rho_t^*(r,v)}{1-\rho_t^*(r,v)}
+=\frac{\pprior}{1-\pprior}e^{\beta_t(r-v)}
+=\frac{1}{\gamma}e^{\beta_t(r-v)}.
+\label{eq:odds-update}
+\end{equation}
+Thus the TAB Bellman target is the exact KL-regularized solution of the binary temporal choice ``reward versus continuation,'' with prior odds $1/\gamma$ and temperature $\beta_t$.
+\end{proposition}
+
+\begin{proposition}[Adaptive-discount reparameterization]
+\label{prop:adaptive-discount-reparam}
+Define the continuation-coefficient KL penalty
+\[
+D_\gamma(\lambda)
+\defeq
+\KL\!\left(
+\Bern\!\Bigl(\frac{\lambda}{1+\gamma}\Bigr)
+\,\middle\|\,
+\Bern\!\Bigl(\frac{\gamma}{1+\gamma}\Bigr)
+\right),
+\qquad \lambda\in[0,1+\gamma].
+\]
+Then for every $\beta\neq 0$,
+\begin{equation}
+g_{\beta,\gamma}(r,v)
+=
+\underset{\lambda\in[0,1+\gamma]}{\mathrm{opt}}
+\Bigl[
+(1+\gamma-\lambda)r + \lambda v - \frac{1+\gamma}{\beta}D_\gamma(\lambda)
+\Bigr],
+\label{eq:adaptive-discount-reparam}
+\end{equation}
+where \textnormal{opt} is \textnormal{max} for $\beta>0$ and \textnormal{min} for $\beta<0$. The unique optimizer is
+\[
+\lambda^*(r,v)=d_{\beta,\gamma}(r,v)=\frac{(1+\gamma)\gamma}{e^{\beta(r-v)}+\gamma}.
+\]
+At the classical comparator $\lambda=\gamma$, the objective in \eqref{eq:adaptive-discount-reparam} reduces exactly to $r+\gamma v$.
+\end{proposition}
+
+This is the key conceptual reparameterization. The comparator is therefore not merely an artificial allocation weight $\rho_t$; it is a realized one-step continuation coefficient. In that language TAB optimizes over adaptive stagewise discounts around the classical comparator $\lambda=\gamma$, penalized by KL distance from the classical prior. Locally, the penalty is quadratic around $\gamma$ because $D_\gamma''(\gamma)=1/\gamma$, so near the classical limit TAB is a regularized adaptive-discount perturbation of the Bellman operator.
+
+\Cref{prop:adaptive-discount-reparam} is also the right place to understand the role of $\beta_t$. Larger $|\beta_t|$ weakens the effective penalty and allows the optimizer to move farther away from the classical discount $\gamma$. Combined with \Cref{prop:beta-inverse-design}, this means that choosing $\beta_t$ is best viewed as choosing a desired local continuation coefficient at a reference Bellman-advantage scale rather than directly tuning a temperature in the abstract.
+
+
+The adaptive-discount reparameterization has an exact systems interpretation. The continuation coefficient $d_t$ is the local pole of the scalar Bellman recursion, while the complementary derivative with respect to reward is the local feed-through gain. The resulting impulse-response kernel is classical discounted dynamic programming when these quantities stay fixed at $(1,\gamma)$.
+
+\begin{theorem}[Adaptive temporal impulse-response kernel]
+\label{thm:adaptive-impulse-response}
+Consider the scalar TAB recursion
+\[
+V_T=0,
+\qquad
+V_t=g_t(r_t,V_{t+1}),
+\qquad t=T-1,\dots,0,
+\]
+where $g_t=g_{\beta_t,\gamma}$. Define
+\[
+a_t \defeq \partial_r g_t(r_t,V_{t+1}),
+\qquad
+d_t \defeq \partial_v g_t(r_t,V_{t+1}).
+\]
+Then
+\[
+a_t=(1+\gamma)\rho_t,
+\qquad
+d_t=(1+\gamma)(1-\rho_t),
+\]
+where $\rho_t=\rho_t^*(r_t,V_{t+1})$. Moreover, for every $k\ge 0$ with $t+k\le T-1$,
+\[
+\frac{\partial V_t}{\partial r_{t+k}}
+=
+\left(\prod_{j=t}^{t+k-1} d_j\right)a_{t+k},
+\]
+with the empty product understood as $1$. When $\beta_j=0$ for all $j$, this reduces to the classical impulse response
+\[
+\frac{\partial V_t}{\partial r_{t+k}}=\gamma^k.
+\]
+\end{theorem}
+
+\begin{corollary}[Local effective horizon and pole]
+\label{cor:effective-horizon}
+Define the finite-horizon effective response mass
+\[
+H_t^{\mathrm{TAB}}
+\defeq
+\sum_{k=0}^{T-1-t}\prod_{j=t}^{t+k-1}d_j.
+\]
+If $d_j\equiv d$ on stages $t,\dots,T-1$, then
+\[
+H_t^{\mathrm{TAB}}=\sum_{k=0}^{T-1-t}d^k=\frac{1-d^{T-t}}{1-d}.
+\]
+In the long-horizon or locally stationary proxy this becomes $(1-d)^{-1}$. Thus $d<\gamma$ shortens the local planning horizon relative to classical discounted dynamic programming, $d\approx \gamma$ recovers the classical filter, and $d>1$ is locally unstable.
+\end{corollary}
+
+TAB is therefore not only an adaptive discount schedule in static terms. It is an adaptive temporal impulse-response kernel whose local gain is determined by the Bernoulli posterior allocation. This is the right control-theoretic lens for the safe layer developed later: safe TAB is a local-pole stabilization rule for the Bellman filter, not an arbitrary truncation of temperature parameters.
+
+\begin{theorem}[Exact temporal comparator theorem]
+\label{thm:temporal-comparator}
+Assume first that $\beta_t>0$ for every stage $t$.
+Then for any comparator sequence $\tilde\rho_0,\dots,\tilde\rho_{T-1}\in[0,1]$,
+\begin{equation}
+\sum_{t=0}^{T-1} g_t(r_t,v_t)
+\ge
+(1+\gamma)
+\sum_{t=0}^{T-1}
+\Bigl[
+\tilde\rho_t r_t + (1-\tilde\rho_t)v_t - \beta_t^{-1}\KLbin{\tilde\rho_t}{\pprior}
+\Bigr].
+\label{eq:temporal-comparator-pos}
+\end{equation}
+If instead $\beta_t<0$ for every stage, the inequality is reversed.
+\end{theorem}
+
+The theorem is deliberately stated before any extra MDP structure is added.
+It is a pure benchmark inequality for temporal allocations: the cumulative value achieved by the weighted operator dominates every comparator sequence once the benchmark is charged the correct KL price.
+The sign reversal for negative temperatures is equally important: the same variational identity covers optimistic and pessimistic regimes without changing the benchmark itself.
+
+
+\begin{corollary}[Classical Bellman comparator]
+\label{cor:classical-comparator}
+Setting $\tilde\rho_t=\pprior=1/(1+\gamma)$ in \Cref{thm:temporal-comparator} gives
+\begin{equation}
+\sum_{t=0}^{T-1} g_t(r_t,v_t)
+\ge
+\sum_{t=0}^{T-1}(r_t+\gamma v_t)
+\qquad\text{if } \beta_t>0 \text{ for all } t,
+\label{eq:classical-comparator-pos}
+\end{equation}
+and the reverse inequality if $\beta_t<0$ for all $t$.
+At $\beta_t\to 0$ one recovers equality stagewise.
+\end{corollary}
+
+This is the cleanest direct link to standard dynamic programming.
+Choosing the prior itself as comparator removes the KL term and recovers the classical Bellman target inside the comparator theorem.
+The raw weighted operator is therefore optimistic relative to the classical target when the stagewise schedule is positive and pessimistic when it is negative.
+
+
+\begin{theorem}[Fixed-policy MDP temporal comparator inequality]
+\label{thm:fixed-policy-comparator}
+Fix a policy $\pi$ on the time-augmented horizon and assume $\beta_t>0$ for every stage.
+Let $\tilde\rho_t(s,a,s')\in[0,1]$ be any comparator field.
+Then the recursive TAB value functions satisfy the one-step bound
+\begin{align}
+Q_t^\pi(s,a)
+\ge
+(1+\gamma)
+\E_{s'\sim P(\cdot\mid s,a)}
+\Bigl[
+&\tilde\rho_t(s,a,s')\,\hat r(s,a)
++\bigl(1-\tilde\rho_t(s,a,s')\bigr)V_{t+1}^\pi(s')
+\nonumber\\
+&\hspace{7em}-\beta_t^{-1}\KLbin{\tilde\rho_t(s,a,s')}{\pprior}
+\Bigr].
+\label{eq:fixed-policy-comparator-one-step}
+\end{align}
+Define along a trajectory the comparator continuation coefficients
+\[
+\lambda_t \defeq (1+\gamma)(1-\tilde\rho_t),
+\qquad
+K_t \defeq \KLbin{\tilde\rho_t}{\pprior},
+\]
+with the convention that the empty product is $1$.
+Then for every stage $t$ and every state $s$,
+\begin{equation}
+V_t^\pi(s)
+\ge
+\E_\pi\Biggl[
+\sum_{k=t}^{T-1}
+\Bigl(\prod_{j=t}^{k-1}\lambda_j\Bigr)
+(1+\gamma)\bigl(\tilde\rho_k\hat r_k - \beta_k^{-1}K_k\bigr)
+\,\Big|\, s_t=s
+\Biggr].
+\label{eq:fixed-policy-comparator-unrolled}
+\end{equation}
+If $\beta_t<0$ for every stage, both inequalities reverse.
+\end{theorem}
+
+The fixed-policy comparator theorem already shows that TAB dominates every comparator field after charging the correct regularization cost. The next theorem sharpens its meaning. Rather than treating the comparator merely as a benchmark, it defines an external recursive control problem over adaptive continuation coefficients and shows that TAB is exactly its Bellman solution.
+
+\begin{theorem}[TAB as regularized adaptive-discount control]
+\label{thm:adaptive-discount-control}
+Fix a policy $\pi$ and a common-sign stagewise schedule $(\beta_t)_{t=0}^{T-1}$. For any comparator field $\lambda=(\lambda_t)_{t=0}^{T-1}$ with
+\[
+\lambda_t:\cS\times\cA\times\cS\to[0,1+\gamma],
+\]
+define recursively $V_T^{\pi,\lambda}\equiv 0$ and
+\begin{align}
+Q_t^{\pi,\lambda}(s,a)
+&\defeq
+\E_{s'}\Bigl[
+(1+\gamma-\lambda_t(s,a,s'))\hat r(s,a)
+-\frac{1+\gamma}{\beta_t}D_\gamma\bigl(\lambda_t(s,a,s')\bigr) \\
+&\hspace{12.5em}
++\lambda_t(s,a,s')V_{t+1}^{\pi,\lambda}(s')
+\Bigr],
+\label{eq:adaptive-discount-q}\\
+V_t^{\pi,\lambda}(s)
+&\defeq
+\sum_a \pi_t(a\mid s)Q_t^{\pi,\lambda}(s,a).
+\label{eq:adaptive-discount-v}
+\end{align}
+If $\beta_t>0$ for every stage, then for every $(t,s)$,
+\begin{equation}
+V_t^{\pi}(s)=\sup_{\lambda}V_t^{\pi,\lambda}(s).
+\label{eq:adaptive-discount-control}
+\end{equation}
+If $\beta_t<0$ for every stage, the supremum becomes an infimum. In either case the optimizer is the TAB continuation field
+\[
+\lambda_t^*(s,a,s')=d_{\beta_t,\gamma}\bigl(\hat r(s,a),V_{t+1}^{\pi}(s')\bigr).
+\]
+Repeated substitution gives the unrolled form
+\begin{equation}
+V_t^{\pi,\lambda}(s)
+=
+\E_\pi\Biggl[
+\sum_{k=t}^{T-1}
+\Bigl(\prod_{j=t}^{k-1}\lambda_j\Bigr)
+\Bigl(
+(1+\gamma-\lambda_k)\hat r_k
+-
+\frac{1+\gamma}{\beta_k}D_\gamma(\lambda_k)
+\Bigr)
+\,\Big|\, s_t=s
+\Biggr],
+\label{eq:adaptive-discount-unrolled}
+\end{equation}
+with the understanding that the product and $\lambda_k$ are evaluated along the sampled transition path.
+\end{theorem}
+
+\Cref{thm:adaptive-discount-control} is the main response to the concern that the comparator might be internal to the operator that generated it. In $\lambda$-space the comparator is an adaptive stagewise discount schedule, and TAB is the exact recursive optimum of that regularized control problem. This objective is still recursive rather than pathwise, but it is an external decision problem in the usual Bellman sense: choose local continuation coefficients, pay a deviation cost from the classical prior, and propagate the induced continuation recursively.
+
+\begin{corollary}[Classical fixed-policy comparator]
+\label{cor:fixed-policy-classical}
+With the choice $\tilde\rho_t\equiv \pprior$, equivalently $\lambda_t\equiv \gamma$, \Cref{thm:fixed-policy-comparator,thm:adaptive-discount-control} gives
+\[
+V_t^\pi(s) \ge V_{0,\gamma,t}^\pi(s)
+\qquad\text{if } \beta_t>0 \text{ for all } t,
+\]
+and the reverse inequality if $\beta_t<0$ for all $t$.
+The product term in \eqref{eq:fixed-policy-comparator-unrolled} or \eqref{eq:adaptive-discount-unrolled} becomes exactly $\gamma^{k-t}$.
+\end{corollary}
+
+The preceding theorem already embeds classical evaluation as a comparator.
+This corollary simply makes that embedding explicit across the whole horizon.
+It shows that the comparator picture is not merely local to one Bellman step; it composes through the time-augmented recursion in the same way classical discounted evaluation does.
+
+
+\begin{proposition}[The regularized benchmark carries a path-length penalty]
+\label{prop:path-length-penalty}
+For any comparator sequence $\tilde\rho_{0:T-1}\subset[0,1]$, define
+\[
+\PL(\tilde\rho_{0:T-1}) \defeq \sum_{t=1}^{T-1}|\tilde\rho_t-\tilde\rho_{t-1}|.
+\]
+Then
+\begin{equation}
+\sum_{t=0}^{T-1}\KLbin{\tilde\rho_t}{\pprior}
+\ge
+\frac{\PL(\tilde\rho_{0:T-1})^2}{2T}.
+\label{eq:path-length-penalty}
+\end{equation}
+Consequently, when $\beta_t>0$ for all $t$ and $\beta_{\max}=\max_t \beta_t$,
+\begin{align}
+(1+\gamma)
+\sum_{t=0}^{T-1}
+\Bigl[
+\tilde\rho_t r_t +(1-\tilde\rho_t)v_t - \beta_t^{-1}\KLbin{\tilde\rho_t}{\pprior}
+\Bigr]
+\le
+&(1+\gamma)
+\sum_{t=0}^{T-1}
+\bigl[\tilde\rho_t r_t +(1-\tilde\rho_t)v_t\bigr]
+\nonumber\\
+&-
+\frac{1+\gamma}{2T\beta_{\max}}\PL(\tilde\rho_{0:T-1})^2.
+\label{eq:path-length-penalty-benchmark}
+\end{align}
+Thus the exact comparator benchmark already penalizes rapidly varying comparator sequences.
+\end{proposition}
+
+This penalty is worth emphasizing because it is not an auxiliary regularizer added later for convenience.
+It is already present in the exact KL benchmark.
+The comparator theory therefore contains an endogenous smoothness bias: violently changing temporal allocations are automatically charged through the accumulated KL terms.
+
+
+\begin{remark}[The role of the stagewise temperature schedule]
+\label{rem:beta-learning-rate}
+In the comparator view, $\beta_t$ is the stagewise sharpness parameter that controls how far the optimizer is willing to move from the classical prior $p_0$.
+Large positive $\beta_t$ weakens the KL penalty and moves $\rho_t^*$ more aggressively toward immediate reward when $r-v$ is favorable.
+Large negative $|\beta_t|$ does the same in the pessimistic direction.
+This is why the paper allows deterministic stagewise schedules with a common sign.
+Section~\ref{sec:safe} converts that flexibility into a certified deployment rule by clipping the raw schedule before it is used by the Bellman operators.
+\end{remark}
+
+\begin{remark}[Certainty equivalents and risk-sensitive control]
+\label{rem:certainty-equivalent}
+For each fixed pair $(r,v)$, the one-step target $g_{\beta,\gamma}(r,v)$ is the entropic certainty equivalent of a two-point random variable that takes value $r$ with prior probability $p_0=1/(1+\gamma)$ and value $v$ with prior probability $1-p_0$.
+In that sense, the TAB Bellman target is already a risk-sensitive control primitive at the one-step Bellman level.
+The optimistic regime $\beta>0$ magnifies favorable deviations from the classical Bellman target, while the pessimistic regime $\beta<0$ suppresses them.
+The calibrated safe theory does not change this interpretation; it only restricts the deployed stagewise temperatures so that the continuation derivative remains inside a certified global bound on the domain of interest.
+\end{remark}
+
+\section{Calibrated Safe TAB: Local-Pole Stabilization, Trust Regions, and Design}
+\label{sec:safe}
+% =====================================================================
+
+The raw family underlying TAB operators is useful precisely because it can differ substantially from the classical Bellman target. But that same flexibility creates instability on regions where the adaptive continuation coefficient exceeds one. This section turns the raw family into a deployed safe family and then studies the main design questions the review raises: when alignment can be certified structurally, how conservative the safe layer really is, how trust-region interpretations relate to contraction, and how $\beta$ and the base discount $\gamma$ should be chosen in practice. In the adaptive-filter language of Section~\ref{sec:temporal-regret}, the purpose of safe TAB is to keep the local Bellman pole inside a certified stable region on the stagewise box of interest.
+
+The key organizational point is again the separation between analysis and deployment. The raw operator supplies the exact variational and adaptive-discount theory. The safe operator clips a proposed stagewise schedule just enough to keep the continuation derivative inside a chosen certification level on a certified stagewise box. That certification is worst-case. The realized local derivative can still be much smaller than both the certificate and the classical coefficient $\gamma$ on aligned regions. The results below make that distinction explicit.
+
+\begin{proposition}[Adaptive continuation coefficient]
+\label{prop:effective-discount}
+For the raw weighted target,
+\[
+\rho_{\beta,\gamma}(r,v)=\frac{e^{\beta r}}{e^{\beta r}+\gamma e^{\beta v}},
+\qquad
+d_{\beta,\gamma}(r,v) \defeq \partial_v \gbg(r,v) = (1+\gamma)(1-\rho_{\beta,\gamma}(r,v)).
+\]
+Moreover,
+\begin{equation}
+d_{\beta,\gamma}(r,v) \le \gamma
+\iff
+\beta(r-v)\ge 0,
+\label{eq:discount-comparison}
+\end{equation}
+and equality holds iff either $\beta=0$ or $r=v$.
+\end{proposition}
+
+\Cref{prop:effective-discount} isolates the exact source of both promise and risk in the raw family.
+On aligned regions the continuation derivative falls below the classical discount factor and the operator becomes locally more stable.
+On misaligned regions it can cross the nonexpansive threshold.
+The safe calibration below is designed precisely to retain as much of the aligned behavior as possible while ruling out the expansive side on a certified box.
+
+
+\begin{theorem}[Raw bounded-set Lipschitz constant]
+\label{thm:lse-contraction}
+Fix $B\ge 0$ and assume $|\hat r(s,a)|\le R_{\max}$.
+Then for every $|r|\le R_{\max}$ and every $|v_1|,|v_2|\le B$,
+\begin{equation}
+|\gbg(r,v_1)-\gbg(r,v_2)| \le \bgL{B}|v_1-v_2|,
+\label{eq:raw-lipschitz}
+\end{equation}
+where the exact worst-case continuation Lipschitz constant is
+\begin{equation}
+\bgL{B}
+=
+\frac{(1+\gamma)\gamma}{e^{-|\beta|(R_{\max}+B)}+\gamma}
+=
+(1+\gamma)\sigma\!\bigl(\log\gamma + |\beta|(R_{\max}+B)\bigr).
+\label{eq:contraction-bound}
+\end{equation}
+In particular,
+\begin{equation}
+\bgL{B}<1
+\iff
+|\beta|(R_{\max}+B)<-2\log\gamma.
+\label{eq:expansive-threshold}
+\end{equation}
+\end{theorem}
+
+This theorem is best read as a diagnosis rather than as the final deployed algorithmic guarantee.
+It identifies exactly when the raw operator is contractive on a bounded set and exactly when it is not.
+The clipping rule later in the section simply converts this local threshold into a deterministic deployment rule on a stagewise certified box.
+
+
+\begin{theorem}[Risk-aligned local improvement over classical discounting]
+\label{thm:aligned-contraction}
+Assume that on a set $\mathcal D\subseteq[-R_{\max},R_{\max}]\times[-B,B]$ one has the margin condition
+\[
+\beta(r-v)\ge \eta>0
+\qquad\text{for all }(r,v)\in\mathcal D.
+\]
+Then on $\mathcal D$,
+\begin{equation}
+\partial_v\gbg(r,v)
+\le
+\frac{(1+\gamma)\gamma}{e^{\eta}+\gamma}
+<\gamma.
+\label{eq:improved-local-modulus}
+\end{equation}
+Thus the raw weighted operator is more contractive than classical discounted dynamic programming on every risk-aligned region with a positive margin.
+\end{theorem}
+
+This is the key positive stability result behind the whole safe construction.
+The weighted operator is interesting not merely because it is nonlinear, but because on the right side of the state space it can be \emph{more} contractive than the classical Bellman operator.
+Safe calibration is therefore not trying to eliminate the nonlinear effect.
+It is trying to confine it to regions where it is useful.
+
+
+\begin{proposition}[Stagewise envelope bounds for a stagewise schedule]
+\label{prop:stagewise-envelope}
+Let $(\beta_t)_{t=0}^{T-1}$ be any deterministic stagewise schedule.
+Define upper and lower scalar envelopes recursively by
+\begin{align}
+U_T &= 0,
+&
+U_t &= g_{\beta_t,\gamma}(R_{\max},U_{t+1}),
+\label{eq:upper-envelope}\\
+L_T &= 0,
+&
+L_t &= g_{\beta_t,\gamma}(-R_{\max},L_{t+1}).
+\label{eq:lower-envelope}
+\end{align}
+Then for every policy $\pi$, every stage $t$, and every $(s,a)$,
+\begin{equation}
+L_t \le Q_t^\pi(s,a) \le U_t,
+\qquad
+L_t \le Q_t^*(s,a) \le U_t.
+\label{eq:raw-envelope-bound}
+\end{equation}
+Consequently,
+\begin{equation}
+\|Q_t^\pi\|_\infty,\ \|Q_t^*\|_\infty \le B_t \defeq \max\{U_t,-L_t\}.
+\label{eq:fp-bound}
+\end{equation}
+\end{proposition}
+
+The envelope recursion gives the certified domain on which calibration will operate. It is also the right finite-horizon replacement for the stationary bound $R_{\max}/(1-\gamma)$. Because the problem is time-unrolled, the natural invariant set is stagewise rather than stationary. These envelopes feed directly into the clipping thresholds in the next definition, but they also give the first nontrivial answer to the alignment question itself.
+
+\begin{proposition}[Certified structural alignment from stagewise envelopes]
+\label{prop:structural-alignment}
+Fix a stage $t$ and a margin $\delta>0$. Let $V_{t+1}$ be any continuation function satisfying
+\[
+L_{t+1}\le V_{t+1}(s')\le U_{t+1}
+\qquad \text{for all } s'.
+\]
+If $\beta_t>0$ and $\hat r(s,a)\ge U_{t+1}+\delta$, or if $\beta_t<0$ and $\hat r(s,a)\le L_{t+1}-\delta$, then for every $s'$,
+\[
+\beta_t\bigl(\hat r(s,a)-V_{t+1}(s')\bigr)\ge |\beta_t|\delta.
+\]
+Consequently,
+\[
+\partial_v g_{\beta_t,\gamma}\bigl(\hat r(s,a),V_{t+1}(s')\bigr)
+\le
+\frac{(1+\gamma)\gamma}{e^{|\beta_t|\delta}+\gamma}
+<\gamma.
+\]
+In particular, reward-dominant states under positive $\beta_t$ and continuation-dominant states under negative $\beta_t$ are uniformly aligned on the entire envelope-certified continuation set.
+\end{proposition}
+
+This proposition is deliberately coarse, but it is operationally meaningful. It gives a verifiable sufficient condition for alignment that depends only on problem data and stagewise bounds rather than on learned values. Sparse terminal bonuses, liquidation payoffs, default penalties, and deterministic regime switches often create exactly this kind of envelope-dominant separation on the relevant subset of transitions.
+
+The same Bernoulli geometry also yields a trust-region interpretation. The raw TAB optimizer is the Lagrangian form of a one-dimensional KL-constrained temporal-allocation problem, but that geometric trust region does not by itself impose the continuation-coefficient cap needed for worst-case contraction.
+
+\begin{proposition}[TAB as the dual of a Bernoulli KL trust region]
+\label{prop:trust-region-dual}
+Fix $r,v\in\R$ and suppose first that $\beta>0$. Let $\rho^*(r,v)$ be the TAB optimizer from \Cref{thm:recursive-decomposition}, and define
+\[
+\epsilon(r,v) \defeq \KLbin{\rho^*(r,v)}{\pprior}.
+\]
+If $r\neq v$, then $\rho^*(r,v)$ is the unique solution of the constrained problem
+\[
+\max_{\rho\in[0,1]}
+\Bigl\{\rho r + (1-\rho)v\Bigr\}
+\qquad
+\text{s.t.}
+\qquad
+\KLbin{\rho}{\pprior}\le \epsilon(r,v).
+\]
+If $r=v$, every feasible point is optimal and the Lagrangian TAB form selects the prior $\rho=\pprior$. Conversely, every active solution of the KL-constrained maximization problem is obtained from the TAB Lagrangian for a unique multiplier $1/\beta>0$. For $\beta<0$, the analogous statement holds with maximization replaced by minimization.
+\end{proposition}
+
+\begin{proposition}[Why a KL trust region alone does not certify contraction]
+\label{prop:trust-region-safety}
+Fix a target modulus $\kappa\in[\gamma,1)$ and define the safe half-space threshold
+\[
+\rho_{\min}(\kappa) \defeq 1-\frac{\kappa}{1+\gamma}.
+\]
+For any temporal allocation $\rho\in(0,1)$, the associated continuation coefficient
+\[
+d(\rho)\defeq (1+\gamma)(1-\rho)
+\]
+satisfies $d(\rho)\le \kappa$ if and only if $\rho\ge \rho_{\min}(\kappa)$. Now define the Bernoulli KL trust region
+\[
+\mathcal U_\epsilon \defeq \{\rho\in(0,1): \KLbin{\rho}{\pprior}\le \epsilon\}
+\]
+and the critical radius
+\[
+\epsilon_{\mathrm{crit}}(\kappa)
+\defeq
+\KLbin{\rho_{\min}(\kappa)}{\pprior}.
+\]
+Then:
+\begin{enumerate}[label=(\roman*)]
+    \item if $\epsilon\le \epsilon_{\mathrm{crit}}(\kappa)$, every $\rho\in\mathcal U_\epsilon$ satisfies $d(\rho)\le \kappa$;
+    \item if $\epsilon>\epsilon_{\mathrm{crit}}(\kappa)$, the set $\mathcal U_\epsilon$ contains some $\rho$ with $d(\rho)>\kappa$.
+\end{enumerate}
+Therefore a KL trust region can certify contraction only when its radius is itself chosen small enough relative to the desired modulus. In general it should supplement, not replace, the explicit continuation-coefficient cap.
+\end{proposition}
+
+\begin{remark}[Hybrid trust regions versus clipping]
+\label{rem:hybrid-trust-region}
+A purely geometric alternative to temperature clipping is to project the raw posterior allocation onto the intersection of a KL trust region and the safe half-space,
+\[
+\mathcal C_t
+=
+\left\{\rho\in(0,1):
+\KLbin{\rho}{\pprior}\le \epsilon_t,
+\quad
+\rho\ge 1-\frac{\kappa_t}{1+\gamma}
+\right\}.
+\]
+One may then deploy the one-dimensional KL projection
+\[
+\rho_t^{\mathrm{hyb}}
+=
+\arg\min_{\rho\in\mathcal C_t}
+\KLbin{\rho}{\rho_t^{\mathrm{raw}}}.
+\]
+We keep clipped temperatures as the main deployed mechanism because they are algebraically simpler on the Bellman-target side and produce the derivative certificate directly, but the trust-region view clarifies that the safe layer is a stability constraint on temporal allocation rather than an arbitrary engineering patch.
+\end{remark}
+
+\begin{definition}[Headroom fractions, certification levels, clipped temperatures, and safe Bellman operators]
+\label{def:safe-calibration}
+Choose stagewise headroom fractions $\alpha_t\in[0,1)$ and define the corresponding certification levels
+\begin{equation}
+\kappa_t \defeq \gamma + \alpha_t(1-\gamma) \in [\gamma,1).
+\label{eq:kappa-from-alpha}
+\end{equation}
+Define the certified radii recursively by
+\begin{equation}
+\Bhat_T=0,
+\qquad
+\Bhat_t=(1+\gamma)R_{\max}+\kappa_t\Bhat_{t+1},
+\qquad t=T-1,\dots,0.
+\label{eq:safe-envelope-recursion}
+\end{equation}
+Let
+\begin{equation}
+\betacap_t
+\defeq
+\frac{\log\!\bigl(\kappa_t/[\gamma(1+\gamma-\kappa_t)]\bigr)}{R_{\max}+\Bhat_{t+1}},
+\label{eq:beta-cap}
+\end{equation}
+and clip any proposed raw schedule $\beta_t^{\mathrm{raw}}\in\R$ by
+\begin{equation}
+\widetilde\beta_t = \clip\bigl(\beta_t^{\mathrm{raw}},-\betacap_t,\betacap_t\bigr).
+\label{eq:beta-clip}
+\end{equation}
+The calibrated safe one-step targets are
+\[
+ f_t^{\safe}(r,v)=f_{\widetilde\beta_t,\gamma}(r,v),
+ \qquad
+ g_t^{\safe}(r,v)=g_{\widetilde\beta_t,\gamma}(r,v).
+\]
+The corresponding stagewise safe Bellman operators are
+\begin{align}
+(\cT_t^{\pi,\safe}Q_{t+1})(s,a)
+&\defeq
+\E_{s'\sim P(\cdot\mid s,a)}\Bigl[g_t^{\safe}\bigl(\hat r(s,a),V_{Q,t+1}^\pi(s')\bigr)\Bigr],
+\label{eq:safe-policy-op}\\
+(\cT_t^{\safe}Q_{t+1})(s,a)
+&\defeq
+\E_{s'\sim P(\cdot\mid s,a)}\Bigl[g_t^{\safe}\bigl(\hat r(s,a),\max_{a'}Q_{t+1}(s',a')\bigr)\Bigr].
+\label{eq:safe-opt-op}
+\end{align}
+The full time-unrolled operators are $\mathbb T_\safe^\pi$ and $\mathbb T_\safe$.
+We write $Q_{\safe,t}^\pi,V_{\safe,t}^\pi,Q_{\safe,t}^*,V_{\safe,t}^*$ for the recursive value functions generated by the clipped schedule.
+Finally, define the certified stagewise box
+\begin{equation}
+\Ksafe \defeq \prod_{t=0}^{T-1}\{Q_t:\|Q_t\|_\infty\le \Bhat_t\}.
+\label{eq:safe-box}
+\end{equation}
+\end{definition}
+
+All ingredients of the safe theory are now visible in one place.
+The raw schedule provides flexibility, the headroom fractions $\alpha_t$ provide an interpretable user-facing stability control, the certification levels $\kappa_t$ are the resulting worst-case global Lipschitz bounds, the radii $\Bhat_t$ define the certified stagewise box, and the clipped schedule $\widetilde\beta_t$ is the temperature actually deployed by the algorithms.
+Everything in the remainder of the paper uses this deployed schedule rather than the raw one.
+
+\begin{remark}[How to read the certification levels when $\gamma$ is close to one]
+\label{rem:kappa-headroom}
+The interval $[\gamma,1)$ should not be interpreted as a narrow tuning range around one.
+It is the remaining headroom between the classical global modulus $\gamma$ and the nonexpansive boundary $1$.
+That is why $\alpha_t=(\kappa_t-\gamma)/(1-\gamma)$ is the more natural user-facing parameter.
+For example, when $\gamma=0.99$, the choices $\alpha_t=0.25$, $0.5$, and $0.9$ correspond to $\kappa_t=0.9925$, $0.995$, and $0.999$.
+These worst-case certificates are numerically close because classical discounted dynamic programming is already close to nonexpansive in that regime.
+No globally contractive perturbation can move far away from that boundary and remain certified on the whole box.
+What matters in practice is the distinction between the global certificate $\kappa_t$ and the realized local derivative $d_{\beta,\gamma}(r,v)$.
+On aligned regions the latter can be much smaller than $\gamma$ even when the former is close to one.
+For instance, with $\gamma=0.99$ and margin condition $\beta(r-v)\ge 1$, \Cref{thm:aligned-contraction} gives
+\[
+ d_{\beta,\gamma}(r,v)\le \frac{(1+\gamma)\gamma}{e+\gamma}\approx 0.531.
+\]
+Thus $\kappa_t$ is a worst-case guardrail, not a prediction of the typical local contraction actually experienced along aligned trajectories.
+\end{remark}
+
+\begin{proposition}[Safe temperature headroom on a fixed box]
+\label{prop:gamma-headroom}
+Fix $B\ge 0$ and a target modulus $\kappa\in(0,1)$. On the box $|r|\le R_{\max}$, $|v|\le B$, the admissible safe interval
+\[
+|\beta|
+\le
+\frac{\log\!\bigl(\kappa/[\gamma(1+\gamma-\kappa)]\bigr)}{R_{\max}+B}
+\]
+is strictly wider for smaller base discounts $\gamma\in(0,\kappa]$. Equivalently, the normalized headroom
+\[
+\Theta(\gamma,\kappa)\defeq \log\!\left(\frac{\kappa}{\gamma(1+\gamma-\kappa)}\right)
+\]
+is strictly decreasing in $\gamma$.
+\end{proposition}
+
+\begin{remark}[Why safe TAB may use a lower base discount than a classical baseline]
+\label{rem:lower-base-gamma}
+The proposition above suggests a useful design principle for long-horizon problems. When a classical baseline uses a very large discount $\gamma_{\mathrm{class}}\approx 1$, a safe TAB deployment need not use the same quantity as its base prior. Choosing a smaller $\gamma_{\mathrm{base}}$ widens the admissible temperature headroom, while the adaptive continuation coefficient can still move upward toward a larger certified modulus on continuation-dominant states. This does change the classical comparator inside the theory, so it is an algorithm-design choice rather than a theorem of dominance over the original $\gamma_{\mathrm{class}}$ objective. The point is that TAB's bidirectional adaptivity makes such a lower-base-$\gamma$ design meaningful in a way classical fixed-$\gamma$ dynamic programming does not.
+\end{remark}
+
+\begin{remark}[Normalized temperatures and horizon-aware schedules]
+\label{rem:normalized-temperature}
+Because only the scale-free quantity $\beta(r-v)$ matters, the natural stagewise tuning parameter is the normalized temperature
+\[
+\theta_t\defeq \beta_t^{\mathrm{raw}}\bigl(R_{\max}+\Bhat_{t+1}\bigr).
+\]
+The safe cap becomes
+\[
+|\theta_t|
+\le
+\log\!\left(\frac{\kappa_t}{\gamma(1+\gamma-\kappa_t)}\right).
+\]
+A constant-$\theta_t$ schedule is therefore already horizon-aware: as the certified continuation radius $\Bhat_{t+1}$ shrinks near the horizon, the same normalized aggressiveness corresponds to a larger absolute $|\beta_t|$. This is the recommended way to interpret deterministic stagewise schedules.
+\end{remark}
+
+\paragraph{Operational calibration of $\beta$.}
+The preceding scale and headroom results can now be combined into direct answers to three practical questions: should $\beta$ vary with time, when does safe clipping actually distort the intended local effect, and what is the natural quantity to tune? The answer is that the raw parameter should be tuned only through its normalized version.
+
+\begin{proposition}[Stagewise invariance of normalized temperatures]
+\label{prop:normalized-invariance}
+Let $A_t\defeq R_{\max}+\Bhat_{t+1}$ and choose a raw stagewise schedule of the form
+\[
+\beta_t^{\mathrm{raw}}=\frac{\theta_t}{A_t}.
+\]
+Fix a normalized Bellman-advantage fraction $\xi\in[-1,1]$. Whenever $r-v=\xi A_t$, one has
+\begin{equation}
+d_{\beta_t^{\mathrm{raw}},\gamma}(r,v)
+=
+\frac{(1+\gamma)\gamma}{e^{\theta_t\xi}+\gamma}.
+\label{eq:normalized-invariance}
+\end{equation}
+Hence a constant normalized schedule $\theta_t\equiv\theta$ produces the same realized continuation coefficient at the same normalized advantage fraction $\xi$ at every stage. Raw $\beta_t$ should vary with time only through the stagewise scale factor $A_t$.
+\end{proposition}
+
+\begin{corollary}[Feasible local designs under safe clipping]
+\label{cor:feasible-design}
+Fix a stage $t$, a normalized reference margin $\xi\in(0,1]$, and a desired local continuation coefficient $\lambda\in(0,1+\gamma)$. The normalized temperature needed to realize $\lambda$ at advantage gap $\Delta=\xi(R_{\max}+\Bhat_{t+1})$ is
+\begin{equation}
+\theta_t(\xi,\lambda)
+=
+\frac{1}{\xi}\log\!\left(\frac{\gamma(1+\gamma-\lambda)}{\lambda}\right).
+\label{eq:normalized-local-design}
+\end{equation}
+The safe clipping rule leaves this design point unchanged iff
+\begin{equation}
+|\theta_t(\xi,\lambda)|
+\le
+\Theta(\gamma,\kappa_t)
+=
+\log\!\left(\frac{\kappa_t}{\gamma(1+\gamma-\kappa_t)}\right).
+\label{eq:feasible-design-region}
+\end{equation}
+Thus safe clipping makes $\beta$ ineffective only when the requested local effect lies outside the feasible region implied by the chosen worst-case certificate.
+\end{corollary}
+
+These two statements give the missing operational answer to ``should $\beta$ vary with time?'' A raw constant-$\beta$ schedule is not scale invariant. The natural invariant object is the normalized temperature $\theta_t$, and a constant normalized schedule already supplies the right horizon dependence. They also answer when clipping washes out the method: only when the requested local effect itself is incompatible with the chosen safe headroom.
+
+\begin{proposition}[Monotonicity of the safe Bellman operators]
+\label{prop:monotonicity}
+Both $\mathbb T_\safe^\pi$ and $\mathbb T_\safe$ are monotone on the time-unrolled product space.
+If $Q_t(s,a)\le \widetilde Q_t(s,a)$ for every $(t,s,a)$, then
+\[
+\mathbb T_\safe^\pi(Q)\le \mathbb T_\safe^\pi(\widetilde Q),
+\qquad
+\mathbb T_\safe(Q)\le \mathbb T_\safe(\widetilde Q).
+\]
+\end{proposition}
+
+Monotonicity survives clipping without modification.
+This matters because later policy-improvement and modified-policy-iteration arguments rely on order preservation rather than on any special closed form.
+The safe operator is therefore not only contractive; it also retains the monotone Bellman structure needed for control arguments.
+
+
+\begin{theorem}[Safe calibration and certified contraction]
+\label{thm:safe-calibration}
+For every stage $t$, every $|r|\le R_{\max}$, and every $|v|\le \Bhat_{t+1}$,
+\begin{equation}
+\left|\partial_v g_t^{\safe}(r,v)\right| \le \kappa_t <1.
+\label{eq:safe-derivative-bound}
+\end{equation}
+Consequently,
+\begin{align}
+\|\cT_t^{\pi,\safe}Q - \cT_t^{\pi,\safe}\widetilde Q\|_\infty
+&\le \kappa_t\|Q-\widetilde Q\|_\infty,
+\label{eq:safe-policy-contraction}\\
+\|\cT_t^{\safe}Q - \cT_t^{\safe}\widetilde Q\|_\infty
+&\le \kappa_t\|Q-\widetilde Q\|_\infty
+\label{eq:safe-opt-contraction}
+\end{align}
+whenever $\|Q\|_\infty,\|\widetilde Q\|_\infty\le \Bhat_{t+1}$.
+Moreover,
+\begin{equation}
+|g_t^{\safe}(r,v)| \le \Bhat_t
+\qquad \text{for all } |r|\le R_{\max},\ |v|\le \Bhat_{t+1},
+\label{eq:safe-range-bound}
+\end{equation}
+so both safe Bellman operators map $\Ksafe$ into itself.
+If $\kappa_*\defeq \max_t \kappa_t$, then
+\begin{equation}
+\|\mathbb T_\safe^\pi(Q)-\mathbb T_\safe^\pi(\widetilde Q)\|_\infty
+\le \kappa_*\|Q-\widetilde Q\|_\infty,
+\qquad
+\|\mathbb T_\safe(Q)-\mathbb T_\safe(\widetilde Q)\|_\infty
+\le \kappa_*\|Q-\widetilde Q\|_\infty.
+\label{eq:safe-global-contraction}
+\end{equation}
+\end{theorem}
+
+This is the central deployment theorem of the paper.
+It turns the variational weighted family into a certified dynamic-programming operator: every stagewise Bellman map is a user-controlled contraction, and the full time-unrolled operator is a self-map on the certified box.
+Once \Cref{thm:safe-calibration} is available, the rest of the dynamic-programming theory follows along essentially classical lines.
+
+\begin{remark}[Safe TAB as local-pole stabilization]
+\label{rem:pole-stabilization}
+Because $d_t=\partial_v g_t^{\safe}$ is the local continuation gain of the scalar Bellman recursion, \Cref{eq:safe-derivative-bound} is exactly a local-pole condition:
+\[
+d_t(r,v)\le \kappa_t<1
+\qquad
+\text{for all } |r|\le R_{\max},\ |v|\le \Bhat_{t+1}.
+\]
+Thus the safe layer does not merely clip a temperature parameter. It keeps every Bellman-local temporal pole inside a certified stable region on the deployed stagewise box.
+\end{remark}
+
+\begin{corollary}[No-distortion region]
+\label{cor:no-distortion}
+If $|\beta_t^{\mathrm{raw}}|\le \betacap_t$ for every stage $t$, then the safe clipped schedule is inactive and the calibrated safe Bellman operators coincide exactly with the raw weighted-LSE operators.
+Otherwise the clipping in \eqref{eq:beta-clip} chooses the nearest admissible stagewise temperature in the safe interval $[-\betacap_t,\betacap_t]$.
+\end{corollary}
+
+The point of this corollary is that safety is meant to be conservative only when necessary. If the raw schedule is already safe on the certified domain, the calibrated operator leaves it untouched. Clipping acts only as a guardrail against the expansive region, not as a blanket suppression of nonlinear behavior. The next proposition sharpens this point by quantifying when safe TAB can still be more contractive than classical discounting on average even in mixed regimes.
+
+\begin{proposition}[Occupancy-weighted improvement criterion]
+\label{prop:occupancy-improvement}
+Fix a stage $t$, a safe continuation value $V_{t+1}$, and any probability measure $\mu_t$ on transition triples $(s,a,s')$. Let
+\[
+d_t(s,a,s')\defeq \partial_v g_t^{\safe}\bigl(\hat r(s,a),V_{t+1}(s')\bigr),
+\qquad
+A_{t,\eta}\defeq\bigl\{(s,a,s'): \widetilde\beta_t(\hat r(s,a)-V_{t+1}(s'))\ge \eta\bigr\}
+\]
+for some $\eta>0$, and write $p_t(\eta)\defeq \mu_t(A_{t,\eta})$. Then
+\begin{equation}
+\E_{\mu_t}[d_t]
+\le
+p_t(\eta)\frac{(1+\gamma)\gamma}{e^{\eta}+\gamma}
++
+\bigl(1-p_t(\eta)\bigr)\kappa_t.
+\label{eq:occupancy-improvement}
+\end{equation}
+Consequently, the average safe TAB continuation coefficient is below the classical coefficient whenever
+\begin{equation}
+p_t(\eta)
+>
+\frac{\kappa_t-\gamma}{\kappa_t-\frac{(1+\gamma)\gamma}{e^{\eta}+\gamma}}.
+\label{eq:occupancy-threshold}
+\end{equation}
+\end{proposition}
+
+This is the right bridge between the purely local theorem and the learning dynamics critique. Safe TAB need not be aligned everywhere to matter. It needs alignment often enough under the occupancy that actually drives Bellman updates. The quantity $p_t(\eta)$ is therefore the natural theory-led diagnostic for experiments and ablations: when it is large and clipping is inactive, one should expect safe TAB to differ materially from classical discounting; when it is small, the safe layer should push the method back toward classical behavior.
+
+\begin{proposition}[Occupancy-guided sign selection]
+\label{prop:sign-selection}
+Fix a stage $t$, a deployed magnitude $b_t\in(0,\betacap_t]$, a continuation function $V_{t+1}$, a probability measure $\mu_t$ on transition triples $(s,a,s')$, and a margin $\eta>0$. For each sign $\varsigma\in\{-1,+1\}$ define
+\[
+\begin{aligned}
+d_t^{\varsigma}(s,a,s')&\defeq \partial_v g_{\varsigma b_t,\gamma}\bigl(\hat r(s,a),V_{t+1}(s')\bigr),\\
+A_{t,\eta}^{\varsigma}&\defeq\left\{(s,a,s'): \varsigma\bigl(\hat r(s,a)-V_{t+1}(s')\bigr)\ge \eta/b_t\right\},
+\end{aligned}
+\]
+and write $p_t^{\varsigma}(\eta)\defeq \mu_t(A_{t,\eta}^{\varsigma})$. Then
+\begin{equation}
+\E_{\mu_t}[d_t^{\varsigma}]
+\le
+p_t^{\varsigma}(\eta)\frac{(1+\gamma)\gamma}{e^{\eta}+\gamma}
++
+\bigl(1-p_t^{\varsigma}(\eta)\bigr)\kappa_t.
+\label{eq:sign-selection-bound}
+\end{equation}
+Therefore, for fixed magnitude and margin, the best upper bound is obtained by choosing the sign $\varsigma_t^\star$ that maximizes $p_t^{\varsigma}(\eta)$.
+\end{proposition}
+
+This proposition is the explicit decision rule missing from the earlier draft. For a fixed magnitude, the preferred sign is the one that makes the larger share of update-relevant Bellman mass aligned. Positive $\beta_t$ is therefore appropriate when reward-dominant transitions are the events one wants to accelerate; negative $\beta_t$ is appropriate when the important events are continuation-dominant bad futures. The rule may be instantiated either from structural prior knowledge or from a pilot estimate of $V_{t+1}$.
+
+\paragraph{State-dependent and learned schedules.}
+The sign rule above is stagewise, but the safe theory is not limited to a single scalar per stage. The clipping argument is pointwise, so exogenous predictors of $\beta$ can vary across states or transitions without changing the core contraction proof.
+
+\begin{theorem}[State-dependent clipped schedules preserve the safe theory]
+\label{thm:state-dependent-safe}
+For each stage $t$, let $\beta_t^{\mathrm{raw}}:\cS\times\cA\times\cS\to\R$ be any measurable function and define the pointwise clipped schedule
+\[
+\widetilde\beta_t(s,a,s')
+=
+\clip\bigl(\beta_t^{\mathrm{raw}}(s,a,s'),-\betacap_t,\betacap_t\bigr).
+\]
+Define the corresponding stagewise operators by
+\begin{align*}
+(\cT_t^{\pi,\mathrm{sd}}Q_{t+1})(s,a)
+&\defeq
+\E_{s'\sim P(\cdot\mid s,a)}
+\Bigl[
+g_{\widetilde\beta_t(s,a,s'),\gamma}\bigl(\hat r(s,a),V_{Q,t+1}^\pi(s')\bigr)
+\Bigr],\\
+(\cT_t^{\mathrm{sd}}Q_{t+1})(s,a)
+&\defeq
+\E_{s'\sim P(\cdot\mid s,a)}
+\Bigl[
+g_{\widetilde\beta_t(s,a,s'),\gamma}\bigl(\hat r(s,a),\max_{a'}Q_{t+1}(s',a')\bigr)
+\Bigr].
+\end{align*}
+Then on the certified box $\Ksafe$ these operators satisfy the same stagewise range and contraction bounds as in \Cref{thm:safe-calibration}:
+\begin{align*}
+\|\cT_t^{\pi,\mathrm{sd}}Q-\cT_t^{\pi,\mathrm{sd}}\bar Q\|_\infty
+&\le
+\kappa_t\|Q-\bar Q\|_\infty,\\
+\|\cT_t^{\mathrm{sd}}Q-\cT_t^{\mathrm{sd}}\bar Q\|_\infty
+&\le
+\kappa_t\|Q-\bar Q\|_\infty,
+\end{align*}
+and
+\[
+|(\cT_t^{\pi,\mathrm{sd}}Q)(s,a)|,\ |(\cT_t^{\mathrm{sd}}Q)(s,a)| \le \Bhat_t
+\qquad \text{whenever } \|Q\|_\infty\le \Bhat_{t+1}.
+\]
+Hence the safe theory extends unchanged to any exogenous state- or transition-dependent raw schedule once it is clipped pointwise.
+\end{theorem}
+
+\begin{corollary}[Frozen learned $\beta$-schedulers]
+\label{cor:frozen-learned-beta}
+Let $\beta_t^{\mathrm{raw}}(\cdot;\phi)$ be the output of any predictor with parameters $\phi$, and deploy only its pointwise clipped version. For every frozen parameter value $\phi$, the induced Bellman operators satisfy the same contraction and invariance guarantees as \Cref{thm:state-dependent-safe}. Thus $\beta$ can be learned between Bellman epochs or in an outer loop without changing the contraction analysis of each frozen Bellman phase. What remains open is joint convergence when the scheduler parameters and the value function are updated simultaneously on the same time scale.
+\end{corollary}
+
+\begin{remark}[Natural-coordinate and natural-gradient schedulers]
+\label{rem:natural-gradient-scheduler}
+On the Bernoulli manifold, the Fisher metric is $g_{\cB}(\rho)=1/[\rho(1-\rho)]$, so the corresponding natural gradient of a scheduler loss $\mathcal L(\rho)$ is
+\[
+\nabla^{\mathrm{nat}} \mathcal L(\rho)=\rho(1-\rho)\,\partial_\rho \mathcal L(\rho).
+\]
+Equivalently, one may parameterize a learned scheduler in the natural coordinate $\eta=\log(\rho/(1-\rho))$ and update $\eta_\phi(s,a,s')$ directly. This matches the information geometry already implicit in the TAB optimizer. The present paper covers the contraction theory of such schedulers once frozen and clipped; same-time-scale convergence of jointly learned natural-coordinate schedulers and value iterates is left for future work.
+\end{remark}
+
+\begin{proposition}[Recursive sensitivity to schedule perturbations]
+\label{prop:schedule-sensitivity}
+Let $\widetilde\beta$ and $\bar\beta$ be two deployed safe schedules, possibly state- or transition-dependent as in \Cref{thm:state-dependent-safe}. Define
+\[
+\delta_t \defeq \sup_{s,a,s'} \bigl|\widetilde\beta_t(s,a,s')-\bar\beta_t(s,a,s')\bigr|
+\]
+with the obvious simplification for deterministic stagewise schedules. Let $Q_t^\pi[\widetilde\beta]$ and $Q_t^\pi[\bar\beta]$ denote the corresponding safe policy values. Then
+\begin{equation}
+\|Q_t^\pi[\widetilde\beta]-Q_t^\pi[\bar\beta]\|_\infty
+\le
+\frac{1+\gamma}{8}(R_{\max}+\Bhat_{t+1})^2\delta_t
++
+\kappa_t\|Q_{t+1}^\pi[\widetilde\beta]-Q_{t+1}^\pi[\bar\beta]\|_\infty.
+\label{eq:schedule-sensitivity-recursion}
+\end{equation}
+Consequently,
+\begin{equation}
+\|Q_t^\pi[\widetilde\beta]-Q_t^\pi[\bar\beta]\|_\infty
+\le
+\sum_{j=t}^{T-1}\left(\prod_{i=t}^{j-1}\kappa_i\right)
+\frac{1+\gamma}{8}(R_{\max}+\Bhat_{j+1})^2\delta_j.
+\label{eq:schedule-sensitivity-unrolled}
+\end{equation}
+The same bounds hold for the optimal values $Q_t^*[\widetilde\beta]$ and $Q_t^*[\bar\beta]$.
+\end{proposition}
+
+This is the recursive counterpart to \Cref{prop:beta-sensitivity}. Moderate changes in the deployed schedule move the value function only by a geometrically propagated $O(\delta_t)$ amount. So the safe family is not only stable in $Q$ given $\beta$; it is also stable to moderate perturbations of $\beta$ itself.
+
+\begin{remark}[Operational $\beta$-selection rule]
+\label{rem:beta-selection-rule}
+The preceding results suggest a direct deployment recipe.
+\begin{enumerate}[leftmargin=1.5em,itemsep=1pt]
+\item Choose a reference normalized advantage fraction $\xi\in(0,1]$ and a desired local continuation coefficient $\lambda_t^{\mathrm{ref}}\in(0,\gamma)$.
+\item Choose the sign $\varsigma_t$ either from structural prior knowledge or by maximizing the aligned-occupancy proxy in \Cref{prop:sign-selection}.
+\item Set the raw normalized temperature
+\[
+\theta_t^{\mathrm{raw}}
+=
+\frac{\varsigma_t}{\xi}
+\log\!\left(\frac{\gamma(1+\gamma-\lambda_t^{\mathrm{ref}})}{\lambda_t^{\mathrm{ref}}}\right),
+\]
+and convert it to a raw stagewise temperature
+\[
+\beta_t^{\mathrm{raw}}=\frac{\theta_t^{\mathrm{raw}}}{R_{\max}+\Bhat_{t+1}}.
+\]
+More generally one may predict a state-dependent raw scheduler with the same normalization.
+\item Clip pointwise to the safe interval. Then monitor three quantities in experiments: the clipping rate, the aligned occupancy $p_t(\eta)$, and the realized continuation coefficients $d_t$. Nontrivial departures from classical DP require low clipping and sufficiently large aligned occupancy.
+\end{enumerate}
+This is not presented as the unique optimal rule, but it is a theory-derived default that turns $\beta$ from a free temperature into a calibrated design variable.
+\end{remark}
+
+\begin{remark}[Stability-flexibility tradeoff]
+\label{rem:safety-tradeoff}
+The headroom fractions $\alpha_t$ are the user-facing stability knobs.
+Choosing $\alpha_t=0$ gives $\kappa_t=\gamma$, forces $\betacap_t=0$, and collapses the safe operator to the classical Bellman target.
+As $\alpha_t\uparrow 1$, equivalently $\kappa_t\uparrow 1$, the admissible interval widens toward the nonexpansive threshold and the safe operator allows more of the raw weighted-LSE behavior, but the certified convergence rate slows down because the global contraction constant approaches one.
+The point of the safe theory is that this tradeoff is explicit, stagewise programmable, and clearly separated from the local contraction gains that can still appear on aligned regions.
+\end{remark}
+
+\section{Policy Evaluation}
+\label{sec:policy-eval}
+% =====================================================================
+
+From this point onward, all algorithms are stated for the calibrated safe operators from Section~\ref{sec:safe}. The raw family remains the comparative and conceptual object; the safe TAB family is the deployed one.
+
+It is important to state the status of the remaining sections clearly. Once \Cref{thm:safe-calibration} gives a monotone self-map contraction on the certified box, most of the dynamic-programming and reinforcement-learning results below are intentionally \emph{completeness theorems}. They show that the safe deployed operator supports the usual finite-horizon toolbox; they are not the main conceptual novelty of the paper. Readers interested only in the new operator-theoretic content can skim Sections~\ref{sec:policy-eval}--\ref{sec:stochastic} after seeing that this closure property holds.
+
+We start with policy evaluation because every later control result uses it as a subroutine. The safe theory lets us state policy evaluation in two complementary languages at once: exact finite-horizon backward induction on the time-augmented DAG, and geometric contraction on the certified box. The first is the intrinsic finite-horizon fact; the second is the quantitative estimate needed for approximate, projected, and stochastic variants.
+
+\begin{theorem}[Exact backward induction and geometric safe policy evaluation]
+\label{thm:policy-eval}
+Fix a policy $\pi$ and let $\kappa_* = \max_t \kappa_t <1$.
+Then the calibrated safe operator $\mathbb T_\safe^\pi$ is a $\kappa_*$-contraction on $\Ksafe$.
+Starting from any $Q^{(0)}\in\Ksafe$, the synchronous iteration
+\begin{equation}
+Q^{(n+1)} = \mathbb T_\safe^\pi Q^{(n)}
+\label{eq:safe-policy-eval-iter}
+\end{equation}
+converges to the unique fixed point $Q_\safe^\pi$ with rate
+\begin{equation}
+\|Q^{(n)}-Q_\safe^\pi\|_\infty
+\le
+\kappa_*^n\|Q^{(0)}-Q_\safe^\pi\|_\infty.
+\label{eq:safe-policy-eval-rate}
+\end{equation}
+Because the time-augmented graph is acyclic,
+\begin{equation}
+Q_t^{(n)} = Q_{\safe,t}^\pi
+\qquad\text{for every } t\ge T-n,
+\label{eq:safe-tail-exact}
+\end{equation}
+so $Q^{(T)}=Q_\safe^\pi$.
+\end{theorem}
+
+The theorem deliberately states two notions of convergence at once.
+The exact $T$-sweep statement is the intrinsic finite-horizon fact; the geometric bound is the quantitative estimate needed for approximate, projected, and stochastic variants.
+This dual viewpoint will recur in value iteration and modified policy iteration.
+
+
+\begin{proposition}[Nonlinearity of safe TAB policy evaluation]
+\label{prop:nonlinear}
+The safe Bellman expectation equation remains nonlinear in $Q_\safe^\pi$ because the responsibility variable depends on the continuation value.
+In particular, there is no analogue of the classical matrix inversion formula $V^\pi=(I-\gamma P^\pi)^{-1}r^\pi$.
+\end{proposition}
+
+Clipping restores contraction, but it does not linearize the Bellman equation.
+The responsibility variable still depends on the continuation value, so iterative methods remain the natural computational language.
+That is why an EM-like alternating viewpoint, although only heuristic, is still helpful for understanding how one might solve the safe evaluation problem in practice.
+
+
+\begin{remark}[An EM-like alternating scheme]
+\label{rem:em-analogy}
+Fix a safe schedule and a policy $\pi$.
+Given a current iterate $Q^{(k)}$, one may alternate:
+\begin{enumerate}[leftmargin=1.5em,itemsep=2pt]
+    \item \textbf{E-step:} compute the responsibilities induced by $Q^{(k)}$;
+    \item \textbf{M-step:} solve the linear Bellman equation with those responsibilities frozen.
+\end{enumerate}
+This is an analogy rather than a literal EM theorem, but it is useful computationally: once the responsibilities are frozen, the continuation coefficient becomes a standard state-dependent discount bounded by $\kappa_t$.
+See Appendix~\ref{app:policy-eval} for explicit formulas.
+\end{remark}
+
+The EM-like viewpoint freezes the temporal allocation field and then solves the resulting linear Bellman equation.
+A complementary idea is to randomize the allocation variable itself.
+That option is worthwhile to spell out carefully because it answers a natural question about Gumbel-Softmax-style relaxations: the allocation can indeed be sampled, but the exact Bellman target is preserved only when sampling is performed after the next-state continuation estimate is available.
+The proposition below separates that exact post-transition Monte Carlo picture from earlier, purely predictive surrogates.
+
+\begin{proposition}[Post-transition exactness and pre-transition predictive surrogates]
+\label{prop:mc-relaxation}
+Fix a stage $t$ with $\widetilde\beta_t\neq 0$.
+Let $\mathcal F_t$ denote the information available before the stage-$t$ transition and let $\mathcal F_{t+1}$ denote the information after observing $(r_t,s_{t+1})$.
+Let $v_{t+1}\in[-\Bhat_{t+1},\Bhat_{t+1}]$ be any $\mathcal F_{t+1}$-measurable continuation estimate and define
+\[
+\rho_t^\star
+\defeq
+\sigma\!\bigl(\widetilde\beta_t(r_t-v_{t+1})+\log(1/\gamma)\bigr).
+\]
+If $Z_t\mid \mathcal F_{t+1}\sim \Bern(\rho_t^\star)$, then the Monte Carlo allocation target
+\begin{equation}
+\widehat G_t^{\mathrm{MC}}
+\defeq
+(1+\gamma)\Bigl[
+Z_t r_t +(1-Z_t)v_{t+1}
+-\widetilde\beta_t^{-1}\KLbin{\rho_t^\star}{\pprior}
+\Bigr]
+\label{eq:mc-target-post}
+\end{equation}
+satisfies
+\begin{equation}
+\E\!\bigl[\widehat G_t^{\mathrm{MC}}\mid \mathcal F_{t+1}\bigr]
+=
+g_t^{\safe}(r_t,v_{t+1}).
+\label{eq:mc-target-post-unbiased}
+\end{equation}
+Now let $\bar\rho_t\in[0,1]$ be any $\mathcal F_t$-measurable predictive allocation and let $Z_t\mid \mathcal F_t\sim \Bern(\bar\rho_t)$.
+Then the predictive target
+\begin{equation}
+\widehat G_t^{\mathrm{pred}}
+\defeq
+(1+\gamma)\Bigl[
+Z_t r_t +(1-Z_t)v_{t+1}
+-\widetilde\beta_t^{-1}\KLbin{\bar\rho_t}{\pprior}
+\Bigr]
+\label{eq:mc-target-pre}
+\end{equation}
+satisfies
+\begin{align}
+\E\!\bigl[\widehat G_t^{\mathrm{pred}}\mid \mathcal F_t\bigr]
+&=
+(1+\gamma)\E\!\Bigl[
+\bar\rho_t r_t +(1-\bar\rho_t)v_{t+1}
+-\widetilde\beta_t^{-1}\KLbin{\bar\rho_t}{\pprior}
+\,\Big|\, \mathcal F_t
+\Bigr]
+\nonumber\\
+&\le \E\!\bigl[g_t^{\safe}(r_t,v_{t+1})\mid \mathcal F_t\bigr]
+\qquad \text{if } \widetilde\beta_t>0,
+\label{eq:mc-target-pre-bound}
+\end{align}
+with the inequality reversed when $\widetilde\beta_t<0$.
+Equality holds if $\bar\rho_t=\rho_t^\star$ almost surely; in particular it holds whenever the continuation value is conditionally deterministic given $\mathcal F_t$.
+\end{proposition}
+
+This proposition identifies exactly where the temporal-allocation randomness should live.
+For the TAB Bellman target, the natural binary draw is a \emph{post-transition} randomization because the optimizer depends on the realized continuation estimate $v_{t+1}$.
+A predictable $\mathcal F_t$-measurable allocation is still meaningful, but it should be described honestly as a surrogate target rather than as the Bellman operator itself.
+The classical case $\widetilde\beta_t=0$ is special only because no relaxation is needed there: the target is already linear.
+
+
+\begin{remark}[Binary Concrete / Gumbel-Softmax relaxations]
+\label{rem:gumbel-relaxation}
+A differentiable alternative is to replace the hard Bernoulli sample $Z_t$ by a Binary Concrete sample $Y_t^\tau\in(0,1)$ with location parameter $\log(\rho/(1-\rho))$ and temperature $\tau>0$ \citep{maddison2017concrete}. The same relaxation is often parameterized through Gumbel-Softmax reparameterization \citep{jang2017categorical}.
+The relaxed target
+\[
+(1+\gamma)\bigl[Y_t^\tau r_t +(1-Y_t^\tau)v_{t+1} - \widetilde\beta_t^{-1}\KLbin{\rho}{\pprior}\bigr]
+\]
+is smooth in the sample path and can therefore be useful when one wants gradients through the allocation variable.
+At finite $\tau$, however, it targets a surrogate rather than the exact Bellman operator, because $Y_t^\tau$ is not Bernoulli and $\E[Y_t^\tau\mid \mathcal F_{t+1}]$ is generally not exactly $\rho$.
+The exact recursive operator is recovered either by using hard Bernoulli sampling with the analytic KL term or, in the limit $\tau\downarrow 0$, by viewing the relaxed sample as an approximation to that hard binary draw.
+Straight-through variants add an additional backward-pass bias and are therefore best regarded as optimization heuristics.
+For Bellman theory the clean interpretation is: Binary Concrete / Gumbel-Softmax is a computational relaxation of the allocation step, not a replacement for the operator that defines the theory.
+\end{remark}
+
+% =====================================================================
+With safe policy evaluation in hand, the next step is control.
+The key conceptual shift is that contraction is no longer the central ingredient; order preservation is.
+Once the safe Bellman operator is known to be monotone, classical greedy-improvement logic can be rebuilt almost verbatim on the time-augmented state space.
+
+\section{Policy Improvement and Policy Iteration}
+\label{sec:policy-iteration}
+% =====================================================================
+
+\begin{theorem}[Safe TAB policy improvement]
+\label{thm:policy-improvement}
+Let $\pi$ be a policy with safe action-value function $Q_\safe^\pi$.
+Define the greedy policy by
+\[
+\pi'_t(s)\in\argmax_a Q_{\safe,t}^\pi(s,a).
+\]
+Then for every stage-state pair,
+\begin{equation}
+V_{\safe,t}^{\pi'}(s)\ge V_{\safe,t}^{\pi}(s).
+\label{eq:safe-policy-improvement}
+\end{equation}
+If deterministic tie-breaking preserves currently greedy actions, equality at every stage-state pair holds iff $\pi$ is already optimal.
+\end{theorem}
+
+The proof is intentionally order-theoretic.
+Nothing like pathwise telescoping is needed once the recursive Bellman object is fixed; monotonicity of the safe Bellman operator is enough.
+That is one of the conceptual simplifications gained by committing fully to the recursive utility interpretation.
+
+
+\begin{theorem}[Finite safe policy iteration on the time-augmented state space]
+\label{thm:policy-iteration}
+Consider the algorithm that alternates:
+\begin{enumerate}[leftmargin=1.5em,itemsep=2pt]
+    \item exact safe policy evaluation by backward induction or, equivalently, by iterating the safe contraction to convergence;
+    \item greedy improvement with deterministic tie-breaking that preserves currently greedy actions.
+\end{enumerate}
+Then the sequence of nonstationary policies $\pi^0,\pi^1,\dots$ has monotonically nondecreasing safe value functions and terminates after finitely many iterations.
+The number of deterministic nonstationary policies is at most $|\cA|^{T|\cS|}$, so termination occurs in at most that many iterations.
+At termination the returned policy is optimal for the calibrated safe TAB problem.
+\end{theorem}
+
+Time augmentation matters here in an essential way.
+The policy space is finite because policies are deterministic maps on stage-state pairs, and the tie-breaking convention prevents cycling among value-equivalent greedy policies.
+So \Cref{thm:policy-iteration} is the exact finite-horizon safe analogue of classical policy iteration, not merely a loose monotonic-improvement statement.
+
+
+% =====================================================================
+\section{Value Iteration}
+\label{sec:value-iteration}
+% =====================================================================
+
+Value iteration is the direct fixed-point alternative to policy iteration.
+Because the safe optimality operator is contractive on the certified box, the usual Banach-style story reappears, but the finite-horizon DAG again gives a stronger exact-tail statement.
+The next three results are best read together: first the algorithm, then the exact-and-geometric convergence theorem, then the control-loss and iteration-complexity consequences.
+
+\begin{definition}[Safe TAB value iteration]
+\label{def:lse-vi}
+Starting from any time-unrolled collection $Q^{(0)}\in\Ksafe$ with terminal stage fixed at zero, define
+\begin{equation}
+Q^{(n+1)} = \mathbb T_\safe Q^{(n)}.
+\label{eq:safe-vi}
+\end{equation}
+\end{definition}
+
+\begin{theorem}[Exact finite-sweep safe value iteration]
+\label{thm:vi-convergence}
+For the optimality operator on the time-augmented horizon-$T$ DAG, safe value iteration is exact after $T$ sweeps.
+More precisely,
+\[
+Q_t^{(n)} = Q_{\safe,t}^*
+\qquad \text{for every } t\ge T-n.
+\]
+Hence $Q^{(T)}=Q_\safe^*$.
+In addition, $\mathbb T_\safe$ is a $\kappa_*$-contraction on $\Ksafe$ and therefore
+\begin{equation}
+\|Q^{(n)}-Q_\safe^*\|_\infty
+\le
+\kappa_*^n\|Q^{(0)}-Q_\safe^*\|_\infty.
+\label{eq:safe-vi-rate}
+\end{equation}
+\end{theorem}
+
+As in policy evaluation, the theorem has an exact and an asymptotic face.
+Exact tail convergence comes from acyclicity of the finite horizon, while geometric convergence comes from safe contraction.
+The former is structurally finite-horizon; the latter is what makes stopping rules and approximation error bounds possible.
+
+
+\begin{corollary}[Approximate-greedy policy loss bound]
+\label{cor:vi-policy-loss}
+Let $\pi_n$ be greedy with respect to $Q^{(n)}$.
+Then
+\begin{equation}
+\|Q_{\safe}^{\pi_n}-Q_\safe^*\|_\infty
+\le
+\frac{2\kappa_*}{1-\kappa_*}\,\|Q^{(n)}-Q_\safe^*\|_\infty.
+\label{eq:safe-vi-policy-bound}
+\end{equation}
+\end{corollary}
+
+This corollary translates Bellman error into control error.
+It is the point where the user-chosen contraction budget reappears as a policy-quality constant: smaller $\kappa_*$ not only accelerates convergence but also tightens the greedy policy loss bound.
+So the safe budgets control both numerical stability and decision quality.
+
+
+\begin{proposition}[Safe iteration complexity]
+\label{prop:vi-complexity}
+If $Q^{(0)}\in\Ksafe$, then to guarantee $\|Q^{(n)}-Q_\safe^*\|_\infty \le \varepsilon$, it suffices to take
+\begin{equation}
+n \ge \frac{\log(2\Bhat_0/\varepsilon)}{\log(1/\kappa_*)}.
+\label{eq:safe-vi-iter-count}
+\end{equation}
+Thus the user-selected contraction budget directly controls the worst-case iteration count.
+\end{proposition}
+
+This proposition makes the role of calibration completely transparent.
+Once the safe moduli are fixed, worst-case iteration complexity behaves exactly like a standard contraction argument with user-selected constant $\kappa_*$.
+The gain from the safe theory is therefore not mysterious: the user specifies a contraction budget, and the algorithm inherits the corresponding complexity bound.
+
+
+% =====================================================================
+\section{Principle of Optimality and Modified Policy Iteration}
+\label{sec:principle-of-optimality}
+% =====================================================================
+
+\begin{theorem}[Principle of optimality for the recursive safe utility]
+\label{thm:principle-optimality}
+Let $\pi^*$ be optimal for the recursive calibrated safe TAB utility on the time-augmented state space.
+Then for every reachable stage-state pair $(t,s)$,
+\begin{equation}
+\pi^*_{t:T-1}\in \argmax_{\pi}V_{\safe,t}^{\pi}(s).
+\label{eq:safe-principle-optimality}
+\end{equation}
+That is, the tail of an optimal policy is optimal from the reached stage onward.
+\end{theorem}
+
+The significance of \Cref{thm:principle-optimality} is mainly conceptual.
+It reassures the reader that safe clipping does not destroy the Bellman recursion's basic dynamic-programming meaning: optimal tail decisions can still be solved locally on the time-augmented state space.
+That is exactly the property needed to justify the control algorithms developed in the rest of the section.
+
+
+\begin{remark}[Pathwise nonlinear objectives still require state augmentation]
+\label{rem:pathwise-augmentation}
+The theorem is exact because the objective is defined recursively through the Bellman operator.
+For a genuinely pathwise nonlinear objective, the prefix aggregate would still need to be carried as an additional state variable.
+The safe clipping fixes the stability problem of the TAB family; it does not collapse recursive utilities and expected pathwise nonlinear returns into the same object.
+\end{remark}
+
+\begin{definition}[Safe modified policy iteration]
+\label{def:lse-mpi}
+Given a current policy $\pi^k$ and a current estimate $Q^k$, perform:
+\begin{enumerate}[leftmargin=1.5em,itemsep=2pt]
+    \item $m$ safe policy-evaluation sweeps: $Q^{k+1/2}=(\mathbb T_\safe^{\pi^k})^mQ^k$;
+    \item greedy policy improvement: $\pi^{k+1}_t(s)\in\argmax_a Q^{k+1/2}_t(s,a)$.
+\end{enumerate}
+\end{definition}
+
+The definition is written to emphasize that MPI is an interpolation device.
+The parameter $m$ controls how far one moves toward exact policy evaluation before greedifying again: $m=1$ behaves like value iteration, while large $m$ behaves like policy iteration.
+The next proposition isolates the part of this interpolation picture that is fully rigorous in the safe nonlinear setting.
+
+\begin{proposition}[Exact tail and evaluation error after $m$ safe sweeps]
+\label{prop:mpi-tail-exact}
+For a fixed policy $\pi$,
+\begin{equation}
+\|(\mathbb T_\safe^{\pi})^mQ - Q_\safe^{\pi}\|_\infty
+\le
+\kappa_*^m\|Q-Q_\safe^{\pi}\|_\infty.
+\label{eq:mpi-tail-rate}
+\end{equation}
+Moreover, the last $m$ stages are exact after $m$ synchronous sweeps:
+\[
+\bigl((\mathbb T_\safe^{\pi})^mQ\bigr)_t = Q_{\safe,t}^{\pi}
+\qquad\text{for every } t\ge T-m.
+\]
+Thus $m=1$ recovers value iteration and $m\ge T$ recovers exact policy evaluation.
+\end{proposition}
+
+This proposition captures the rigorous core of safe modified policy iteration.
+Evaluation error shrinks like $\kappa_*^m$, and the last $m$ stages become exact after $m$ sweeps because the horizon is acyclic.
+The following remark then separates this clean evaluation statement from sharper global per-cycle claims that would require additional analysis.
+
+
+\begin{remark}[What is proved and what remains open]
+\label{rem:mpi-open}
+The proposition above gives the rigorous interpolation statement needed for safe modified policy iteration.
+A sharp global per-cycle control theorem for arbitrary $m<T$ with greedy improvement is more delicate in the nonlinear setting, and we do not claim one here.
+What the safe theory does give is a uniform evaluation error bound of order $\kappa_*^m$ at every cycle.
+\end{remark}
+
+% =====================================================================
+\section{Stochastic Approximation}
+\label{sec:stochastic}
+% =====================================================================
+
+Because the safe Bellman operators are contractions on the certified box $\Ksafe$, the standard projected stochastic-approximation theorems apply directly once boundedness and visitation assumptions are imposed.
+
+\begin{definition}[Projected safe TAB TD(0)]
+\label{def:lse-td0}
+For policy evaluation, the projected TD(0) update at a sampled transition $(t,s_t,a_t,r_t,s_{t+1})$ is
+\begin{equation}
+V_t(s_t)
+\leftarrow
+\Pi_{[-\Bhat_t,\Bhat_t]}
+\Bigl(V_t(s_t) + \alpha_n\bigl[g_t^{\safe}(r_t,V_{t+1}(s_{t+1})) - V_t(s_t)\bigr]\Bigr).
+\label{eq:safe-td0}
+\end{equation}
+\end{definition}
+
+The projection is not a cosmetic addition.
+It keeps the iterates on the same certified box on which the safe Bellman operator is contractive, thereby aligning the stochastic approximation with the deterministic contraction analysis in the main text.
+That is why the classical Robbins--Monro template becomes available again despite the nonlinear target.
+
+\begin{theorem}[Convergence of projected safe TAB TD(0)]
+\label{thm:td0-convergence}
+Assume:
+\begin{enumerate}[label=(\roman*),leftmargin=1.5em,itemsep=2pt]
+    \item Robbins--Monro step sizes $\sum_n \alpha_n=\infty$ and $\sum_n \alpha_n^2<\infty$;
+    \item every stage-state pair is visited infinitely often under the fixed policy $\pi$;
+    \item projection onto the certified stagewise intervals $[-\Bhat_t,\Bhat_t]$.
+\end{enumerate}
+Then the projected TD(0) iterates converge almost surely to $V_\safe^\pi$.
+\end{theorem}
+
+The theorem is classical in form but notable in interpretation.
+Once safe calibration supplies a certified contraction and projection supplies boundedness, the nonlinear Bellman target fits directly into the standard stochastic-approximation framework.
+The safe layer is therefore doing exactly the mathematical job it was designed to do.
+
+
+\begin{definition}[Projected safe TAB Q-learning]
+\label{def:lse-q}
+For off-policy control, the projected Q-learning update is
+\begin{equation}
+Q_t(s_t,a_t)
+\leftarrow
+\Pi_{[-\Bhat_t,\Bhat_t]}
+\Bigl(Q_t(s_t,a_t) + \alpha_n\bigl[g_t^{\safe}(r_t,\max_{a'}Q_{t+1}(s_{t+1},a')) - Q_t(s_t,a_t)\bigr]\Bigr).
+\label{eq:safe-q-update}
+\end{equation}
+\end{definition}
+
+\begin{theorem}[Convergence of projected safe TAB Q-learning]
+\label{thm:q-convergence}
+Assume Robbins--Monro step sizes, infinite visitation of every stage-state-action triple, and projection onto the certified box.
+Then projected safe TAB Q-learning converges almost surely to $Q_\safe^*$.
+\end{theorem}
+
+The control analogue is no harder once off-policy visitation is guaranteed.
+The max operator is already built into the safe Bellman contraction, so the proof reduces to the standard projected asynchronous Q-learning argument with a different one-step target.
+This is a good example of how the safe theory reuses classical proof architecture without forcing the target itself to be classical.
+
+
+\begin{definition}[Projected safe expected-SARSA]
+\label{def:lse-sarsa}
+Given a current policy $\pi$, the projected expected-SARSA update is
+\begin{equation}
+\begin{aligned}
+Q_t(s_t,a_t)
+&\leftarrow
+\Pi_{[-\Bhat_t,\Bhat_t]}
+\Bigl(
+Q_t(s_t,a_t) + \alpha_n\bigl[
+    g_t^{\safe}\bigl(r_t,\sum_{a'}\pi_{t+1}(a'\mid s_{t+1})Q_{t+1}(s_{t+1},a')\bigr) \\
+&\qquad\qquad
+    - Q_t(s_t,a_t)
+\bigr]
+\Bigr)
+\end{aligned}
+\label{eq:safe-sarsa}
+\end{equation}
+\end{definition}
+
+\begin{remark}[Why expected-SARSA rather than sampled SARSA]
+\label{rem:expected-sarsa}
+Because $g_t^{\safe}(r,\cdot)$ is nonlinear, the sampled target $g_t^{\safe}(r,Q(s',A'))$ with $A'\sim\pi(\cdot\mid s')$ is not an unbiased sample of the Bellman expectation target.
+For small temperatures one has the second-order bias expansion
+\begin{equation}
+\E_\pi\bigl[g_t^{\safe}(r,Q(s',A'))\bigr] - g_t^{\safe}\bigl(r,\E_\pi[Q(s',A')]\bigr)
+=
+\frac{\widetilde\beta_t\gamma}{2(1+\gamma)}\Var_\pi\!\bigl(Q(s',A')\bigr) + O(\widetilde\beta_t^2),
+\label{eq:sarsa-bias}
+\end{equation}
+so the bias vanishes as $\widetilde\beta_t\to 0$ and also under deterministic policies.
+Expected-SARSA is therefore the correct on-policy analogue for the safe TAB Bellman operator.
+\end{remark}
+
+\begin{proposition}[Fixed-policy convergence of safe expected-SARSA]
+\label{prop:expected-sarsa-eval}
+Under the same assumptions as \Cref{thm:td0-convergence}, but on stage-state-action triples rather than stage-state pairs, projected safe expected-SARSA converges almost surely to $Q_\safe^{\pi}$ for a fixed policy $\pi$.
+\end{proposition}
+
+This proposition isolates the mathematically clean fixed-policy core of on-policy learning in the nonlinear setting.
+Once that part is secured, the control theorem can be read as adding slower policy adaptation on top of a stable evaluation process rather than as proving everything at once.
+
+
+\begin{theorem}[Two-timescale safe expected-SARSA control]
+\label{thm:sarsa-convergence}
+Assume the hypotheses of \Cref{prop:expected-sarsa-eval}, and in addition that policy updates are GLIE and evolve on a slower timescale satisfying the standard ODE conditions of Borkar~\cite{borkar2000ode}.
+Then projected safe expected-SARSA control converges almost surely to $Q_\safe^*$.
+\end{theorem}
+
+This theorem should be read with its conditions in view.
+The fixed-policy result is the robust part; the control conclusion depends on the usual two-timescale separation assumptions.
+Stating the theorem this way keeps the safe RL extension faithful to what is actually proved.
+
+
+% =====================================================================
+\clearpage
+\section{Discussion, Scope, and Summary}
+\label{sec:summary}
+% =====================================================================
+
+The conceptual core of the paper is now deliberately narrower and sharper than a blanket claim of RL superiority. TAB is a Bellman-local temporal-allocation operator family with five main theoretical features: (i) a control-motivated derivation in which the raw/centered/scaled split is forced by the incompatibility between certainty-equivalent translation symmetry and the classical Bellman boundary; (ii) an exact Bernoulli information-geometric interpretation in which the classical discount prior is a base point and the Bellman advantage produces an affine natural-coordinate update; (iii) an exact recursive interpretation as regularized adaptive-discount control; (iv) an adaptive-filter view in which the realized continuation coefficient is the local Bellman pole and therefore has a direct effective-horizon meaning; and (v) a safe clipped deployment layer with transparent design knobs for $\beta$, $\gamma$, and stagewise certification. Everything after that is intentionally a completeness story: once the safe operator is certified, the usual finite-horizon DP/RL machinery follows.
+
+This scope clarification matters for how the theory should be read. The paper does \emph{not} prove universal policy-improvement advantages, sample-complexity gains, or blanket improvements in sparse-reward exploration. What it does prove is a falsifiable conditional theory. If aligned transitions occupy enough Bellman mass and the deployed clip is mostly inactive, then the adaptive continuation coefficient should be materially smaller than the classical one on the relevant part of the state space, and the effective horizon from \Cref{cor:effective-horizon} should shorten accordingly. If those conditions fail, safe TAB should revert toward classical dynamic programming. The experiments should therefore report not only returns, but also the alignment diagnostic from \Cref{prop:occupancy-improvement}, the realized continuation coefficients, the effective-horizon proxy, and the extent to which clipping is active.
+
+The information-geometric content of the main paper is intentionally narrow. We use only the Bernoulli temporal-allocation manifold, its natural and mixture coordinates, the KL divergence, the associated Fisher metric, and the trust-region interpretation needed to explain safety. We do not invoke broader categorical, topological, or Frobenius-manifold machinery, because it is unnecessary for the Bellman results proved here.
+
+\begin{table}[t]
+\caption{Classical discounted DP, the raw TAB family, and the deployed safe TAB family. The main novelty lies in the middle rows of the raw/safe columns; the final DP/RL rows are completeness results.}
+\label{tab:master-comparison}
+\small
+\centering
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.24\textwidth}XXX@{}}
+\toprule
+ & Classical discounted DP & TAB family & Calibrated safe TAB DP \\
+\midrule
+One-step target & $r+\gamma V$ & $g_{\beta,\gamma}(r,V)$ & $g_t^{\safe}(r,V)=g_{\widetilde\beta_t,\gamma}(r,V)$ \\
+Decision interpretation & fixed discount recursion & regularized adaptive-discount control over $\lambda$ & same control problem with clipped stagewise schedule \\
+Classical boundary & exact by definition & exact at $\beta\to 0$ & exact whenever clipping is inactive near zero \\
+Temporal prior / comparator & implicit fixed split & exact KL benchmark around $p_0=1/(1+\gamma)$, equivalently $\lambda=\gamma$ & same benchmark with certification levels $\kappa_t$ \\
+Continuation coefficient & fixed $\gamma$ & adaptive $d_{\beta,\gamma}(r,V)$, may exceed $1$ & adaptive but certified $\le \kappa_t<1$ on $\Ksafe$ \\
+When it improves over classical & not applicable & aligned regions: $\beta(r-V)\ge 0$ & structural and occupancy-weighted criteria identify when local gains survive deployment \\
+Choice of $\beta$ & not applicable & sign by aligned Bellman mass; magnitude by inverse design at a reference margin & normalized stagewise or state-dependent raw schedule with safe clipping \\
+Global stability guarantee & yes & only on explicit bounded sets & yes by construction on the certified box \\
+Policy / value iteration & standard & well defined on the time-augmented DAG & standard consequences of safe contraction/monotonicity \\
+Projected RL convergence & standard & only in admissible contraction regimes & standard projected-SA completeness results on $\Ksafe$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The table is best read columnwise rather than rowwise. The middle column records the analytic object and its operator-theoretic meaning. The last column records what remains after one insists on deployment-grade worst-case stability. Read that way, the safe layer is not suppressing the theory; it is separating expressive analysis from certified use.
+
+The most important empirical consequence of this summary is also the simplest one: safe TAB should be judged by whether it creates useful \emph{adaptive continuation behavior}, not merely by whether it remains nonlinear. The relevant diagnostics are now explicit in the theory: the sign of $\beta$, the normalized temperature schedule, the clipping rate, the alignment rate, the realized continuation coefficients, and the implied effective-horizon proxy. Those are the quantities that determine whether TAB is meaningfully different from classical dynamic programming or merely collapses back toward it.
+
+Two natural extensions are deliberately left outside the main theorem stack. First, the Bernoulli temporal-allocation manifold can be replaced by the simplex over a finite temporal block. If
+\[
+p_j=\frac{\gamma^j}{\sum_{\ell=0}^{m+1}\gamma^\ell},
+\qquad
+C_m=\sum_{\ell=0}^{m+1}\gamma^\ell,
+\]
+then the categorical certainty equivalent
+\[
+g^{(m)}_\beta(x_0,\dots,x_{m+1})
+=
+\frac{C_m}{\beta}
+\log\left(\sum_{j=0}^{m+1}p_j e^{\beta x_j}\right)
+\]
+reduces as $\beta\to 0$ to the calibrated finite-block discounted target
+\[
+x_0+\gamma x_1+\cdots+\gamma^m x_m+\gamma^{m+1}x_{m+1}.
+\]
+Binary TAB is the case $m=0$. Second, the Bernoulli Fisher geometry suggests natural-gradient learning of state-dependent allocation logits. Both directions are plausible algorithmic extensions, but neither is needed for the main Bellman operator theory, so both are left as future work.
+
+% =====================================================================
+\section{Related Literature}
+\label{sec:related}
+% =====================================================================
+
+This paper should be positioned relative to four nearby literatures.
+
+\paragraph{Risk-sensitive control, recursive utility, and dynamic risk measures.}
+Classical risk-sensitive control already replaces expectation by nonlinear certainty equivalents and thereby induces nonlinear Bellman equations \citep{howard1972risk,mihatsch2002risk}. Recursive utility and dynamic risk-measure frameworks likewise study time-consistent one-step aggregators for continuation values \citep{kreps1978temporal,epstein1989substitution,follmer2016stochastic}. More recently, recursive optimized certainty equivalent (OCE) MDPs and their reductions have developed broad dynamic risk-sensitive control theories over cumulative return \citep{xu2023recursiveoce,wang2025oce}. TAB should therefore \emph{not} be read as the first entropic or recursive Bellman operator. The narrower novelty claim is that TAB applies an exponential/KL certainty-equivalent construction to the \emph{binary present-versus-continuation split} around the classical Bellman prior $p_0=1/(1+\gamma)$, yields an explicit adaptive continuation coefficient that can be compared pointwise to the classical $\gamma$, and supplies a safe clipped deployment layer tailored to that coefficient.
+
+\paragraph{Action-regularized and soft Bellman operators.}
+Soft Bellman methods, linearly solvable MDPs, and maximum-entropy RL regularize over \emph{actions} and thereby change the action-selection mechanism or policy class \citep{todorov2007linearly,ziebart2008maximum,asadi2017alternative,haarnoja2018soft}. That distinction remains important here, but it is not the whole story. Many risk-sensitive Bellman operators also modify value propagation rather than actions. The stronger distinction is that TAB regularizes a temporal decision inside a single Bellman backup: how much continuation should be propagated relative to the classical prior. This yields the adaptive continuation coefficient $d_{\beta,\gamma}(r,v)$, the exact classical comparator $\lambda=\gamma$, and the local comparison theorems that are specific to the present-versus-continuation axis.
+
+\paragraph{Other adjacent RL directions.}
+Distributional and tail-risk methods change the return law or optimize a different pathwise risk objective \citep{bellemare2017distributional,dabney2018quantile,bdr2023distributional,wang2023near,chen2024distrl}. Offline-risk and Bellman-trust methods alter pessimism or regularization with respect to data support \citep{kumar2020conservative,kostrikov2022offline,zhang2024riskoffline,luo2025trustbellman}. Reward shaping, discount regularization, representation learning for nonstationarity, and context-robust policy optimization change the reward, the horizon uniformly, the representation, or the update constraints rather than the Bellman-local temporal split itself \citep{rathnam2024discount,ma2024assistant,ramesh2024chunked,lee2024pausing,zhang2024corep,hamadanian2025lcpo}. These directions are therefore best viewed as orthogonal or composable rather than as exact substitutes for TAB.
+
+\paragraph{Information geometry.}
+Information geometry studies statistical manifolds, KL divergences, natural and mixture coordinates, and Fisher--Rao metrics \citep{amari2000methods,amari2016information}. The TAB construction uses only the one-dimensional Bernoulli case: the classical discount prior is a base point on the present-versus-continuation manifold, the optimizer is an affine update in natural coordinates, and the KL regularizer is locally the Fisher metric around that base point. This is therefore not a generic attempt to import abstract information geometry into RL. It is a narrow geometric interpretation of the exact variational identity already underlying TAB.
+
+The related-work message is accordingly modest. TAB is closest in spirit to recursive entropic and OCE-style Bellman theories, and the paper should not oversell distance from them. The defensible novelty points are more specific: the classical prior $p_0=1/(1+\gamma)$ and its exact Bellman calibration; the Bernoulli information-geometric interpretation of that prior; the Bellman-local adaptive-discount and adaptive-filter views; the explicit statewise comparison of the realized continuation coefficient to $\gamma$; the structural and occupancy-weighted alignment criteria; and the certified safe clipping layer that keeps the deployed operator globally contractive while preserving the raw operator whenever certification is not binding.
+
+Several directions remain open. One would like joint-convergence theories for simultaneously learned $\beta$-schedulers and value iterates, tighter certification domains than the current stagewise boxes, and performance guarantees that connect the adaptive-discount and adaptive-filter views directly to sample complexity or regret. Those are intentionally left outside the present paper. What this manuscript establishes is the operator-theoretic foundation: TAB is a Bellman-local temporal-allocation family with an exact Bernoulli information-geometric interpretation, a transparent safe deployment layer, and a complete finite-horizon DP/RL closure once the safe layer is imposed.
+
+\appendix
+\section{Proofs}
+\label{app:proofs}
+% =====================================================================
+
+\subsection{Section 3: discount-aware axiomatic and variational foundations}
+\label{app:axioms}
+
+\paragraph{Proof of \Cref{prop:weighted-basic}.}
+For the raw family,
+\[
+ h_{\beta,w}(a,b)=\frac{1}{\beta}\log\!\bigl(e^{\beta a}+w e^{\beta b}\bigr),
+\qquad w>0,
+\]
+the partial derivatives are
+\[
+\partial_a h_{\beta,w}(a,b)=\frac{e^{\beta a}}{e^{\beta a}+w e^{\beta b}}>0,
+\qquad
+\partial_b h_{\beta,w}(a,b)=\frac{w e^{\beta b}}{e^{\beta a}+w e^{\beta b}}>0,
+\]
+so monotonicity holds.
+Translation equivariance follows by factoring out $e^{\beta c}$ inside the logarithm:
+\[
+ h_{\beta,w}(a+c,b+c)=\frac{1}{\beta}\log\!\bigl(e^{\beta c}(e^{\beta a}+w e^{\beta b})\bigr)=h_{\beta,w}(a,b)+c.
+\]
+Smoothness for $\beta\neq 0$ is immediate.
+For discounted associativity,
+\begin{align*}
+ h_{\beta,w_1}\bigl(a,h_{\beta,w_2}(b,c)\bigr)
+ &= \frac{1}{\beta}\log\!\Bigl(e^{\beta a}+w_1 e^{\beta h_{\beta,w_2}(b,c)}\Bigr)\\
+ &= \frac{1}{\beta}\log\!\Bigl(e^{\beta a}+w_1(e^{\beta b}+w_2 e^{\beta c})\Bigr)\\
+ &= \frac{1}{\beta}\log\!\bigl(e^{\beta a}+w_1 e^{\beta b}+w_1w_2 e^{\beta c}\bigr).
+\end{align*}
+On the other hand,
+\begin{align*}
+ h_{\beta,w_1w_2}\bigl(h_{\beta,w_1}(a,b),c\bigr)
+ &= \frac{1}{\beta}\log\!\Bigl(e^{\beta h_{\beta,w_1}(a,b)}+w_1w_2 e^{\beta c}\Bigr)\\
+ &= \frac{1}{\beta}\log\!\Bigl(e^{\beta a}+w_1 e^{\beta b}+w_1w_2 e^{\beta c}\Bigr),
+\end{align*}
+which proves \Cref{eq:discounted-assoc-weighted-lse}.
+For the centered operator,
+\[
+ f_{\beta,\gamma}(r,v)=h_{\beta,\gamma}(r,v)-\frac{\log(1+\gamma)}{\beta},
+\]
+so strict monotonicity, translation equivariance, and smoothness are inherited from the raw family.
+For the classical limit, expand
+\[
+\frac{e^{\beta r}+\gamma e^{\beta v}}{1+\gamma}
+=1+\beta\frac{r+\gamma v}{1+\gamma}+O(\beta^2),
+\]
+and use $\log(1+x)=x+O(x^2)$ to obtain
+\[
+ f_{\beta,\gamma}(r,v)=\frac{r+\gamma v}{1+\gamma}+O(\beta),
+\qquad
+ g_{\beta,\gamma}(r,v)=r+\gamma v+O(\beta).
+\]
+
+\paragraph{Proof of \Cref{prop:no-single-normalization}.}
+Fix $a,b,c\in\R$. For every sequence $\beta_n\to 0$ with $\beta_n\neq 0$,
+\[
+A_{\beta_n,\gamma}(a+c,b+c)=A_{\beta_n,\gamma}(a,b)+c.
+\]
+Passing to the limit and using pointwise convergence gives
+\[
+A_{0,\gamma}(a+c,b+c)=A_{0,\gamma}(a,b)+c,
+\]
+so $A_{0,\gamma}$ is translation equivariant. But for the classical Bellman target,
+\[
+(r+c)+\gamma(v+c)=(r+\gamma v)+(1+\gamma)c,
+\]
+which equals $(r+\gamma v)+c$ only if $\gamma=0$. Hence no continuous translation-equivariant family can converge to $r+\gamma v$ for $\gamma\in(0,1)$.
+
+\paragraph{Proof of \Cref{thm:uniqueness}.}
+Assume
+\[
+A_w(a,b)=\phi^{-1}\!\bigl(\phi(a)+w\phi(b)\bigr)
+\]
+for a continuous strictly monotone $\phi:\R\to(0,\infty)$, and suppose every $A_w$ is translation equivariant.
+Fix $c\in\R$ and define
+\[
+u_c(x)\defeq \phi\bigl(\phi^{-1}(x)+c\bigr).
+\]
+Translation equivariance implies
+\begin{align*}
+\nu_c(x+w y)
+&=\phi\Bigl(A_w\bigl(\phi^{-1}(x)+c,\phi^{-1}(y)+c\bigr)\Bigr)\\
+&=\phi\Bigl(A_w\bigl(\phi^{-1}(x),\phi^{-1}(y)\bigr)+c\Bigr)\\
+&=\nu_c(x)+w\nu_c(y)
+\end{align*}
+for all $x,y>0$ and all $w>0$.
+Setting $x=y=0$ yields $\nu_c(0)=\nu_c(0)+w\nu_c(0)$, so $\nu_c(0)=0$.
+Then setting $x=0$ gives
+\[
+\nu_c(wy)=w\nu_c(y).
+\]
+Now for arbitrary $x,y>0$,
+\begin{align*}
+w\nu_c(x+y)
+&=\nu_c\bigl(w(x+y)\bigr)
+ = \nu_c(wx+wy)
+ = \nu_c(wx)+w\nu_c(y)
+ = w\nu_c(x)+w\nu_c(y).
+\end{align*}
+Since $w>0$, this gives the Cauchy equation
+\[
+\nu_c(x+y)=\nu_c(x)+\nu_c(y)
+\qquad \forall x,y>0.
+\]
+Continuity forces linearity: $\nu_c(x)=m(c)x$ for some $m(c)>0$.
+Hence
+\[
+\phi(t+c)=m(c)\phi(t)
+\qquad \forall t,c\in\R.
+\]
+Applying this twice gives $m(c+d)=m(c)m(d)$ and $m(0)=1$.
+The only continuous positive solutions are $m(c)=e^{\beta c}$ for some $\beta\in\R$.
+Thus $\phi(t)=Ce^{\beta t}$ for some $C>0$.
+Strict monotonicity rules out $\beta=0$.
+Substituting into the quasi-sum form gives
+\[
+A_w(a,b)=\frac{1}{\beta}\log\!\left(\frac{Ce^{\beta a}+wCe^{\beta b}}{C}\right)=\frac{1}{\beta}\log\!\bigl(e^{\beta a}+w e^{\beta b}\bigr).
+\]
+
+\paragraph{Proof of \Cref{thm:broad-class}.}
+Fix $w>0$.
+Translation equivariance implies $A_w(a,b)=b+h_w(a-b)$, where $h_w(\Delta)=A_w(\Delta,0)$.
+Set $\Delta=a-b$.
+Then
+\[
+A_w(a,b)=b+h_w(\Delta).
+\]
+The Legendre conjugate of $h_w$ is
+\[
+h_w^*(\rho)=\sup_{x\in\R}\{\rho x-h_w(x)\}.
+\]
+By strict convexity, $h_w'$ is injective, so the optimizer is unique and lies at $x=(h_w')^{-1}(\rho)$ whenever $\rho\in h_w'(\R)$.
+Fenchel biconjugacy yields
+\[
+h_w(\Delta)=\sup_{\rho\in h_w'(\R)}\{\rho\Delta-h_w^*(\rho)\}.
+\]
+Therefore
+\begin{align*}
+A_w(a,b)
+&=b+h_w(a-b)\\
+&=\sup_{\rho\in h_w'(\R)}\{\rho(a-b)+b-h_w^*(\rho)\}\\
+&=\sup_{\rho\in h_w'(\R)}\{\rho a +(1-\rho)b-h_w^*(\rho)\},
+\end{align*}
+which is \Cref{eq:broad-decomp}.
+For strictly concave $h_w$, apply the same argument to $-h_w$ and the supremum becomes an infimum.
+
+\paragraph{Proof of \Cref{thm:prior-characterization}.}
+Let
+\[
+\ell_{\beta,p}(\rho;a,b)=\rho a +(1-\rho)b-\beta^{-1}\KL\!\left(\Bern(\rho)\,\middle\|\,\Bern(p)\right).
+\]
+For $\rho\in(0,1)$,
+\[
+\frac{\partial \ell_{\beta,p}}{\partial \rho}
+=a-b-\frac{1}{\beta}\left(\log\frac{\rho}{1-\rho}-\log\frac{p}{1-p}\right).
+\]
+Setting this derivative to zero gives
+\[
+\log\frac{\rho^*}{1-\rho^*}=\beta(a-b)+\log\frac{p}{1-p},
+\]
+so
+\[
+\rho^*=\frac{pe^{\beta a}}{pe^{\beta a}+(1-p)e^{\beta b}}.
+\]
+Substituting this optimizer back into the objective yields the standard Gibbs identity
+\[
+\mathrm{opt}_{\rho\in[0,1]}\,\ell_{\beta,p}(\rho;a,b)
+=\frac{1}{\beta}\log\bigl(pe^{\beta a}+(1-p)e^{\beta b}\bigr),
+\]
+with \textnormal{max} for $\beta>0$ and \textnormal{min} for $\beta<0$.
+Choosing $p=1/(1+\gamma)$ gives
+\[
+\Psi_{\beta,p}(a,b)=\frac{1}{\beta}\log\!\left(\frac{e^{\beta a}+\gamma e^{\beta b}}{1+\gamma}\right)=f_{\beta,\gamma}(a,b).
+\]
+
+\subsection{Section 4: Bellman equations, Bernoulli geometry, and the classical limit}
+\label{app:bellman}
+
+\paragraph{Proof of \Cref{thm:recursive-decomposition}.}
+Apply \Cref{thm:prior-characterization} with $p=\pprior=1/(1+\gamma)$.
+The first-order condition is
+\[
+\log\frac{\rho^*}{1-\rho^*}=\beta(r-v)+\log\frac{\pprior}{1-\pprior}=\beta(r-v)+\log(1/\gamma),
+\]
+so
+\[
+\rho^*(r,v)=\sigma\!\bigl(\beta(r-v)+\log(1/\gamma)\bigr).
+\]
+Multiplying the variational identity by $(1+\gamma)$ gives the stated formula for $g_{\beta,\gamma}$.
+
+\paragraph{Proof of \Cref{prop:natural-coordinate-update}.}
+By \Cref{thm:recursive-decomposition},
+\[
+\frac{\rho^*(r,v)}{1-\rho^*(r,v)}
+=
+\frac{1}{\gamma}e^{\beta(r-v)}.
+\]
+Taking logarithms gives
+\[
+\eta^*(r,v)
+=
+\log\frac{\rho^*(r,v)}{1-\rho^*(r,v)}
+=
+\log(1/\gamma)+\beta(r-v)
+=
+\eta_0+\beta(r-v).
+\]
+When $\beta=0$, this reduces to $\eta^*=\eta_0$, equivalently $\rho^*=\pprior$.
+
+\paragraph{Proof of \Cref{prop:fisher-local-kl}.}
+Let $X\sim\Bern(\rho)$ so that
+\[
+\Pr(X=1)=\rho,
+\qquad
+\Pr(X=0)=1-\rho.
+\]
+The log-likelihood is
+\[
+\log p_\rho(X)=X\log \rho + (1-X)\log(1-\rho),
+\]
+and its derivative is
+\[
+\partial_\rho \log p_\rho(X)=\frac{X}{\rho}-\frac{1-X}{1-\rho}=\frac{X-\rho}{\rho(1-\rho)}.
+\]
+Therefore the Fisher information is
+\[
+g_{\cB}(\rho)=\E_\rho\!\left[(\partial_\rho \log p_\rho(X))^2\right]=\frac{1}{\rho(1-\rho)}.
+\]
+Now define
+\[
+\phi(\rho)=\KLbin{\rho}{\pprior}=\rho\log\frac{\rho}{\pprior}+(1-\rho)\log\frac{1-\rho}{1-\pprior}.
+\]
+Then $\phi(\pprior)=0$ and
+\[
+\phi'(\rho)=\log\frac{\rho}{1-\rho}-\log\frac{\pprior}{1-\pprior},
+\qquad
+\phi'(\pprior)=0.
+\]
+Differentiating again gives
+\[
+\phi''(\rho)=\frac{1}{\rho(1-\rho)}=g_{\cB}(\rho).
+\]
+A second-order Taylor expansion around $\rho=\pprior$ therefore yields
+\[
+\KLbin{\rho}{\pprior}
+=
+\frac{1}{2}g_{\cB}(\pprior)(\rho-\pprior)^2 + O\bigl((\rho-\pprior)^3\bigr)
+=
+\frac{(\rho-\pprior)^2}{2\pprior(1-\pprior)} + O\bigl((\rho-\pprior)^3\bigr).
+\]
+Thus the KL penalty agrees to second order with the Fisher quadratic form at the classical prior.
+
+\paragraph{Proof of \Cref{thm:lse-bellman-expectation}.}
+Start from
+\[
+Q_{\beta,\gamma,t}^{\pi}(s,a)=\E_{s'}\bigl[g_{\beta,\gamma}(\hat r(s,a),V_{\beta,\gamma,t+1}^{\pi}(s'))\bigr].
+\]
+Insert the variational identity from \Cref{thm:recursive-decomposition} pointwise inside the expectation.
+The optimizer is exactly
+\[
+\rho_t^{\pi}(s,a,s')=\sigma\!\bigl(\beta(\hat r(s,a)-V_{\beta,\gamma,t+1}^{\pi}(s'))+\log(1/\gamma)\bigr).
+\]
+At $\beta=0$, $g_{0,\gamma}(r,v)=r+\gamma v$, so the Bellman equation reduces to the classical discounted recursion.
+
+\paragraph{Proof of \Cref{thm:lse-bellman-optimality}.}
+The optimal Bellman recursion is
+\[
+Q_{\beta,\gamma,t}^*(s,a)=\E_{s'}\bigl[g_{\beta,\gamma}(\hat r(s,a),V_{\beta,\gamma,t+1}^*(s'))\bigr],
+\qquad
+V_{\beta,\gamma,t}^*(s)=\max_a Q_{\beta,\gamma,t}^*(s,a).
+\]
+Expanding the one-step target with \Cref{thm:recursive-decomposition} gives the expanded variational form.
+
+\paragraph{Proof of \Cref{thm:recovery-classical}.}
+Fix $\beta_0>0$ and a stagewise envelope $\bar B_t$ large enough to contain both the classical and weighted value functions for $|\beta|\le \beta_0$.
+By \Cref{prop:stagewise-envelope}, such envelopes are available and depend only on $(R_{\max},\gamma,T,\beta_0)$.
+On the compact set $|r|\le R_{\max}$, $|v|\le \bar B_{t+1}$, the map $(\beta,r,v)\mapsto g_{\beta,\gamma}(r,v)$ is smooth through $\beta=0$.
+Hence there is a constant $M_t(\beta_0)$ such that
+\[
+|g_{\beta,\gamma}(r,v)-(r+\gamma v)|\le M_t(\beta_0)|\beta|
+\]
+uniformly on that compact set.
+Subtract the classical and weighted Bellman equations to obtain
+\[
+\|Q_{\beta,\gamma,t}^{\pi}-Q_{0,\gamma,t}^{\pi}\|_\infty
+\le M_t|\beta| + \gamma_t\|V_{\beta,\gamma,t+1}^{\pi}-V_{0,\gamma,t+1}^{\pi}\|_\infty,
+\]
+for some finite constant $\gamma_t$ depending only on the compact stagewise envelope.
+Since the terminal values agree exactly at stage $T$, backward induction yields the claimed $O(|\beta|)$ bound stagewise.
+The optimal case is identical, replacing policy averaging by maximization.
+
+\paragraph{Proof of \Cref{cor:small-beta-policy-stability}.}
+By \Cref{thm:recovery-classical},
+\[
+\sup_{t,s,a}|Q^*_{\beta,\gamma,t}(s,a)-Q^*_{0,\gamma,t}(s,a)|\to 0
+\qquad \text{as } \beta\to 0.
+\]
+Choose $\beta_*>0$ so that this sup norm is smaller than $\Delta/2$ when $|\beta|\le \beta_*$.
+Then for every $(t,s)$,
+\begin{align*}
+Q^*_{\beta,\gamma,t}(s,\pi_t^0(s))
+&\ge Q^*_{0,\gamma,t}(s,\pi_t^0(s)) - \Delta/2\\
+&> \max_{a\neq \pi_t^0(s)}Q^*_{0,\gamma,t}(s,a)+\Delta/2\\
+&\ge \max_{a\neq \pi_t^0(s)}Q^*_{\beta,\gamma,t}(s,a).
+\end{align*}
+Hence the same policy remains uniquely greedy.
+
+\paragraph{Proof of \Cref{prop:beta-monotone}.}
+Let
+\[
+Z(\beta)=\pprior e^{\beta r}+(1-\pprior)e^{\beta v},
+\qquad
+c_\beta(r,v)=\frac{1}{\beta}\log Z(\beta)
+\quad (\beta\neq 0).
+\]
+Define the Gibbs weights
+\[
+q_\beta(r)=\frac{\pprior e^{\beta r}}{Z(\beta)},
+\qquad
+q_\beta(v)=\frac{(1-\pprior)e^{\beta v}}{Z(\beta)}.
+\]
+A direct differentiation gives
+\[
+\beta^2\frac{d}{d\beta}c_\beta(r,v)
+=\beta\sum_x q_\beta(x)x - \log Z(\beta)
+=\sum_x q_\beta(x)\log\frac{q_\beta(x)}{p(x)}
+=\KL(q_\beta\|p)\ge 0,
+\]
+where $p=(\pprior,1-\pprior)$.
+Equality holds iff $q_\beta=p$, which for the two-point family is equivalent to $r=v$.
+Multiplying by $(1+\gamma)$ proves that $g_{\beta,\gamma}(r,v)$ is nondecreasing in $\beta$.
+The value functions inherit the ordering by backward induction because the Bellman operators are monotone in the continuation argument.
+
+\paragraph{Derivation of \Cref{eq:risk-premium}.}
+For the same two-point distribution, the cumulant expansion gives
+\[
+\frac{1}{\beta}\log Z(\beta)=\E_p[X]+\frac{\beta}{2}\Var_p(X)+O(\beta^2),
+\]
+with
+\[
+\E_p[X]=\frac{r+\gamma v}{1+\gamma},
+\qquad
+\Var_p(X)=\frac{\gamma}{(1+\gamma)^2}(r-v)^2.
+\]
+Multiplying by $(1+\gamma)$ yields \Cref{eq:risk-premium}.
+
+\paragraph{Proof of \Cref{prop:beta-scale}.}
+For $c>0$,
+\begin{align*}
+g_{\beta/c,\gamma}(cr,cv)
+&=(1+\gamma)\frac{c}{\beta}
+\log\!\left(\frac{e^{\beta r}+\gamma e^{\beta v}}{1+\gamma}\right)
+= c\,g_{\beta,\gamma}(r,v).
+\end{align*}
+The optimizer obeys
+\[
+\rho^*_{\beta/c,\gamma}(cr,cv)
+=\sigma\!\bigl((\beta/c)(cr-cv)+\log(1/\gamma)\bigr)
+=\rho^*_{\beta,\gamma}(r,v),
+\]
+and then $d_{\beta/c,\gamma}(cr,cv)=(1+\gamma)(1-\rho^*_{\beta/c,\gamma}(cr,cv))=d_{\beta,\gamma}(r,v)$.
+
+\paragraph{Proof of \Cref{prop:beta-inverse-design}.}
+Since $d_{\beta,\gamma}(r,v)$ depends on $(r,v)$ only through $\Delta=r-v$,
+\[
+d_{\beta,\gamma}(v+\Delta,v)=\frac{(1+\gamma)\gamma}{e^{\beta\Delta}+\gamma}.
+\]
+Solving $d_{\beta,\gamma}(v+\Delta,v)=\lambda$ for $\beta$ gives
+\[
+e^{\beta\Delta}=\frac{\gamma(1+\gamma-\lambda)}{\lambda},
+\qquad
+\beta=\frac{1}{\Delta}\log\!\left(\frac{\gamma(1+\gamma-\lambda)}{\lambda}\right).
+\]
+If $\lambda<\gamma$, then the logarithm is positive, so $\beta\Delta>0$; if $\lambda>\gamma$, it is negative, so $\beta\Delta<0$. The last statement follows by substituting $\lambda=\kappa_t$ and $|\Delta|=R_{\max}+\Bhat_{t+1}$ into \eqref{eq:beta-inverse-design}, which reproduces \eqref{eq:beta-cap}.
+
+\paragraph{Proof of \Cref{prop:beta-sensitivity}.}
+Let
+\[
+p=(\pprior,1-\pprior),
+\qquad
+\Delta=r-v,
+\qquad
+\ell_0=\log\frac{\pprior}{1-\pprior}=\log(1/\gamma).
+\]
+For $\beta\neq 0$, the centered certainty equivalent is
+\[
+f_{\beta,\gamma}(r,v)=\frac{1}{\beta}\log\!\bigl(\pprior e^{\beta r}+(1-\pprior)e^{\beta v}\bigr).
+\]
+By the same Gibbs-tilting calculation used in the proof of \Cref{prop:beta-monotone},
+\[
+\partial_\beta f_{\beta,\gamma}(r,v)
+=
+\frac{1}{\beta^2}
+\KL\!\left(
+\Bern\!\bigl(\rho^*_{\beta,\gamma}(r,v)\bigr)
+\,\middle\|\,
+\Bern(\pprior)
+\right),
+\]
+where
+\[
+\rho^*_{\beta,\gamma}(r,v)=\sigma(\ell_0+\beta\Delta).
+\]
+Now let $\varphi(\ell)=\log(1+e^\ell)$, so $\varphi'(\ell)=\sigma(\ell)$ and
+\[
+\varphi''(\ell)=\sigma(\ell)\bigl(1-\sigma(\ell)\bigr)\le \frac14.
+\]
+For Bernoulli distributions parameterized by logits, the KL divergence above is the Bregman divergence of $\varphi$:
+\[
+\KL\!\left(
+\Bern\!\bigl(\sigma(\ell_0+z)\bigr)
+\,\middle\|\,
+\Bern\!\bigl(\sigma(\ell_0)\bigr)
+\right)
+=
+\varphi(\ell_0)-\varphi(\ell_0+z)+\varphi'(\ell_0+z)z,
+\qquad z=\beta\Delta.
+\]
+Because $\varphi$ is $1/4$-smooth, this Bregman divergence is at most $z^2/8$.
+Therefore,
+\[
+0\le \partial_\beta f_{\beta,\gamma}(r,v)\le \frac{\Delta^2}{8},
+\qquad
+0\le \partial_\beta g_{\beta,\gamma}(r,v)=(1+\gamma)\partial_\beta f_{\beta,\gamma}(r,v)\le \frac{1+\gamma}{8}\Delta^2
+\]
+for every $\beta\neq 0$.
+At $\beta=0$, \Cref{eq:risk-premium} gives
+\[
+\partial_\beta g_{0,\gamma}(r,v)=\frac{\gamma}{2(1+\gamma)}\Delta^2\le \frac{1+\gamma}{8}\Delta^2,
+\]
+so the same bound extends continuously to $\beta=0$.
+The Lipschitz bounds \eqref{eq:beta-sensitivity-target}--\eqref{eq:beta-sensitivity-box} follow from the mean-value theorem and the box estimate $|r-v|\le R_{\max}+B$.
+
+\subsection{Section 5: temporal filtering, adaptive discounts, and comparator theorems}
+\label{app:temporal}
+
+\paragraph{Proof of \Cref{prop:ew-update}.}
+Differentiate
+\[
+\rho r +(1-\rho)v - \beta_t^{-1}\KLbin{\rho}{\pprior}
+\]
+with respect to $\rho$.
+The derivative is
+\[
+r-v-\frac{1}{\beta_t}\left(\log\frac{\rho}{1-\rho}-\log\frac{\pprior}{1-\pprior}\right).
+\]
+Setting this to zero gives
+\[
+\log\frac{\rho_t^*}{1-\rho_t^*}=\beta_t(r-v)+\log\frac{\pprior}{1-\pprior}=\beta_t(r-v)+\log(1/\gamma),
+\]
+which implies \Cref{eq:exp-weights-rho} and \Cref{eq:odds-update}.
+
+\paragraph{Proof of \Cref{prop:adaptive-discount-reparam}.}
+Write $\lambda=(1+\gamma)(1-\rho)$, so $\rho=1-\lambda/(1+\gamma)$ and $\lambda\in[0,1+\gamma]$. Because swapping the two Bernoulli labels leaves KL unchanged,
+\[
+\KLbin{\rho}{\pprior}
+=
+\KL\!\left(
+\Bern\!\Bigl(\frac{\lambda}{1+\gamma}\Bigr)
+\,\middle\|\,
+\Bern\!\Bigl(\frac{\gamma}{1+\gamma}\Bigr)
+\right)
+=D_\gamma(\lambda).
+\]
+Substituting this change of variables into
+\[
+g_{\beta,\gamma}(r,v)=(1+\gamma)\,\underset{\rho\in[0,1]}{\mathrm{opt}}
+\Bigl[\rho r +(1-\rho)v-\beta^{-1}\KLbin{\rho}{\pprior}\Bigr]
+\]
+gives
+\[
+g_{\beta,\gamma}(r,v)=\underset{\lambda\in[0,1+\gamma]}{\mathrm{opt}}
+\Bigl[(1+\gamma-\lambda)r+\lambda v-\frac{1+\gamma}{\beta}D_\gamma(\lambda)\Bigr].
+\]
+The optimizer is $\lambda^*=(1+\gamma)(1-\rho^*)=d_{\beta,\gamma}(r,v)$. Setting $\lambda=\gamma$ corresponds to $\rho=\pprior$, so the KL term vanishes and the objective equals $r+\gamma v$.
+
+\paragraph{Proof of \Cref{thm:adaptive-impulse-response}.}
+Differentiating the explicit form of $g_t=g_{\beta_t,\gamma}$ gives
+\[
+\partial_r g_t(r_t,V_{t+1})=
+\frac{(1+\gamma)e^{\beta_t r_t}}{e^{\beta_t r_t}+\gamma e^{\beta_t V_{t+1}}}
+=(1+\gamma)\rho_t,
+\]
+and
+\[
+\partial_v g_t(r_t,V_{t+1})=
+\frac{(1+\gamma)\gamma e^{\beta_t V_{t+1}}}{e^{\beta_t r_t}+\gamma e^{\beta_t V_{t+1}}}
+=(1+\gamma)(1-\rho_t).
+\]
+For $k=0$, one has
+\[
+\frac{\partial V_t}{\partial r_t}=
+\partial_r g_t(r_t,V_{t+1})=a_t,
+\]
+which matches the stated formula because the product is empty. For $k\ge 1$, the chain rule gives
+\[
+\frac{\partial V_t}{\partial r_{t+k}}
+=
+\partial_v g_t(r_t,V_{t+1})\frac{\partial V_{t+1}}{\partial r_{t+k}}
+=d_t\frac{\partial V_{t+1}}{\partial r_{t+k}}.
+\]
+Iterating this identity yields
+\[
+\frac{\partial V_t}{\partial r_{t+k}}
+=
+\left(\prod_{j=t}^{t+k-1}d_j\right)\frac{\partial V_{t+k}}{\partial r_{t+k}}
+=
+\left(\prod_{j=t}^{t+k-1}d_j\right)a_{t+k}.
+\]
+When $\beta_j=0$ for all $j$, one has $\rho_j=1/(1+\gamma)$, so $a_j=1$ and $d_j=\gamma$, giving $\partial V_t/\partial r_{t+k}=\gamma^k$.
+
+\paragraph{Proof of \Cref{cor:effective-horizon}.}
+By \Cref{thm:adaptive-impulse-response}, the sensitivity of $V_t$ to the reward shock at stage $t+k$ is scaled by the propagation factor $\prod_{j=t}^{t+k-1}d_j$. Summing these propagation factors over the remaining horizon gives the stated finite-horizon response mass
+\[
+H_t^{\mathrm{TAB}}=\sum_{k=0}^{T-1-t}\prod_{j=t}^{t+k-1}d_j.
+\]
+If $d_j\equiv d$ on stages $t,\dots,T-1$, then this is the geometric sum
+\[
+H_t^{\mathrm{TAB}}=\sum_{k=0}^{T-1-t}d^k=\frac{1-d^{T-t}}{1-d}.
+\]
+In the locally stationary proxy or infinite-horizon comparison this becomes $(1-d)^{-1}$. The classical case is recovered by setting $d=\gamma$. If $d>1$, the geometric response grows rather than decays, which is exactly the local instability ruled out by the safe layer.
+
+\paragraph{Proof of \Cref{thm:temporal-comparator}.}
+When $\beta_t>0$, the one-step variational identity says
+\[
+g_t(r_t,v_t)=(1+\gamma)\max_{\rho\in[0,1]}\Bigl[\rho r_t+(1-\rho)v_t-\beta_t^{-1}\KLbin{\rho}{\pprior}\Bigr].
+\]
+Therefore for any comparator $\tilde\rho_t\in[0,1]$,
+\[
+g_t(r_t,v_t)\ge (1+\gamma)\Bigl[\tilde\rho_t r_t+(1-\tilde\rho_t)v_t-\beta_t^{-1}\KLbin{\tilde\rho_t}{\pprior}\Bigr].
+\]
+Summing over $t$ yields \Cref{eq:temporal-comparator-pos}.
+If $\beta_t<0$, the one-step identity is an infimum rather than a supremum, so the direction reverses.
+
+\paragraph{Proof of \Cref{thm:fixed-policy-comparator}.}
+For the one-step bound, apply \Cref{thm:temporal-comparator} inside the Bellman expectation:
+\begin{align*}
+Q_t^\pi(s,a)
+&=\E_{s'}\bigl[g_t(\hat r(s,a),V_{t+1}^\pi(s'))\bigr]\\
+&\ge (1+\gamma)\E_{s'}\Bigl[
+    \tilde\rho_t(s,a,s')\hat r(s,a)
+    +\bigl(1-\tilde\rho_t(s,a,s')\bigr)V_{t+1}^\pi(s') \\
+&\hspace{8.5em}
+    -\beta_t^{-1}\KLbin{\tilde\rho_t(s,a,s')}{\pprior}
+\Bigr].
+\end{align*}
+Averaging over the action selected by $\pi_t$ gives
+\[
+V_t^\pi(s)\ge \E_\pi\bigl[(1+\gamma)(\tilde\rho_t\hat r_t-\beta_t^{-1}K_t)+\lambda_t V_{t+1}^\pi(s_{t+1})\,|\,s_t=s\bigr].
+\]
+Repeated substitution on the time-augmented DAG yields \Cref{eq:fixed-policy-comparator-unrolled}.
+The negative-temperature case is identical with reversed inequalities.
+
+\paragraph{Proof of \Cref{thm:adaptive-discount-control}.}
+For each stage $t$ and state-action pair $(s,a)$,
+\[
+Q_t^{\pi}(s,a)=\E_{s'}\bigl[g_{\beta_t,\gamma}(\hat r(s,a),V_{t+1}^{\pi}(s'))\bigr].
+\]
+Apply \Cref{prop:adaptive-discount-reparam} pointwise inside the expectation. When $\beta_t>0$, this gives
+\begin{align*}
+Q_t^{\pi}(s,a)
+=\sup_{\lambda_t(\cdot)}\E_{s'}\Bigl[
+(1+\gamma-\lambda_t(s,a,s'))\hat r(s,a)
+-\frac{1+\gamma}{\beta_t}D_\gamma\bigl(\lambda_t(s,a,s')\bigr)
++\lambda_t(s,a,s')V_{t+1}^{\pi}(s')
+\Bigr],
+\end{align*}
+with infimum instead of supremum when $\beta_t<0$. Averaging over the action chosen by $\pi_t$ yields the Bellman recursion for $V_t^{\pi}$ as the pointwise supremum/infimum over stage-$t$ continuation fields plus the continuation value $V_{t+1}^{\pi}$.
+
+Proceed by backward induction on $t$. The terminal stage is trivial because $V_T^{\pi}=V_T^{\pi,\lambda}=0$. Assume the representation holds at stage $t+1$. Substituting
+\[
+V_{t+1}^{\pi}(s')=\sup_{\lambda_{t+1:T-1}}V_{t+1}^{\pi,\lambda}(s')
+\]
+into the Bellman display above shows that the stage-$t$ supremum over $\lambda_t$ together with the inductive supremum over $\lambda_{t+1:T-1}$ is exactly the supremum over the full field $\lambda_{t:T-1}$ in the recursive definition \eqref{eq:adaptive-discount-q}--\eqref{eq:adaptive-discount-v}. This yields \eqref{eq:adaptive-discount-control}; the negative-temperature case is identical with infima throughout. The optimizer is the pointwise maximizer/minimizer from \Cref{prop:adaptive-discount-reparam}, namely $\lambda_t^*=d_{\beta_t,\gamma}(\hat r,V_{t+1}^{\pi})$.
+
+For the unrolled expression \eqref{eq:adaptive-discount-unrolled}, repeatedly substitute the recursion for $V_{t+1}^{\pi,\lambda}$ on the finite-horizon time-augmented DAG. Each substitution contributes a multiplicative factor $\lambda_j$ to later terms, producing the stated product form.
+
+\paragraph{Proof of \Cref{prop:path-length-penalty}.}
+Pinsker's inequality in natural logarithms gives, for each $t$,
+\[
+\KLbin{\tilde\rho_t}{\pprior} \ge 2(\tilde\rho_t-\pprior)^2.
+\]
+Next,
+\[
+\PL(\tilde\rho_{0:T-1})
+=\sum_{t=1}^{T-1}|\tilde\rho_t-\tilde\rho_{t-1}|
+\le 2\sum_{t=0}^{T-1}|\tilde\rho_t-\pprior|.
+\]
+Applying Cauchy--Schwarz,
+\[
+\PL(\tilde\rho_{0:T-1})^2\le 4T\sum_{t=0}^{T-1}(\tilde\rho_t-\pprior)^2
+\le 2T\sum_{t=0}^{T-1}\KLbin{\tilde\rho_t}{\pprior},
+\]
+which proves \Cref{eq:path-length-penalty}.
+For the benchmark bound, note that when $\beta_t>0$ one has $\beta_t^{-1}\ge \beta_{\max}^{-1}$, so
+\[
+\sum_{t=0}^{T-1}\beta_t^{-1}\KLbin{\tilde\rho_t}{\pprior}
+\ge \frac{1}{\beta_{\max}}\sum_{t=0}^{T-1}\KLbin{\tilde\rho_t}{\pprior}
+\ge \frac{\PL(\tilde\rho_{0:T-1})^2}{2T\beta_{\max}}.
+\]
+Substituting this into the regularized benchmark yields \Cref{eq:path-length-penalty-benchmark}.
+
+\subsection{Section 6: safe calibration, trust regions, contraction, and envelopes}
+\label{app:safe}
+
+\paragraph{Proof of \Cref{prop:trust-region-dual}.}
+Assume first that $\beta>0$ and $r\neq v$. Let
+\[
+\rho^*=\rho^*(r,v)
+\qquad\text{and}\qquad
+\epsilon(r,v)=\KLbin{\rho^*}{\pprior}.
+\]
+By the one-step variational identity,
+\[
+\rho^*\in\arg\max_{\rho\in[0,1]}
+\Bigl[\rho r+(1-\rho)v-\beta^{-1}\KLbin{\rho}{\pprior}\Bigr].
+\]
+Now consider the KL-constrained feasible set
+\[
+\mathcal F_\epsilon=\{\rho\in[0,1]: \KLbin{\rho}{\pprior}\le \epsilon(r,v)\}.
+\]
+If there were some $\bar\rho\in\mathcal F_\epsilon$ with
+\[
+\bar\rho r +(1-\bar\rho)v > \rho^* r +(1-\rho^*)v,
+\]
+then, since $\KLbin{\bar\rho}{\pprior}\le \KLbin{\rho^*}{\pprior}$, one would also have
+\[
+\bar\rho r +(1-\bar\rho)v - \beta^{-1}\KLbin{\bar\rho}{\pprior}
+>
+\rho^* r +(1-\rho^*)v - \beta^{-1}\KLbin{\rho^*}{\pprior},
+\]
+contradicting optimality of $\rho^*$ in the Lagrangian problem. Hence $\rho^*$ solves the constrained maximization. Uniqueness follows because the objective is linear with nonzero slope $r-v$, so on the one-dimensional convex set $\mathcal F_\epsilon$ the maximizer is the appropriate endpoint and is unique.
+
+If $r=v$, the constrained objective is constant in $\rho$, so every feasible point is optimal. The Lagrangian TAB objective then reduces to $v-\beta^{-1}\KLbin{\rho}{\pprior}$ and is uniquely optimized at $\rho=\pprior$.
+
+Conversely, consider an active constrained maximization solution $\hat\rho$ with radius $\hat\epsilon>0$. Since the feasible set is one-dimensional and the constraint is smooth and active, the KKT condition gives some multiplier $\mu>0$ such that
+\[
+r-v-\mu\left(\log\frac{\hat\rho}{1-\hat\rho}-\log\frac{\pprior}{1-\pprior}\right)=0.
+\]
+Setting $\beta=1/\mu$ shows that $\hat\rho$ is exactly the optimizer of the TAB Lagrangian. The case $\beta<0$ is identical after replacing maximization by minimization.
+
+\paragraph{Proof of \Cref{prop:trust-region-safety}.}
+For any temporal allocation $\rho$, the continuation coefficient is
+\[
+d(\rho)=(1+\gamma)(1-\rho),
+\]
+so
+\[
+d(\rho)\le \kappa
+\iff
+1-\rho\le \frac{\kappa}{1+\gamma}
+\iff
+\rho\ge 1-\frac{\kappa}{1+\gamma}=\rho_{\min}(\kappa).
+\]
+Now define
+\[
+\phi(\rho)=\KLbin{\rho}{\pprior}.
+\]
+As in the proof of \Cref{prop:fisher-local-kl},
+\[
+\phi'(\rho)=\log\frac{\rho}{1-\rho}-\log\frac{\pprior}{1-\pprior}.
+\]
+Hence $\phi'(\rho)<0$ for $\rho<\pprior$, $\phi'(\rho)=0$ at $\rho=\pprior$, and $\phi'(\rho)>0$ for $\rho>\pprior$. Therefore each sublevel set
+\[
+\mathcal U_\epsilon=\{\rho\in(0,1):\phi(\rho)\le \epsilon\}
+\]
+is an interval $[\rho_-(\epsilon),\rho_+(\epsilon)]$ with $\rho_-(\epsilon)\le \pprior\le \rho_+(\epsilon)$, and the left endpoint $\rho_-(\epsilon)$ decreases monotonically as $\epsilon$ grows.
+
+Because $\kappa\ge \gamma$, one has
+\[
+\rho_{\min}(\kappa)=1-\frac{\kappa}{1+\gamma}\le 1-\frac{\gamma}{1+\gamma}=\frac{1}{1+\gamma}=\pprior.
+\]
+Define
+\[
+\epsilon_{\mathrm{crit}}(\kappa)=\phi(\rho_{\min}(\kappa)).
+\]
+If $\epsilon\le \epsilon_{\mathrm{crit}}(\kappa)$, monotonicity of $\phi$ on $(0,\pprior]$ implies
+\[
+\rho_-(\epsilon)\ge \rho_{\min}(\kappa),
+\]
+so every $\rho\in\mathcal U_\epsilon$ satisfies $\rho\ge \rho_{\min}(\kappa)$ and hence $d(\rho)\le \kappa$. This proves part (i).
+
+If instead $\epsilon>\epsilon_{\mathrm{crit}}(\kappa)$, then again by monotonicity on $(0,\pprior]$ the left endpoint satisfies
+\[
+\rho_-(\epsilon)<\rho_{\min}(\kappa).
+\]
+Any such $\rho_-(\epsilon)\in\mathcal U_\epsilon$ has $d(\rho_-(\epsilon))>\kappa$, proving part (ii).
+
+\paragraph{Proof of \Cref{prop:effective-discount}.}
+Using the explicit form of $g_{\beta,\gamma}$,
+\[
+\partial_v g_{\beta,\gamma}(r,v)=\frac{(1+\gamma)\gamma e^{\beta v}}{e^{\beta r}+\gamma e^{\beta v}}=\frac{(1+\gamma)\gamma}{e^{\beta(r-v)}+\gamma}.
+\]
+Thus
+\begin{align*}
+\partial_v g_{\beta,\gamma}(r,v)\le \gamma
+&\iff (1+\gamma)e^{\beta v}\le e^{\beta r}+\gamma e^{\beta v}\\
+&\iff e^{\beta v}\le e^{\beta r}\\
+&\iff \beta(r-v)\ge 0.
+\end{align*}
+Equality holds iff $e^{\beta r}=e^{\beta v}$, that is, either $\beta=0$ or $r=v$.
+
+\paragraph{Proof of \Cref{thm:lse-contraction}.}
+The mean-value theorem reduces the claim to maximizing
+\[
+\partial_v g_{\beta,\gamma}(r,v)=\frac{(1+\gamma)\gamma}{e^{\beta(r-v)}+\gamma}
+\]
+over $|r|\le R_{\max}$ and $|v|\le B$.
+This derivative is increasing as $\beta(r-v)$ decreases.
+The smallest possible value of $\beta(r-v)$ on the box is $-|\beta|(R_{\max}+B)$.
+Substituting that value gives
+\[
+\sup_{|r|\le R_{\max},|v|\le B}\partial_v g_{\beta,\gamma}(r,v)
+=
+\frac{(1+\gamma)\gamma}{e^{-|\beta|(R_{\max}+B)}+\gamma}
+=(1+\gamma)\sigma\!\bigl(\log\gamma+|\beta|(R_{\max}+B)\bigr).
+\]
+For the threshold, write $x=|\beta|(R_{\max}+B)$ and solve
+\[
+(1+\gamma)\sigma(\log\gamma+x)<1
+\iff x<-2\log\gamma.
+\]
+
+\paragraph{Proof of \Cref{thm:aligned-contraction}.}
+If $\beta(r-v)\ge \eta>0$, then
+\[
+\partial_v g_{\beta,\gamma}(r,v)=\frac{(1+\gamma)\gamma}{e^{\beta(r-v)}+\gamma}\le \frac{(1+\gamma)\gamma}{e^{\eta}+\gamma}<\gamma.
+\]
+
+\paragraph{Proof of \Cref{prop:stagewise-envelope}.}
+We prove the upper bound by backward induction; the lower bound is identical.
+At stage $T$, all terminal values are zero, so $Q_T^\pi=Q_T^*=0=U_T$.
+Assume $Q_{t+1}^\pi(s,a)\le U_{t+1}$ for every $(s,a)$.
+Then $V_{t+1}^\pi(s)\le U_{t+1}$ because policy averaging preserves the bound.
+Monotonicity of $g_{\beta_t,\gamma}$ in both arguments gives
+\[
+Q_t^\pi(s,a)=\E\bigl[g_{\beta_t,\gamma}(\hat r(s,a),V_{t+1}^\pi(s'))\bigr]\le g_{\beta_t,\gamma}(R_{\max},U_{t+1})=U_t.
+\]
+The optimal case is the same, replacing policy averaging by maximization.
+The lower bound follows by replacing $R_{\max}$ with $-R_{\max}$ and $U_t$ with $L_t$.
+
+\paragraph{Proof of \Cref{prop:structural-alignment}.}
+Assume first that $\beta_t>0$ and $\hat r(s,a)\ge U_{t+1}+\delta$. Since $V_{t+1}(s')\le U_{t+1}$ for every $s'$, one has
+\[
+\hat r(s,a)-V_{t+1}(s')\ge \delta,
+\qquad
+\beta_t\bigl(\hat r(s,a)-V_{t+1}(s')\bigr)\ge \beta_t\delta=|\beta_t|\delta.
+\]
+If instead $\beta_t<0$ and $\hat r(s,a)\le L_{t+1}-\delta$, then $V_{t+1}(s')\ge L_{t+1}$, so
+\[
+\hat r(s,a)-V_{t+1}(s')\le -\delta,
+\qquad
+\beta_t\bigl(\hat r(s,a)-V_{t+1}(s')\bigr)\ge |\beta_t|\delta.
+\]
+In either case the margin condition of \Cref{thm:aligned-contraction} holds with $\eta=|\beta_t|\delta$, which yields the derivative bound.
+
+\paragraph{Proof of \Cref{thm:safe-calibration}.}
+Fix a stage $t$.
+By construction, $|\widetilde\beta_t|\le \betacap_t$.
+Apply \Cref{thm:lse-contraction} with $B=\Bhat_{t+1}$:
+\[
+\sup_{|r|\le R_{\max},|v|\le \Bhat_{t+1}}\left|\partial_v g_t^{\safe}(r,v)\right|
+\le (1+\gamma)\sigma\!\bigl(\log\gamma + \betacap_t(R_{\max}+\Bhat_{t+1})\bigr).
+\]
+Using the definition of $\betacap_t$,
+\[
+\log\gamma + \betacap_t(R_{\max}+\Bhat_{t+1})=\log\frac{\kappa_t}{1+\gamma-\kappa_t}.
+\]
+Applying $\sigma$ gives
+\[
+(1+\gamma)\sigma\!\left(\log\frac{\kappa_t}{1+\gamma-\kappa_t}\right)=\kappa_t,
+\]
+which proves \Cref{eq:safe-derivative-bound}.
+The operator contraction bounds follow from the mean-value theorem, policy averaging / maximization being $1$-Lipschitz in the sup norm, and linearity of expectation.
+For the range bound, note that $f_{\beta,\gamma}(r,0)$ lies between $r$ and $0$, hence $|g_t^{\safe}(r,0)|\le (1+\gamma)|r|\le (1+\gamma)R_{\max}$.
+Therefore, for $|v|\le \Bhat_{t+1}$,
+\[
+|g_t^{\safe}(r,v)|\le |g_t^{\safe}(r,0)| + \kappa_t|v|\le (1+\gamma)R_{\max}+\kappa_t\Bhat_{t+1}=\Bhat_t.
+\]
+This proves invariance of $\Ksafe$.
+
+\paragraph{Proof of \Cref{prop:gamma-headroom}.}
+For fixed $\kappa\in(0,1)$ define
+\[
+\Theta(\gamma,\kappa)=\log\!\left(\frac{\kappa}{\gamma(1+\gamma-\kappa)}\right),
+\qquad \gamma\in(0,\kappa].
+\]
+Then
+\[
+\frac{\partial}{\partial \gamma}\Theta(\gamma,\kappa)
+=-\frac{1}{\gamma}-\frac{1}{1+\gamma-\kappa}<0.
+\]
+Hence $\Theta(\gamma,\kappa)$ is strictly decreasing in $\gamma$, and dividing by the positive scale $R_{\max}+B$ preserves the monotonicity of the admissible interval.
+
+\paragraph{Proof of \Cref{prop:occupancy-improvement}.}
+On the aligned event $A_{t,\eta}$, \Cref{thm:aligned-contraction} gives
+\[
+d_t(s,a,s')\le \frac{(1+\gamma)\gamma}{e^{\eta}+\gamma}.
+\]
+On its complement, \Cref{thm:safe-calibration} gives $d_t(s,a,s')\le \kappa_t$. Therefore
+\begin{align*}
+\E_{\mu_t}[d_t]
+&=\E_{\mu_t}\bigl[d_t\mathbf 1_{A_{t,\eta}}\bigr]+\E_{\mu_t}\bigl[d_t\mathbf 1_{A_{t,\eta}^c}\bigr]\\
+&\le p_t(\eta)\frac{(1+\gamma)\gamma}{e^{\eta}+\gamma} + \bigl(1-p_t(\eta)\bigr)\kappa_t,
+\end{align*}
+which is \eqref{eq:occupancy-improvement}. Solving the inequality $\E_{\mu_t}[d_t]<\gamma$ for $p_t(\eta)$ yields \eqref{eq:occupancy-threshold}.
+
+\paragraph{Proof of \Cref{prop:normalized-invariance}.}
+If $\beta_t^{\mathrm{raw}}=\theta_t/A_t$ and $r-v=\xi A_t$, then
+\[
+\beta_t^{\mathrm{raw}}(r-v)=\frac{\theta_t}{A_t}\,\xi A_t=\theta_t\xi.
+\]
+Substituting this into the explicit formula
+\[
+d_{\beta,\gamma}(r,v)=\frac{(1+\gamma)\gamma}{e^{\beta(r-v)}+\gamma}
+\]
+gives \eqref{eq:normalized-invariance}. The final statement is immediate: for fixed $\xi$, the realized continuation coefficient depends on the stage only through $\theta_t$.
+
+\paragraph{Proof of \Cref{cor:feasible-design}.}
+Apply \Cref{prop:beta-inverse-design} at the reference gap
+\[
+\Delta=\xi(R_{\max}+\Bhat_{t+1}).
+\]
+The required raw temperature is
+\[
+\beta_t(\xi,\lambda)=\frac{1}{\Delta}\log\!\left(\frac{\gamma(1+\gamma-\lambda)}{\lambda}\right),
+\]
+so the corresponding normalized temperature is
+\[
+\theta_t(\xi,\lambda)=\beta_t(\xi,\lambda)\bigl(R_{\max}+\Bhat_{t+1}\bigr)=\frac{1}{\xi}\log\!\left(\frac{\gamma(1+\gamma-\lambda)}{\lambda}\right),
+\]
+which is \eqref{eq:normalized-local-design}. The safe clip is inactive at that design point exactly when
+\[
+|\beta_t(\xi,\lambda)|\le \betacap_t.
+\]
+Multiplying both sides by $R_{\max}+\Bhat_{t+1}$ and using the definitions of $\theta_t(\xi,\lambda)$ and $\betacap_t$ yields \eqref{eq:feasible-design-region}.
+
+\paragraph{Proof of \Cref{prop:sign-selection}.}
+For each fixed sign $\varsigma$, the schedule $\beta=\varsigma b_t$ is safely admissible because $b_t\le \betacap_t$.
+The aligned event for that choice is exactly
+\[
+A_{t,\eta}^{\varsigma}
+=
+\left\{(s,a,s'): \beta\bigl(\hat r(s,a)-V_{t+1}(s')\bigr)\ge \eta\right\}.
+\]
+Applying \Cref{prop:occupancy-improvement} with this $\beta$ gives \eqref{eq:sign-selection-bound}. Since the constants
+\[
+\frac{(1+\gamma)\gamma}{e^{\eta}+\gamma}
+\qquad \text{and} \qquad
+\kappa_t
+\]
+do not depend on $\varsigma$, the bound is minimized exactly by maximizing $p_t^{\varsigma}(\eta)$.
+
+\paragraph{Proof of \Cref{thm:state-dependent-safe}.}
+Fix a stage $t$.
+By construction,
+\[
+|\widetilde\beta_t(s,a,s')|\le \betacap_t
+\qquad \text{for every }(s,a,s').
+\]
+Hence \Cref{thm:safe-calibration} applies pointwise to each realized triple $(s,a,s')$:
+for $|r|\le R_{\max}$ and $|v|\le \Bhat_{t+1}$,
+\[
+\left|\partial_v g_{\widetilde\beta_t(s,a,s'),\gamma}(r,v)\right|\le \kappa_t
+\]
+and
+\[
+\left|g_{\widetilde\beta_t(s,a,s'),\gamma}(r,v)\right|\le \Bhat_t.
+\]
+Therefore, for any $Q,\bar Q$ with $\|Q\|_\infty,\|\bar Q\|_\infty\le \Bhat_{t+1}$,
+\begin{align*}
+|(\cT_t^{\pi,\mathrm{sd}}Q)(s,a)-(\cT_t^{\pi,\mathrm{sd}}\bar Q)(s,a)|
+&\le
+\E_{s'}\Bigl[
+\kappa_t
+\bigl|V_{Q,t+1}^\pi(s')-V_{\bar Q,t+1}^\pi(s')\bigr|
+\Bigr]\\
+&\le
+\kappa_t\|Q-\bar Q\|_\infty,
+\end{align*}
+since policy averaging is $1$-Lipschitz in the sup norm.
+The optimality operator is identical, using that maximization over $a'$ is also $1$-Lipschitz.
+The range bounds follow by taking expectations of the pointwise estimate
+\[
+\left|g_{\widetilde\beta_t(s,a,s'),\gamma}\bigl(\hat r(s,a),v\bigr)\right|\le \Bhat_t.
+\]
+
+\paragraph{Proof of \Cref{cor:frozen-learned-beta}.}
+For any frozen parameter vector $\phi$, the deployed clipped scheduler
+\[
+\widetilde\beta_t(\cdot;\phi)=\clip\bigl(\beta_t^{\mathrm{raw}}(\cdot;\phi),-\betacap_t,\betacap_t\bigr)
+\]
+is simply an exogenous state- or transition-dependent schedule. The claim is therefore an immediate application of \Cref{thm:state-dependent-safe}.
+
+\paragraph{Proof of \Cref{prop:schedule-sensitivity}.}
+Write
+\[
+C_t\defeq \frac{1+\gamma}{8}(R_{\max}+\Bhat_{t+1})^2.
+\]
+Fix a policy $\pi$. For any $(s,a)$,
+\begin{align*}
+&\bigl|Q_t^\pi[\widetilde\beta](s,a)-Q_t^\pi[\bar\beta](s,a)\bigr|\\
+&\le
+\E_{s'}\Bigl[
+\bigl|g_{\widetilde\beta_t(s,a,s'),\gamma}\bigl(\hat r(s,a),V_{t+1}^\pi[\widetilde\beta](s')\bigr)
+-
+g_{\bar\beta_t(s,a,s'),\gamma}\bigl(\hat r(s,a),V_{t+1}^\pi[\widetilde\beta](s')\bigr)\bigr|
+\Bigr]\\
+&\quad+
+\E_{s'}\Bigl[
+\bigl|g_{\bar\beta_t(s,a,s'),\gamma}\bigl(\hat r(s,a),V_{t+1}^\pi[\widetilde\beta](s')\bigr)
+-
+g_{\bar\beta_t(s,a,s'),\gamma}\bigl(\hat r(s,a),V_{t+1}^\pi[\bar\beta](s')\bigr)\bigr|
+\Bigr].
+\end{align*}
+Because all safe continuation values lie in $[-\Bhat_{t+1},\Bhat_{t+1}]$, \Cref{prop:beta-sensitivity} bounds the first expectation by $C_t\delta_t$.
+Because the deployed schedules are safe, \Cref{thm:safe-calibration} or \Cref{thm:state-dependent-safe} bounds the second expectation by
+\[
+\kappa_t\|Q_{t+1}^\pi[\widetilde\beta]-Q_{t+1}^\pi[\bar\beta]\|_\infty.
+\]
+Taking the supremum over $(s,a)$ yields \eqref{eq:schedule-sensitivity-recursion}. Since both schedules have the same zero terminal condition, backward unrolling gives \eqref{eq:schedule-sensitivity-unrolled}. The optimal-value case is identical, replacing policy averaging by maximization, which remains $1$-Lipschitz in the sup norm.
+
+\subsection{Section 7: policy evaluation}
+\label{app:policy-eval}
+
+\paragraph{Proof of \Cref{thm:policy-eval}.}
+By \Cref{thm:safe-calibration}, $\mathbb T_\safe^\pi$ is a $\kappa_*$-contraction on $\Ksafe$, so Banach's fixed-point theorem gives uniqueness of $Q_\safe^\pi$ and the bound \Cref{eq:safe-policy-eval-rate}.
+Because the time-augmented graph is acyclic, the stage-$T-1$ component depends only on the terminal stage, which is fixed exactly after one sweep.
+Inductively, once stages $t+1,\dots,T-1$ are exact, the stage-$t$ update is exact in the next sweep.
+Hence the last $n$ stages are exact after $n$ sweeps, giving \Cref{eq:safe-tail-exact} and exactness after $T$ sweeps.
+
+\paragraph{Proof of \Cref{prop:nonlinear}.}
+The responsibility term
+\[
+\rho_t(s,a,s')=\sigma\!\bigl(\widetilde\beta_t(\hat r(s,a)-V_{t+1}(s'))+\log(1/\gamma)\bigr)
+\]
+depends nonlinearly on the continuation value.
+Substituting it into the Bellman equation produces a composition of sigmoid, logarithm, and expectation, so the resulting fixed-point equation is not affine in $Q$.
+A linear solve analogous to $(I-\gamma P^\pi)^{-1}r^\pi$ is therefore unavailable.
+
+\paragraph{Explicit form of the EM-like alternation in \Cref{rem:em-analogy}.}
+Given $Q^{(k)}$, define frozen responsibilities
+\[
+\rho_t^{(k)}(s,a,s')=\sigma\!\bigl(\widetilde\beta_t(\hat r(s,a)-V_{Q^{(k)},t+1}^{\pi}(s'))+\log(1/\gamma)\bigr).
+\]
+With these fixed, the Bellman update becomes linear in the unknown continuation values:
+\begin{align*}
+Q_{t}^{(k+1)}(s,a)
+&=\E_{s'}\Bigl[
+    (1+\gamma)\rho_t^{(k)}\hat r(s,a)
+    +(1+\gamma)(1-\rho_t^{(k)})V_{Q^{(k+1)},t+1}^{\pi}(s') \\
+&\hspace{6.5em}
+    -(1+\gamma)\widetilde\beta_t^{-1}\KLbin{\rho_t^{(k)}}{\pprior}
+\Bigr].
+\end{align*}
+Thus the M-step is a standard policy-evaluation solve with a frozen state-dependent discount bounded by $\kappa_t$.
+
+\paragraph{Proof of \Cref{prop:mc-relaxation}.}
+For the post-transition estimator, $\E[Z_t\mid \mathcal F_{t+1}]=\rho_t^\star$, so
+\[
+\E\!\bigl[\widehat G_t^{\mathrm{MC}}\mid \mathcal F_{t+1}\bigr]
+=(1+\gamma)\Bigl[\rho_t^\star r_t +(1-\rho_t^\star)v_{t+1}-\widetilde\beta_t^{-1}\KLbin{\rho_t^\star}{\pprior}\Bigr].
+\]
+By the one-step variational identity for the clipped stagewise temperature $\widetilde\beta_t$, the right-hand side equals $g_t^{\safe}(r_t,v_{t+1})$, proving \Cref{eq:mc-target-post-unbiased}.
+For the predictive estimator, $\bar\rho_t$ is $\mathcal F_t$-measurable and $\E[Z_t\mid \mathcal F_t]=\bar\rho_t$, which gives the displayed conditional expectation formula in \Cref{prop:mc-relaxation}.
+Now apply the same one-step variational principle pointwise:
+\[
+(1+\gamma)\Bigl[\bar\rho_t r_t +(1-\bar\rho_t)v_{t+1}-\widetilde\beta_t^{-1}\KLbin{\bar\rho_t}{\pprior}\Bigr]
+\le g_t^{\safe}(r_t,v_{t+1})
+\]
+when $\widetilde\beta_t>0$, with the inequality reversed when $\widetilde\beta_t<0$.
+Taking conditional expectations given $\mathcal F_t$ yields \Cref{eq:mc-target-pre-bound}.
+Equality holds exactly when $\bar\rho_t$ coincides with the pointwise optimizer $\rho_t^\star$ almost surely; in particular this happens whenever $v_{t+1}$ is conditionally deterministic given $\mathcal F_t$.
+
+\subsection{Section 8: policy improvement and policy iteration}
+\label{app:policy-iter}
+
+\paragraph{Proof of \Cref{thm:policy-improvement}.}
+For every state $s$ and stage $t$,
+\[
+V_{\safe,t}^{\pi}(s)=\sum_a \pi_t(a\mid s)Q_{\safe,t}^{\pi}(s,a)\le \max_a Q_{\safe,t}^{\pi}(s,a)=Q_{\safe,t}^{\pi}(s,\pi'_t(s)).
+\]
+Since the safe Bellman operator is monotone in the continuation argument,
+\[
+\mathbb T_\safe^{\pi'}Q_\safe^{\pi}\ge \mathbb T_\safe^{\pi}Q_\safe^{\pi}=Q_\safe^{\pi}.
+\]
+Repeated application of the monotone contraction yields
+\[
+Q_\safe^{\pi'}\ge Q_\safe^{\pi},
+\qquad
+V_\safe^{\pi'}\ge V_\safe^{\pi}.
+\]
+If tie-breaking preserves already greedy actions, equality everywhere implies that the policy does not change, hence $\pi$ is already greedy with respect to its own safe value function and therefore optimal.
+
+\paragraph{Proof of \Cref{thm:policy-iteration}.}
+\Cref{thm:policy-improvement} gives monotone improvement.
+There are only finitely many deterministic nonstationary policies on the time-augmented horizon, at most $|\cA|^{T|\cS|}$.
+Deterministic tie-breaking that preserves already greedy actions prevents cycling among value-equivalent policies.
+Therefore the algorithm must terminate after finitely many iterations.
+At termination the policy is greedy with respect to its own exact safe value function, hence satisfies the Bellman optimality condition and is optimal.
+
+\subsection{Section 9: value iteration}
+\label{app:value-iter}
+
+\paragraph{Proof of \Cref{thm:vi-convergence}.}
+The synchronous safe value-iteration map is the safe optimality contraction from \Cref{thm:safe-calibration}, so Banach's theorem yields the geometric rate \Cref{eq:safe-vi-rate}.
+The exact finite-sweep claim follows from the same DAG argument as in policy evaluation: stage $T-1$ is exact after one sweep, stage $T-2$ after two sweeps, and so on.
+
+\paragraph{Proof of \Cref{cor:vi-policy-loss}.}
+Let $\varepsilon_n=\|Q^{(n)}-Q_\safe^*\|_\infty$ and let $\pi_n$ be greedy with respect to $Q^{(n)}$.
+For every stage-state pair,
+\[
+Q_\safe^*(s,\pi_n(s))\ge Q^{(n)}(s,\pi_n(s)) - \varepsilon_n = \max_a Q^{(n)}(s,a)-\varepsilon_n \ge V_\safe^*(s)-2\varepsilon_n.
+\]
+The performance-difference step in the contraction setting then gives
+\[
+\|Q_\safe^{\pi_n}-Q_\safe^*\|_\infty\le \frac{2\kappa_*}{1-\kappa_*}\varepsilon_n,
+\]
+which is \Cref{eq:safe-vi-policy-bound}.
+
+\paragraph{Proof of \Cref{prop:vi-complexity}.}
+From \Cref{eq:safe-vi-rate},
+\[
+\|Q^{(n)}-Q_\safe^*\|_\infty\le \kappa_*^n \|Q^{(0)}-Q_\safe^*\|_\infty\le 2\Bhat_0\kappa_*^n.
+\]
+To make this at most $\varepsilon$, it suffices that
+\[
+2\Bhat_0\kappa_*^n\le \varepsilon,
+\]
+which after taking logarithms yields \Cref{eq:safe-vi-iter-count}.
+
+\subsection{Section 10: principle of optimality and modified policy iteration}
+\label{app:principle-mpi}
+
+\paragraph{Proof of \Cref{thm:principle-optimality}.}
+Fix a reachable stage-state pair $(t,s)$ under an optimal policy $\pi^*$.
+Suppose the tail policy $\pi^*_{t:T-1}$ were not optimal from $(t,s)$ onward.
+Then there would exist another tail policy $\tilde\pi$ with $V_{\safe,t}^{\tilde\pi}(s)>V_{\safe,t}^{\pi^*}(s)$.
+Replacing the tail of $\pi^*$ by $\tilde\pi$ would then strictly improve the stage-$0$ recursive value of the combined policy, contradicting optimality of $\pi^*$.
+Thus the tail must itself be optimal.
+
+\paragraph{Proof of \Cref{prop:mpi-tail-exact}.}
+For a fixed policy $\pi$, the safe evaluation operator $\mathbb T_\safe^{\pi}$ is a $\kappa_*$-contraction on $\Ksafe$, so
+\[
+\|(\mathbb T_\safe^{\pi})^mQ-Q_\safe^{\pi}\|_\infty\le \kappa_*^m\|Q-Q_\safe^{\pi}\|_\infty.
+\]
+The exact-tail claim follows from the same acyclic-graph argument used in \Cref{thm:policy-eval}: after $m$ sweeps the last $m$ stages have no remaining approximation error.
+
+\subsection{Section 11: stochastic approximation}
+\label{app:stochastic}
+
+\paragraph{Proof of \Cref{thm:td0-convergence}.}
+Projection onto $[-\Bhat_t,\Bhat_t]$ guarantees bounded iterates.
+The conditional expectation of the TD target equals the safe Bellman expectation operator.
+By \Cref{thm:safe-calibration}, this operator is a contraction on the projected box.
+Robbins--Monro step-size conditions and infinite visitation therefore allow one to invoke the standard projected asynchronous stochastic-approximation theorem, yielding almost-sure convergence to $V_\safe^\pi$.
+
+\paragraph{Proof of \Cref{thm:q-convergence}.}
+The proof is the off-policy analogue of TD(0).
+The conditional mean field of the Q-learning update is the safe Bellman optimality operator, which is a contraction on the projected box.
+Projection ensures boundedness, infinite visitation ensures every coordinate is updated infinitely often, and Robbins--Monro step sizes complete the standard stochastic-approximation argument.
+
+\paragraph{Derivation of \Cref{eq:sarsa-bias}.}
+Let $Q=Q(s',A')$ and $m=\E_\pi[Q]$.
+A second-order Taylor expansion of $g_t^{\safe}(r,\cdot)$ around $m$ gives
+\[
+g_t^{\safe}(r,Q)=g_t^{\safe}(r,m)+\partial_v g_t^{\safe}(r,m)(Q-m)+\frac{1}{2}\partial_{vv}^2 g_t^{\safe}(r,m)(Q-m)^2+O((Q-m)^3).
+\]
+Taking expectation removes the linear term.
+At $\widetilde\beta_t$ near zero,
+\[
+\partial_{vv}^2 g_t^{\safe}(r,m)=\frac{\widetilde\beta_t\gamma}{1+\gamma}+O(\widetilde\beta_t^2),
+\]
+which yields \Cref{eq:sarsa-bias}.
+
+\paragraph{Proof of \Cref{prop:expected-sarsa-eval}.}
+For a fixed policy $\pi$, the expected-SARSA target is
+\[
+g_t^{\safe}\Bigl(r_t,\sum_{a'}\pi_{t+1}(a'\mid s_{t+1})Q_{t+1}(s_{t+1},a')\Bigr),
+\]
+whose conditional expectation is exactly the safe Bellman expectation operator on action values.
+Projection ensures boundedness, the operator is a contraction on $\Ksafe$, and infinite visitation holds by assumption.
+Thus the same asynchronous stochastic-approximation theorem as in TD(0) applies and yields almost-sure convergence to $Q_\safe^\pi$.
+
+\paragraph{Proof of \Cref{thm:sarsa-convergence}.}
+For each frozen policy $\pi$, \Cref{prop:expected-sarsa-eval} gives a unique attracting fixed point $Q_\safe^\pi$.
+On the projected box, the map $(Q,\pi)\mapsto \mathbb T_\safe^\pi Q$ is jointly Lipschitz because $g_t^{\safe}$ is smooth on bounded sets and policy averaging is linear in $\pi$.
+The fast timescale therefore tracks $Q_\safe^\pi$, while the slower GLIE policy updates move $\pi$ toward greedification with respect to the current $Q$-function.
+Under the standard ODE conditions of Borkar's two-timescale theorem, the coupled process converges almost surely to the invariant set of the greedy limit, which is precisely $Q_\safe^*$.
+
+
+\bibliographystyle{plainnat}
+\bibliography{bibliography_ig}
+
+\end{document}

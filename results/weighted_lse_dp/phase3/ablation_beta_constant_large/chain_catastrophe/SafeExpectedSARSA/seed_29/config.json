@@ -90,12 +90,12 @@
     "return_q25": 0.0,
     "return_q50": 0.0,
     "return_q75": 0.0,
-    "return_q95": 3.00125599625689,
-    "cvar_5pct": -1.3253101690113887,
-    "cvar_10pct": -0.6626550845056943,
-    "top5pct_mean": 3.6190730683558456,
-    "top10pct_mean": 3.2542155652020552,
-    "event_rate": 0.01,
-    "event_conditioned_return": -6.626550845056944
+    "return_q95": 2.9384217166706392,
+    "cvar_5pct": -0.7478338318784604,
+    "cvar_10pct": -0.3739169159392302,
+    "top5pct_mean": 3.4309740762089915,
+    "top10pct_mean": 2.034014247240573,
+    "event_rate": 0.006,
+    "event_conditioned_return": -6.231948598987169
   }
 }

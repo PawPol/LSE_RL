@@ -1,0 +1,108 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-19T06:20:22Z",
+  "phase": "phase2",
+  "task": "taxi_bonus_shock",
+  "algorithm": "QLearning",
+  "seed": 11,
+  "git_sha": "209303bcbf621d95a65493ae456d72b00dcddaeb",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "task": "taxi_bonus_shock",
+    "algorithm": "QLearning",
+    "seed": 11,
+    "gamma": 0.99,
+    "horizon": 120,
+    "n_base": 44,
+    "train_steps": 300000,
+    "checkpoint_every": 10000,
+    "eval_episodes_checkpoint": 50,
+    "success_threshold": 0.75,
+    "epsilon": 0.15,
+    "learning_rate": 0.1,
+    "stress_type": "jackpot",
+    "task_config": {
+      "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_taxi_grid.txt",
+      "prob": 0.9,
+      "gamma": 0.99,
+      "horizon": 120,
+      "bonus_prob": 0.05,
+      "bonus_reward": 5.0,
+      "n_states": 44,
+      "n_actions": 4,
+      "train_steps": 300000,
+      "checkpoint_every": 10000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 500,
+      "success_threshold": 0.75,
+      "dp_algorithms": [
+        "PE",
+        "VI",
+        "PI",
+        "MPI",
+        "AsyncVI"
+      ],
+      "rl_algorithms": [
+        "QLearning",
+        "ExpectedSARSA"
+      ],
+      "ref_policy": "pickup_then_deliver",
+      "severity": "jackpot",
+      "stress_type": "jackpot",
+      "lr_multiplier": 1.0,
+      "epsilon_override": 0.15
+    },
+    "factory_config": {
+      "task": "taxi_bonus_shock",
+      "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_taxi_grid.txt",
+      "n_passengers": 1,
+      "prob": 0.9,
+      "rew": [
+        0,
+        1
+      ],
+      "gamma": 0.99,
+      "horizon": 120,
+      "n_states": 44,
+      "bonus_prob": 0.05,
+      "bonus_reward": 5.0,
+      "train_steps": 300000,
+      "checkpoint_every": 10000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 500,
+      "success_threshold": 0.75,
+      "n_actions": 4,
+      "dp_algorithms": [
+        "PE",
+        "VI",
+        "PI",
+        "MPI",
+        "AsyncVI"
+      ],
+      "rl_algorithms": [
+        "QLearning",
+        "ExpectedSARSA"
+      ],
+      "ref_policy": "pickup_then_deliver",
+      "severity": "jackpot",
+      "stress_type": "jackpot",
+      "lr_multiplier": 1.0,
+      "epsilon_override": 0.15
+    },
+    "tail_risk_metrics": {
+      "return_q05": 0.6689717585696803,
+      "return_q25": 0.6757290490602831,
+      "return_q50": 0.682554595010387,
+      "return_q75": 0.682554595010387,
+      "return_q95": 0.7471720943315961,
+      "cvar_5pct": 0.5642039216556445,
+      "cvar_10pct": 0.6165878401126623,
+      "top5pct_mean": 3.731440476592778,
+      "top10pct_mean": 2.2393062854621872,
+      "event_rate": 0.044,
+      "event_conditioned_return": 4.133435392791353
+    }
+  },
+  "suite": "ablation/hparam/lr10/eps015",
+  "storage_mode": "rl_online"
+}

@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T19:05:33Z",
+  "created_at": "2026-04-20T12:23:39Z",
   "phase": "phase3",
   "task": "chain_regime_shift",
   "algorithm": "SafeExpectedSARSA",
   "seed": 83,
-  "git_sha": "88450283161d756c5da562860b0d881c3866efef",
+  "git_sha": "01a22b9945b1a74a643b82b1f38fefc5e36ee5f8",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "task": "chain_regime_shift",
@@ -90,12 +90,12 @@
     },
     "adaptation_metrics": {
       "change_at_episode": 300,
-      "pre_change_auc": 4.688497427188641,
-      "post_change_auc": 15.613462318493573,
-      "lag_to_50pct_recovery": 0,
-      "lag_to_75pct_recovery": 0,
+      "pre_change_auc": 0.0,
+      "post_change_auc": 14.924620954195913,
+      "lag_to_50pct_recovery": 21,
+      "lag_to_75pct_recovery": 92,
       "lag_to_90pct_recovery": null,
-      "post_change_optimum": 20.07599154562606
+      "post_change_optimum": 19.541278147254136
     }
   },
   "suite": "paper_suite",

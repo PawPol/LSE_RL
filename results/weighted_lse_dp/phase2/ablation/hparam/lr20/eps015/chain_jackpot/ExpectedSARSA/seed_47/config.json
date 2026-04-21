@@ -1,0 +1,91 @@
+{
+  "task": "chain_jackpot",
+  "algorithm": "ExpectedSARSA",
+  "seed": 47,
+  "gamma": 0.99,
+  "horizon": 60,
+  "n_base": 26,
+  "train_steps": 120000,
+  "checkpoint_every": 4000,
+  "eval_episodes_checkpoint": 50,
+  "success_threshold": 0.9,
+  "epsilon": 0.15,
+  "learning_rate": 0.2,
+  "stress_type": "jackpot",
+  "task_config": {
+    "state_n": 25,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 60,
+    "jackpot_state": 20,
+    "jackpot_prob": 0.05,
+    "jackpot_reward": 10.0,
+    "jackpot_terminates": true,
+    "train_steps": 120000,
+    "checkpoint_every": 4000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 500,
+    "success_threshold": 0.9,
+    "dp_algorithms": [
+      "PE",
+      "VI",
+      "PI",
+      "MPI",
+      "AsyncVI"
+    ],
+    "rl_algorithms": [
+      "QLearning",
+      "ExpectedSARSA"
+    ],
+    "ref_policy": "always_right",
+    "severity": "jackpot",
+    "stress_type": "jackpot",
+    "lr_multiplier": 2.0,
+    "epsilon_override": 0.15
+  },
+  "factory_config": {
+    "task": "chain_jackpot",
+    "state_n": 25,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 60,
+    "jackpot_state": 20,
+    "jackpot_prob": 0.05,
+    "jackpot_reward": 10.0,
+    "jackpot_terminates": true,
+    "train_steps": 120000,
+    "checkpoint_every": 4000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 500,
+    "success_threshold": 0.9,
+    "dp_algorithms": [
+      "PE",
+      "VI",
+      "PI",
+      "MPI",
+      "AsyncVI"
+    ],
+    "rl_algorithms": [
+      "QLearning",
+      "ExpectedSARSA"
+    ],
+    "ref_policy": "always_right",
+    "severity": "jackpot",
+    "stress_type": "jackpot",
+    "lr_multiplier": 2.0,
+    "epsilon_override": 0.15
+  },
+  "tail_risk_metrics": {
+    "return_q05": 0.0,
+    "return_q25": 0.0,
+    "return_q50": 0.0,
+    "return_q75": 0.0,
+    "return_q95": 0.0,
+    "cvar_5pct": 0.0,
+    "cvar_10pct": 0.0,
+    "top5pct_mean": 0.5487757395676102,
+    "top10pct_mean": 0.2743878697838051,
+    "event_rate": 0.004,
+    "event_conditioned_return": 6.298554404775355
+  }
+}

@@ -1,0 +1,892 @@
+[
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.02,
+    "terminal_reward": 0.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 0.02,
+    "micro_reward": true
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.02,
+    "terminal_reward": 0.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 0.02,
+    "micro_reward": true
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.05,
+    "terminal_reward": 0.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 0.05,
+    "micro_reward": true
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.1,
+    "terminal_reward": 0.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 0.1,
+    "micro_reward": true
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.2,
+    "terminal_reward": 0.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 0.2,
+    "micro_reward": true
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.02,
+    "terminal_reward": 0.0,
+    "horizon": 30,
+    "gamma": 0.95,
+    "reward_bound": 0.02,
+    "micro_reward": true
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.05,
+    "terminal_reward": 0.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 0.05,
+    "micro_reward": true
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.1,
+    "terminal_reward": 0.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 0.1,
+    "micro_reward": true
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.2,
+    "terminal_reward": 0.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 0.2,
+    "micro_reward": true
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.02,
+    "terminal_reward": 0.0,
+    "horizon": 30,
+    "gamma": 0.97,
+    "reward_bound": 0.02,
+    "micro_reward": true
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.02,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.02
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.02,
+    "terminal_reward": 2.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 2.02
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.02,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.02
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.05,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.05
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.1
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.02,
+    "terminal_reward": 1.0,
+    "horizon": 30,
+    "gamma": 0.95,
+    "reward_bound": 1.02
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.02,
+    "terminal_reward": 2.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 2.02
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.05,
+    "terminal_reward": 2.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 2.05
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.05,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.05
+  },
+  {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.05,
+    "terminal_reward": 2.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 2.05
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.05,
+    "reward_interval": 3,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.05,
+    "reward_interval": 3,
+    "terminal_reward": 2.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.05,
+    "reward_interval": 3,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.05,
+    "reward_interval": 5,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.1,
+    "reward_interval": 3,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.2,
+    "reward_interval": 3,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.05,
+    "reward_interval": 3,
+    "terminal_reward": 1.0,
+    "horizon": 30,
+    "gamma": 0.95,
+    "reward_bound": 1.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.05,
+    "reward_interval": 3,
+    "terminal_reward": 2.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.05,
+    "reward_interval": 5,
+    "terminal_reward": 2.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.05,
+    "reward_interval": 5,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.05,
+    "reward_interval": 5,
+    "terminal_reward": 2.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.1,
+    "reward_interval": 3,
+    "terminal_reward": 2.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.1,
+    "reward_interval": 3,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.1,
+    "reward_interval": 3,
+    "terminal_reward": 2.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.1,
+    "reward_interval": 5,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.1,
+    "reward_interval": 5,
+    "terminal_reward": 2.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.1,
+    "reward_interval": 5,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.1,
+    "reward_interval": 5,
+    "terminal_reward": 2.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.2,
+    "reward_interval": 3,
+    "terminal_reward": 2.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "shaped_chain",
+    "n_states": 20,
+    "intermediate_reward": 0.2,
+    "reward_interval": 3,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.0
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 0.5,
+    "event_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.1
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 0.5,
+    "event_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.1
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 0.5,
+    "event_prob": 0.2,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.1
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 0.5,
+    "event_prob": 0.3,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.1
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 1.0,
+    "event_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.1
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 1.5,
+    "event_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.6
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 0.5,
+    "event_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 30,
+    "gamma": 0.95,
+    "reward_bound": 1.1
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 0.5,
+    "event_prob": 0.2,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.1
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 0.5,
+    "event_prob": 0.3,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.1
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 1.0,
+    "event_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.1
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 1.0,
+    "event_prob": 0.2,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.1
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 1.0,
+    "event_prob": 0.2,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.1
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 1.0,
+    "event_prob": 0.3,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.1
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 1.0,
+    "event_prob": 0.3,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.1
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 1.5,
+    "event_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.6
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 1.5,
+    "event_prob": 0.2,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.6
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 1.5,
+    "event_prob": 0.2,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.6
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 1.5,
+    "event_prob": 0.3,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 1.6
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 1.5,
+    "event_prob": 0.3,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 1.6
+  },
+  {
+    "family": "two_path_chain",
+    "n_states": 20,
+    "safe_reward": 0.02,
+    "event_reward": 0.5,
+    "event_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 30,
+    "gamma": 0.97,
+    "reward_bound": 1.1
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.02,
+    "hazard_penalty": -1.0,
+    "hazard_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.02,
+    "hazard_penalty": -1.0,
+    "hazard_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.02,
+    "hazard_penalty": -1.0,
+    "hazard_prob": 0.2,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.02,
+    "hazard_penalty": -1.5,
+    "hazard_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 2.5
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.02,
+    "hazard_penalty": -2.0,
+    "hazard_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 3.0
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.05,
+    "hazard_penalty": -1.0,
+    "hazard_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.02,
+    "hazard_penalty": -1.0,
+    "hazard_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 30,
+    "gamma": 0.95,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.02,
+    "hazard_penalty": -1.0,
+    "hazard_prob": 0.2,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.02,
+    "hazard_penalty": -1.5,
+    "hazard_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 2.5
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.02,
+    "hazard_penalty": -1.5,
+    "hazard_prob": 0.2,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 2.5
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.02,
+    "hazard_penalty": -1.5,
+    "hazard_prob": 0.2,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 2.5
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.02,
+    "hazard_penalty": -2.0,
+    "hazard_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 3.0
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.02,
+    "hazard_penalty": -2.0,
+    "hazard_prob": 0.2,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 3.0
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.02,
+    "hazard_penalty": -2.0,
+    "hazard_prob": 0.2,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 3.0
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.05,
+    "hazard_penalty": -1.0,
+    "hazard_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.05,
+    "hazard_penalty": -1.0,
+    "hazard_prob": 0.2,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.05,
+    "hazard_penalty": -1.0,
+    "hazard_prob": 0.2,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 2.0
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.05,
+    "hazard_penalty": -1.5,
+    "hazard_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 2.5
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.05,
+    "hazard_penalty": -1.5,
+    "hazard_prob": 0.1,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.97,
+    "reward_bound": 2.5
+  },
+  {
+    "family": "dense_grid_hazard",
+    "grid_size": [
+      5,
+      4
+    ],
+    "step_cost": -0.05,
+    "hazard_penalty": -1.5,
+    "hazard_prob": 0.2,
+    "terminal_reward": 1.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 2.5
+  }
+]

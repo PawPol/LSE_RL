@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T20:03:04Z",
+  "created_at": "2026-04-19T04:18:34Z",
   "phase": "phase3",
   "task": "grid_regime_shift",
   "algorithm": "SafeExpectedSARSA",
   "seed": 11,
-  "git_sha": "cc9414297e4e83c37b87f14e19791f2f5079e96e",
+  "git_sha": "04ae83ce0ad58e01ae067f48c8d6b1da9f9e8ac7",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "task": "grid_regime_shift",
@@ -107,12 +107,12 @@
     },
     "adaptation_metrics": {
       "change_at_episode": 200,
-      "pre_change_auc": 0.39548772604691607,
-      "post_change_auc": 0.8391401592187206,
-      "lag_to_50pct_recovery": 25,
-      "lag_to_75pct_recovery": 145,
-      "lag_to_90pct_recovery": 3640,
-      "post_change_optimum": 0.96059601
+      "pre_change_auc": 0.46725808100553584,
+      "post_change_auc": 0.7350894050945299,
+      "lag_to_50pct_recovery": 261,
+      "lag_to_75pct_recovery": 352,
+      "lag_to_90pct_recovery": null,
+      "post_change_optimum": 0.9509900498999999
     }
   },
   "suite": "ablation_alpha_0.05",

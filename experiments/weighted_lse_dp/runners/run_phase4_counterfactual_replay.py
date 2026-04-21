@@ -33,6 +33,7 @@ if _MUSHROOM_DEV not in sys.path:
 from experiments.weighted_lse_dp.common.seeds import seed_everything
 from experiments.weighted_lse_dp.geometry.phase4_calibration_v3 import (
     build_schedule_v3_from_pilot,
+    select_sign,
 )
 from experiments.weighted_lse_dp.geometry.task_activation_search import (
     run_classical_pilot,
@@ -135,12 +136,26 @@ def _replay_task(
     gamma_val = float(cfg.get("gamma", 0.97))
     r_max = float(cfg.get("reward_bound", 1.0))
 
-    # Step 3: build schedule
+    # Step 3: determine sign, then recompute sign-aligned p_align before
+    # building the schedule.  Without this correction, negative-sign families
+    # (e.g. grid_hazard) receive p_align=0 (raw margin > 0 is rare for
+    # hazard-avoidance) which collapses informativeness and beta to zero,
+    # making all replay diagnostics invalid.
+    resolved_sign = select_sign(pilot_data["margins_by_stage"], r_max)
+    corrected_p_align: list[float] = []
+    for margins_arr in pilot_data["margins_by_stage"]:
+        m = np.asarray(margins_arr, dtype=np.float64)
+        corrected_p_align.append(
+            float(np.mean(resolved_sign * m > 0.0)) if len(m) > 0 else 0.0
+        )
+    pilot_data = {**pilot_data, "p_align_by_stage": corrected_p_align}
+
     schedule = build_schedule_v3_from_pilot(
         pilot_data=pilot_data,
         r_max=r_max,
         gamma_base=gamma_val,
         gamma_eval=gamma_val,
+        sign_family=resolved_sign,
         task_family=family,
         source_phase="counterfactual_replay",
         notes=f"counterfactual replay task {tag}",

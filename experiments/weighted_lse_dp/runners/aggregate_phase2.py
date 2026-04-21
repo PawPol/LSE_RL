@@ -926,32 +926,48 @@ def build_calibration_json(
         reward_range = [min(r_vals), max(max(r_vals), 1.0)]
 
     # Collect calibration dicts for stagewise arrays.
-    # User decision (MINOR R3-5): prefer exact DP algorithm groups
-    # (VI / PI / MPI / AsyncVI / PE) so the Phase III calibration
-    # reference is the best available planner, not an RL average.
-    # Fall back to all groups if no DP group produced calibration data.
+    # Priority order (Issue D fix): DP planners first (v_next = V*[t+1,s'] is
+    # exact), then QLearning (v_next = greedy max_a Q matches its own target),
+    # then ExpectedSARSA as last resort (v_next logged as greedy max but update
+    # uses expected-policy value — logged margin is biased downward relative to
+    # the actual bootstrap, which could underestimate informativeness).
     _DP_ALGO_NAMES: frozenset[str] = frozenset(
         {"vi", "pi", "mpi", "asyncvi", "pe",
          "value_iteration", "policy_iteration",
          "modified_policy_iteration", "async_value_iteration",
          "policy_evaluation"}
     )
+    _QL_ALGO_NAMES: frozenset[str] = frozenset(
+        {"qlearning", "q_learning", "q-learning"}
+    )
+    _ESARSA_ALGO_NAMES: frozenset[str] = frozenset(
+        {"expectedsarsa", "expected_sarsa", "expected-sarsa"}
+    )
     calib_dicts_dp: list[dict[str, np.ndarray]] = []
+    calib_dicts_ql: list[dict[str, np.ndarray]] = []
     calib_dicts_all: list[dict[str, np.ndarray]] = []
     for (suite, task, algo), agg in groups.items():
-        if task != task_family:
+        # Match the exact family name OR suffixed regime-shift variants
+        # (e.g. chain_regime_shift_pre_shift, chain_regime_shift_post_shift).
+        if task != task_family and not task.startswith(task_family + "_"):
             continue
         c = agg.get("calibration")
         if c is None:
             continue
         calib_dicts_all.append(c)
-        if algo.lower() in _DP_ALGO_NAMES:
+        algo_lower = algo.lower()
+        if algo_lower in _DP_ALGO_NAMES:
             calib_dicts_dp.append(c)
+        elif algo_lower in _QL_ALGO_NAMES:
+            calib_dicts_ql.append(c)
 
-    # Use DP-only dicts when available; fall back to all groups.
-    calib_dicts: list[dict[str, np.ndarray]] = (
-        calib_dicts_dp if calib_dicts_dp else calib_dicts_all
-    )
+    # Use DP-only dicts when available; fall back to QLearning; last resort all.
+    if calib_dicts_dp:
+        calib_dicts: list[dict[str, np.ndarray]] = calib_dicts_dp
+    elif calib_dicts_ql:
+        calib_dicts = calib_dicts_ql
+    else:
+        calib_dicts = calib_dicts_all
 
     # Build stagewise block
     stagewise: dict[str, Any] | None = None

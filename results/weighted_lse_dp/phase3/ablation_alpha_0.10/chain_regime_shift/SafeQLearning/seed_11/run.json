@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T20:06:58Z",
+  "created_at": "2026-04-19T04:22:18Z",
   "phase": "phase3",
   "task": "chain_regime_shift",
   "algorithm": "SafeQLearning",
   "seed": 11,
-  "git_sha": "cc9414297e4e83c37b87f14e19791f2f5079e96e",
+  "git_sha": "04ae83ce0ad58e01ae067f48c8d6b1da9f9e8ac7",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "task": "chain_regime_shift",
@@ -90,12 +90,12 @@
     },
     "adaptation_metrics": {
       "change_at_episode": 300,
-      "pre_change_auc": 4.740668215803246,
-      "post_change_auc": 16.72565676125233,
-      "lag_to_50pct_recovery": 0,
-      "lag_to_75pct_recovery": 0,
-      "lag_to_90pct_recovery": null,
-      "post_change_optimum": 21.28827049095092
+      "pre_change_auc": 0.0,
+      "post_change_auc": 15.730221033262833,
+      "lag_to_50pct_recovery": 14,
+      "lag_to_75pct_recovery": 93,
+      "lag_to_90pct_recovery": 2657,
+      "post_change_optimum": 20.34456322677963
     }
   },
   "suite": "ablation_alpha_0.10",

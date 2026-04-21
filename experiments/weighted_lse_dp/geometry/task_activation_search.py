@@ -73,11 +73,17 @@ def _compute_vstar(
     gamma: float,
     horizon: int,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-    """Finite-horizon backward VI to get V* and Q*. Returns (V_star, Q_star)."""
+    """Finite-horizon backward VI returning V_table[T+1, S] and Q_star[S, A].
+
+    V_table[t, s] = optimal value at stage t from state s, so the correct
+    continuation for a transition at stage t is V_table[t+1, s'].
+    V_table[horizon] = 0 (boundary condition).
+    Q_star is the greedy Q at stage 0 (used for epsilon-greedy action selection).
+    """
     if not (hasattr(mdp_base, "p") and hasattr(mdp_base, "r")):
         S = int(mdp_base.info.observation_space.n)
         A = int(mdp_base.info.action_space.n)
-        return np.zeros(S), np.zeros((S, A))
+        return np.zeros((horizon + 1, S)), np.zeros((S, A))
     P = np.asarray(mdp_base.p, dtype=np.float64)   # (S, A, S')
     R_raw = np.asarray(mdp_base.r, dtype=np.float64)
     # MushroomRL stores R as (S, A, S') — compute expected reward r̄(s,a)
@@ -86,12 +92,12 @@ def _compute_vstar(
     else:
         R = R_raw   # already (S, A)
     S, A = R.shape[:2]
-    V = np.zeros(S, dtype=np.float64)
-    for _ in range(horizon):
-        Q = R + gamma * np.einsum("ijk,k->ij", P, V)   # (S, A)
-        V = Q.max(axis=1)
-    Q_star = R + gamma * np.einsum("ijk,k->ij", P, V)
-    return V, Q_star
+    V_table = np.zeros((horizon + 1, S), dtype=np.float64)  # [T+1, S]; V_table[horizon]=0
+    for t in range(horizon - 1, -1, -1):
+        Q = R + gamma * np.einsum("ijk,k->ij", P, V_table[t + 1])   # (S, A)
+        V_table[t] = Q.max(axis=1)
+    Q_star = R + gamma * np.einsum("ijk,k->ij", P, V_table[1])
+    return V_table, Q_star
 
 
 # ---------------------------------------------------------------------------
@@ -106,6 +112,7 @@ def run_classical_pilot(
     max_steps: int | None = None,
     prebuilt_env: tuple[Any, Any, dict[str, Any]] | None = None,
     collect_transitions: bool = False,
+    sign_family: int = 1,
 ) -> dict[str, Any]:
     """Run a classical pilot using exact DP V* as the value proxy.
 
@@ -136,6 +143,10 @@ def run_classical_pilot(
         tuples used to compute margins. Used by the counterfactual replay
         runner so the same trajectories drive both pilot stats and the
         replay diagnostics (no second rollout needed).
+    sign_family : int
+        Task family sign (+1 or -1).  Used to compute sign-aligned p_align:
+        ``p_align_t = P(sign_family * margin > 0)``.  Default +1 is correct
+        for positive-shock families; pass -1 for catastrophe/hazard families.
 
     Returns
     -------
@@ -239,19 +250,19 @@ def run_classical_pilot(
         for i in range(T_ep):
             r_t = ep_rewards[i]
             nb = ep_next_bases[i]
-            # V*(terminal) = 0; guard against out-of-bound index
-            v_next = float(V_star[nb]) if (len(V_star) > 0 and nb < len(V_star)) else 0.0
-            # terminal step: V*(s') = 0 ONLY when episode ended via the
-            # environment marking the transition absorbing. Horizon
-            # exhaustion (len(ep_rewards) == max_steps) does NOT zero
-            # v_next. The pilot loop above breaks on `absorbing`, so an
-            # episode shorter than max_steps was absorbing on its last
-            # step; equal length means the episode hit the horizon while
-            # the next state was non-absorbing.
+            stage = ep_stages[i]
+            # Finite-horizon: use V_table[stage+1, s'] so each stage's
+            # continuation correctly reflects remaining time-to-go.
+            next_stage = stage + 1
+            V_shape0 = V_star.shape[0]  # horizon+1
+            if V_shape0 > next_stage and nb < V_star.shape[1]:
+                v_next = float(V_star[next_stage, nb])
+            else:
+                v_next = 0.0
+            # absorbing terminal: override with 0
             if i == T_ep - 1 and len(ep_rewards) < max_steps:
                 v_next = 0.0
             margin = r_t - v_next   # no gamma (lessons.md: margin formula)
-            stage = ep_stages[i]
             margins_by_stage[stage].append(margin)
             if collect_transitions:
                 transitions.append((float(r_t), float(v_next), int(stage)))
@@ -276,8 +287,9 @@ def run_classical_pilot(
         n_t = len(margins_arr)
         n_by_stage_list.append(n_t)
         if n_t > 0:
+            # Sign-aligned: P(sign_family * margin > 0)
             p_align_by_stage_list.append(
-                float(np.mean(margins_arr > 0.0))
+                float(np.mean(sign_family * margins_arr > 0.0))
             )
         else:
             p_align_by_stage_list.append(0.0)
@@ -326,35 +338,55 @@ def compute_candidate_score(
 ) -> dict[str, Any]:
     """Score a candidate on predicted activation diagnostics.
 
-    Per spec S5.4, computes four raw metrics from the schedule and pilot
-    data, then returns both raw values and (for single-candidate use)
-    the unweighted sum as a score placeholder. True z-score
-    standardization is applied across the batch in ``score_all_candidates``.
+    Scores are designed to rank candidates likely to satisfy the Phase IV-A
+    gate (check_gate.py C2a/C2b), which evaluates per-transition natural-shift
+    magnitudes conditioned on informative stages.  These are proxies — they
+    are computed from pilot margins and the deployed beta schedule rather than
+    from replayed transitions through the frozen suite — so a candidate that
+    passes the screening filter is a stronger candidate for passing the gate,
+    not a guarantee.
+
+    Primary metrics (gate-aligned proxies, drive ranking and acceptance):
+      predicted_mean_abs_u_informative   — proxy for gate C2a (mean |u|)
+      predicted_median_abs_u_informative — proxy for gate C2a (median |u|)
+      predicted_frac_informative_ge_5e3  — proxy for gate C2b (frac >= 5e-3)
+
+    Secondary / auxiliary metrics (retained for diagnostics):
+      mean_abs_target_gap_norm           — spec §5.4 target-gap term
+      informative_stage_frac             — prerequisite: stages must exist
+      mean_abs_u_pred                    — legacy stage-level mean (diagnostic)
+      frac_u_ge_5e3                      — legacy stage-level frac (diagnostic)
+
+    Batch z-score standardization is applied in ``score_all_candidates``.
 
     Parameters
     ----------
     pilot_data : dict
-        Output of ``run_classical_pilot``.
+        Output of ``run_classical_pilot`` (must contain margins_by_stage and
+        p_align_by_stage).
     schedule : dict
-        Output of ``build_schedule_v3_from_pilot``.
+        Output of ``build_schedule_v3_from_pilot`` (must contain beta_used_t,
+        xi_ref_t, u_ref_used_t).
     reward_bound : float
         One-step reward bound R_max.
     weights : dict or None
-        Score weights. Defaults to spec values:
-        w1=1.0, w2=1.0, w3=1.0, w4=0.5.
+        Score weights.  Defaults: w1=1.0 (mean_abs_u_info), w2=1.0
+        (frac_info), w3=0.5 (target_gap), w4=0.25 (informative_stage_frac,
+        auxiliary).  informative_stage_frac weight is deliberately small
+        so the informative-transition metrics dominate.
 
     Returns
     -------
     dict
-        Keys: raw_metrics (dict of float), score_components (dict),
-        total_score (float).
+        Keys: raw_metrics (dict), score_components (dict), total_score (float),
+        has_informative_stages (bool).
     """
     if weights is None:
         weights = {
-            "w1_mean_abs_u": 1.0,
-            "w2_mean_abs_delta_d": 1.0,
-            "w3_mean_abs_target_gap_norm": 1.0,
-            "w4_informative_stage_frac": 0.5,
+            "w1_mean_abs_u_informative": 1.0,
+            "w2_frac_informative_ge_5e3": 1.0,
+            "w3_mean_abs_target_gap_norm": 0.5,
+            "w4_informative_stage_frac": 0.25,  # auxiliary; low weight
         }
 
     u_ref_used = np.asarray(schedule["u_ref_used_t"], dtype=np.float64)
@@ -366,63 +398,91 @@ def compute_candidate_score(
     margins_by_stage = pilot_data["margins_by_stage"]
 
     T = len(u_ref_used)
+    T_min = min(T, len(p_align), len(xi_ref))
 
-    # --- Raw metric 1: mean |u_pred| ---
-    mean_abs_u_pred = float(np.mean(np.abs(u_ref_used)))
+    # ------------------------------------------------------------------
+    # Informative-stage mask (same criterion as check_gate.py / replay)
+    # Stage t is informative iff xi_ref_t * sqrt(p_align_t) >= 0.05
+    # ------------------------------------------------------------------
+    _INFO_THRESH = 0.05
+    informative_mask: list[bool] = []
+    for t in range(T_min):
+        score = float(xi_ref[t]) * float(np.sqrt(max(float(p_align[t]), 0.0)))
+        informative_mask.append(score >= _INFO_THRESH)
+    # Stages beyond T_min have no p_align data; treat as non-informative.
+    informative_stage_frac = float(sum(informative_mask)) / max(T_min, 1)
+    has_informative_stages = any(informative_mask)
 
-    # --- Raw metric 2: mean |delta_d_pred| ---
-    # Use small-signal approximation: delta_d ~ -(gamma / (1+gamma)) * u
-    coeff_dd = gamma_base / (1.0 + gamma_base)
-    delta_d_pred = coeff_dd * np.abs(u_ref_used)
-    mean_abs_delta_d_pred = float(np.mean(delta_d_pred))
+    # ------------------------------------------------------------------
+    # Primary metrics: gate-aligned informative-subset transition proxies
+    # For each informative stage t, predicted per-transition |u_i| =
+    #   |beta_used_t| * |m_i|  for m_i in margins_by_stage[t].
+    # This mirrors the gate's frac_informative_u_ge_5e3 computation.
+    # ------------------------------------------------------------------
+    u_pred_info: list[float] = []
+    for t in range(T_min):
+        if not informative_mask[t]:
+            continue
+        b = abs(float(beta_used[t]))
+        if t < len(margins_by_stage):
+            m_arr = np.asarray(margins_by_stage[t], dtype=np.float64)
+            if m_arr.size > 0:
+                u_pred_info.extend((b * np.abs(m_arr)).tolist())
 
-    # --- Raw metric 3: mean |target_gap| / R_max ---
-    # Small-signal: gap ~ (gamma / (2*(1+gamma))) * beta * margin^2
-    # Use mean margin^2 per stage * beta_used
+    if has_informative_stages and len(u_pred_info) > 0:
+        u_info_arr = np.array(u_pred_info, dtype=np.float64)
+        predicted_mean_abs_u_informative = float(np.mean(u_info_arr))
+        predicted_median_abs_u_informative = float(np.median(u_info_arr))
+        predicted_frac_informative_ge_5e3 = float(np.mean(u_info_arr >= 5e-3))
+    else:
+        # No informative stages or no margin data: metrics are undefined.
+        # Set to 0 so they fail the acceptance filter explicitly.
+        predicted_mean_abs_u_informative = 0.0
+        predicted_median_abs_u_informative = 0.0
+        predicted_frac_informative_ge_5e3 = 0.0
+
+    # ------------------------------------------------------------------
+    # Secondary metric: target-gap proxy (spec §5.4 w3 term)
+    # Small-signal: gap ~ (gamma / (2*(1+gamma))) * |beta_t| * mean(m^2)
+    # ------------------------------------------------------------------
     coeff_tg = gamma_base / (2.0 * (1.0 + gamma_base))
     target_gap_terms = []
     for t in range(min(T, len(margins_by_stage))):
         m_arr = np.asarray(margins_by_stage[t], dtype=np.float64)
-        if m_arr.size > 0:
-            mean_m2 = float(np.mean(m_arr**2))
-        else:
-            mean_m2 = 0.0
+        mean_m2 = float(np.mean(m_arr ** 2)) if m_arr.size > 0 else 0.0
         target_gap_terms.append(coeff_tg * abs(float(beta_used[t])) * mean_m2)
     mean_abs_target_gap = float(np.mean(target_gap_terms)) if target_gap_terms else 0.0
     rb = max(reward_bound, 1e-8)
     mean_abs_target_gap_norm = mean_abs_target_gap / rb
 
-    # --- Raw metric 4: informative stage fraction ---
-    # Fraction of stages where xi_ref_t * sqrt(p_align_t) >= 0.05
-    T_min = min(T, len(p_align))
-    informative_count = 0
-    for t in range(T_min):
-        info_score = float(xi_ref[t]) * float(np.sqrt(max(p_align[t], 0.0)))
-        if info_score >= 0.05:
-            informative_count += 1
-    informative_stage_frac = informative_count / max(T_min, 1)
-
-    # --- Fraction of stages with |u| >= 5e-3 ---
+    # ------------------------------------------------------------------
+    # Legacy stage-level diagnostics (retained for backwards-compat and
+    # comparison; NOT used for acceptance or primary ranking)
+    # ------------------------------------------------------------------
+    mean_abs_u_pred = float(np.mean(np.abs(u_ref_used)))
     frac_u_ge_5e3 = float(np.mean(np.abs(u_ref_used) >= 5e-3))
 
     raw_metrics = {
-        "mean_abs_u_pred": mean_abs_u_pred,
-        "mean_abs_delta_d_pred": mean_abs_delta_d_pred,
+        # Primary (gate-aligned informative-subset proxies)
+        "predicted_mean_abs_u_informative": predicted_mean_abs_u_informative,
+        "predicted_median_abs_u_informative": predicted_median_abs_u_informative,
+        "predicted_frac_informative_ge_5e3": predicted_frac_informative_ge_5e3,
+        # Secondary / auxiliary
         "mean_abs_target_gap_norm": mean_abs_target_gap_norm,
         "informative_stage_frac": informative_stage_frac,
+        # Legacy diagnostics
+        "mean_abs_u_pred": mean_abs_u_pred,
         "frac_u_ge_5e3": frac_u_ge_5e3,
     }
 
-    # For a single candidate, z-score is trivial (raw value).
-    # The batch-level standardization is done in score_all_candidates.
-    w1 = weights.get("w1_mean_abs_u", 1.0)
-    w2 = weights.get("w2_mean_abs_delta_d", 1.0)
-    w3 = weights.get("w3_mean_abs_target_gap_norm", 1.0)
-    w4 = weights.get("w4_informative_stage_frac", 0.5)
+    w1 = weights.get("w1_mean_abs_u_informative", 1.0)
+    w2 = weights.get("w2_frac_informative_ge_5e3", 1.0)
+    w3 = weights.get("w3_mean_abs_target_gap_norm", 0.5)
+    w4 = weights.get("w4_informative_stage_frac", 0.25)
 
     score_components = {
-        "w1_x_mean_abs_u": w1 * mean_abs_u_pred,
-        "w2_x_mean_abs_delta_d": w2 * mean_abs_delta_d_pred,
+        "w1_x_mean_abs_u_informative": w1 * predicted_mean_abs_u_informative,
+        "w2_x_frac_informative_ge_5e3": w2 * predicted_frac_informative_ge_5e3,
         "w3_x_mean_abs_target_gap_norm": w3 * mean_abs_target_gap_norm,
         "w4_x_informative_stage_frac": w4 * informative_stage_frac,
     }
@@ -433,6 +493,7 @@ def compute_candidate_score(
         "raw_metrics": raw_metrics,
         "score_components": score_components,
         "total_score": total_score,
+        "has_informative_stages": has_informative_stages,
     }
 
 
@@ -445,12 +506,23 @@ def select_activation_suite(
     scored_candidates: list[dict[str, Any]],
     min_per_family: int = 1,
     max_per_family: int = 2,
-    min_mean_abs_u_pred: float = 2e-3,
-    min_frac_active_stages: float = 0.05,
 ) -> list[dict[str, Any]]:
     """Select the activation suite from scored candidates.
 
-    Per spec S5.3, applies minimum acceptance criteria and per-family caps.
+    Applies a gate-aligned screening filter before ranking.  Candidates must
+    satisfy proxies for gate conditions C2a and C2b (check_gate.py):
+
+      C2a proxy: predicted_mean_abs_u_informative >= 5e-3
+                 OR predicted_median_abs_u_informative >= 5e-3
+      C2b proxy: predicted_frac_informative_ge_5e3 >= 0.10
+
+    Candidates with no informative stages fail acceptance explicitly
+    (the proxies are undefined / zero, not a borderline value).
+
+    Thresholds 5e-3 and 0.10 are taken directly from gate C2a/C2b; no new
+    numbers are introduced.  The filter is a gate-aligned screening proxy,
+    not the gate itself: pilot-based predictions carry noise relative to
+    replayed transitions through the frozen suite.
 
     Parameters
     ----------
@@ -461,10 +533,6 @@ def select_activation_suite(
         Minimum number of tasks to select per family (best-effort).
     max_per_family : int
         Maximum number of tasks to select per family.
-    min_mean_abs_u_pred : float
-        Minimum predicted mean |u| for acceptance (2e-3 for search).
-    min_frac_active_stages : float
-        Minimum fraction of stages with |u| >= 5e-3 (0.05).
 
     Returns
     -------
@@ -472,6 +540,10 @@ def select_activation_suite(
         Selected candidates (subset of input), each augmented with
         "selected_reason" and "acceptance_status".
     """
+    # Gate thresholds taken verbatim from check_gate.py C2a / C2b
+    _C2A_THRESHOLD = 5e-3
+    _C2B_THRESHOLD = 0.10
+
     # Group by family
     by_family: dict[str, list[dict]] = defaultdict(list)
     for cand in scored_candidates:
@@ -481,21 +553,29 @@ def select_activation_suite(
     selected: list[dict] = []
 
     for family, candidates in sorted(by_family.items()):
-        # Filter by acceptance criteria
+        # Filter by gate-aligned acceptance proxies
         passing = []
         for c in candidates:
+            # Explicit rejection when informative set is empty
+            if not c["scoring"].get("has_informative_stages", False):
+                continue
             metrics = c["scoring"]["raw_metrics"]
-            u_ok = metrics["mean_abs_u_pred"] >= min_mean_abs_u_pred
-            frac_ok = metrics["frac_u_ge_5e3"] >= min_frac_active_stages
-            if u_ok and frac_ok:
+            c2a_proxy = (
+                metrics["predicted_mean_abs_u_informative"] >= _C2A_THRESHOLD
+                or metrics["predicted_median_abs_u_informative"] >= _C2A_THRESHOLD
+            )
+            c2b_proxy = (
+                metrics["predicted_frac_informative_ge_5e3"] >= _C2B_THRESHOLD
+            )
+            if c2a_proxy and c2b_proxy:
                 passing.append(c)
 
         if len(passing) == 0:
             logger.warning(
-                "Family '%s': no candidates pass acceptance criteria "
-                "(min_mean_abs_u_pred=%.4f, min_frac_active=%.4f). "
+                "Family '%s': no candidates pass gate-aligned acceptance filter "
+                "(C2a proxy >= %.0e, C2b proxy >= %.2f). "
                 "%d candidates scored.",
-                family, min_mean_abs_u_pred, min_frac_active_stages,
+                family, _C2A_THRESHOLD, _C2B_THRESHOLD,
                 len(candidates),
             )
             continue
@@ -585,20 +665,31 @@ def score_all_candidates(
         )
 
         try:
-            # Step 1: Run classical pilot
+            # Step 1: Run classical pilot (raw margins; p_align uses sign=+1 initially)
             pilot_data = run_classical_pilot(
                 cfg, seed=seed, n_episodes=n_pilot_episodes,
             )
 
-            # Step 2: Build schedule v3
+            # Step 2: Determine sign from margin distribution, then
+            # recompute sign-aligned p_align before building the schedule.
             gamma_val = float(cfg.get("gamma", 0.97))
             r_max = float(cfg.get("reward_bound", 1.0))
+            resolved_sign = select_sign(pilot_data["margins_by_stage"], r_max)
+
+            corrected_p_align: list[float] = []
+            for margins_arr in pilot_data["margins_by_stage"]:
+                m = np.asarray(margins_arr, dtype=np.float64)
+                corrected_p_align.append(
+                    float(np.mean(resolved_sign * m > 0.0)) if len(m) > 0 else 0.0
+                )
+            pilot_data = {**pilot_data, "p_align_by_stage": corrected_p_align}
 
             schedule = build_schedule_v3_from_pilot(
                 pilot_data=pilot_data,
                 r_max=r_max,
                 gamma_base=gamma_val,
                 gamma_eval=gamma_val,
+                sign_family=resolved_sign,
                 task_family=family,
                 source_phase="pilot",
                 notes=f"activation_search candidate {idx}",
@@ -633,30 +724,34 @@ def score_all_candidates(
                 "schedule": None,
                 "scoring": {
                     "raw_metrics": {
-                        "mean_abs_u_pred": 0.0,
-                        "mean_abs_delta_d_pred": 0.0,
+                        "predicted_mean_abs_u_informative": 0.0,
+                        "predicted_median_abs_u_informative": 0.0,
+                        "predicted_frac_informative_ge_5e3": 0.0,
                         "mean_abs_target_gap_norm": 0.0,
                         "informative_stage_frac": 0.0,
+                        "mean_abs_u_pred": 0.0,
                         "frac_u_ge_5e3": 0.0,
                     },
                     "score_components": {},
                     "total_score": 0.0,
+                    "has_informative_stages": False,
                 },
                 "error": str(exc),
             })
 
     # -----------------------------------------------------------------
     # Batch z-score standardization
+    # Primary metrics drive ranking; informative_stage_frac is auxiliary.
     # -----------------------------------------------------------------
     metric_keys = [
-        "mean_abs_u_pred",
-        "mean_abs_delta_d_pred",
+        "predicted_mean_abs_u_informative",
+        "predicted_frac_informative_ge_5e3",
         "mean_abs_target_gap_norm",
         "informative_stage_frac",
     ]
     weight_keys = [
-        "w1_mean_abs_u",
-        "w2_mean_abs_delta_d",
+        "w1_mean_abs_u_informative",
+        "w2_frac_informative_ge_5e3",
         "w3_mean_abs_target_gap_norm",
         "w4_informative_stage_frac",
     ]

@@ -39,10 +39,10 @@ plotter cannot run pytest, a verifier cannot edit code. Full specs in
 | Subagent              | Scope                                                       | Edits code | Runs tests | Typical phase |
 |-----------------------|-------------------------------------------------------------|-----------|-----------|---------------|
 | `planner`             | Spec → `tasks/todo.md` decomposition                        | No        | No        | All           |
-| `env-builder`         | Environments, wrappers, stress families                     | Yes       | No        | I, II         |
-| `algo-implementer`    | Classical DP/TD (I) + safe DP/TD (III)                      | Yes       | No        | I, III        |
-| `operator-theorist`   | Safe LSE operator, certification math, `logaddexp`          | Yes       | No        | III           |
-| `calibration-engineer`| Calibration emission (I/II) + schedule build (III)          | Yes       | No        | I, II, III    |
+| `env-builder`         | Environments, wrappers, stress families, activation tasks   | Yes       | No        | I, II, IV-A   |
+| `algo-implementer`    | Classical DP/TD (I) + safe DP/TD (III) + stabilized RL (IV-C) | Yes     | No        | I, III, IV-C  |
+| `operator-theorist`   | Safe LSE operator, certification math, `logaddexp`, geometry| Yes       | No        | III, IV-A     |
+| `calibration-engineer`| Calibration emission (I/II) + schedule build (III) + v3 natural-shift calibration (IV-A) + state-dependent schedulers (IV-C) | Yes | No | I, II, III, IV-A, IV-C |
 | `experiment-runner`   | Configs, run dispatch, result aggregation                   | Yes       | No        | All           |
 | `test-author`         | Unit, integration, smoke tests per spec                     | Yes       | No        | All           |
 | `plotter-analyst`     | Figures + paper tables + analysis notebooks                 | Yes       | No        | All           |
@@ -86,6 +86,14 @@ Given a task in `tasks/todo.md` tagged `[X]`, route as follows:
 | `[test]`                    | `test-author`          |
 | `[plot]`, `[analysis]`      | `plotter-analyst`      |
 | `[ablation]`                | `experiment-runner` (+ `plotter-analyst` for readout) |
+| `[geometry]`                | `operator-theorist` (natural-shift, activation metrics) |
+| `[activation]`              | `operator-theorist` (search pipeline) + `env-builder` (task families) |
+| `[counterfactual]`          | `experiment-runner` (replay dispatch) + `operator-theorist` (target math) |
+| `[translation]`             | `experiment-runner` (run matrix) + `plotter-analyst` (analysis) |
+| `[stabilization]`           | `algo-implementer` (SafeDoubleQ, SafeTargetQ, SafeTargetExpectedSARSA) |
+| `[scheduler]`               | `calibration-engineer` (state-dependent, smoothing, backoff) |
+| `[priority-dp]`             | `algo-implementer` (geometry-prioritized async DP) |
+| `[audit]`                   | `operator-theorist` (Phase III compatibility audit) |
 | `[spec-read]`               | `planner`              |
 
 ## 5. Codex integration
@@ -120,6 +128,19 @@ When closing phase `P` (= I, II, or III):
      calibration contract."
    - Phase III: "challenge operator correctness, certification-box
      invariance, β=0 collapse, and numerical stability of logaddexp."
+   - Phase IV-A: "challenge Phase III backward compatibility, natural-shift
+     geometry correctness, activation-search ex-ante purity (no safe-return
+     leakage), counterfactual replay isolation, and matched-control
+     completeness per docs/specs/phase_IV_A_activation_audit_and_counterfactual.md."
+   - Phase IV-B: "challenge whether activation diagnostics actually translate
+     into outcome improvements, whether matched-control pairing is valid,
+     whether diagnostic-strength sweep is monotone, and whether null results
+     are reported honestly per docs/specs/phase_IV_B_translation_experiments.md."
+   - Phase IV-C: "challenge estimator-stabilization correctness (dual tables,
+     target networks), state-dependent scheduler freeze discipline, geometry
+     priority scoring, ablation isolation, and whether gains are attributable
+     to the claimed mechanism per
+     docs/specs/phase_IV_C_advanced_stabilization_and_geometry_ablations.md."
 5. Poll with `/codex:status`. When both jobs complete, `/codex:result`
    each and pipe into `review-triage`.
 6. `review-triage` writes actionable entries to `tasks/todo.md`, grouped
@@ -146,7 +167,10 @@ delegate design.
 
 - Worktrees are created at dispatch time via `isolation: "worktree"`.
 - Branch naming: `phase-<P>/<role>/<short-slug>`, e.g.
-  `phase-iii/operator-theorist/safe-target-closed-form`.
+  `phase-iii/operator-theorist/safe-target-closed-form`,
+  `phase-iv-a/operator-theorist/natural-shift-geometry`,
+  `phase-iv-b/experiment-runner/translation-rl`,
+  `phase-iv-c/algo-implementer/safe-double-q`.
 - The orchestrator is responsible for merging worktree branches back
   into the current working branch. Verifier runs on the merged branch,
   not on the worktree.
@@ -176,7 +200,24 @@ The orchestrator merges this into `tasks/todo.md` and, where
 appropriate, promotes "Open questions" to user-visible clarification
 prompts.
 
-## 8. When this document changes
+## 8. Overnight autonomous mode
+
+For unattended Phase IV execution, `/lse:overnight` wraps the full
+plan → implement → verify → review → gate lifecycle. See
+`docs/workflow.md §7` for details. Key additions:
+
+- Checkpoint state machine: `scripts/overnight/checkpoint.py`
+- Gate checks: `scripts/overnight/check_gate.py`
+- Auto-resolution of open questions (conservative defaults, logged)
+- Failure budget: 3 per sub-phase, then stop
+- Sequential gates: IV-A activation → IV-B translation → IV-C completion
+
+The overnight command follows all invariants in §3 with these
+overrides: plan auto-approval (§3.1), automated BLOCKER routing
+(§5.2 step 6), and gate-based phase transitions (replacing user
+merge approval).
+
+## 9. When this document changes
 
 AGENTS.md, subagent specs, and slash commands are themselves
 spec-level artifacts. Changes require:

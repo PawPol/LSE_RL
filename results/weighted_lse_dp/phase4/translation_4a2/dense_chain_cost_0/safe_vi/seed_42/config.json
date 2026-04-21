@@ -1,0 +1,26 @@
+{
+  "phase": "IV-B",
+  "suite": "translation_4a2",
+  "task_tag": "dense_chain_cost_0",
+  "family": "dense_chain_cost",
+  "algorithm": "safe_vi",
+  "seed": 42,
+  "gamma": 0.95,
+  "horizon": 20,
+  "n_pilot_episodes": 200,
+  "task_cfg": {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.02,
+    "terminal_reward": 0.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "prob": 1.0,
+    "reward_bound": 0.02,
+    "micro_reward": true
+  },
+  "source_activation_suite": "experiments/weighted_lse_dp/configs/phase4/activation_suite_4a2.json",
+  "schedule_sign": 1,
+  "schedule_T": 20,
+  "schedule_path": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_vi/seed_42/schedule_v3.json"
+}

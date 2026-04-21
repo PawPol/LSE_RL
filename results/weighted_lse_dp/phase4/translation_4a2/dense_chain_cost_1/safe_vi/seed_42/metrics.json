@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-21T03:08:54Z",
+  "phase": "phase4",
+  "task": "dense_chain_cost_1",
+  "algorithm": "safe_vi",
+  "seed": 42,
+  "final_bellman_residual": 0.5941235526954985,
+  "n_sweeps": 1,
+  "wall_clock_s": 0.000608125003054738,
+  "converged": true,
+  "n_states": 21,
+  "schedule_sign": 1,
+  "beta_used_min": 0.0,
+  "beta_used_max": 0.09583131506209429,
+  "n_stages_clipped": 0,
+  "clip_fraction": 0.0
+}

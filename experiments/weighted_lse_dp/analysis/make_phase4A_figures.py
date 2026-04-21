@@ -268,7 +268,9 @@ def _fig_task_search_frontier(project_root: Path, output_dir: Path) -> None:
 
     selected_idxs: set[int] = set()
     if selected_path.exists():
-        for t in _load_json(selected_path):
+        raw = _load_json(selected_path)
+        task_list = raw.get("tasks", raw) if isinstance(raw, dict) else raw
+        for t in task_list:
             selected_idxs.add(t["idx"])
 
     # Assign colors per family

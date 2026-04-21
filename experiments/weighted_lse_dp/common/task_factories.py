@@ -48,6 +48,7 @@ __all__ = [
     "make_chain_base",
     "make_grid_base",
     "make_taxi_base",
+    "build_ref_pi_for_task",
 ]
 
 
@@ -644,3 +645,145 @@ def make_chain_base(
     )
 
     return mdp_base, mdp_rl, cfg, ref_pi
+
+
+# ---------------------------------------------------------------------------
+# Public reference-policy dispatcher
+# ---------------------------------------------------------------------------
+
+def build_ref_pi_for_task(
+    task_name: str,
+    task_cfg: dict,
+    mdp: object,
+) -> np.ndarray:
+    """Build the reference policy array for PE / SafePE based on ``task_cfg['ref_policy']``.
+
+    Dispatches on the ``ref_policy`` string in *task_cfg*:
+
+    * ``"always_right"`` — all-zeros policy (action 0 = right for chain tasks).
+    * ``"shortest_path"`` — BFS shortest-Manhattan-path to goal cell for grid tasks.
+      Reads ``n_rows``, ``n_cols`` from *task_cfg*; finds the 'G' cell in
+      ``task_cfg['grid_file']``.
+    * ``"pickup_then_deliver"`` — heuristic pickup-then-deliver for taxi tasks.
+      Parses ``task_cfg['grid_file']``.
+
+    Falls back to all-zeros if ``ref_policy`` is absent or unrecognised
+    (with a ``RuntimeWarning``).
+
+    Returns
+    -------
+    ref_pi : np.ndarray, shape (horizon, n_states), dtype int64
+    """
+    import warnings
+
+    # Read horizon and n_states from the MDP object.
+    horizon = int(mdp.info.horizon)  # type: ignore[union-attr]
+    n_states = int(mdp.info.observation_space.n)  # type: ignore[union-attr]
+
+    ref_policy = task_cfg.get("ref_policy", "always_right")
+
+    if ref_policy == "always_right":
+        action_per_state = np.zeros(n_states, dtype=np.int64)
+
+    elif ref_policy == "shortest_path":
+        # Grid task: parse goal cell from grid file, then build shortest-path policy.
+        grid_file = task_cfg.get("grid_file")
+        if grid_file is None:
+            warnings.warn(
+                f"build_ref_pi_for_task({task_name!r}): ref_policy='shortest_path' "
+                "but no 'grid_file' in task_cfg — falling back to all-zeros.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            action_per_state = np.zeros(n_states, dtype=np.int64)
+        else:
+            # n_rows/n_cols may be absent for square 5x5 grids that only
+            # specify n_states=25.  Fall back to sqrt(n_states).
+            _sq = int(round(n_states ** 0.5))
+            n_rows = int(task_cfg.get("n_rows", _sq))
+            n_cols = int(task_cfg.get("n_cols", _sq))
+            goal_cell: tuple[int, int] | None = None
+            with open(grid_file) as fh:
+                for row_idx, line in enumerate(fh):
+                    for col_idx, ch in enumerate(line.rstrip("\n")):
+                        if ch == "G":
+                            goal_cell = (row_idx, col_idx)
+                            break
+                    if goal_cell is not None:
+                        break
+            if goal_cell is None:
+                warnings.warn(
+                    f"build_ref_pi_for_task({task_name!r}): no 'G' cell found "
+                    f"in {grid_file!r} — falling back to all-zeros.",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+                action_per_state = np.zeros(n_states, dtype=np.int64)
+            else:
+                action_per_state = _grid_base_reference_action_per_state(
+                    n_rows=n_rows,
+                    n_cols=n_cols,
+                    goal_cell=goal_cell,
+                )
+
+    elif ref_policy == "pickup_then_deliver":
+        # Taxi task: parse grid, build heuristic pickup-then-deliver policy.
+        grid_file = task_cfg.get("grid_file")
+        if grid_file is None:
+            warnings.warn(
+                f"build_ref_pi_for_task({task_name!r}): ref_policy='pickup_then_deliver' "
+                "but no 'grid_file' in task_cfg — falling back to all-zeros.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            action_per_state = np.zeros(n_states, dtype=np.int64)
+        else:
+            grid_map, cell_list, passenger_list = parse_grid(str(grid_file))
+            if not passenger_list:
+                warnings.warn(
+                    f"build_ref_pi_for_task({task_name!r}): no passenger 'F' cell "
+                    f"in {grid_file!r} — falling back to all-zeros.",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+                action_per_state = np.zeros(n_states, dtype=np.int64)
+            else:
+                pickup_cell = (int(passenger_list[0][0]), int(passenger_list[0][1]))
+                goal_cell_taxi: tuple[int, int] | None = None
+                for r_idx, row in enumerate(grid_map):
+                    for c_idx, ch in enumerate(row):
+                        if ch == "G":
+                            goal_cell_taxi = (r_idx, c_idx)
+                            break
+                    if goal_cell_taxi is not None:
+                        break
+                if goal_cell_taxi is None:
+                    warnings.warn(
+                        f"build_ref_pi_for_task({task_name!r}): no 'G' cell in "
+                        f"{grid_file!r} — falling back to all-zeros.",
+                        RuntimeWarning,
+                        stacklevel=2,
+                    )
+                    action_per_state = np.zeros(n_states, dtype=np.int64)
+                else:
+                    action_per_state = _taxi_base_reference_action_per_state(
+                        cell_list=cell_list,
+                        grid_map=grid_map,
+                        pickup_cell=pickup_cell,
+                        goal_cell=goal_cell_taxi,
+                    )
+
+    else:
+        warnings.warn(
+            f"build_ref_pi_for_task({task_name!r}): unrecognised ref_policy "
+            f"{ref_policy!r} — falling back to all-zeros.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        action_per_state = np.zeros(n_states, dtype=np.int64)
+
+    return deterministic_policy_array(
+        horizon=horizon,
+        n_states=n_states,
+        action_per_state=action_per_state,
+    )

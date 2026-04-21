@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T19:19:36Z",
+  "created_at": "2026-04-19T04:44:01Z",
   "phase": "phase3",
   "task": "chain_catastrophe",
   "algorithm": "SafeExpectedSARSA",
   "seed": 83,
-  "git_sha": "cc9414297e4e83c37b87f14e19791f2f5079e96e",
+  "git_sha": "209303bcbf621d95a65493ae456d72b00dcddaeb",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "task": "chain_catastrophe",
@@ -98,14 +98,14 @@
       "return_q05": 0.0,
       "return_q25": 0.0,
       "return_q50": 0.0,
-      "return_q75": 0.5526834771623851,
-      "return_q95": 1.6977550817328821,
-      "cvar_5pct": -2.9187203806985447,
-      "cvar_10pct": -1.4593601903492723,
-      "top5pct_mean": 2.1173562601869813,
-      "top10pct_mean": 1.8852158653077895,
-      "event_rate": 0.024,
-      "event_conditioned_return": -6.080667459788635
+      "return_q75": 0.0,
+      "return_q95": 1.1397145052611992,
+      "cvar_5pct": -0.9872662806165627,
+      "cvar_10pct": -0.49363314030828137,
+      "top5pct_mean": 1.765124791920696,
+      "top10pct_mean": 1.0852699672560557,
+      "event_rate": 0.008,
+      "event_conditioned_return": -6.170414253853517
     }
   },
   "suite": "ablation_beta_constant_small",

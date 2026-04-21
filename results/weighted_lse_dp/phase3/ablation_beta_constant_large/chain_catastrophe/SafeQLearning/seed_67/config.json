@@ -91,11 +91,11 @@
     "return_q50": 0.0,
     "return_q75": 0.0,
     "return_q95": 0.0,
-    "cvar_5pct": -0.6632201725948622,
-    "cvar_10pct": -0.3316100862974311,
+    "cvar_5pct": 0.0,
+    "cvar_10pct": 0.0,
     "top5pct_mean": 0.0,
     "top10pct_mean": 0.0,
-    "event_rate": 0.006,
-    "event_conditioned_return": -5.526834771623851
+    "event_rate": 0.0,
+    "event_conditioned_return": NaN
   }
 }

@@ -1,6 +1,6 @@
 {
   "schedule_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase3/calibration/grid_regime_shift/schedule.json",
-  "calibration_source_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase2/calibration/grid_regime_shift.json",
-  "calibration_hash": "36c77bf35902d61a532f4db49544460b5bdd846ed8058d89dbe3abd079d843ca",
+  "calibration_source_path": "results/weighted_lse_dp/phase2/calibration/grid_regime_shift.json",
+  "calibration_hash": "2c69e9f6ad0c7e3f6a5bef6dc50b2442eac121bf6a11a0201399aab62251e46a",
   "source_phase": "phase2"
 }

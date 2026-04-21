@@ -1,11 +1,12 @@
 ---
-description: Spawn the planner subagent on a given phase spec and produce tasks/todo.md entries. Usage: /lse:plan-phase I | II | III
-argument-hint: <I | II | III>
+description: Spawn the planner subagent on a given phase spec and produce tasks/todo.md entries. Usage: /lse:plan-phase I | II | III | IV-A | IV-B | IV-C
+argument-hint: <I | II | III | IV-A | IV-B | IV-C>
 ---
 
 # /lse:plan-phase
 
-Arguments: `$ARGUMENTS` — one of `I`, `II`, `III` (or a spec path).
+Arguments: `$ARGUMENTS` — one of `I`, `II`, `III`, `IV-A`, `IV-B`, `IV-C`
+(or a spec path).
 
 ## Protocol
 

@@ -98,11 +98,11 @@
   },
   "adaptation_metrics": {
     "change_at_episode": 200,
-    "pre_change_auc": 0.4683134984147644,
-    "post_change_auc": 0.8761662479071908,
+    "pre_change_auc": 0.4856730673891705,
+    "post_change_auc": 0.815072130113293,
     "lag_to_50pct_recovery": 0,
     "lag_to_75pct_recovery": 0,
-    "lag_to_90pct_recovery": 106,
+    "lag_to_90pct_recovery": 1352,
     "post_change_optimum": 0.970299
   }
 }

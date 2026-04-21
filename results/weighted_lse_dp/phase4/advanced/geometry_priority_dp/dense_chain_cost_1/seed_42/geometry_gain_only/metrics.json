@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "phase4C",
+  "task": "dense_chain_cost_1",
+  "algorithm": "geometry_priority_dp_geometry_gain_only",
+  "mode": "geometry_gain_only",
+  "seed": 42,
+  "n_sweeps": 20,
+  "n_backups": 2100,
+  "final_residual": 0.0,
+  "convergence_sweep_1e-2": 20,
+  "wall_clock_s": 0.027506584010552615,
+  "frac_high_activation_backups": 0.9747619047619047,
+  "lambda_geom": 1.0,
+  "lambda_u": 0.0,
+  "lambda_kl": 0.0
+}

@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T19:03:40Z",
+  "created_at": "2026-04-20T12:21:49Z",
   "phase": "phase3",
   "task": "chain_jackpot",
   "algorithm": "SafeQLearning",
   "seed": 29,
-  "git_sha": "88450283161d756c5da562860b0d881c3866efef",
+  "git_sha": "01a22b9945b1a74a643b82b1f38fefc5e36ee5f8",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "task": "chain_jackpot",

@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "phase4C",
+  "task": "dense_chain_cost_1",
+  "algorithm": "safe_target_q_polyak",
+  "seed": 42,
+  "train_steps": 20000,
+  "n_transitions": 20000,
+  "mean_return": -0.6415140775914574,
+  "final_disc_return_mean": -0.6415140775914574,
+  "mean_q_target_gap": 7.125644223140411e-06,
+  "mean_beta_used": 0.03400141680233128
+}

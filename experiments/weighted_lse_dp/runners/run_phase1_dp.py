@@ -48,6 +48,7 @@ for _p in (_REPO_ROOT, _MUSHROOM_DEV):
 from experiments.weighted_lse_dp.common.callbacks import DPCurvesLogger
 from experiments.weighted_lse_dp.common.calibration import (
     build_calibration_stats_from_dp_tables,
+    get_task_sign,
 )
 from experiments.weighted_lse_dp.common.schemas import RunWriter
 from experiments.weighted_lse_dp.common.seeds import seed_everything
@@ -323,6 +324,7 @@ def _run_single(
         R=r,
         gamma=gamma_for_calib,
         horizon=horizon,
+        sign=get_task_sign(task_name),
     )
     rw.set_calibration_stats(calib_stats)
 

@@ -130,19 +130,19 @@
       "ci_high": 1.0
     },
     "wall_clock_s": {
-      "mean": 0.007424735997725899,
-      "std": 0.0002796230636472302,
-      "median": 0.007350874977419153,
-      "q25": 0.007270166490343399,
-      "q75": 0.007542374994955026,
-      "iqr": 0.00027220850461162627,
-      "ci_low": 0.007189458003267646,
-      "ci_high": 0.007733875012490898
+      "mean": 0.06000840266400095,
+      "std": 0.001669347828683794,
+      "median": 0.059481832999153994,
+      "q25": 0.0590738334976777,
+      "q75": 0.06067968699790072,
+      "iqr": 0.00160585350022302,
+      "ci_low": 0.0586658339962014,
+      "ci_high": 0.06187754099664744
     }
   },
   "provenance": {
     "schedule_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase3/calibration/grid_sparse_goal/schedule.json",
-    "calibration_hash": "8606b7c92579b29e3f4b0a3e4836baa05fbf2f341ebfd85a6e737c754221c71a",
+    "calibration_hash": "8bf465e816fd3eabce9027dfc4aa51517cf801590d056ad8775d313ef8decbb3",
     "source_phase": "phase2"
   }
 }

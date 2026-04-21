@@ -1,0 +1,18 @@
+{
+  "_description": "Phase IV-C: trust-region, adaptive-headroom, wrong-sign, constant-u, and raw-unclipped ablation configs.",
+  "phase": "IV-C",
+  "ablation_types": [
+    "trust_region_off",
+    "trust_region_tighter",
+    "adaptive_headroom_off",
+    "adaptive_headroom_aggressive",
+    "wrong_sign",
+    "constant_u",
+    "raw_unclipped"
+  ],
+  "baseline_ref": "phase4/translation_study.json",
+  "activation_suite_path": "experiments/weighted_lse_dp/configs/phase4/activation_suite_4a2.json",
+  "seeds": [42, 123, 456],
+  "train_steps": 20000,
+  "n_pilot_episodes": 200
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "family": "dense_chain_cost",
+    "cfg": {
+      "family": "dense_chain_cost",
+      "n_states": 20,
+      "step_reward": -0.02,
+      "terminal_reward": 0.0,
+      "horizon": 20,
+      "gamma": 0.95,
+      "reward_bound": 0.02,
+      "micro_reward": true
+    },
+    "gamma_base": 0.95,
+    "schedule_id": "",
+    "predicted_mean_abs_u_informative": 0.008441942052057174,
+    "predicted_frac_informative_ge_5e3": 0.8888888888888888,
+    "mean_abs_u_pred": 0.00854491985487318
+  },
+  {
+    "family": "dense_chain_cost",
+    "cfg": {
+      "family": "dense_chain_cost",
+      "n_states": 20,
+      "step_reward": -0.05,
+      "terminal_reward": 0.0,
+      "horizon": 20,
+      "gamma": 0.95,
+      "reward_bound": 0.05,
+      "micro_reward": true
+    },
+    "gamma_base": 0.95,
+    "schedule_id": "",
+    "predicted_mean_abs_u_informative": 0.008441942052057174,
+    "predicted_frac_informative_ge_5e3": 0.8888888888888888,
+    "mean_abs_u_pred": 0.00854491985487318
+  }
+]

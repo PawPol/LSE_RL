@@ -1,0 +1,122 @@
+{
+  "generated_at": "2026-04-21T03:33:50Z",
+  "gate_version": "option_c_v1",
+  "thresholds": {
+    "mean_abs_u": 0.005,
+    "frac_informative_u_ge_5e3": 0.1
+  },
+  "families": [
+    {
+      "family": "dense_chain_cost",
+      "design_point": {
+        "mean_abs_u_pred": 0.00854492,
+        "gate_pass": true
+      },
+      "informative_replay": {
+        "mean_abs_u": 0.008824386473432937,
+        "median_abs_u": 0.009288384378293055,
+        "frac_u_ge_5e3": 0.9392632315224995,
+        "n_informative": 17156,
+        "frac_informative": 0.8578,
+        "gate_pass_mean_or_median": true,
+        "gate_pass_frac": true
+      },
+      "topquartile_replay": {
+        "mean_abs_u": 0.009625798768206016,
+        "frac_u_ge_5e3": 1.0,
+        "n_topquartile": 5532
+      },
+      "global_replay": {
+        "mean_abs_u": 0.0076675765867686195,
+        "is_dilution_only": true
+      },
+      "iv_b_eligible": true,
+      "eligibility_reason": "all three conditions pass",
+      "tag": "dense_chain_cost_0"
+    },
+    {
+      "family": "dense_grid_hazard",
+      "design_point": {
+        "mean_abs_u_pred": 0.00052291,
+        "gate_pass": false
+      },
+      "informative_replay": {
+        "mean_abs_u": 0.0,
+        "median_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_informative": 0,
+        "frac_informative": 0.0,
+        "gate_pass_mean_or_median": false,
+        "gate_pass_frac": false
+      },
+      "topquartile_replay": {
+        "mean_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_topquartile": 0
+      },
+      "global_replay": {
+        "mean_abs_u": 0.0,
+        "is_dilution_only": true
+      },
+      "iv_b_eligible": false,
+      "eligibility_reason": "no replay entry for this family",
+      "tag": ""
+    },
+    {
+      "family": "shaped_chain",
+      "design_point": {
+        "mean_abs_u_pred": 0.0012958,
+        "gate_pass": false
+      },
+      "informative_replay": {
+        "mean_abs_u": 0.0,
+        "median_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_informative": 0,
+        "frac_informative": 0.0,
+        "gate_pass_mean_or_median": false,
+        "gate_pass_frac": false
+      },
+      "topquartile_replay": {
+        "mean_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_topquartile": 0
+      },
+      "global_replay": {
+        "mean_abs_u": 0.0,
+        "is_dilution_only": true
+      },
+      "iv_b_eligible": false,
+      "eligibility_reason": "no replay entry for this family",
+      "tag": ""
+    },
+    {
+      "family": "two_path_chain",
+      "design_point": {
+        "mean_abs_u_pred": 0.00340461,
+        "gate_pass": false
+      },
+      "informative_replay": {
+        "mean_abs_u": 0.0,
+        "median_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_informative": 0,
+        "frac_informative": 0.0,
+        "gate_pass_mean_or_median": false,
+        "gate_pass_frac": false
+      },
+      "topquartile_replay": {
+        "mean_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_topquartile": 0
+      },
+      "global_replay": {
+        "mean_abs_u": 0.0,
+        "is_dilution_only": true
+      },
+      "iv_b_eligible": false,
+      "eligibility_reason": "no replay entry for this family",
+      "tag": ""
+    }
+  ]
+}

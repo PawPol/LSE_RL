@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T19:05:58Z",
+  "created_at": "2026-04-19T03:50:42Z",
   "phase": "phase3",
   "task": "chain_sparse_long",
   "algorithm": "SafeMPI",
   "seed": 11,
-  "git_sha": "88450283161d756c5da562860b0d881c3866efef",
+  "git_sha": "04ae83ce0ad58e01ae067f48c8d6b1da9f9e8ac7",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "task": "chain_sparse_long",

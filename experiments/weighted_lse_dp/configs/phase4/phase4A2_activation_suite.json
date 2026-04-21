@@ -1,0 +1,22 @@
+{
+  "selected_tasks": [
+    {
+      "cfg": {
+        "family": "dense_chain_cost",
+        "n_states": 20,
+        "step_reward": -0.02,
+        "terminal_reward": 0.0,
+        "horizon": 20,
+        "gamma": 0.95,
+        "reward_bound": 0.02
+      },
+      "family": "dense_chain_cost",
+      "notes": "phase4A2 micro-reward best candidate (micro_reward=True)"
+    }
+  ],
+  "n_pilot_episodes": 1000,
+  "tau_n": 200,
+  "T_target": 20,
+  "gamma": 0.95,
+  "suite_type": "phase4A2_mainline"
+}

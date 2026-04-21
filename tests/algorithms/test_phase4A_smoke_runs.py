@@ -70,7 +70,7 @@ def test_counterfactual_replay_smoke() -> None:
             / "weighted_lse_dp"
             / "configs"
             / "phase4"
-            / "activation_suite.json"
+            / "activation_suite_4a2.json"
         )
 
         result = _run([

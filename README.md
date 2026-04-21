@@ -67,6 +67,14 @@ Design documents in [`docs/specs/`](docs/specs/):
 - `phase_II_stress_test_beta0_experiments.md` — stress tests of the β=0 harness.
 - `phase_III_safe_weighted_lse_experiments.md` — weighted-LSE operator
   experiments with safety constraints.
+- `phase_IV_A_activation_audit_and_counterfactual.md` — Phase III audit,
+  operator-sensitive activation suite, natural-shift scheduling, counterfactual
+  target replay.
+- `phase_IV_B_translation_experiments.md` — translation study: does certified
+  activation improve tail-risk, adaptation, sample-efficiency, or planning?
+- `phase_IV_C_advanced_stabilization_and_geometry_ablations.md` — advanced
+  estimator stabilization (SafeDoubleQ, SafeTargetQ), state-dependent
+  schedulers, geometry-prioritized DP, certification ablations.
 
 ## Working conventions
 
@@ -92,10 +100,11 @@ diagram.
 
 | Command                            | Purpose |
 |------------------------------------|---------|
-| `/lse:plan-phase <I\|II\|III>`     | Spawn `planner` on a phase spec; decompose into `tasks/todo.md`. |
+| `/lse:plan-phase <I\|II\|III\|IV-A\|IV-B\|IV-C>` | Spawn `planner` on a phase spec; decompose into `tasks/todo.md`. |
 | `/lse:implement <task-id>`         | Route a tagged task to its role subagent per `AGENTS.md §4`. |
 | `/lse:verify [--full]`             | Run the `verifier` subagent (tests + diffs + schema checks). |
-| `/lse:review <I\|II\|III>`         | Phase-boundary Codex gate: `/codex:review` + `/codex:adversarial-review` in background, then `review-triage`. |
+| `/lse:review <I\|II\|III\|IV-A\|IV-B\|IV-C>` | Phase-boundary Codex gate: `/codex:review` + `/codex:adversarial-review` in background, then `review-triage`. |
+| `/lse:overnight [--resume] [--phase]` | Autonomous end-to-end Phase IV pipeline (IV-A → B → C) with checkpoints, gates, and Codex reviews. |
 | `/lse:status`                      | Read-only status: todo progress + active Codex jobs + quarantined runs. |
 
 ### Codex plugin setup (once per machine)
@@ -122,3 +131,7 @@ PR on the pins.
 - 2026-04-16: Project structure initialized.
 - 2026-04-16: Orchestration authored — 10 role subagents, 5 `/lse:*`
   slash commands, Codex gate at phase boundaries.
+- 2026-04-18: Phases I, II, III implementation complete (547 tests, 1940 runs).
+- 2026-04-18: Phase IV infrastructure — directories, configs, geometry
+  package, runner/analysis/test stubs, updated AGENTS.md dispatch table and
+  Codex focus strings for IV-A/B/C.

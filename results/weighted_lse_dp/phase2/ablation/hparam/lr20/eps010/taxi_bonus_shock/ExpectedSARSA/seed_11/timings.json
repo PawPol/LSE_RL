@@ -1,0 +1,13 @@
+{
+  "total_s": 9.288175707974005,
+  "step_s": 0.0,
+  "fit_s": 0.0,
+  "eval_s": 0.40513720706803724,
+  "plot_s": 0.0,
+  "other_s": 0.0,
+  "train_s": 8.7612183750025,
+  "eval_final_s": 0.2109674169914797,
+  "post_s": 0.31135604198789224,
+  "steps_per_s": null,
+  "updates_per_s": null
+}

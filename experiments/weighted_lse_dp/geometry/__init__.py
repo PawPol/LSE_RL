@@ -40,6 +40,11 @@ from .adaptive_headroom import (
     compute_u_safe_ref,
     run_fixed_point,
 )
+from .phase4_calibration_v3 import (
+    select_sign,
+    build_schedule_v3,
+    build_schedule_v3_from_pilot,
+)
 
 __all__ = [
     "compute_natural_shift",
@@ -65,4 +70,7 @@ __all__ = [
     "compute_theta_safe",
     "compute_u_safe_ref",
     "run_fixed_point",
+    "select_sign",
+    "build_schedule_v3",
+    "build_schedule_v3_from_pilot",
 ]

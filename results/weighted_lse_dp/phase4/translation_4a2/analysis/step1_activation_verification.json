@@ -1,0 +1,52 @@
+{
+  "dense_chain_cost_0": {
+    "tag": "dense_chain_cost_0",
+    "activated": true,
+    "checks": {
+      "mean_abs_natural_shift_nonlinear_gt_zero": true,
+      "mean_abs_delta_effective_discount_nonlinear_gt_zero": true,
+      "mean_abs_target_gap_nonlinear_gt_zero": true
+    },
+    "algos_found": [
+      "classical_expected_sarsa",
+      "classical_q",
+      "classical_vi",
+      "safe_expected_sarsa_stagewise",
+      "safe_expected_sarsa_zero",
+      "safe_q_stagewise",
+      "safe_q_zero",
+      "safe_vi",
+      "safe_vi_zero"
+    ],
+    "classes_found": [
+      "classical",
+      "safe-nonlinear",
+      "safe-zero"
+    ]
+  },
+  "dense_chain_cost_1": {
+    "tag": "dense_chain_cost_1",
+    "activated": true,
+    "checks": {
+      "mean_abs_natural_shift_nonlinear_gt_zero": true,
+      "mean_abs_delta_effective_discount_nonlinear_gt_zero": true,
+      "mean_abs_target_gap_nonlinear_gt_zero": true
+    },
+    "algos_found": [
+      "classical_expected_sarsa",
+      "classical_q",
+      "classical_vi",
+      "safe_expected_sarsa_stagewise",
+      "safe_expected_sarsa_zero",
+      "safe_q_stagewise",
+      "safe_q_zero",
+      "safe_vi",
+      "safe_vi_zero"
+    ],
+    "classes_found": [
+      "classical",
+      "safe-nonlinear",
+      "safe-zero"
+    ]
+  }
+}

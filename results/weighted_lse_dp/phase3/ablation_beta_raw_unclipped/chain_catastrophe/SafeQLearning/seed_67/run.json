@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T19:34:36Z",
+  "created_at": "2026-04-19T04:58:13Z",
   "phase": "phase3",
   "task": "chain_catastrophe",
   "algorithm": "SafeQLearning",
   "seed": 67,
-  "git_sha": "cc9414297e4e83c37b87f14e19791f2f5079e96e",
+  "git_sha": "209303bcbf621d95a65493ae456d72b00dcddaeb",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "task": "chain_catastrophe",
@@ -102,8 +102,8 @@
       "return_q95": 0.0,
       "cvar_5pct": 0.0,
       "cvar_10pct": 0.0,
-      "top5pct_mean": 0.3095027472109356,
-      "top10pct_mean": 0.1547513736054678,
+      "top5pct_mean": 0.0,
+      "top10pct_mean": 0.0,
       "event_rate": 0.0,
       "event_conditioned_return": NaN
     }

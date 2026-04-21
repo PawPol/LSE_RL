@@ -1,0 +1,80 @@
+{
+  "task": "grid_sparse_goal",
+  "algorithm": "QLearning",
+  "seed": 47,
+  "gamma": 0.9,
+  "horizon": 120,
+  "n_base": 49,
+  "train_steps": 200000,
+  "checkpoint_every": 5000,
+  "eval_episodes_checkpoint": 50,
+  "success_threshold": 0.85,
+  "epsilon": 0.1,
+  "learning_rate": 0.1,
+  "stress_type": null,
+  "task_config": {
+    "grid_file": "experiments/weighted_lse_dp/assets/grids/phase2_sparse_goal_7x7.txt",
+    "prob": 0.9,
+    "goal_reward": 1.0,
+    "gamma": 0.9,
+    "horizon": 120,
+    "n_rows": 7,
+    "n_cols": 7,
+    "n_states": 49,
+    "n_actions": 4,
+    "train_steps": 200000,
+    "checkpoint_every": 5000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 200,
+    "success_threshold": 0.85,
+    "dp_algorithms": [
+      "PE",
+      "VI",
+      "PI",
+      "MPI",
+      "AsyncVI"
+    ],
+    "rl_algorithms": [
+      "QLearning",
+      "ExpectedSARSA"
+    ],
+    "ref_policy": "shortest_path",
+    "severity": "sparse_reward",
+    "gamma_prime_override": 0.9
+  },
+  "factory_config": {
+    "task": "grid_sparse_goal",
+    "grid_file": "experiments/weighted_lse_dp/assets/grids/phase2_sparse_goal_7x7.txt",
+    "n_rows": 7,
+    "n_cols": 7,
+    "prob": 0.9,
+    "goal_reward": 1.0,
+    "gamma": 0.9,
+    "horizon": 120,
+    "goal_cell": [
+      6,
+      6
+    ],
+    "train_steps": 200000,
+    "checkpoint_every": 5000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 200,
+    "success_threshold": 0.85,
+    "n_states": 49,
+    "n_actions": 4,
+    "dp_algorithms": [
+      "PE",
+      "VI",
+      "PI",
+      "MPI",
+      "AsyncVI"
+    ],
+    "rl_algorithms": [
+      "QLearning",
+      "ExpectedSARSA"
+    ],
+    "ref_policy": "shortest_path",
+    "severity": "sparse_reward",
+    "gamma_prime_override": 0.9
+  }
+}

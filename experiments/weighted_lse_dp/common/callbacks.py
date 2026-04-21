@@ -589,6 +589,7 @@ class RLEvaluator:
         n_eval_episodes: int,
         success_threshold: float,
         gamma: float,
+        success_fn: object = None,
     ) -> None:
         self._agent = agent
         self._env = env
@@ -596,6 +597,12 @@ class RLEvaluator:
         self._n_eval_episodes = int(n_eval_episodes)
         self._success_threshold = float(success_threshold)
         self._gamma = float(gamma)
+
+        # Optional callable: success_fn(reward, absorbing, t, horizon) -> bool.
+        # Default: any early absorbing state (t < horizon) counts as success.
+        # Override to distinguish goal arrivals from catastrophic absorbing states
+        # (e.g. require positive final reward on catastrophe tasks).
+        self._success_fn = success_fn  # type: ignore[assignment]
 
         # Read horizon from the environment's MDPInfo.
         self._horizon: int = int(self._env.info.horizon)  # type: ignore[union-attr]
@@ -651,10 +658,16 @@ class RLEvaluator:
                 t += 1
 
                 if absorbing:
-                    # absorbing at t < horizon means the base env signalled a
-                    # real task goal; absorbing at t == horizon is the wrapper's
-                    # horizon-timeout signal.  Only the former counts as success.
-                    episode_success = (t < self._horizon)
+                    # Determine success via the optional callable or the default rule.
+                    # Default: absorbing before the horizon is a goal arrival.
+                    # Callers on catastrophe/hazard tasks should pass a success_fn
+                    # that also checks the final reward sign (e.g. reward > 0).
+                    if self._success_fn is not None:
+                        episode_success = bool(
+                            self._success_fn(reward, absorbing, t, self._horizon)
+                        )
+                    else:
+                        episode_success = (t < self._horizon)
                     break
                 if t >= self._horizon:
                     break
@@ -944,6 +957,8 @@ class AdaptationMetricsLogger:
         pre = episode_returns[:change_at_episode]
         post = episode_returns[change_at_episode:]
 
+        # Named "auc" per spec but implemented as mean return (trapezoid with
+        # unit episode width is proportional to mean, so the ranking is identical).
         pre_auc = float(np.nanmean(pre)) if len(pre) > 0 else float("nan")
         post_auc = float(np.nanmean(post)) if len(post) > 0 else float("nan")
         post_optimum = float(np.nanmax(post)) if len(post) > 0 else float("nan")
@@ -1015,6 +1030,16 @@ class TailRiskLogger:
         r = np.asarray(episode_returns, dtype=np.float64)
         flags = np.asarray(event_flags, dtype=bool)
         n = len(r)
+
+        if n == 0:
+            nan = float("nan")
+            return {
+                "return_q05": nan, "return_q25": nan, "return_q50": nan,
+                "return_q75": nan, "return_q95": nan,
+                "cvar_5pct": nan, "cvar_10pct": nan,
+                "top5pct_mean": nan, "top10pct_mean": nan,
+                "event_rate": 0.0, "event_conditioned_return": nan,
+            }
 
         # Quantiles.
         q05, q25, q50, q75, q95 = np.nanpercentile(r, [5, 25, 50, 75, 95])

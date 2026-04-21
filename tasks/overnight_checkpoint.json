@@ -4,7 +4,8 @@
   "current_phase": "IV-A",
   "phase_status": {
     "IV-A": "complete",
-    "IV-B": "not_started",
+    "IV-A2": "complete",
+    "IV-B": "pending_user_approval",
     "IV-C": "not_started"
   },
   "task_queue": [],
@@ -48,6 +49,33 @@
         "after_bhat_fix": {"conditions_met": 10, "best_value": 0.00356, "root_cause": "trust-region cap with 200 episodes"},
         "final_pass": {"n_ep_increased_to": 1000, "conditions_met": 11}
       }
+    },
+    "IV-A2": {
+      "result": "PASS",
+      "gate_policy": "option_c",
+      "timestamp": "2026-04-20T06:11:00Z",
+      "best_family": "dense_chain_cost",
+      "best_cfg": {
+        "family": "dense_chain_cost",
+        "n_states": 20,
+        "step_reward": -0.02,
+        "terminal_reward": 0.0,
+        "horizon": 20,
+        "gamma": 0.95,
+        "reward_bound": 0.02,
+        "micro_reward": true
+      },
+      "gate1_mean_abs_u_pred": 0.016525,
+      "gate2a_mean_abs_u_replay_informative": 0.006348,
+      "gate2a_median_abs_u_replay_informative": 0.006708,
+      "gate2b_frac_informative": 0.8807,
+      "n_pilot_episodes": 1000,
+      "n_replay_episodes": 1000,
+      "n_informative_transitions": 17613,
+      "frac_u_ge_5e3_informative": 0.8355,
+      "root_cause_fix": "terminal_reward=0 keeps reward_bound=|step_reward|=0.02, giving A_t~0.4 instead of ~27, so beta~0.077 (vs 2.5e-4) and mean|u_replay|>5e-3",
+      "selected_tasks_path": "results/weighted_lse_dp/phase4/task_search/phase4A2_selected_tasks.json",
+      "eligibility_report_path": "results/weighted_lse_dp/phase4/activation_report/phase4A2_eligibility_report.md"
     }
   },
   "codex_sessions": [],

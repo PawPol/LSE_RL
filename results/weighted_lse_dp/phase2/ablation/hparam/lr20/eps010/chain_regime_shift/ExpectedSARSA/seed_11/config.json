@@ -1,0 +1,87 @@
+{
+  "task": "chain_regime_shift",
+  "algorithm": "ExpectedSARSA",
+  "seed": 11,
+  "gamma": 0.99,
+  "horizon": 60,
+  "n_base": 25,
+  "train_steps": 180000,
+  "checkpoint_every": 6000,
+  "eval_episodes_checkpoint": 50,
+  "success_threshold": 0.8,
+  "epsilon": 0.1,
+  "learning_rate": 0.2,
+  "stress_type": "regime_shift",
+  "task_config": {
+    "state_n": 25,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 60,
+    "shift_type": "goal_flip",
+    "change_at_episode": 300,
+    "post_prob": 0.9,
+    "train_steps": 180000,
+    "checkpoint_every": 6000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 200,
+    "success_threshold": 0.8,
+    "dp_algorithms": [
+      "PE",
+      "VI",
+      "PI",
+      "MPI",
+      "AsyncVI"
+    ],
+    "rl_algorithms": [
+      "QLearning",
+      "ExpectedSARSA"
+    ],
+    "ref_policy": "always_right",
+    "severity": "regime_shift",
+    "stress_type": "regime_shift",
+    "warmstart_dp": true,
+    "lr_multiplier": 2.0,
+    "epsilon_override": 0.1
+  },
+  "factory_config": {
+    "task": "chain_regime_shift_goal_flip",
+    "state_n": 25,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 60,
+    "change_at_episode": 300,
+    "shift_type": "goal_flip",
+    "post_prob": 0.9,
+    "train_steps": 180000,
+    "checkpoint_every": 6000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 200,
+    "success_threshold": 0.8,
+    "dp_algorithms": [
+      "PE",
+      "VI",
+      "PI",
+      "MPI",
+      "AsyncVI"
+    ],
+    "rl_algorithms": [
+      "QLearning",
+      "ExpectedSARSA"
+    ],
+    "ref_policy": "always_right",
+    "severity": "regime_shift",
+    "stress_type": "regime_shift",
+    "warmstart_dp": true,
+    "lr_multiplier": 2.0,
+    "epsilon_override": 0.1
+  },
+  "adaptation_metrics": {
+    "change_at_episode": 300,
+    "pre_change_auc": 0.0,
+    "post_change_auc": 16.03439270913423,
+    "lag_to_50pct_recovery": 14,
+    "lag_to_75pct_recovery": 93,
+    "lag_to_90pct_recovery": 2454,
+    "post_change_optimum": 20.269661429799502
+  }
+}

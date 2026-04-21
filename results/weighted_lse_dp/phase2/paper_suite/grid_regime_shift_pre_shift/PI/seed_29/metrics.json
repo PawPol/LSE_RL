@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-20T12:06:01Z",
+  "phase": "phase2",
+  "task": "grid_regime_shift_pre_shift",
+  "algorithm": "PI",
+  "seed": 29,
+  "final_bellman_residual": 0.9238215947599959,
+  "n_sweeps": 9,
+  "wall_clock_s": 0.008163333004631568,
+  "converged": true,
+  "sweeps_to_1e-2": 0,
+  "sweeps_to_1e-4": 0,
+  "sweeps_to_1e-6": 0
+}

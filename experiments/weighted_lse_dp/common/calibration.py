@@ -47,7 +47,59 @@ __all__ = [
     "build_calibration_stats_from_dp_tables",
     "build_transitions_payload",
     "build_transitions_payload_from_lists",
+    "get_task_sign",
+    "TASK_FAMILY_SIGNS",
 ]
+
+# Source of truth for per-family calibration sign (+1 = positive-shock family,
+# -1 = catastrophe/hazard family).  Spec §12.  Mirrors aggregate_phase2.py;
+# kept here so runners can compute sign-aligned stats without importing the
+# aggregation module.
+TASK_FAMILY_SIGNS: dict[str, int] = {
+    # Phase I base tasks
+    "chain_base":         1,
+    "grid_base":          1,
+    "taxi_base":          1,
+    # Phase II stress families
+    "chain_sparse_long":  1,
+    "chain_jackpot":      1,
+    "chain_catastrophe": -1,
+    "chain_regime_shift": 1,
+    "grid_sparse_goal":   1,
+    "grid_hazard":       -1,
+    "grid_regime_shift":  1,
+    "taxi_bonus_shock":   1,
+    # Phase IV activation-search families (positive-sign by construction)
+    "chain_sparse_credit": 1,   # Phase IV-A mainline (sparse credit, goal-directed)
+    "regime_shift":        1,   # Phase IV-A search alias
+    "dense_chain_cost":    1,
+    "shaped_chain":        1,
+    "two_path_chain":      1,
+    "dense_grid_hazard":   1,
+}
+
+
+def get_task_sign(task_family: str) -> int:
+    """Return the calibration sign for *task_family* (+1 or -1).
+
+    Strips ``_pre_shift`` / ``_post_shift`` regime-shift suffixes before
+    lookup.  Returns 1 (positive) for unknown families with a warning.
+    """
+    import warnings
+    canonical = task_family
+    for suffix in ("_pre_shift", "_post_shift"):
+        if task_family.endswith(suffix):
+            canonical = task_family[: -len(suffix)]
+            break
+    sign = TASK_FAMILY_SIGNS.get(canonical)
+    if sign is None:
+        warnings.warn(
+            f"get_task_sign: unknown task_family={task_family!r}; "
+            f"defaulting to sign=+1.  Add it to TASK_FAMILY_SIGNS.",
+            stacklevel=2,
+        )
+        return 1
+    return sign
 
 
 def build_transitions_payload(
@@ -203,6 +255,7 @@ def aggregate_calibration_stats(
     *,
     horizon: int,
     bellman_residuals: dict[int, np.ndarray] | None = None,
+    sign: int = 1,
 ) -> dict[str, np.ndarray]:
     """Aggregate per-transition data into per-stage calibration statistics.
 
@@ -221,6 +274,11 @@ def aggregate_calibration_stats(
         When ``None`` (or when a stage has no entry), the corresponding
         ``bellman_residual_mean`` / ``bellman_residual_std`` entries are
         ``NaN``.
+    sign:
+        Task family sign (+1 or -1).  Used to compute sign-aligned margin
+        statistics: ``aligned_margin_freq[t] = P(sign * margin > 0)`` and
+        ``aligned_positive_mean[t] = E[max(sign * margin, 0)]``.
+        Default 1 preserves backward compatibility for positive-sign tasks.
 
     Returns
     -------
@@ -311,12 +369,14 @@ def aggregate_calibration_stats(
         max_abs_v_next[t] = np.max(np.abs(v_t))
         max_abs_q_current[t] = np.max(np.abs(q_t))
 
-        # Aligned-margin frequency: fraction of transitions with margin_beta0 > 0
-        aligned_margin_freq[t] = np.mean(m_t > 0.0)
+        # Aligned-margin frequency: P(sign * margin > 0).
+        # sign=-1 families (hazard/catastrophe) want margin < 0 as "aligned".
+        a_t = sign * m_t
+        aligned_margin_freq[t] = np.mean(a_t > 0.0)
 
-        # Phase II per-stage fields
-        aligned_positive_mean[t] = np.mean(np.maximum(m_t, 0.0))
-        aligned_negative_mean[t] = np.mean(np.maximum(-m_t, 0.0))
+        # Phase II per-stage fields (sign-aligned)
+        aligned_positive_mean[t] = np.mean(np.maximum(a_t, 0.0))
+        aligned_negative_mean[t] = np.mean(np.maximum(-a_t, 0.0))
         if _td_target_arr is not None:
             td_target_std[t] = np.std(_td_target_arr[mask])
         if _td_error_arr is not None:
@@ -389,6 +449,7 @@ def build_calibration_stats_from_dp_tables(
     *,
     gamma: float,
     horizon: int,
+    sign: int = 1,
 ) -> dict[str, np.ndarray]:
     """Build per-stage calibration stats directly from exact DP tables.
 
@@ -530,15 +591,16 @@ def build_calibration_stats_from_dp_tables(
         max_abs_v_next[t] = np.max(np.abs(v_flat))
         max_abs_q_current[t] = np.max(np.abs(q_flat))
 
-        # Aligned-margin frequency: fraction of (s,a) pairs with margin_beta0 > 0
-        aligned_margin_freq[t] = np.mean(margin_flat > 0.0)
+        # Aligned-margin frequency: P(sign * margin > 0).
+        a_flat = sign * margin_flat
+        aligned_margin_freq[t] = np.mean(a_flat > 0.0)
 
         bellman_residual_mean[t] = np.mean(td_error_flat)
         bellman_residual_std[t] = np.std(td_error_flat)
 
-        # Phase II per-stage fields
-        aligned_positive_mean[t] = np.mean(np.maximum(margin_flat, 0.0))
-        aligned_negative_mean[t] = np.mean(np.maximum(-margin_flat, 0.0))
+        # Phase II per-stage fields (sign-aligned)
+        aligned_positive_mean[t] = np.mean(np.maximum(a_flat, 0.0))
+        aligned_negative_mean[t] = np.mean(np.maximum(-a_flat, 0.0))
         td_target_std[t] = np.std(td_target_flat)
         td_error_std[t] = np.std(td_error_flat)
 

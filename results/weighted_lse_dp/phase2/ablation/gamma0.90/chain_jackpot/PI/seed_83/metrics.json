@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-19T05:08:42Z",
+  "phase": "phase2",
+  "task": "chain_jackpot",
+  "algorithm": "PI",
+  "seed": 83,
+  "final_bellman_residual": 1.8265675049153831,
+  "n_sweeps": 3,
+  "wall_clock_s": 0.0018622919742483646,
+  "converged": true,
+  "sweeps_to_1e-2": null,
+  "sweeps_to_1e-4": null,
+  "sweeps_to_1e-6": null
+}

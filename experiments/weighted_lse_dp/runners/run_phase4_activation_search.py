@@ -39,6 +39,9 @@ from experiments.weighted_lse_dp.geometry.task_activation_search import (  # noq
     select_activation_suite,
 )
 from experiments.weighted_lse_dp.tasks.phase4_operator_suite import get_search_grid  # noqa: E402
+from experiments.weighted_lse_dp.tasks.phase4a2_families import (  # noqa: E402
+    get_phase4a2_search_grid,
+)
 from experiments.weighted_lse_dp.common.io import save_json  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -100,9 +103,11 @@ def _make_serialisable(obj: Any) -> Any:
 def _write_candidate_grid(
     output_dir: Path,
     search_grid: list[dict[str, Any]],
+    suffix: str = "",
 ) -> Path:
-    """Write candidate_grid.json -- all candidate configs."""
-    path = output_dir / "candidate_grid.json"
+    """Write candidate_grid{suffix}.json -- all candidate configs."""
+    path = output_dir / f"candidate_grid{suffix}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
     save_json(path, _make_serialisable(search_grid))
     logger.info("Wrote %s (%d candidates)", path, len(search_grid))
     return path
@@ -111,19 +116,25 @@ def _write_candidate_grid(
 def _write_candidate_scores(
     output_dir: Path,
     scored_candidates: list[dict[str, Any]],
+    suffix: str = "",
 ) -> Path:
-    """Write candidate_scores.csv -- one row per candidate."""
-    path = output_dir / "candidate_scores.csv"
+    """Write candidate_scores{suffix}.csv -- one row per candidate."""
+    path = output_dir / f"candidate_scores{suffix}.csv"
     path.parent.mkdir(parents=True, exist_ok=True)
 
     fieldnames = [
         "idx",
         "family",
         "total_score",
-        "mean_abs_u_pred",
-        "mean_abs_delta_d_pred",
+        # Primary gate-aligned proxies
+        "predicted_mean_abs_u_informative",
+        "predicted_median_abs_u_informative",
+        "predicted_frac_informative_ge_5e3",
+        # Secondary / auxiliary
         "mean_abs_target_gap_norm",
         "informative_stage_frac",
+        # Legacy diagnostics
+        "mean_abs_u_pred",
         "frac_u_ge_5e3",
         "error",
     ]
@@ -137,10 +148,12 @@ def _write_candidate_scores(
                 "idx": c["idx"],
                 "family": c["family"],
                 "total_score": f"{c['scoring']['total_score']:.8f}",
-                "mean_abs_u_pred": f"{metrics['mean_abs_u_pred']:.8f}",
-                "mean_abs_delta_d_pred": f"{metrics['mean_abs_delta_d_pred']:.8f}",
+                "predicted_mean_abs_u_informative": f"{metrics['predicted_mean_abs_u_informative']:.8f}",
+                "predicted_median_abs_u_informative": f"{metrics['predicted_median_abs_u_informative']:.8f}",
+                "predicted_frac_informative_ge_5e3": f"{metrics['predicted_frac_informative_ge_5e3']:.8f}",
                 "mean_abs_target_gap_norm": f"{metrics['mean_abs_target_gap_norm']:.8f}",
                 "informative_stage_frac": f"{metrics['informative_stage_frac']:.8f}",
+                "mean_abs_u_pred": f"{metrics['mean_abs_u_pred']:.8f}",
                 "frac_u_ge_5e3": f"{metrics['frac_u_ge_5e3']:.8f}",
                 "error": c.get("error", ""),
             }
@@ -153,9 +166,10 @@ def _write_candidate_scores(
 def _write_selected_tasks(
     output_dir: Path,
     selected: list[dict[str, Any]],
+    suffix: str = "",
 ) -> Path:
-    """Write selected_tasks.json -- the frozen activation suite."""
-    path = output_dir / "selected_tasks.json"
+    """Write selected_tasks{suffix}.json -- the frozen activation suite."""
+    path = output_dir / f"selected_tasks{suffix}.json"
 
     # Build a clean list with cfg, scoring, schedule metadata, and reason
     clean: list[dict[str, Any]] = []
@@ -191,15 +205,17 @@ def _write_activation_report(
     selected: list[dict[str, Any]],
     seed: int,
     n_pilot_episodes: int,
+    suffix: str = "",
 ) -> Path:
-    """Write activation_search_report.md."""
-    path = output_dir / "activation_search_report.md"
+    """Write activation_search_report{suffix}.md."""
+    path = output_dir / f"activation_search_report{suffix}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
 
     selected_idxs = {c["idx"] for c in selected}
+    label = "Phase IV-A2" if suffix == "_4a2" else "Phase IV-A"
 
     lines: list[str] = []
-    lines.append("# Phase IV-A Activation Search Report\n")
+    lines.append(f"# {label} Activation Search Report\n")
     lines.append(f"- Seed: {seed}")
     lines.append(f"- Pilot episodes: {n_pilot_episodes}")
     lines.append(f"- Total candidates: {len(scored_candidates)}")
@@ -229,8 +245,8 @@ def _write_activation_report(
             key=lambda c: c["scoring"]["total_score"],
             reverse=True,
         )
-        lines.append("| Rank | Idx | Score | mean|u| | frac_active | Status |")
-        lines.append("|------|-----|-------|---------|-------------|--------|")
+        lines.append("| Rank | Idx | Score | mean|u|_info | frac_info>=5e-3 | Status |")
+        lines.append("|------|-----|-------|--------------|----------------|--------|")
         for rank, c in enumerate(sorted_cands, 1):
             m = c["scoring"]["raw_metrics"]
             status = "SELECTED" if c["idx"] in selected_idxs else "rejected"
@@ -239,8 +255,8 @@ def _write_activation_report(
             lines.append(
                 f"| {rank} | {c['idx']} "
                 f"| {c['scoring']['total_score']:.4f} "
-                f"| {m['mean_abs_u_pred']:.6f} "
-                f"| {m['frac_u_ge_5e3']:.4f} "
+                f"| {m['predicted_mean_abs_u_informative']:.6f} "
+                f"| {m['predicted_frac_informative_ge_5e3']:.4f} "
                 f"| {status} |"
             )
         lines.append("")
@@ -254,10 +270,11 @@ def _write_frozen_suite_config(
     selected: list[dict[str, Any]],
     seed: int,
     n_pilot_episodes: int,
+    suffix: str = "",
 ) -> Path:
-    """Write the frozen activation_suite.json config."""
+    """Write the frozen activation_suite{suffix}.json config."""
     config_path = Path(
-        "experiments/weighted_lse_dp/configs/phase4/activation_suite.json"
+        f"experiments/weighted_lse_dp/configs/phase4/activation_suite{suffix}.json"
     )
     config_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -271,6 +288,16 @@ def _write_frozen_suite_config(
             sched = c["schedule"]
             entry["gamma_base"] = sched.get("gamma_base")
             entry["schedule_id"] = sched.get("schedule_id", "")
+        # Store gate-aligned primary metrics so check_gate.py can use
+        # predicted_mean_abs_u_informative for the design-point C1 check.
+        m = c["scoring"]["raw_metrics"]
+        entry["predicted_mean_abs_u_informative"] = m.get(
+            "predicted_mean_abs_u_informative", 0.0
+        )
+        entry["predicted_frac_informative_ge_5e3"] = m.get(
+            "predicted_frac_informative_ge_5e3", 0.0
+        )
+        entry["mean_abs_u_pred"] = m.get("mean_abs_u_pred", 0.0)
         suite_entries.append(entry)
 
     payload = {
@@ -295,7 +322,7 @@ def _write_frozen_suite_config(
 
 
 def main(args: argparse.Namespace) -> None:
-    """Run Phase IV-A activation search."""
+    """Run Phase IV-A (or IV-A2) activation search."""
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)-8s %(name)s: %(message)s",
@@ -306,11 +333,15 @@ def main(args: argparse.Namespace) -> None:
     n_pilot_episodes = args.n_pilot_episodes
     output_dir = Path(args.output_dir)
     dry_run = args.dry_run
+    grid_name = args.grid  # "default" or "phase4a2"
+    suffix = "_4a2" if grid_name == "phase4a2" else ""
+    phase_label = "Phase IV-A2" if suffix else "Phase IV-A"
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    logger.info("Phase IV-A activation search starting")
-    logger.info("  seed=%d  n_pilot_episodes=%d  dry_run=%s", seed, n_pilot_episodes, dry_run)
+    logger.info("%s activation search starting (grid=%s)", phase_label, grid_name)
+    logger.info("  seed=%d  n_pilot_episodes=%d  dry_run=%s  suffix='%s'",
+                seed, n_pilot_episodes, dry_run, suffix)
     logger.info("  output_dir=%s", output_dir)
 
     t0 = time.monotonic()
@@ -318,7 +349,10 @@ def main(args: argparse.Namespace) -> None:
     # ------------------------------------------------------------------
     # Step 1: Get search grid
     # ------------------------------------------------------------------
-    search_grid = get_search_grid()
+    if grid_name == "phase4a2":
+        search_grid = get_phase4a2_search_grid()
+    else:
+        search_grid = get_search_grid()
     logger.info("Search grid: %d candidates", len(search_grid))
 
     # ------------------------------------------------------------------
@@ -340,8 +374,8 @@ def main(args: argparse.Namespace) -> None:
     # ------------------------------------------------------------------
     # Step 3: Write grid and scores (always, even on dry-run)
     # ------------------------------------------------------------------
-    _write_candidate_grid(output_dir, search_grid)
-    _write_candidate_scores(output_dir, scored_candidates)
+    _write_candidate_grid(output_dir, search_grid, suffix=suffix)
+    _write_candidate_scores(output_dir, scored_candidates, suffix=suffix)
 
     # ------------------------------------------------------------------
     # Step 4: Select suite (unless dry-run)
@@ -349,7 +383,7 @@ def main(args: argparse.Namespace) -> None:
     if dry_run:
         logger.info("Dry run: skipping selection and freeze. Done.")
         _write_activation_report(
-            output_dir, scored_candidates, [], seed, n_pilot_episodes,
+            output_dir, scored_candidates, [], seed, n_pilot_episodes, suffix=suffix,
         )
         elapsed = time.monotonic() - t0
         logger.info("Elapsed: %.1f s", elapsed)
@@ -359,22 +393,20 @@ def main(args: argparse.Namespace) -> None:
         scored_candidates,
         min_per_family=1,
         max_per_family=2,
-        min_mean_abs_u_pred=2e-3,
-        min_frac_active_stages=0.05,
     )
     logger.info("Selected %d tasks for the activation suite", len(selected))
 
     # ------------------------------------------------------------------
     # Step 5: Write selected tasks and report
     # ------------------------------------------------------------------
-    _write_selected_tasks(output_dir, selected)
+    _write_selected_tasks(output_dir, selected, suffix=suffix)
     _write_activation_report(
-        output_dir, scored_candidates, selected, seed, n_pilot_episodes,
+        output_dir, scored_candidates, selected, seed, n_pilot_episodes, suffix=suffix,
     )
-    _write_frozen_suite_config(selected, seed, n_pilot_episodes)
+    _write_frozen_suite_config(selected, seed, n_pilot_episodes, suffix=suffix)
 
     elapsed = time.monotonic() - t0
-    logger.info("Phase IV-A activation search complete. Elapsed: %.1f s", elapsed)
+    logger.info("%s activation search complete. Elapsed: %.1f s", phase_label, elapsed)
 
 
 def parse_args() -> argparse.Namespace:
@@ -385,6 +417,13 @@ def parse_args() -> argparse.Namespace:
         "--output-dir",
         type=Path,
         default=Path("results/weighted_lse_dp/phase4/task_search/"),
+    )
+    p.add_argument(
+        "--grid",
+        choices=["default", "phase4a2"],
+        default="default",
+        help="Which candidate grid to use. 'phase4a2' uses dense-reward families "
+             "and emits _4a2-suffixed artifacts.",
     )
     p.add_argument(
         "--dry-run",

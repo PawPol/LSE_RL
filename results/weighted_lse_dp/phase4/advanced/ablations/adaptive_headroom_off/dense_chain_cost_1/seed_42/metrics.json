@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "phase4C",
+  "task": "dense_chain_cost_1",
+  "algorithm": "safe_q_stagewise_ablation_adaptive_headroom_off",
+  "ablation": "adaptive_headroom_off",
+  "seed": 42,
+  "train_steps": 20000,
+  "n_transitions": 20000,
+  "mean_return": -0.6415140775914574,
+  "final_disc_return_mean": -0.6415140775914574
+}

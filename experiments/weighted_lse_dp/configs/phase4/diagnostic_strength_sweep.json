@@ -1,0 +1,31 @@
+{
+  "_description": "Phase IV-B: diagnostic-strength sweep. Varies reference effect strength (u_max in the v3 calibration) to test monotone activation-outcome correlation on the frozen IV-A2 activation suite.",
+  "phase": "IV-B",
+  "status": "active",
+  "suite": "diagnostic_sweep_4a2",
+  "activation_suite": "experiments/weighted_lse_dp/configs/phase4/activation_suite_4a2.json",
+  "sweep_parameter": "u_max",
+  "sweep_values": [0.0, 0.005, 0.010, 0.020],
+  "algorithm": "safe_q_stagewise",
+  "train_steps": 20000,
+  "checkpoint_every": 1000,
+  "eval_episodes": 50,
+  "epsilon": 0.1,
+  "learning_rate": 0.1,
+  "success_threshold": 0.5,
+  "n_pilot_episodes": 200,
+  "seeds_rl": [42, 123, 456, 789, 1024],
+  "metrics": {
+    "activation": [
+      "mean_abs_u",
+      "frac_active",
+      "safe_clip_fraction_mean",
+      "safe_effective_discount_mean"
+    ],
+    "outcome": [
+      "mean_return",
+      "final_disc_return_mean",
+      "steps_to_threshold"
+    ]
+  }
+}

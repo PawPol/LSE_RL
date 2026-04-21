@@ -1,13 +1,13 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T19:05:54Z",
+  "created_at": "2026-04-19T03:50:39Z",
   "phase": "phase3",
   "task": "grid_sparse_goal",
   "algorithm": "SafePE",
   "seed": 29,
-  "final_bellman_residual": 0.0,
+  "final_bellman_residual": 0.9988906256687536,
   "n_sweeps": 1,
-  "wall_clock_s": 0.0026001250080298632,
+  "wall_clock_s": 0.0019928749825339764,
   "converged": true,
   "n_states": 49,
   "schedule_sign": 1,
@@ -15,7 +15,7 @@
   "beta_used_max": 0.000402019801354133,
   "n_stages_clipped": 120,
   "clip_fraction": 1.0,
-  "sweeps_to_1e-2": 0,
-  "sweeps_to_1e-4": 0,
-  "sweeps_to_1e-6": 0
+  "sweeps_to_1e-2": null,
+  "sweeps_to_1e-4": null,
+  "sweeps_to_1e-6": null
 }

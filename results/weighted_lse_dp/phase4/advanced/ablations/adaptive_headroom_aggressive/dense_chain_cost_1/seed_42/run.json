@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "phase4C",
+  "task": "dense_chain_cost_1",
+  "algorithm": "safe_q_stagewise_ablation_adaptive_headroom_aggressive",
+  "ablation": "adaptive_headroom_aggressive",
+  "seed": 42,
+  "elapsed_s": 0.7837073749979027,
+  "schedule_v3_path": "results/weighted_lse_dp/phase4/advanced/ablations/adaptive_headroom_aggressive/dense_chain_cost_1/seed_42/schedule_v3_adaptive_headroom_aggressive.json",
+  "config": {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.05,
+    "terminal_reward": 0.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 0.05,
+    "micro_reward": true
+  },
+  "final_mean_return": -0.641388293057279
+}

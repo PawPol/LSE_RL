@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "phase4C",
+  "task": "dense_chain_cost_1",
+  "algorithm": "safe_q_stagewise_ablation_trust_region_off",
+  "ablation": "trust_region_off",
+  "seed": 42,
+  "elapsed_s": 0.7867851249902742,
+  "schedule_v3_path": "results/weighted_lse_dp/phase4/advanced/ablations/trust_region_off/dense_chain_cost_1/seed_42/schedule_v3_trust_region_off.json",
+  "config": {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.05,
+    "terminal_reward": 0.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 0.05,
+    "micro_reward": true
+  },
+  "final_mean_return": -0.6415140775914574
+}

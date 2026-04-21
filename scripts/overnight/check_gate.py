@@ -207,6 +207,7 @@ def _family_eligibility(
 def _write_eligibility_report(
     results_dir: Path,
     records: list[dict],
+    suffix: str = "",
 ) -> Path:
     """Persist the Option C eligibility report to JSON and return the path."""
     report_dir = results_dir / "activation_report"
@@ -220,12 +221,12 @@ def _write_eligibility_report(
         },
         "families": records,
     }
-    out_path = report_dir / "family_eligibility.json"
+    out_path = report_dir / f"family_eligibility{suffix}.json"
     out_path.write_text(json.dumps(payload, indent=2) + "\n")
     return out_path
 
 
-def check_gate_iva(results_dir: Path, configs_dir: Path) -> list[dict]:
+def check_gate_iva(results_dir: Path, configs_dir: Path, suffix: str = "") -> list[dict]:
     """Phase IV-A activation gate (Option C, v1).
 
     Three-condition activation gate:
@@ -244,15 +245,15 @@ def check_gate_iva(results_dir: Path, configs_dir: Path) -> list[dict]:
     checks: list[dict] = []
     audit_dir = results_dir / "audit"
     search_dir = results_dir / "task_search"
-    replay_dir = results_dir / "counterfactual_replay"
+    replay_dir = results_dir / f"counterfactual_replay{suffix}"
 
-    # 1. Audit artifacts
+    # 1. Audit artifacts (shared; no suffix — Phase III compat is not namespaced)
     checks.append(_file_exists(audit_dir / "phase3_compat_report.md", "Phase III compat report"))
     checks.append(_file_exists(audit_dir / "phase3_code_audit.json", "Phase III code audit"))
     checks.append(_file_exists(audit_dir / "phase3_result_audit.json", "Phase III result audit"))
 
     # 2. Activation search
-    selected = search_dir / "selected_tasks.json"
+    selected = search_dir / f"selected_tasks{suffix}.json"
     checks.append(_file_exists(selected, "Selected tasks file"))
     if selected.exists():
         try:
@@ -268,14 +269,16 @@ def check_gate_iva(results_dir: Path, configs_dir: Path) -> list[dict]:
     else:
         checks.append(_check(False, "At least one task family selected", "File missing"))
 
-    checks.append(_file_exists(search_dir / "activation_search_report.md", "Activation search report"))
+    checks.append(_file_exists(
+        search_dir / f"activation_search_report{suffix}.md", "Activation search report"
+    ))
 
     # 3. Counterfactual replay
     checks.append(_dir_nonempty(replay_dir, "Counterfactual replay results"))
 
     # 4. Three-condition activation gate (Option C, v1)
     replay_summary_file = replay_dir / "all_replay_summaries.json"
-    scores_file = search_dir / "candidate_scores.csv"
+    scores_file = search_dir / f"candidate_scores{suffix}.csv"
 
     predictions_by_family = _read_candidate_predictions(scores_file)
 
@@ -415,7 +418,7 @@ def check_gate_iva(results_dir: Path, configs_dir: Path) -> list[dict]:
     # [INFO] check block so the output surfaces them alongside the gates.
     eligibility_records = _family_eligibility(replay_tasks, predictions_by_family)
     try:
-        eligibility_path = _write_eligibility_report(results_dir, eligibility_records)
+        eligibility_path = _write_eligibility_report(results_dir, eligibility_records, suffix=suffix)
         checks.append(_check(
             True,
             f"[INFO] Wrote per-family eligibility report",
@@ -433,7 +436,9 @@ def check_gate_iva(results_dir: Path, configs_dir: Path) -> list[dict]:
     checks[-1]["_eligibility_records"] = eligibility_records
 
     # 6. Configs
-    checks.append(_file_exists(configs_dir / "activation_suite.json", "Frozen activation suite config"))
+    checks.append(_file_exists(
+        configs_dir / f"activation_suite{suffix}.json", "Frozen activation suite config"
+    ))
     checks.append(_file_exists(configs_dir / "gamma_matched_controls.json", "Matched controls config"))
 
     return checks
@@ -443,7 +448,7 @@ def check_gate_iva(results_dir: Path, configs_dir: Path) -> list[dict]:
 # IV-B: Translation gate (spec §14)
 # ---------------------------------------------------------------------------
 
-def check_gate_ivb(results_dir: Path, configs_dir: Path) -> list[dict]:
+def check_gate_ivb(results_dir: Path, configs_dir: Path, suffix: str = "") -> list[dict]:
     """Phase IV-B translation gate.
 
     Conditions (from spec §14):
@@ -455,48 +460,67 @@ def check_gate_ivb(results_dir: Path, configs_dir: Path) -> list[dict]:
     6. Translation study config exists.
     """
     checks: list[dict] = []
-    translation_dir = results_dir / "translation"
+    translation_dir = results_dir / f"translation{suffix}"
 
-    # 1. IV-A artifacts still intact
-    checks.append(_file_exists(
-        results_dir / "task_search" / "selected_tasks.json",
-        "IV-A selected tasks (prerequisite)",
-    ))
+    # 1. IV-A artifacts still intact — check both unsuffixed and suffixed selected_tasks
+    selected_tasks_path = results_dir / "task_search" / f"selected_tasks{suffix}.json"
+    fallback_path = results_dir / "task_search" / "selected_tasks.json"
+    prereq_ok = selected_tasks_path.exists() or fallback_path.exists()
+    checks.append(_check(prereq_ok, "IV-A selected tasks (prerequisite)",
+                         str(selected_tasks_path)))
 
-    # 2. Translation results
-    checks.append(_dir_nonempty(translation_dir, "Translation experiment results"))
+    # 2. Translation results — check both the raw dir and aggregated subdir
+    trans_ok = translation_dir.is_dir() and (
+        any(translation_dir.glob("*/*/seed_*")) or
+        (translation_dir / "aggregated").is_dir()
+    )
+    checks.append(_check(trans_ok, "Translation experiment results",
+                         str(translation_dir)))
 
-    # 3. Check for matched comparison artifacts
-    # These would be subdirectories or files within translation/
-    for comparison_type in ["classical_matched", "safe_zero", "safe_nonlinear"]:
-        path = translation_dir / comparison_type
-        # Also check if they're files rather than directories
+    # 3. Check for matched comparison artifacts (classical, safe-zero, safe-nonlinear).
+    # Accept either old layout (classical_matched/ etc.) or new aggregated layout
+    # (aggregated/<task>/classical_*/summary.json).
+    for comparison_type, algo_patterns in [
+        ("classical_matched", ["classical_q", "classical_expected_sarsa", "classical_vi"]),
+        ("safe_zero", ["safe_q_zero", "safe_expected_sarsa_zero", "safe_vi_zero"]),
+        ("safe_nonlinear", ["safe_q_stagewise", "safe_expected_sarsa_stagewise", "safe_vi"]),
+    ]:
+        old_path = translation_dir / comparison_type
         alt_path = translation_dir / f"{comparison_type}.json"
-        exists = path.exists() or alt_path.exists()
-        checks.append(_check(
-            exists,
-            f"Matched comparison: {comparison_type}",
-            f"Checked {path} and {alt_path}",
-        ))
+        agg_path = translation_dir / "aggregated"
+        # New layout: any aggregated summary matching one of the algo_patterns
+        new_layout_ok = agg_path.is_dir() and any(
+            agg_path.glob(f"*/{pat}/summary.json")
+            for pat in algo_patterns
+        )
+        exists = old_path.exists() or alt_path.exists() or new_layout_ok
+        checks.append(_check(exists, f"Matched comparison: {comparison_type}",
+                             f"Checked {old_path}, {alt_path}, or aggregated/{comparison_type} patterns"))
 
-    # 4. Diagnostic sweep
+    # 4. Diagnostic sweep — check both old layout and separate sweep dirs
     sweep_exists = (
         (translation_dir / "diagnostic_sweep").exists()
         or (translation_dir / "diagnostic_sweep.json").exists()
         or any(translation_dir.glob("*sweep*"))
+        or any(results_dir.glob(f"diagnostic_sweep{suffix}*"))
     ) if translation_dir.exists() else False
     checks.append(_check(sweep_exists, "Diagnostic-strength sweep results"))
 
     # 5. Translation analysis
     analysis_exists = (
-        (translation_dir / "translation_analysis.json").exists()
+        (translation_dir / "analysis" / "translation_analysis_summary.json").exists()
+        or (translation_dir / "translation_analysis.json").exists()
         or (translation_dir / "translation_analysis").exists()
         or any(translation_dir.glob("*analysis*"))
     ) if translation_dir.exists() else False
     checks.append(_check(analysis_exists, "Translation analysis pipeline output"))
 
-    # 6. Config
-    checks.append(_file_exists(configs_dir / "translation_study.json", "Translation study config"))
+    # 6. Config — accept translation_study.json or translation_study_4a2.json
+    config_ok = (
+        (configs_dir / "translation_study.json").exists() or
+        (configs_dir / f"translation_study{suffix}.json").exists()
+    )
+    checks.append(_check(config_ok, "Translation study config"))
 
     return checks
 
@@ -594,9 +618,19 @@ def main() -> None:
         default=Path("experiments/weighted_lse_dp/configs/phase4"),
     )
     parser.add_argument("--json", action="store_true", help="Output as JSON")
+    parser.add_argument(
+        "--suffix",
+        default="",
+        help="Artifact namespace suffix (e.g. '_4a2' for Phase IV-A2 artifacts).",
+    )
     args = parser.parse_args()
 
-    checks = GATE_MAP[args.phase](args.results_dir, args.configs_dir)
+    gate_fn = GATE_MAP[args.phase]
+    import inspect
+    if "suffix" in inspect.signature(gate_fn).parameters:
+        checks = gate_fn(args.results_dir, args.configs_dir, suffix=args.suffix)
+    else:
+        checks = gate_fn(args.results_dir, args.configs_dir)
 
     # [INFO] checks are diagnostic and do not contribute to pass/fail.
     def _is_info(c: dict) -> bool:

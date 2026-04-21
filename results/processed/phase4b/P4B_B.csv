@@ -1,0 +1,3 @@
+task,activated,classes_found,mean_abs_natural_shift_nonlinear_gt_zero,mean_abs_delta_effective_discount_nonlinear_gt_zero,mean_abs_target_gap_nonlinear_gt_zero
+dense_chain_cost_0,True,classical|safe-nonlinear|safe-zero,True,True,True
+dense_chain_cost_1,True,classical|safe-nonlinear|safe-zero,True,True,True
