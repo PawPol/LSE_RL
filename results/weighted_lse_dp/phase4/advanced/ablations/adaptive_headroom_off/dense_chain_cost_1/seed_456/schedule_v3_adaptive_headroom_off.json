@@ -297,7 +297,7 @@
   "source_phase": "phase4C_ablation_adaptive_headroom_off",
   "notes": "Phase IV-C ablation: adaptive_headroom_off",
   "provenance": {
-    "git_sha": "01a22b9945b1a74a643b82b1f38fefc5e36ee5f8",
+    "git_sha": "fa077e0a75d850a63da597f54fff569ff627e6ec",
     "calibration_code_version": "v3.0",
     "input_hashes": {
       "margins": "e7d6b71300293fae",

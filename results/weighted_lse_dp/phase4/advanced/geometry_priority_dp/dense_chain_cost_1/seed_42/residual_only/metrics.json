@@ -9,7 +9,7 @@
   "n_backups": 2205,
   "final_residual": 0.0,
   "convergence_sweep_1e-2": 21,
-  "wall_clock_s": 0.02895587499369867,
+  "wall_clock_s": 0.029707541994866915,
   "frac_high_activation_backups": 0.9727891156462585,
   "lambda_geom": 0.0,
   "lambda_u": 0.0,

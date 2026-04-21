@@ -92,9 +92,14 @@ class GeometryPriorityDP:
                 x = beta * xi + np.log(1.0 / self._gamma)
                 rho = 1.0 / (1.0 + np.exp(-x))
             self._rho_t[t] = rho
-            self._geom_gain_t[t] = self._gamma * abs(rho - 1.0 / (1.0 + self._gamma))
+            # spec §5.1: geom_gain = |effective_discount_used - gamma_base|
+            # effective_discount = rho * gamma, so = |rho*gamma - gamma| = gamma*|rho - 1|
+            eff_discount = rho * self._gamma
+            self._geom_gain_t[t] = abs(eff_discount - self._gamma)
             self._u_ref_t[t] = abs(beta * xi)
-            self._kl_t[t] = float(kl_bernoulli(np.array([rho]), q=0.5)[0])
+            # spec §5.1: KL_Bern(rho_used || p0) where p0 = 1/(1+gamma) is the beta=0 prior
+            p0 = 1.0 / (1.0 + self._gamma)
+            self._kl_t[t] = float(kl_bernoulli(np.array([rho]), q=p0)[0])
 
     def _safe_q_batch(self, V_next: np.ndarray, t: int) -> np.ndarray:
         """Compute Q[s,a] = sum_s' P[s,a,s'] * g_t^safe(r[s,a], V_next[s'])."""
@@ -142,14 +147,26 @@ class GeometryPriorityDP:
         tol: float = 1e-6,
         max_sweeps: int = 500,
         top_k_fraction: float = 0.25,
+        log_backups: bool = False,
     ) -> dict[str, Any]:
-        """Run geometry-priority async VI until convergence."""
+        """Run geometry-priority async VI until convergence.
+
+        Parameters
+        ----------
+        log_backups : bool
+            If True, accumulate per-backup records (spec §8.4) in
+            ``result["backup_log"]``. Each record is a dict with keys
+            sweep, rank, stage, state, residual, priority, geom_gain, kl.
+            Disabled by default to avoid memory overhead in sweeps with
+            many (s,t) pairs.
+        """
         t0 = time.perf_counter()
         V = np.zeros((self._T + 1, self._S))
         residual_history = []
         n_backups = 0
         high_act_backups = 0
         convergence_sweep_1e2 = None
+        backup_log: list[dict[str, Any]] = []
 
         for sweep in range(max_sweeps):
             max_residual = 0.0
@@ -167,7 +184,7 @@ class GeometryPriorityDP:
             ts, ss = np.unravel_index(flat_idx, (self._T, self._S))
 
             # Apply updates for top-k (s, t) pairs
-            for t, s in zip(ts, ss):
+            for rank, (t, s) in enumerate(zip(ts, ss)):
                 t_idx = int(t)
                 s_idx = int(s)
                 if t_idx == self._T - 1:
@@ -179,6 +196,17 @@ class GeometryPriorityDP:
                 n_backups += 1
                 if self._u_ref_t[t_idx] >= 5e-3:
                     high_act_backups += 1
+                if log_backups:
+                    backup_log.append({
+                        "sweep": sweep,
+                        "rank": rank,
+                        "stage": t_idx,
+                        "state": s_idx,
+                        "residual": float(all_residuals[t_idx, s_idx]),
+                        "priority": float(priority[t_idx, s_idx]),
+                        "geom_gain": float(self._geom_gain_t[t_idx]),
+                        "kl": float(self._kl_t[t_idx]),
+                    })
 
             residual_history.append(float(max_residual))
             if max_residual < 1e-2 and convergence_sweep_1e2 is None:
@@ -196,7 +224,7 @@ class GeometryPriorityDP:
         elapsed = time.perf_counter() - t0
         frac_high = high_act_backups / max(n_backups, 1)
 
-        return {
+        result: dict[str, Any] = {
             "V": V[:self._T],
             "Q": Q_final,
             "n_sweeps": sweep + 1,
@@ -212,3 +240,6 @@ class GeometryPriorityDP:
             "lambda_u": self._lambda_u,
             "lambda_kl": self._lambda_kl,
         }
+        if log_backups:
+            result["backup_log"] = backup_log
+        return result

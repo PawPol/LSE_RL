@@ -7,6 +7,6 @@
   "seed": 123,
   "train_steps": 20000,
   "n_transitions": 20000,
-  "mean_return": -0.25660563103658307,
-  "final_disc_return_mean": -0.25660563103658296
+  "mean_return": -0.25659808396453226,
+  "final_disc_return_mean": -0.2565553172229116
 }

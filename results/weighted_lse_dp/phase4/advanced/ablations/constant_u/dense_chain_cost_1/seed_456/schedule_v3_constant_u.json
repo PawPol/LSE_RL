@@ -295,9 +295,9 @@
     false
   ],
   "source_phase": "phase4C_ablation_constant_u",
-  "notes": "constant_u ablation: u_const=0.011652",
+  "notes": "constant_u ablation: u_const=0.011652, constant_u_clip_count=0",
   "provenance": {
-    "git_sha": "01a22b9945b1a74a643b82b1f38fefc5e36ee5f8",
+    "git_sha": "fa077e0a75d850a63da597f54fff569ff627e6ec",
     "calibration_code_version": "v3.0",
     "input_hashes": {
       "margins": "e7d6b71300293fae",

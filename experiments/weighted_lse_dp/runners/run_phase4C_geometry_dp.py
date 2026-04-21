@@ -155,7 +155,7 @@ def run_single(
             p=p, r=r_bar, gamma=gamma, horizon=horizon,
             schedule_v3=v3, **lambdas, seed=seed,
         )
-        result = planner.plan(tol=1e-6, max_sweeps=500)
+        result = planner.plan(tol=1e-6, max_sweeps=500, log_backups=True)
 
         metrics = {
             "schema_version": "1.0.0", "phase": "phase4C",
@@ -180,8 +180,18 @@ def run_single(
             "schedule_v3_path": sched_path, "config": cfg,
             "geom_gain_per_stage": result["geom_gain_per_stage"],
             "u_ref_per_stage": result["u_ref_per_stage"],
+            "leakage_limitation": "pilot and train share seed; no cross-fitting (spec §4.5)",
         }
         (run_dir / "run.json").write_text(json.dumps(run_json, indent=2))
+        # Dump per-backup log (spec §8.4) if present
+        backup_log = result.get("backup_log")
+        if backup_log:
+            log_arrays = {
+                k: np.array([rec[k] for rec in backup_log])
+                for k in ("sweep", "rank", "stage", "state",
+                          "residual", "priority", "geom_gain", "kl")
+            }
+            np.savez_compressed(str(run_dir / "backup_log.npz"), **log_arrays)
         return {"task_tag": task_tag, "mode": mode, "seed": seed,
                 "status": "pass", "n_sweeps": result["n_sweeps"],
                 "final_residual": result["final_residual"]}

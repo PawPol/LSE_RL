@@ -5,7 +5,7 @@
   "algorithm": "safe_q_stagewise_ablation_wrong_sign",
   "ablation": "wrong_sign",
   "seed": 123,
-  "elapsed_s": 0.7654417080048006,
+  "elapsed_s": 0.8005538750003325,
   "schedule_v3_path": "results/weighted_lse_dp/phase4/advanced/ablations/wrong_sign/dense_chain_cost_0/seed_123/schedule_v3_wrong_sign.json",
   "config": {
     "family": "dense_chain_cost",
@@ -17,5 +17,6 @@
     "reward_bound": 0.02,
     "micro_reward": true
   },
-  "final_mean_return": -0.25660563103658296
+  "final_mean_return": -0.2565553172229116,
+  "leakage_limitation": "pilot and train share seed; no cross-fitting (spec \u00a74.5)"
 }

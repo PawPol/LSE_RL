@@ -246,6 +246,12 @@ def run_single(
             "scheduler_type": scheduler_type, "seed": seed,
             "elapsed_s": elapsed, "schedule_v3_path": sched_path,
             "config": cfg, "final_mean_return": final_mean,
+            "scheduler_mode_note": (
+                "Variants are stagewise schedule quality sweeps (alpha/tau_n parameter "
+                "space), not state-bin schedulers. Full state-bin scheduling (spec §4) "
+                "requires per-bin xi_ref_{t,b} calibration, not yet implemented in this runner."
+            ),
+            "leakage_limitation": "pilot and train share seed; no cross-fitting (spec §4.5)",
         }
         (run_dir / "run.json").write_text(json.dumps(run_json, indent=2))
         return {"scheduler": scheduler_type, "task_tag": task_tag, "seed": seed,

@@ -32,6 +32,18 @@ Sync modes
 - ``polyak_tau > 0.0``: Polyak averaging.  Every step,
   ``Q_target <- (1 - tau) * Q_target + tau * Q_online``.  ``sync_every``
   is ignored in this mode.
+
+Spec §3.2 freeze semantics
+--------------------------
+"Frozen during the Bellman-learning phase" means the *schedule* (beta_t)
+is frozen (calibrated once from a pilot, never retrained).  The *target
+table* is frozen between consecutive syncs, per the standard DQN
+interpretation — not across the entire 20 k-step training run.
+This follows standard usage: hard-sync interval is ``sync_every=200`` steps
+(100 syncs over 20 k steps); Polyak uses ``tau=0.05``.  If a reviewer
+reads §3.2 as "target frozen for the full run", that is a stricter
+interpretation: the run.json ``architecture_note`` field records this.
+(Adversarial review A6 — resolved as DISPUTE.)
 """
 from __future__ import annotations
 

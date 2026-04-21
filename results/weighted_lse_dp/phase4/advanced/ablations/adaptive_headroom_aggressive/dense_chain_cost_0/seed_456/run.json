@@ -5,7 +5,7 @@
   "algorithm": "safe_q_stagewise_ablation_adaptive_headroom_aggressive",
   "ablation": "adaptive_headroom_aggressive",
   "seed": 456,
-  "elapsed_s": 0.7841757089918246,
+  "elapsed_s": 0.7925929999910295,
   "schedule_v3_path": "results/weighted_lse_dp/phase4/advanced/ablations/adaptive_headroom_aggressive/dense_chain_cost_0/seed_456/schedule_v3_adaptive_headroom_aggressive.json",
   "config": {
     "family": "dense_chain_cost",
@@ -17,5 +17,6 @@
     "reward_bound": 0.02,
     "micro_reward": true
   },
-  "final_mean_return": -0.25660563103658296
+  "final_mean_return": -0.25660563103658296,
+  "leakage_limitation": "pilot and train share seed; no cross-fitting (spec \u00a74.5)"
 }

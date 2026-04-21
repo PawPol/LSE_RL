@@ -360,6 +360,9 @@ def run_single(
             "task": task_tag, "algorithm": algorithm, "seed": seed,
             "elapsed_s": elapsed, "schedule_v3_path": sched_path, "config": cfg,
             "final_mean_return": final_mean,
+            "leakage_limitation": "pilot and train share seed; no cross-fitting (spec §4.5)",
+            "architecture_note": ("hand-rolled training loop — not comparable to MushroomRL Core "
+                                  "baseline for architecture-isolated attribution (spec §A2)"),
         }
         (run_dir / "run.json").write_text(json.dumps(run_json, indent=2))
         np.save(str(run_dir / "eval_returns.npy"), np.array(eval_returns))

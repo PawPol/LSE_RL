@@ -125,10 +125,11 @@ def _build_ablated_schedule(
     constant_u = overrides.pop("_constant_u", False)
 
     base_sign = int(get_task_sign(cfg.get("family", "unknown")))
-    sign_family = -base_sign if flip_sign else base_sign
-
+    # wrong_sign isolation: pilot always runs with correct base_sign so that
+    # p_align_t, informativeness_t, and alpha_t are not co-mutated.
+    # Only beta_used_t is negated post-hoc (see below).
     pilot = run_classical_pilot(cfg=cfg, seed=seed, n_episodes=n_pilot_episodes,
-                                sign_family=sign_family)
+                                sign_family=base_sign)
     r_max = float(cfg.get("reward_bound", pilot.get("reward_bound", 1.0)))
     gamma_base = float(gamma)
 
@@ -140,20 +141,43 @@ def _build_ablated_schedule(
         gamma_base=gamma_base,
         gamma_eval=gamma_base,
         task_family=str(cfg.get("family", "unknown")),
-        sign_family=sign_family,
+        sign_family=base_sign,
         source_phase=f"phase4C_ablation_{ablation}",
         notes=f"Phase IV-C ablation: {ablation}",
         output_path=schedule_v3_path,
         **{k: v for k, v in v3_kwargs.items()},
     )
 
+    if flip_sign:
+        # Negate beta_used_t post-hoc: only the operator sign is flipped,
+        # all diagnostics (p_align_t, informativeness_t, alpha_t) remain intact.
+        v3["beta_used_t"] = [-b for b in v3["beta_used_t"]]
+        v3["sign_family"] = -base_sign
+        v3["notes"] = v3.get("notes", "") + " [wrong_sign: beta negated post-hoc, pilot unchanged]"
+        with open(schedule_v3_path, "w") as f:
+            json.dump(v3, f, indent=2)
+
     if constant_u:
         beta_arr = np.asarray(v3["beta_used_t"], dtype=np.float64)
         xi_arr = np.asarray(v3.get("xi_ref_t", np.ones(len(beta_arr))), dtype=np.float64)
         u_mean = float(np.mean(np.abs(beta_arr * xi_arr)))
         xi_safe = np.where(xi_arr > 1e-9, xi_arr, 1.0)
-        v3["beta_used_t"] = (u_mean / xi_safe).tolist()
-        v3["notes"] = f"constant_u ablation: u_const={u_mean:.6f}"
+        beta_const = u_mean / xi_safe
+        # Check for cap violations before wrapping
+        beta_cap_arr = np.asarray(v3.get("beta_cap_t", np.full(len(beta_arr), np.inf)))
+        clip_mask = np.abs(beta_const) > np.abs(beta_cap_arr)
+        constant_u_clip_count = int(np.sum(clip_mask))
+        if constant_u_clip_count > 0:
+            import warnings
+            warnings.warn(
+                f"constant_u ablation: {constant_u_clip_count}/{len(beta_const)} stages "
+                f"will be clipped by beta_cap_t after wrapping. "
+                f"The resulting schedule is NOT constant-u at those stages.",
+                stacklevel=2,
+            )
+        v3["beta_used_t"] = beta_const.tolist()
+        v3["notes"] = (f"constant_u ablation: u_const={u_mean:.6f}, "
+                       f"constant_u_clip_count={constant_u_clip_count}")
         with open(schedule_v3_path, "w") as f:
             json.dump(v3, f, indent=2)
 
@@ -256,7 +280,7 @@ def run_single(
         mdp_eval = _copy.deepcopy(mdp_rl)
         gamma = float(cfg.get("gamma", 0.95))
         horizon = int(cfg.get("horizon", 20))
-        n_base = horizon + 1
+        n_base = mdp_rl.info.observation_space.n // horizon
 
         schedule, sched_path = _build_ablated_schedule(
             cfg=cfg, seed=seed, n_pilot_episodes=n_pilot_episodes,
@@ -293,6 +317,7 @@ def run_single(
             "algorithm": f"safe_q_stagewise_ablation_{ablation}", "ablation": ablation,
             "seed": seed, "elapsed_s": elapsed, "schedule_v3_path": sched_path,
             "config": cfg, "final_mean_return": final_mean,
+            "leakage_limitation": "pilot and train share seed; no cross-fitting (spec §4.5)",
         }
         (run_dir / "run.json").write_text(json.dumps(run_json, indent=2))
         return {"ablation": ablation, "task_tag": task_tag, "seed": seed,
