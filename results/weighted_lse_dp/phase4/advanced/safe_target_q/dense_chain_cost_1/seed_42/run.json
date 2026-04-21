@@ -4,7 +4,7 @@
   "task": "dense_chain_cost_1",
   "algorithm": "safe_target_q",
   "seed": 42,
-  "elapsed_s": 0.6123270000098273,
+  "elapsed_s": 0.6247045420022914,
   "schedule_v3_path": "results/weighted_lse_dp/phase4/advanced/safe_target_q/dense_chain_cost_1/seed_42/schedule_v3.json",
   "config": {
     "family": "dense_chain_cost",
@@ -16,5 +16,7 @@
     "reward_bound": 0.05,
     "micro_reward": true
   },
-  "final_mean_return": -0.6415140775914574
+  "final_mean_return": -0.6415140775914574,
+  "leakage_limitation": "pilot and train share seed; no cross-fitting (spec \u00a74.5)",
+  "architecture_note": "hand-rolled training loop \u2014 not comparable to MushroomRL Core baseline for architecture-isolated attribution (spec \u00a7A2)"
 }

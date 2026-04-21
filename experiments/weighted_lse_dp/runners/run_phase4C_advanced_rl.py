@@ -66,6 +66,7 @@ from experiments.weighted_lse_dp.tasks.phase4_operator_suite import (  # noqa: E
 __all__ = ["main", "run_single", "build_plan"]
 
 ALL_ALGORITHMS: tuple[str, ...] = (
+    "safe_q_single_table",      # architectural control: 1 table, same loop
     "safe_double_q",
     "safe_target_q",
     "safe_target_q_polyak",
@@ -119,11 +120,17 @@ def _make_agent(
 ) -> Any:
     from lse_rl.algorithms import (
         SafeDoubleQLearning,
+        SafeSingleQLearning,
         SafeTargetExpectedSARSA,
         SafeTargetQLearning,
     )
 
-    if algorithm == "safe_double_q":
+    if algorithm == "safe_q_single_table":
+        return SafeSingleQLearning(
+            n_states=n_states, n_actions=n_actions, schedule=schedule,
+            learning_rate=_LR, gamma=gamma, seed=seed,
+        )
+    elif algorithm == "safe_double_q":
         return SafeDoubleQLearning(
             n_states=n_states, n_actions=n_actions, schedule=schedule,
             learning_rate=_LR, gamma=gamma, seed=seed,
@@ -333,18 +340,59 @@ def run_single(
         final_mean = (float(np.mean(eval_returns[-3:]))
                       if len(eval_returns) >= 3 else float(eval_returns[-1]))
 
-        # Aggregate estimator-specific diagnostics
+        # Aggregate estimator-specific diagnostics (mean + variance + percentiles)
         diag_keys = {
-            "safe_double_q": ["double_gap", "natural_shift_double", "beta_used"],
-            "safe_target_q": ["q_target_gap", "beta_used"],
-            "safe_target_q_polyak": ["q_target_gap", "beta_used"],
-            "safe_target_expected_sarsa": ["q_target_gap", "beta_used"],
+            "safe_q_single_table": ["td_error", "natural_shift", "beta_used",
+                                    "rho", "effective_discount"],
+            "safe_double_q": ["double_gap", "natural_shift_double", "beta_used",
+                              "rho", "effective_discount"],
+            "safe_target_q": ["q_target_gap", "beta_used", "rho", "effective_discount"],
+            "safe_target_q_polyak": ["q_target_gap", "beta_used", "rho", "effective_discount"],
+            "safe_target_expected_sarsa": ["q_target_gap", "beta_used",
+                                           "rho", "effective_discount"],
         }
         diag: dict[str, float] = {}
         for key in diag_keys.get(algorithm, ["beta_used"]):
-            vals = [log[key] for log in all_logs if key in log]
-            if vals:
+            vals = np.array([log[key] for log in all_logs if key in log],
+                            dtype=np.float64)
+            if len(vals):
                 diag[f"mean_{key}"] = float(np.mean(vals))
+                diag[f"std_{key}"] = float(np.std(vals))
+                diag[f"p5_{key}"] = float(np.percentile(vals, 5))
+                diag[f"p95_{key}"] = float(np.percentile(vals, 95))
+
+        # Stage-wise breakdown of beta_used and natural_shift
+        stage_diag: dict[str, list[float]] = {}
+        T = agent.T
+        stage_keys = (diag_keys.get(algorithm, ["beta_used"])
+                      + (["natural_shift"] if algorithm == "safe_q_single_table"
+                         else ["natural_shift_double"] if algorithm == "safe_double_q"
+                         else []))
+        for key in stage_keys:
+            by_stage: dict[int, list[float]] = {t: [] for t in range(T)}
+            for log in all_logs:
+                if key in log and "stage" in log:
+                    t = int(log["stage"])
+                    if 0 <= t < T:
+                        by_stage[t].append(float(log[key]))
+            stage_diag[f"stage_mean_{key}"] = [
+                float(np.mean(by_stage[t])) if by_stage[t] else 0.0
+                for t in range(T)
+            ]
+            stage_diag[f"stage_std_{key}"] = [
+                float(np.std(by_stage[t])) if by_stage[t] else 0.0
+                for t in range(T)
+            ]
+
+        # Dump per-step diagnostic fields to transitions.npz (spec §A12/A13)
+        dump_keys = diag_keys.get(algorithm, ["beta_used"]) + ["stage"]
+        trans_arrays: dict[str, np.ndarray] = {}
+        for key in dump_keys:
+            arr = [log[key] for log in all_logs if key in log]
+            if arr:
+                trans_arrays[key] = np.array(arr)
+        if trans_arrays:
+            np.savez_compressed(str(run_dir / "transitions.npz"), **trans_arrays)
 
         metrics = {
             "schema_version": "1.0.0", "phase": "phase4C",
@@ -353,6 +401,7 @@ def run_single(
             "mean_return": float(np.mean(eval_returns)),
             "final_disc_return_mean": final_mean,
             **diag,
+            **stage_diag,
         }
         (run_dir / "metrics.json").write_text(json.dumps(metrics, indent=2))
         run_json = {
@@ -432,7 +481,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--config", type=Path,
                    default=Path("experiments/weighted_lse_dp/configs/phase4/advanced_estimators.json"))
     p.add_argument("--algorithm", default="all",
-                   choices=list(ALL_ALGORITHMS) + ["all"])
+                   choices=list(ALL_ALGORITHMS) + ["all"],
+                   help="Algorithm to run; 'safe_q_single_table' is the architectural control.")
     p.add_argument("--task", default="all")
     p.add_argument("--seed", type=int, default=None)
     p.add_argument("--out-root", type=Path, default=Path("results/weighted_lse_dp"))
