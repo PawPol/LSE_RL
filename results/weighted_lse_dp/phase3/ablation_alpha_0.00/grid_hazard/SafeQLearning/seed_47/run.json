@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T19:46:48Z",
+  "created_at": "2026-04-19T04:03:06Z",
   "phase": "phase3",
   "task": "grid_hazard",
   "algorithm": "SafeQLearning",
   "seed": 47,
-  "git_sha": "cc9414297e4e83c37b87f14e19791f2f5079e96e",
+  "git_sha": "04ae83ce0ad58e01ae067f48c8d6b1da9f9e8ac7",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "task": "grid_hazard",
@@ -97,13 +97,13 @@
       "schedule_file": "results/weighted_lse_dp/phase3/calibration/grid_hazard/alpha_0.00.json"
     },
     "tail_risk_metrics": {
-      "return_q05": 0.8093230042871478,
+      "return_q05": 0.8016305895390459,
       "return_q25": 0.8261686238355866,
       "return_q50": 0.8261686238355866,
       "return_q75": 0.8345137614500875,
       "return_q95": 0.8345137614500875,
-      "cvar_5pct": 0.7814017637624346,
-      "cvar_10pct": 0.7955648159918465,
+      "cvar_5pct": 0.760680521649118,
+      "cvar_10pct": 0.7827750113305244,
       "top5pct_mean": 0.8345137614500875,
       "top10pct_mean": 0.8345137614500875,
       "event_rate": 0.0,

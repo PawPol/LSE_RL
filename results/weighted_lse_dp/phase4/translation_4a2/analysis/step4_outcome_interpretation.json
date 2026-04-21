@@ -1,0 +1,20 @@
+{
+  "dense_chain_cost_0": {
+    "tag": "dense_chain_cost_0",
+    "family_type": "dense_chain_cost",
+    "primary_metric": "mean_return",
+    "secondary_metrics": [
+      "final_disc_return_mean",
+      "steps_to_threshold"
+    ]
+  },
+  "dense_chain_cost_1": {
+    "tag": "dense_chain_cost_1",
+    "family_type": "dense_chain_cost",
+    "primary_metric": "mean_return",
+    "secondary_metrics": [
+      "final_disc_return_mean",
+      "steps_to_threshold"
+    ]
+  }
+}

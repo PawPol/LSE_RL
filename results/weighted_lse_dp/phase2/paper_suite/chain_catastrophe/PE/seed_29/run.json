@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-20T12:05:58Z",
+  "phase": "phase2",
+  "task": "chain_catastrophe",
+  "algorithm": "PE",
+  "seed": 29,
+  "git_sha": "01a22b9945b1a74a643b82b1f38fefc5e36ee5f8",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "task": "chain_catastrophe",
+    "state_n": 25,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 60,
+    "risky_state": 15,
+    "risky_prob": 0.05,
+    "catastrophe_reward": -10.0,
+    "shortcut_prob": 0.9,
+    "shortcut_jump": 5,
+    "train_steps": 120000,
+    "checkpoint_every": 4000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 500,
+    "success_threshold": 0.8,
+    "dp_algorithms": [
+      "PE",
+      "VI",
+      "PI",
+      "MPI",
+      "AsyncVI"
+    ],
+    "rl_algorithms": [
+      "QLearning",
+      "ExpectedSARSA"
+    ],
+    "ref_policy": "always_right",
+    "severity": "catastrophe",
+    "stress_type": "catastrophe",
+    "suite_config_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/weighted_lse_dp/configs/phase2/paper_suite.json"
+  },
+  "suite": "paper_suite",
+  "storage_mode": "dp_stagewise"
+}

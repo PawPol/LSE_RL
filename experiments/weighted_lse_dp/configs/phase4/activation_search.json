@@ -1,0 +1,23 @@
+{
+  "_description": "Phase IV-A: activation-search grid. Candidate task families with operator-sensitive parameters.",
+  "phase": "IV-A",
+  "candidate_families": [],
+  "search_parameters": {
+    "horizon_range": [],
+    "reward_scale_range": [],
+    "gamma_base_range": [],
+    "sparsity_range": []
+  },
+  "scoring": {
+    "metrics": [
+      "mean_abs_u",
+      "frac_active",
+      "effective_discount_range",
+      "target_gap_range"
+    ]
+  },
+  "selection_criteria": {
+    "min_mean_abs_u": 5e-3,
+    "min_frac_active": 0.1
+  }
+}

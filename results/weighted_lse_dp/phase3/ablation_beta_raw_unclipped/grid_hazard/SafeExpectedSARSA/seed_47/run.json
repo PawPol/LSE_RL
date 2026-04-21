@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T19:39:22Z",
+  "created_at": "2026-04-19T05:02:41Z",
   "phase": "phase3",
   "task": "grid_hazard",
   "algorithm": "SafeExpectedSARSA",
   "seed": 47,
-  "git_sha": "cc9414297e4e83c37b87f14e19791f2f5079e96e",
+  "git_sha": "209303bcbf621d95a65493ae456d72b00dcddaeb",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "task": "grid_hazard",
@@ -97,15 +97,15 @@
       "schedule_file": "results/weighted_lse_dp/phase3/calibration/grid_hazard/beta_raw_unclipped.json"
     },
     "tail_risk_metrics": {
-      "return_q05": 0.8775210229989678,
-      "return_q25": 0.8953382542587164,
-      "return_q50": 0.8953382542587164,
-      "return_q75": 0.9043820750088044,
-      "return_q95": 0.9043820750088044,
-      "cvar_5pct": 0.849892166009804,
-      "cvar_10pct": 0.8677839649142801,
-      "top5pct_mean": 0.9043820750088044,
-      "top10pct_mean": 0.9043820750088044,
+      "return_q05": 0.7936142836436554,
+      "return_q25": 0.8261686238355866,
+      "return_q50": 0.8429431933839268,
+      "return_q75": 0.8514577710948755,
+      "return_q95": 0.8514577710948755,
+      "cvar_5pct": 0.7791194948504571,
+      "cvar_10pct": 0.7894130854873046,
+      "top5pct_mean": 0.8514577710948755,
+      "top10pct_mean": 0.8514577710948756,
       "event_rate": 0.0,
       "event_conditioned_return": NaN
     }

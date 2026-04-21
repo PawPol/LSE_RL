@@ -93,8 +93,8 @@
     "return_q95": 0.0,
     "cvar_5pct": 0.0,
     "cvar_10pct": 0.0,
-    "top5pct_mean": 0.022107339086495405,
-    "top10pct_mean": 0.011053669543247702,
+    "top5pct_mean": 0.0,
+    "top10pct_mean": 0.0,
     "event_rate": 0.0,
     "event_conditioned_return": NaN
   }

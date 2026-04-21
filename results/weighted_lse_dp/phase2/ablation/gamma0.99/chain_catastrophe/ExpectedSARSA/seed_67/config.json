@@ -1,0 +1,90 @@
+{
+  "task": "chain_catastrophe",
+  "algorithm": "ExpectedSARSA",
+  "seed": 67,
+  "gamma": 0.99,
+  "horizon": 60,
+  "n_base": 26,
+  "train_steps": 120000,
+  "checkpoint_every": 4000,
+  "eval_episodes_checkpoint": 50,
+  "success_threshold": 0.8,
+  "epsilon": 0.1,
+  "learning_rate": 0.1,
+  "stress_type": "catastrophe",
+  "task_config": {
+    "state_n": 25,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 60,
+    "risky_state": 15,
+    "risky_prob": 0.05,
+    "shortcut_jump": 5,
+    "catastrophe_reward": -10.0,
+    "train_steps": 120000,
+    "checkpoint_every": 4000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 500,
+    "success_threshold": 0.8,
+    "dp_algorithms": [
+      "PE",
+      "VI",
+      "PI",
+      "MPI",
+      "AsyncVI"
+    ],
+    "rl_algorithms": [
+      "QLearning",
+      "ExpectedSARSA"
+    ],
+    "ref_policy": "always_right",
+    "severity": "catastrophe",
+    "stress_type": "catastrophe",
+    "gamma_prime_override": 0.99
+  },
+  "factory_config": {
+    "task": "chain_catastrophe",
+    "state_n": 25,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 60,
+    "risky_state": 15,
+    "risky_prob": 0.05,
+    "catastrophe_reward": -10.0,
+    "shortcut_prob": 0.9,
+    "shortcut_jump": 5,
+    "train_steps": 120000,
+    "checkpoint_every": 4000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 500,
+    "success_threshold": 0.8,
+    "dp_algorithms": [
+      "PE",
+      "VI",
+      "PI",
+      "MPI",
+      "AsyncVI"
+    ],
+    "rl_algorithms": [
+      "QLearning",
+      "ExpectedSARSA"
+    ],
+    "ref_policy": "always_right",
+    "severity": "catastrophe",
+    "stress_type": "catastrophe",
+    "gamma_prime_override": 0.99
+  },
+  "tail_risk_metrics": {
+    "return_q05": 0.0,
+    "return_q25": 0.0,
+    "return_q50": 0.0,
+    "return_q75": 0.0,
+    "return_q95": 0.0,
+    "cvar_5pct": 0.0,
+    "cvar_10pct": 0.0,
+    "top5pct_mean": 0.0,
+    "top10pct_mean": 0.0,
+    "event_rate": 0.0,
+    "event_conditioned_return": NaN
+  }
+}

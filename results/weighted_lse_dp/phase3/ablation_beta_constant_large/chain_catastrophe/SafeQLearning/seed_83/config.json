@@ -88,14 +88,14 @@
   "tail_risk_metrics": {
     "return_q05": 0.0,
     "return_q25": 0.0,
-    "return_q50": 0.0,
+    "return_q50": 0.5639051904523875,
     "return_q75": 1.1165886676147725,
     "return_q95": 1.1278673410250228,
-    "cvar_5pct": -3.8050669083807582,
-    "cvar_10pct": -1.9025334541903791,
-    "top5pct_mean": 1.688606253977501,
-    "top10pct_mean": 1.4048622635293304,
+    "cvar_5pct": -3.8881594211129684,
+    "cvar_10pct": -1.9440797105564842,
+    "top5pct_mean": 1.3769345177326744,
+    "top10pct_mean": 1.2524009293788487,
     "event_rate": 0.032,
-    "event_conditioned_return": -5.945417044344936
+    "event_conditioned_return": -6.0752490954890135
   }
 }

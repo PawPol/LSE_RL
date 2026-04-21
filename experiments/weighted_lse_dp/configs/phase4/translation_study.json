@@ -1,0 +1,28 @@
+{
+  "_description": "Phase IV-B: translation experiment matrix. Tests whether certified activation translates into outcome improvements.",
+  "phase": "IV-B",
+  "activation_suite_ref": "phase4/activation_suite.json",
+  "algorithms": {
+    "rl": [
+      "classical_q",
+      "classical_expected_sarsa",
+      "safe_q_stagewise",
+      "safe_expected_sarsa_stagewise"
+    ],
+    "dp": [
+      "classical_sync_vi",
+      "classical_async_vi",
+      "safe_sync_vi",
+      "safe_async_vi"
+    ]
+  },
+  "outcome_metrics": [
+    "tail_risk_cvar",
+    "adaptation_lag",
+    "sample_efficiency",
+    "planning_speed",
+    "estimator_stability"
+  ],
+  "seeds": [42, 123, 456, 789, 1024],
+  "min_seeds_per_family": 5
+}

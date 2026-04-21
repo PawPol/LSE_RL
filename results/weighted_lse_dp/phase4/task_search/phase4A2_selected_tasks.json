@@ -1,0 +1,41 @@
+{
+  "schema_version": "phase4A2.selected_tasks.v1",
+  "seed": 42,
+  "n_pilot_episodes": 1000,
+  "n_replay_episodes": 1000,
+  "gate_policy": "option_c",
+  "notes": "Phase IV-A2 mainline: micro-reward best candidate. All three Option C gates pass (GATE 1: mean_abs_u_pred=0.01652 >= 5e-3; GATE 2a: mean=0.006348, median=0.006708 informative |u_replay| >= 5e-3; GATE 2b: frac_informative=0.8807 >= 0.10).",
+  "tasks": [
+    {
+      "family": "dense_chain_cost",
+      "cfg": {
+        "family": "dense_chain_cost",
+        "n_states": 20,
+        "step_reward": -0.02,
+        "terminal_reward": 0.0,
+        "horizon": 20,
+        "gamma": 0.95,
+        "reward_bound": 0.02
+      },
+      "meta": {
+        "micro_reward": true,
+        "candidate_idx": 0
+      },
+      "gates": {
+        "gate1_mean_abs_u_pred": 0.016524553298950195,
+        "gate2a_mean_abs_u_replay_informative": 0.0063475197377248225,
+        "gate2a_median_abs_u_replay_informative": 0.006708002502338146,
+        "gate2b_frac_informative_transitions": 0.88065,
+        "all_gates_pass": true
+      },
+      "scoring": {
+        "total_score": 9.774408705405346,
+        "mean_abs_u_pred": 0.016524553298950195,
+        "frac_u_ge_5e3": 1.0,
+        "informative_stage_frac": 1.0,
+        "mean_abs_delta_d_pred": 0.00805042340205266
+      },
+      "replay_summary_path": "results/weighted_lse_dp/phase4/counterfactual_replay_4a2/dense_chain_cost_0/replay_summary.json"
+    }
+  ]
+}

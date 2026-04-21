@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "phase4C",
+  "task": "dense_chain_cost_1",
+  "algorithm": "safe_q_stagewise_ablation_constant_u",
+  "ablation": "constant_u",
+  "seed": 42,
+  "elapsed_s": 0.7890576249919832,
+  "schedule_v3_path": "results/weighted_lse_dp/phase4/advanced/ablations/constant_u/dense_chain_cost_1/seed_42/schedule_v3_constant_u.json",
+  "config": {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.05,
+    "terminal_reward": 0.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 0.05,
+    "micro_reward": true
+  },
+  "final_mean_return": -0.6415140775914574,
+  "leakage_limitation": "pilot and train share seed; no cross-fitting (spec \u00a74.5)"
+}

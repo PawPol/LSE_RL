@@ -1,0 +1,190 @@
+{
+  "n_total": 80,
+  "n_pass_gate1": 0,
+  "n_ratio_ge_0p25": 0,
+  "per_family": {
+    "dense_chain_cost": {
+      "n": 20,
+      "u_min": 0.0006527900695800781,
+      "u_mean": 0.001010574336113286,
+      "u_max": 0.0014653143039847466,
+      "A_mean": 28.117381857358236,
+      "ratio_mean": 0.02874546868391667,
+      "ratio_max": 0.04068284621700472,
+      "frac_ge5e3_mean": 0.07285714285714287,
+      "info_frac_mean": 0.19428571428571426
+    },
+    "dense_grid_hazard": {
+      "n": 20,
+      "u_min": 0.0018559058086315256,
+      "u_mean": 0.0021380421272516595,
+      "u_max": 0.002215902477614271,
+      "A_mean": 39.17131330492435,
+      "ratio_mean": 0.01797706058025704,
+      "ratio_max": 0.02158630538318154,
+      "frac_ge5e3_mean": 0.16499999999999998,
+      "info_frac_mean": 0.4499999999999999
+    },
+    "shaped_chain": {
+      "n": 20,
+      "u_min": 0.0,
+      "u_mean": 0.00041999547310734594,
+      "u_max": 0.0013045725480844196,
+      "A_mean": 23.606956853238543,
+      "ratio_mean": 0.0525846296859502,
+      "ratio_max": 0.09356293291523225,
+      "frac_ge5e3_mean": 0.03535714285714286,
+      "info_frac_mean": 0.0692857142857143
+    },
+    "two_path_chain": {
+      "n": 20,
+      "u_min": 0.0009248256683349609,
+      "u_mean": 0.0009865835014630686,
+      "u_max": 0.0015347932262757718,
+      "A_mean": 20.687627124435913,
+      "ratio_mean": 0.07611717728517292,
+      "ratio_max": 0.12173039335579033,
+      "frac_ge5e3_mean": 0.10346153846153847,
+      "info_frac_mean": 0.1130769230769231
+    }
+  },
+  "top5_by_ratio": [
+    {
+      "idx": 53,
+      "family": "two_path_chain",
+      "horizon": 20,
+      "gamma": 0.97,
+      "reward_bound": 1.1,
+      "mean_margin_abs_mean": 2.2811585385853936,
+      "mean_margin_abs_median": 2.251557858625289,
+      "mean_margin_sq": 5.7302546467756725,
+      "mean_A_t": 18.739432903318438,
+      "ratio_margin_over_A": 0.12173039335579033,
+      "mean_abs_u_pred": 0.0009267330169677734,
+      "error": ""
+    },
+    {
+      "idx": 52,
+      "family": "two_path_chain",
+      "horizon": 20,
+      "gamma": 0.95,
+      "reward_bound": 1.1,
+      "mean_margin_abs_mean": 1.9773116727848907,
+      "mean_margin_abs_median": 1.9694856613233522,
+      "mean_margin_sq": 4.258654152652587,
+      "mean_A_t": 16.94360348633773,
+      "ratio_margin_over_A": 0.11669959547738899,
+      "mean_abs_u_pred": 0.0009267330169677734,
+      "error": ""
+    },
+    {
+      "idx": 58,
+      "family": "two_path_chain",
+      "horizon": 20,
+      "gamma": 0.97,
+      "reward_bound": 1.6,
+      "mean_margin_abs_mean": 3.0381467990409248,
+      "mean_margin_abs_median": 2.975629506723801,
+      "mean_margin_sq": 10.454592065604551,
+      "mean_A_t": 27.25735695028136,
+      "ratio_margin_over_A": 0.11146153328742184,
+      "mean_abs_u_pred": 0.0009267330169677734,
+      "error": ""
+    },
+    {
+      "idx": 57,
+      "family": "two_path_chain",
+      "horizon": 20,
+      "gamma": 0.95,
+      "reward_bound": 1.6,
+      "mean_margin_abs_mean": 2.6366435887170763,
+      "mean_margin_abs_median": 2.6028356512141393,
+      "mean_margin_sq": 7.782817940995686,
+      "mean_A_t": 24.64524143467306,
+      "ratio_margin_over_A": 0.10698388148097497,
+      "mean_abs_u_pred": 0.0009267330169677734,
+      "error": ""
+    },
+    {
+      "idx": 51,
+      "family": "two_path_chain",
+      "horizon": 20,
+      "gamma": 0.97,
+      "reward_bound": 1.1,
+      "mean_margin_abs_mean": 1.7764996982817067,
+      "mean_margin_abs_median": 1.7688434265596142,
+      "mean_margin_sq": 3.3838011149335356,
+      "mean_A_t": 18.739432903318438,
+      "ratio_margin_over_A": 0.09480007785972641,
+      "mean_abs_u_pred": 0.0009267330169677734,
+      "error": ""
+    }
+  ],
+  "top5_by_mean_abs_u": [
+    {
+      "idx": 64,
+      "family": "dense_grid_hazard",
+      "total_score": 2.9082347672120945,
+      "mean_abs_u_pred": 0.002215902477614271,
+      "frac_u_ge_5e3": 0.2,
+      "informative_stage_frac": 0.45,
+      "mean_abs_delta_d_pred": 0.0010795422326838756,
+      "reward_bound": 3.0,
+      "horizon": 20,
+      "gamma": 0.95,
+      "error": ""
+    },
+    {
+      "idx": 72,
+      "family": "dense_grid_hazard",
+      "total_score": 2.90954004431409,
+      "mean_abs_u_pred": 0.002215902477614271,
+      "frac_u_ge_5e3": 0.2,
+      "informative_stage_frac": 0.45,
+      "mean_abs_delta_d_pred": 0.0010795422326838756,
+      "reward_bound": 3.0,
+      "horizon": 20,
+      "gamma": 0.95,
+      "error": ""
+    },
+    {
+      "idx": 63,
+      "family": "dense_grid_hazard",
+      "total_score": 3.0289092776581708,
+      "mean_abs_u_pred": 0.0022154300998577523,
+      "frac_u_ge_5e3": 0.2,
+      "informative_stage_frac": 0.45,
+      "mean_abs_delta_d_pred": 0.0010793120999306996,
+      "reward_bound": 2.5,
+      "horizon": 20,
+      "gamma": 0.95,
+      "error": ""
+    },
+    {
+      "idx": 69,
+      "family": "dense_grid_hazard",
+      "total_score": 3.0300052123104715,
+      "mean_abs_u_pred": 0.0022154300998577523,
+      "frac_u_ge_5e3": 0.2,
+      "informative_stage_frac": 0.45,
+      "mean_abs_delta_d_pred": 0.0010793120999306996,
+      "reward_bound": 2.5,
+      "horizon": 20,
+      "gamma": 0.95,
+      "error": ""
+    },
+    {
+      "idx": 62,
+      "family": "dense_grid_hazard",
+      "total_score": 3.2354306790681413,
+      "mean_abs_u_pred": 0.0022149577179000884,
+      "frac_u_ge_5e3": 0.2,
+      "informative_stage_frac": 0.45,
+      "mean_abs_delta_d_pred": 0.0010790819651308123,
+      "reward_bound": 2.0,
+      "horizon": 20,
+      "gamma": 0.95,
+      "error": ""
+    }
+  ]
+}

@@ -1,0 +1,178 @@
+{
+  "generated_at": "2026-04-21T02:38:43Z",
+  "gate_version": "option_c_v1",
+  "thresholds": {
+    "mean_abs_u": 0.005,
+    "frac_informative_u_ge_5e3": 0.1
+  },
+  "families": [
+    {
+      "family": "chain_catastrophe",
+      "design_point": {
+        "mean_abs_u_pred": 0.00218146,
+        "gate_pass": false
+      },
+      "informative_replay": {
+        "mean_abs_u": 0.0,
+        "median_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_informative": 0,
+        "frac_informative": 0.0,
+        "gate_pass_mean_or_median": false,
+        "gate_pass_frac": false
+      },
+      "topquartile_replay": {
+        "mean_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_topquartile": 0
+      },
+      "global_replay": {
+        "mean_abs_u": 0.0,
+        "is_dilution_only": true
+      },
+      "iv_b_eligible": false,
+      "eligibility_reason": "no replay entry for this family",
+      "tag": ""
+    },
+    {
+      "family": "chain_jackpot",
+      "design_point": {
+        "mean_abs_u_pred": 0.00174504,
+        "gate_pass": false
+      },
+      "informative_replay": {
+        "mean_abs_u": 0.0,
+        "median_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_informative": 0,
+        "frac_informative": 0.0,
+        "gate_pass_mean_or_median": false,
+        "gate_pass_frac": false
+      },
+      "topquartile_replay": {
+        "mean_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_topquartile": 0
+      },
+      "global_replay": {
+        "mean_abs_u": 0.0,
+        "is_dilution_only": true
+      },
+      "iv_b_eligible": false,
+      "eligibility_reason": "no replay entry for this family",
+      "tag": ""
+    },
+    {
+      "family": "chain_sparse_credit",
+      "design_point": {
+        "mean_abs_u_pred": 0.00561564,
+        "gate_pass": true
+      },
+      "informative_replay": {
+        "mean_abs_u": 0.00036816303174877057,
+        "median_abs_u": 0.00010373986836549552,
+        "frac_u_ge_5e3": 0.026570359860699083,
+        "n_informative": 7753,
+        "frac_informative": 0.38765,
+        "gate_pass_mean_or_median": false,
+        "gate_pass_frac": false
+      },
+      "topquartile_replay": {
+        "mean_abs_u": 0.004954295684610353,
+        "frac_u_ge_5e3": 0.5020937188434695,
+        "n_topquartile": 5015
+      },
+      "global_replay": {
+        "mean_abs_u": 0.0023336381509280867,
+        "is_dilution_only": true
+      },
+      "iv_b_eligible": false,
+      "eligibility_reason": "informative mean=0.000368 median=0.000104 both < 5e-03; informative frac(|u|>=5e-03)=0.0266 < 0.10",
+      "tag": "chain_sparse_credit_0"
+    },
+    {
+      "family": "grid_hazard",
+      "design_point": {
+        "mean_abs_u_pred": 0.00076454,
+        "gate_pass": false
+      },
+      "informative_replay": {
+        "mean_abs_u": 0.0014599628890398493,
+        "median_abs_u": 0.001331474686255856,
+        "frac_u_ge_5e3": 0.0,
+        "n_informative": 157,
+        "frac_informative": 0.015897124341838802,
+        "gate_pass_mean_or_median": false,
+        "gate_pass_frac": false
+      },
+      "topquartile_replay": {
+        "mean_abs_u": 0.0009815133606035976,
+        "frac_u_ge_5e3": 0.0,
+        "n_topquartile": 2654
+      },
+      "global_replay": {
+        "mean_abs_u": 0.0006997219769672419,
+        "is_dilution_only": true
+      },
+      "iv_b_eligible": false,
+      "eligibility_reason": "design-point 0.000765 < 5e-03; informative mean=0.001460 median=0.001331 both < 5e-03; informative frac(|u|>=5e-03)=0.0000 < 0.10",
+      "tag": "grid_hazard_2"
+    },
+    {
+      "family": "regime_shift",
+      "design_point": {
+        "mean_abs_u_pred": 0.0007396,
+        "gate_pass": false
+      },
+      "informative_replay": {
+        "mean_abs_u": 0.0,
+        "median_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_informative": 0,
+        "frac_informative": 0.0,
+        "gate_pass_mean_or_median": false,
+        "gate_pass_frac": false
+      },
+      "topquartile_replay": {
+        "mean_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_topquartile": 0
+      },
+      "global_replay": {
+        "mean_abs_u": 0.0,
+        "is_dilution_only": true
+      },
+      "iv_b_eligible": false,
+      "eligibility_reason": "no replay entry for this family",
+      "tag": ""
+    },
+    {
+      "family": "taxi_bonus",
+      "design_point": {
+        "mean_abs_u_pred": 0.00043276,
+        "gate_pass": false
+      },
+      "informative_replay": {
+        "mean_abs_u": 0.0,
+        "median_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_informative": 0,
+        "frac_informative": 0.0,
+        "gate_pass_mean_or_median": false,
+        "gate_pass_frac": false
+      },
+      "topquartile_replay": {
+        "mean_abs_u": 0.0,
+        "frac_u_ge_5e3": 0.0,
+        "n_topquartile": 0
+      },
+      "global_replay": {
+        "mean_abs_u": 0.0,
+        "is_dilution_only": true
+      },
+      "iv_b_eligible": false,
+      "eligibility_reason": "no replay entry for this family",
+      "tag": ""
+    }
+  ]
+}

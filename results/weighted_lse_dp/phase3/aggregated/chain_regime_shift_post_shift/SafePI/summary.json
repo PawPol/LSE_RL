@@ -42,14 +42,14 @@
       "ci_high": 0.0
     },
     "final_bellman_residual": {
-      "mean": 10.385085058497335,
+      "mean": 10.384436969756203,
       "std": 0.0,
-      "median": 10.385085058497335,
-      "q25": 10.385085058497335,
-      "q75": 10.385085058497335,
+      "median": 10.384436969756203,
+      "q25": 10.384436969756203,
+      "q75": 10.384436969756203,
       "iqr": 0.0,
-      "ci_low": 10.385085058497335,
-      "ci_high": 10.385085058497335
+      "ci_low": 10.384436969756203,
+      "ci_high": 10.384436969756203
     },
     "n_stages_clipped": {
       "mean": 0.0,
@@ -132,19 +132,19 @@
       "ci_high": 0.0
     },
     "wall_clock_s": {
-      "mean": 0.02126402499852702,
-      "std": 0.0004670876056625728,
-      "median": 0.02119162501185201,
-      "q25": 0.021044875000370666,
-      "q75": 0.02163591599673964,
-      "iqr": 0.0005910409963689744,
-      "ci_low": 0.020912941795540974,
-      "ci_high": 0.021619783400092275
+      "mean": 0.022440016399195885,
+      "std": 0.0005375053628564953,
+      "median": 0.02230858300026739,
+      "q25": 0.02203087499947287,
+      "q75": 0.02259049999702256,
+      "iqr": 0.0005596249975496903,
+      "ci_low": 0.022063933000026736,
+      "ci_high": 0.022900707999360746
     }
   },
   "provenance": {
     "schedule_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase3/calibration/chain_regime_shift/schedule.json",
-    "calibration_hash": "e5bbaea13fe72a1304efd145532cc89d8dbafeb50e5927168df48c2c6b7b1686",
+    "calibration_hash": "bb30c7ed62e7c04d52e7991d66fad0aa7b6ba2b6ae61d511a9590bc4261adb86",
     "source_phase": "phase2"
   }
 }

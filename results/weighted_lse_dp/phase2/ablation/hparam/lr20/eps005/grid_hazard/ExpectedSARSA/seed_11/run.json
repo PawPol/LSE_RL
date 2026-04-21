@@ -1,0 +1,121 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-19T05:59:27Z",
+  "phase": "phase2",
+  "task": "grid_hazard",
+  "algorithm": "ExpectedSARSA",
+  "seed": 11,
+  "git_sha": "209303bcbf621d95a65493ae456d72b00dcddaeb",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "task": "grid_hazard",
+    "algorithm": "ExpectedSARSA",
+    "seed": 11,
+    "gamma": 0.99,
+    "horizon": 80,
+    "n_base": 25,
+    "train_steps": 200000,
+    "checkpoint_every": 5000,
+    "eval_episodes_checkpoint": 50,
+    "success_threshold": 0.8,
+    "epsilon": 0.05,
+    "learning_rate": 0.2,
+    "stress_type": "hazard",
+    "task_config": {
+      "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_base_grid.txt",
+      "prob": 0.9,
+      "goal_reward": 1.0,
+      "gamma": 0.99,
+      "horizon": 80,
+      "hazard_states": [
+        12
+      ],
+      "hazard_prob": 0.1,
+      "hazard_reward": -5.0,
+      "hazard_terminates": false,
+      "n_states": 25,
+      "n_actions": 4,
+      "train_steps": 200000,
+      "checkpoint_every": 5000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 500,
+      "success_threshold": 0.8,
+      "dp_algorithms": [
+        "PE",
+        "VI",
+        "PI",
+        "MPI",
+        "AsyncVI"
+      ],
+      "rl_algorithms": [
+        "QLearning",
+        "ExpectedSARSA"
+      ],
+      "ref_policy": "shortest_path",
+      "severity": "hazard",
+      "stress_type": "hazard",
+      "lr_multiplier": 2.0,
+      "epsilon_override": 0.05
+    },
+    "factory_config": {
+      "task": "grid_hazard",
+      "grid_file": "experiments/weighted_lse_dp/assets/grids/phase1_base_grid.txt",
+      "n_rows": 5,
+      "n_cols": 5,
+      "prob": 0.9,
+      "pos_rew": 1.0,
+      "neg_rew": 0.0,
+      "gamma": 0.99,
+      "horizon": 80,
+      "goal_cell": [
+        4,
+        4
+      ],
+      "hazard_states": [
+        12
+      ],
+      "hazard_prob": 0.1,
+      "hazard_reward": -5.0,
+      "hazard_terminates": false,
+      "train_steps": 200000,
+      "checkpoint_every": 5000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 500,
+      "success_threshold": 0.8,
+      "goal_reward": 1.0,
+      "n_states": 25,
+      "n_actions": 4,
+      "dp_algorithms": [
+        "PE",
+        "VI",
+        "PI",
+        "MPI",
+        "AsyncVI"
+      ],
+      "rl_algorithms": [
+        "QLearning",
+        "ExpectedSARSA"
+      ],
+      "ref_policy": "shortest_path",
+      "severity": "hazard",
+      "stress_type": "hazard",
+      "lr_multiplier": 2.0,
+      "epsilon_override": 0.05
+    },
+    "tail_risk_metrics": {
+      "return_q05": 0.8429431933839268,
+      "return_q25": 0.8687458127689782,
+      "return_q50": 0.8775210229989678,
+      "return_q75": 0.8775210229989678,
+      "return_q95": 0.8775210229989678,
+      "cvar_5pct": 0.8323758011518921,
+      "cvar_10pct": 0.850044754572734,
+      "top5pct_mean": 0.877521022998968,
+      "top10pct_mean": 0.877521022998968,
+      "event_rate": 0.0,
+      "event_conditioned_return": NaN
+    }
+  },
+  "suite": "ablation/hparam/lr20/eps005",
+  "storage_mode": "rl_online"
+}

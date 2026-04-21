@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T20:13:12Z",
+  "created_at": "2026-04-19T04:28:22Z",
   "phase": "phase3",
   "task": "chain_catastrophe",
   "algorithm": "SafeQLearning",
@@ -10,7 +10,7 @@
   "steps_to_threshold": null,
   "auc_disc_return": 2.4249963147537827,
   "final_disc_return_mean": 3.9139054690536526,
-  "final_10pct_success_rate": 0.04,
+  "final_10pct_success_rate": 0.0,
   "tail_risk_metrics": {
     "return_q05": 0.0,
     "return_q25": 0.0,

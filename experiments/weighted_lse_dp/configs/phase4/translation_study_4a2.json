@@ -1,0 +1,32 @@
+{
+  "_description": "Phase IV-B translation matrix on the frozen IV-A2 activation suite (dense_chain_cost).",
+  "phase": "IV-B",
+  "status": "active",
+  "suite": "translation_4a2",
+  "activation_suite": "experiments/weighted_lse_dp/configs/phase4/activation_suite_4a2.json",
+  "train_steps": 20000,
+  "checkpoint_every": 1000,
+  "eval_episodes": 50,
+  "epsilon": 0.1,
+  "learning_rate": 0.1,
+  "success_threshold": 0.5,
+  "n_pilot_episodes": 200,
+  "seeds_rl": [42, 123, 456, 789, 1024],
+  "seeds_dp": [42, 123, 456],
+  "rl_algorithms": [
+    "classical_q",
+    "classical_expected_sarsa",
+    "safe_q_stagewise",
+    "safe_expected_sarsa_stagewise",
+    "safe_q_zero",
+    "safe_expected_sarsa_zero"
+  ],
+  "dp_algorithms": [
+    "classical_vi",
+    "safe_vi",
+    "safe_vi_zero",
+    "classical_async_vi",
+    "safe_async_vi",
+    "safe_async_vi_zero"
+  ]
+}

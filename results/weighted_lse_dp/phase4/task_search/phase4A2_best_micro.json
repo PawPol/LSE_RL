@@ -1,0 +1,10 @@
+{
+  "family": "dense_chain_cost",
+  "n_states": 20,
+  "step_reward": -0.02,
+  "terminal_reward": 0.0,
+  "horizon": 20,
+  "gamma": 0.95,
+  "reward_bound": 0.02,
+  "micro_reward": true
+}

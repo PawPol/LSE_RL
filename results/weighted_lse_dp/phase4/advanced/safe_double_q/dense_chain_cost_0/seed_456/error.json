@@ -1,0 +1,8 @@
+{
+  "algorithm": "safe_double_q",
+  "task_tag": "dense_chain_cost_0",
+  "seed": 456,
+  "status": "fail",
+  "error": "not enough values to unpack (expected 5, got 4)",
+  "traceback": "Traceback (most recent call last):\n  File \"/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/weighted_lse_dp/runners/run_phase4C_advanced_rl.py\", line 321, in run_single\n    ep_return, ep_logs = _run_episode_train(\n                         ~~~~~~~~~~~~~~~~~~^\n        mdp=mdp_rl, agent=agent, n_base=n_base, horizon=horizon,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        n_actions=n_actions, epsilon=_EPSILON, rng=rng,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        global_step_ref=global_step_ref, algorithm=algorithm,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/weighted_lse_dp/runners/run_phase4C_advanced_rl.py\", line 191, in _run_episode_train\n    next_aug_arr, reward, absorbing, _, info = mdp.step(np.array([action]))\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nValueError: not enough values to unpack (expected 5, got 4)\n"
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-21T03:08:28Z",
+  "phase": "phase4",
+  "task": "dense_chain_cost_0",
+  "algorithm": "safe_q_zero",
+  "seed": 456,
+  "train_steps": 20000,
+  "n_transitions": 20000,
+  "mean_return": -0.2565825926061124,
+  "steps_to_threshold": null,
+  "auc_disc_return": -0.2562084167181247,
+  "final_disc_return_mean": -0.25660563103658296,
+  "final_10pct_success_rate": 0.0
+}

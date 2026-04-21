@@ -28,6 +28,7 @@ Spec anchors: Phase I spec S5.1, S7.1-7.4, S9.3.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import sys
 import time
@@ -310,9 +311,12 @@ def run_single(
 
     # -- Create callbacks ---------------------------------------------------
     logger = TransitionLogger(agent, n_base=n_base, gamma=gamma)
+    # Use a separate env for evaluation so that evaluation episodes do not
+    # advance the training env's internal state (episode counter, RNG, etc.).
+    mdp_eval = copy.deepcopy(mdp_rl)
     evaluator = RLEvaluator(
         agent=agent,
-        env=mdp_rl,
+        env=mdp_eval,
         run_writer=rw,
         n_eval_episodes=eval_episodes_checkpoint,
         success_threshold=success_threshold,

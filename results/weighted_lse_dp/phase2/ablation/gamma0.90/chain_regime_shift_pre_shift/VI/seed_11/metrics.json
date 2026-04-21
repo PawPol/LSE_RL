@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-19T05:12:33Z",
+  "phase": "phase2",
+  "task": "chain_regime_shift_pre_shift",
+  "algorithm": "VI",
+  "seed": 11,
+  "final_bellman_residual": 4.753541359906632,
+  "n_sweeps": 1,
+  "wall_clock_s": 0.00020304101053625345,
+  "converged": true,
+  "sweeps_to_1e-2": null,
+  "sweeps_to_1e-4": null,
+  "sweeps_to_1e-6": null
+}

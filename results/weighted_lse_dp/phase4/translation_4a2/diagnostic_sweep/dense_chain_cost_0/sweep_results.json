@@ -1,0 +1,33 @@
+{
+  "task_tag": "dense_chain_cost_0",
+  "sweep": [
+    {
+      "u_max": 0.0,
+      "mean_return": NaN,
+      "std_return": NaN,
+      "mean_abs_u": 0.0,
+      "n_seeds": 5
+    },
+    {
+      "u_max": 0.005,
+      "mean_return": NaN,
+      "std_return": NaN,
+      "mean_abs_u": 0.0,
+      "n_seeds": 5
+    },
+    {
+      "u_max": 0.01,
+      "mean_return": NaN,
+      "std_return": NaN,
+      "mean_abs_u": 0.0,
+      "n_seeds": 5
+    },
+    {
+      "u_max": 0.02,
+      "mean_return": NaN,
+      "std_return": NaN,
+      "mean_abs_u": 0.0,
+      "n_seeds": 5
+    }
+  ]
+}

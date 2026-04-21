@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T19:26:44Z",
+  "created_at": "2026-04-19T04:50:49Z",
   "phase": "phase3",
   "task": "chain_catastrophe",
   "algorithm": "SafeQLearning",
   "seed": 47,
-  "git_sha": "cc9414297e4e83c37b87f14e19791f2f5079e96e",
+  "git_sha": "209303bcbf621d95a65493ae456d72b00dcddaeb",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "task": "chain_catastrophe",
@@ -98,14 +98,14 @@
       "return_q05": 0.0,
       "return_q25": 0.0,
       "return_q50": 0.0,
-      "return_q75": 0.5526834771623851,
+      "return_q75": 1.691943417591701,
       "return_q95": 1.703451093757654,
-      "cvar_5pct": -3.688162984920562,
-      "cvar_10pct": -1.844081492460281,
-      "top5pct_mean": 2.1220859245547157,
-      "top10pct_mean": 1.9117386009070694,
+      "cvar_5pct": -3.8225022100668604,
+      "cvar_10pct": -1.9112511050334302,
+      "top5pct_mean": 2.055238923776751,
+      "top10pct_mean": 1.8793450087672021,
       "event_rate": 0.032,
-      "event_conditioned_return": -5.762754663938378
+      "event_conditioned_return": -5.972659703229469
     }
   },
   "suite": "ablation_beta_constant_large",

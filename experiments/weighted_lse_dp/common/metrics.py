@@ -112,32 +112,21 @@ def aggregate(
 
     # Percentile bootstrap on the mean along ``axis``.
     idx = rng.integers(0, n, size=(n_bootstrap, n))
-    # Gather along ``axis``; np.take handles both 1-D and 2-D cleanly.
-    # Shape: (n_bootstrap, n, ...) where "..." is the kept axis (if any).
+    # np.take(values, idx, axis=axis) inserts the index shape (n_bootstrap, n)
+    # at position ``axis``, giving:
+    #   axis=0, ndim=1: (n_bootstrap, n)
+    #   axis=0, ndim=2: (n_bootstrap, n, T)
+    #   axis=1, ndim=2: (n_seeds, n_bootstrap, n)
+    # The sample dimension (n) always sits at axis+1; taking the mean there
+    # reduces it and leaves the bootstrap dimension at position ``axis``.
     resampled = np.take(values, idx, axis=axis)
-    # Mean across the resampled seed dimension (axis=1 because the
-    # bootstrap axis is inserted at position ``axis`` in ``resampled``;
-    # see note below).
-    #
-    # Concretely:
-    #   - If axis == 0 and values.ndim == 1 -> resampled.shape == (n_bootstrap, n)
-    #     mean over axis=1 gives (n_bootstrap,).
-    #   - If axis == 0 and values.ndim == 2 -> resampled.shape == (n_bootstrap, n, T)
-    #     mean over axis=1 gives (n_bootstrap, T).
-    #   - If axis == 1 and values.ndim == 2 -> resampled.shape == (n_seeds, n_bootstrap, n)
-    #     The bootstrap samples then live along axis 2; handle below.
-    boot_axis = axis + 1 if axis < values.ndim - 1 else axis
-    # np.take inserts the index shape at ``axis``. Since idx has shape
-    # (n_bootstrap, n), np.take puts those two dims at positions
-    # (axis, axis + 1); the mean must be taken over axis + 1.
     boot_means = np.mean(resampled, axis=axis + 1)
-
+    # boot_means has n_bootstrap at position ``axis``:
+    #   axis=0 -> (n_bootstrap,) or (n_bootstrap, T)  → quantile over axis=0
+    #   axis=1 -> (n_seeds, n_bootstrap)              → quantile over axis=1
     alpha = (1.0 - ci_level) / 2.0
-    ci_low = np.quantile(boot_means, alpha, axis=0)
-    ci_high = np.quantile(boot_means, 1.0 - alpha, axis=0)
-
-    # Silence the unused local (kept for documentation of the axis logic).
-    del boot_axis
+    ci_low = np.quantile(boot_means, alpha, axis=axis)
+    ci_high = np.quantile(boot_means, 1.0 - alpha, axis=axis)
 
     out: dict[str, float | np.ndarray] = {
         "mean": _to_float_if_scalar(mean),

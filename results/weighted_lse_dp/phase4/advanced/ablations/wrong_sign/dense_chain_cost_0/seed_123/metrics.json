@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "phase4C",
+  "task": "dense_chain_cost_0",
+  "algorithm": "safe_q_stagewise_ablation_wrong_sign",
+  "ablation": "wrong_sign",
+  "seed": 123,
+  "train_steps": 20000,
+  "n_transitions": 20000,
+  "mean_return": -0.25659808396453226,
+  "final_disc_return_mean": -0.2565553172229116
+}

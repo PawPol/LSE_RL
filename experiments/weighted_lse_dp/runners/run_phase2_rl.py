@@ -30,6 +30,7 @@ Spec anchors: Phase II spec S5, S7, S8.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import sys
 import time
@@ -54,6 +55,7 @@ from experiments.weighted_lse_dp.common.callbacks import (  # noqa: E402
 )
 from experiments.weighted_lse_dp.common.calibration import (  # noqa: E402
     aggregate_calibration_stats,
+    get_task_sign,
 )
 from experiments.weighted_lse_dp.common.schemas import RunWriter  # noqa: E402
 from experiments.weighted_lse_dp.common.seeds import (  # noqa: E402
@@ -653,13 +655,26 @@ def run_single(
     else:
         logger = TransitionLogger(agent, n_base=n_base, gamma=gamma)
 
+    # Catastrophe tasks have absorbing failure states (early termination with
+    # negative reward).  The default success criterion (any absorbing at t <
+    # horizon) would wrongly count those as successes.
+    _eval_success_fn = None
+    if stress_type == "catastrophe":
+        _eval_success_fn = lambda r, a, t, h: bool(a and t < h and float(r) > 0.0)
+
+    # Use a separate env for evaluation so that evaluation episodes do not
+    # advance the training env's episode counter or perturb its RNG state.
+    # This is critical for regime-shift tasks where the change point is
+    # controlled by the training env's episode count.
+    mdp_eval = copy.deepcopy(mdp_rl)
     evaluator = RLEvaluator(
         agent=agent,
-        env=mdp_rl,
+        env=mdp_eval,
         run_writer=rw,
         n_eval_episodes=eval_episodes_checkpoint,
         success_threshold=success_threshold,
         gamma=gamma,
+        success_fn=_eval_success_fn,
     )
 
     # -- Create Core --------------------------------------------------------
@@ -757,7 +772,7 @@ def run_single(
 
         # Build calibration stats from the training transitions.
         calibration_stats = aggregate_calibration_stats(
-            transitions_payload, horizon=horizon
+            transitions_payload, horizon=horizon, sign=get_task_sign(task)
         )
 
         # -- Per-episode returns for stress metrics: use greedy eval data ---

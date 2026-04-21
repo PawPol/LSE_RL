@@ -289,14 +289,9 @@ class SafeWeightedModifiedPolicyIteration:
         """
         pi_new = np.empty((self._T, self._S), dtype=np.int64)
         for t in range(self._T - 1, -1, -1):
-            # E[V_{t+1}(s') | s, a] via transition probabilities.
-            E_v_next = np.einsum(
-                "ijk,k->ij", self._p, self.V[t + 1]
-            )  # (S, A)
-
-            # Safe weighted-LSE backup: Q_full[t, s, a] = g_t^safe(r_bar, E_v_next).
-            Q_t = self._safe.compute_safe_target_batch(
-                self._r_bar, E_v_next, t
+            # Safe Q: E_{s'}[g_t^safe(r_bar, V[t+1,s'])].
+            Q_t = self._safe.compute_safe_target_ev_batch(
+                self._r_bar, self.V[t + 1], self._p, t
             )  # (S, A)
 
             # Record diagnostics from this stage's safe backup.
@@ -327,12 +322,8 @@ class SafeWeightedModifiedPolicyIteration:
             pi_new_t = pi_new[t]  # (S,)
 
             # Full (S, A) safe backup, then read off the policy column.
-            E_v_next_full = np.einsum(
-                "ijk,k->ij", self._p, self.V[t + 1]
-            )  # (S, A)
-
-            Q_all = self._safe.compute_safe_target_batch(
-                self._r_bar, E_v_next_full, t
+            Q_all = self._safe.compute_safe_target_ev_batch(
+                self._r_bar, self.V[t + 1], self._p, t
             )  # (S, A)
 
             # V[t, s] = Q^safe_pi[t, s, pi_new[t, s]].

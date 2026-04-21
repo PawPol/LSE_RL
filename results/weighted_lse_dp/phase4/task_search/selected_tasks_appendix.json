@@ -1,0 +1,184 @@
+{
+  "suite_type": "appendix_sanity",
+  "n_pilot_episodes": 200,
+  "tau_n": 200,
+  "seed": 42,
+  "generated_at": "2026-04-20T01:31:49Z",
+  "git_sha": "7d6234eaaa60355dcd546c9e515f2b9758024554",
+  "selected_families": [
+    "chain_sparse_credit",
+    "grid_hazard"
+  ],
+  "tasks": [
+    {
+      "idx": 11,
+      "family": "chain_sparse_credit",
+      "cfg": {
+        "family": "chain_sparse_credit",
+        "state_n": 30,
+        "gamma": 0.95,
+        "horizon": 10,
+        "step_cost": -0.01,
+        "reward_bound": 1.0
+      },
+      "scoring": {
+        "raw_metrics": {
+          "mean_abs_u_pred": 0.010671615600585938,
+          "mean_abs_delta_d_pred": 0.005198992215670072,
+          "mean_abs_target_gap_norm": 0.0022199259193672097,
+          "informative_stage_frac": 1.0,
+          "frac_u_ge_5e3": 1.0
+        },
+        "score_components": {
+          "w1_x_mean_abs_u": 0.010671615600585938,
+          "w2_x_mean_abs_delta_d": 0.005198992215670072,
+          "w3_x_mean_abs_target_gap_norm": 0.0022199259193672097,
+          "w4_x_informative_stage_frac": 0.5,
+          "z_mean_abs_u_pred": 3.1171999049729298,
+          "z_mean_abs_delta_d_pred": 3.1171999049729298,
+          "z_mean_abs_target_gap_norm": 4.799145658889086,
+          "z_informative_stage_frac": 3.0128706760542405
+        },
+        "total_score": 12.539980806862065
+      },
+      "acceptance_status": "accepted",
+      "selected_reason": "Rank 1/6 in family 'chain_sparse_credit' (score=12.539981)",
+      "schedule_summary": {
+        "gamma_base": 0.95,
+        "schedule_id": "",
+        "sign": null,
+        "n_stages": 10
+      }
+    },
+    {
+      "idx": 6,
+      "family": "chain_sparse_credit",
+      "cfg": {
+        "family": "chain_sparse_credit",
+        "state_n": 24,
+        "gamma": 0.95,
+        "horizon": 5,
+        "step_cost": -0.01,
+        "reward_bound": 1.0
+      },
+      "scoring": {
+        "raw_metrics": {
+          "mean_abs_u_pred": 0.01190185546875,
+          "mean_abs_delta_d_pred": 0.00579833984375,
+          "mean_abs_target_gap_norm": 0.001173599901565832,
+          "informative_stage_frac": 1.0,
+          "frac_u_ge_5e3": 1.0
+        },
+        "score_components": {
+          "w1_x_mean_abs_u": 0.01190185546875,
+          "w2_x_mean_abs_delta_d": 0.00579833984375,
+          "w3_x_mean_abs_target_gap_norm": 0.001173599901565832,
+          "w4_x_informative_stage_frac": 0.5,
+          "z_mean_abs_u_pred": 3.5243748474412055,
+          "z_mean_abs_delta_d_pred": 3.524374847441206,
+          "z_mean_abs_target_gap_norm": 2.3632765804278875,
+          "z_informative_stage_frac": 3.0128706760542405
+        },
+        "total_score": 10.91846161333742
+      },
+      "acceptance_status": "accepted",
+      "selected_reason": "Rank 2/6 in family 'chain_sparse_credit' (score=10.918462)",
+      "schedule_summary": {
+        "gamma_base": 0.95,
+        "schedule_id": "",
+        "sign": null,
+        "n_stages": 5
+      }
+    },
+    {
+      "idx": 53,
+      "family": "grid_hazard",
+      "cfg": {
+        "family": "grid_hazard",
+        "hazard_reward": -1.0,
+        "hazard_prob": 0.3,
+        "gamma": 0.95,
+        "horizon": 10,
+        "n_rows": 5,
+        "n_cols": 5,
+        "reward_bound": 1.0
+      },
+      "scoring": {
+        "raw_metrics": {
+          "mean_abs_u_pred": 0.0025577545166015625,
+          "mean_abs_delta_d_pred": 0.0012460855337289665,
+          "mean_abs_target_gap_norm": 0.00032710571503001144,
+          "informative_stage_frac": 0.3,
+          "frac_u_ge_5e3": 0.3
+        },
+        "score_components": {
+          "w1_x_mean_abs_u": 0.0025577545166015625,
+          "w2_x_mean_abs_delta_d": 0.0012460855337289665,
+          "w3_x_mean_abs_target_gap_norm": 0.00032710571503001144,
+          "w4_x_informative_stage_frac": 0.15,
+          "z_mean_abs_u_pred": 0.43173912162402267,
+          "z_mean_abs_delta_d_pred": 0.4317391216240227,
+          "z_mean_abs_target_gap_norm": 0.3926202276283082,
+          "z_informative_stage_frac": 0.5944449731843948
+        },
+        "total_score": 1.553320957468551
+      },
+      "acceptance_status": "accepted",
+      "selected_reason": "Rank 1/9 in family 'grid_hazard' (score=1.553321)",
+      "schedule_summary": {
+        "gamma_base": 0.95,
+        "schedule_id": "",
+        "sign": null,
+        "n_stages": 10
+      }
+    },
+    {
+      "idx": 51,
+      "family": "grid_hazard",
+      "cfg": {
+        "family": "grid_hazard",
+        "hazard_reward": -1.0,
+        "hazard_prob": 0.2,
+        "gamma": 0.95,
+        "horizon": 10,
+        "n_rows": 5,
+        "n_cols": 5,
+        "reward_bound": 1.0
+      },
+      "scoring": {
+        "raw_metrics": {
+          "mean_abs_u_pred": 0.0025577545166015625,
+          "mean_abs_delta_d_pred": 0.0012460855337289665,
+          "mean_abs_target_gap_norm": 0.00032529510897266387,
+          "informative_stage_frac": 0.3,
+          "frac_u_ge_5e3": 0.3
+        },
+        "score_components": {
+          "w1_x_mean_abs_u": 0.0025577545166015625,
+          "w2_x_mean_abs_delta_d": 0.0012460855337289665,
+          "w3_x_mean_abs_target_gap_norm": 0.00032529510897266387,
+          "w4_x_informative_stage_frac": 0.15,
+          "z_mean_abs_u_pred": 0.43173912162402267,
+          "z_mean_abs_delta_d_pred": 0.4317391216240227,
+          "z_mean_abs_target_gap_norm": 0.38840509846843607,
+          "z_informative_stage_frac": 0.5944449731843948
+        },
+        "total_score": 1.549105828308679
+      },
+      "acceptance_status": "accepted",
+      "selected_reason": "Rank 2/9 in family 'grid_hazard' (score=1.549106)",
+      "schedule_summary": {
+        "gamma_base": 0.95,
+        "schedule_id": "",
+        "sign": null,
+        "n_stages": 10
+      }
+    }
+  ],
+  "label": "short-horizon high-activation sanity checks",
+  "note": "Do not use as primary evidence for main paper claim",
+  "T_variants": [
+    5,
+    10
+  ]
+}

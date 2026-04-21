@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T19:58:03Z",
+  "created_at": "2026-04-19T04:13:45Z",
   "phase": "phase3",
   "task": "chain_catastrophe",
   "algorithm": "SafeExpectedSARSA",
@@ -10,7 +10,7 @@
   "steps_to_threshold": null,
   "auc_disc_return": 2.1796747778221444,
   "final_disc_return_mean": 0.43400878843017315,
-  "final_10pct_success_rate": 0.02666666666666667,
+  "final_10pct_success_rate": 0.0,
   "tail_risk_metrics": {
     "return_q05": 0.0,
     "return_q25": 0.0,

@@ -1,0 +1,54 @@
+{
+  "dense_chain_cost_0": {
+    "tag": "dense_chain_cost_0",
+    "nonlinearity_effect": {
+      "lower": 0.0,
+      "upper": 0.0,
+      "mean_diff": 0.0,
+      "n_pairs": 3
+    },
+    "total_effect": {
+      "lower": 0.0,
+      "upper": 0.0,
+      "mean_diff": 0.0,
+      "n_pairs": 3
+    },
+    "path_effect": {
+      "lower": 0.0,
+      "upper": 0.0,
+      "mean_diff": 0.0,
+      "n_pairs": 3
+    },
+    "n_seeds": {
+      "classical": 3,
+      "safe-zero": 3,
+      "safe-nonlinear": 3
+    }
+  },
+  "dense_chain_cost_1": {
+    "tag": "dense_chain_cost_1",
+    "nonlinearity_effect": {
+      "lower": 0.0,
+      "upper": 0.0,
+      "mean_diff": 0.0,
+      "n_pairs": 3
+    },
+    "total_effect": {
+      "lower": 0.0,
+      "upper": 0.0,
+      "mean_diff": 0.0,
+      "n_pairs": 3
+    },
+    "path_effect": {
+      "lower": 0.0,
+      "upper": 0.0,
+      "mean_diff": 0.0,
+      "n_pairs": 3
+    },
+    "n_seeds": {
+      "classical": 3,
+      "safe-zero": 3,
+      "safe-nonlinear": 3
+    }
+  }
+}

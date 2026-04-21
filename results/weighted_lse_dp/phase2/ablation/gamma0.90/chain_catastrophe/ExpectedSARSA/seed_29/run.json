@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-19T05:05:32Z",
+  "phase": "phase2",
+  "task": "chain_catastrophe",
+  "algorithm": "ExpectedSARSA",
+  "seed": 29,
+  "git_sha": "209303bcbf621d95a65493ae456d72b00dcddaeb",
+  "host": "LIQs-Mac-Mini.local",
+  "config": {
+    "task": "chain_catastrophe",
+    "algorithm": "ExpectedSARSA",
+    "seed": 29,
+    "gamma": 0.9,
+    "horizon": 60,
+    "n_base": 26,
+    "train_steps": 120000,
+    "checkpoint_every": 4000,
+    "eval_episodes_checkpoint": 50,
+    "success_threshold": 0.8,
+    "epsilon": 0.1,
+    "learning_rate": 0.1,
+    "stress_type": "catastrophe",
+    "task_config": {
+      "state_n": 25,
+      "prob": 0.9,
+      "gamma": 0.9,
+      "horizon": 60,
+      "risky_state": 15,
+      "risky_prob": 0.05,
+      "shortcut_jump": 5,
+      "catastrophe_reward": -10.0,
+      "train_steps": 120000,
+      "checkpoint_every": 4000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 500,
+      "success_threshold": 0.8,
+      "dp_algorithms": [
+        "PE",
+        "VI",
+        "PI",
+        "MPI",
+        "AsyncVI"
+      ],
+      "rl_algorithms": [
+        "QLearning",
+        "ExpectedSARSA"
+      ],
+      "ref_policy": "always_right",
+      "severity": "catastrophe",
+      "stress_type": "catastrophe",
+      "gamma_prime_override": 0.9
+    },
+    "factory_config": {
+      "task": "chain_catastrophe",
+      "state_n": 25,
+      "prob": 0.9,
+      "gamma": 0.9,
+      "horizon": 60,
+      "risky_state": 15,
+      "risky_prob": 0.05,
+      "catastrophe_reward": -10.0,
+      "shortcut_prob": 0.9,
+      "shortcut_jump": 5,
+      "train_steps": 120000,
+      "checkpoint_every": 4000,
+      "eval_episodes_checkpoint": 50,
+      "eval_episodes_final": 500,
+      "success_threshold": 0.8,
+      "dp_algorithms": [
+        "PE",
+        "VI",
+        "PI",
+        "MPI",
+        "AsyncVI"
+      ],
+      "rl_algorithms": [
+        "QLearning",
+        "ExpectedSARSA"
+      ],
+      "ref_policy": "always_right",
+      "severity": "catastrophe",
+      "stress_type": "catastrophe",
+      "gamma_prime_override": 0.9
+    },
+    "tail_risk_metrics": {
+      "return_q05": 0.0,
+      "return_q25": 0.0,
+      "return_q50": 0.0019966781110160375,
+      "return_q75": 0.00473560556096945,
+      "return_q95": 0.0050510234893587965,
+      "cvar_5pct": -0.014878124419500016,
+      "cvar_10pct": -0.007439062209750008,
+      "top5pct_mean": 0.005261783956632721,
+      "top10pct_mean": 0.005116219092425863,
+      "event_rate": 0.02,
+      "event_conditioned_return": -0.03719531104875005
+    }
+  },
+  "suite": "ablation/gamma0.90",
+  "storage_mode": "rl_online"
+}

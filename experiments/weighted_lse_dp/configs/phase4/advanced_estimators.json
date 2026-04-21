@@ -1,0 +1,16 @@
+{
+  "_description": "Phase IV-C: advanced estimator-stabilized RL variants.",
+  "phase": "IV-C",
+  "algorithms": [
+    "safe_double_q",
+    "safe_target_q",
+    "safe_target_q_polyak",
+    "safe_target_expected_sarsa"
+  ],
+  "activation_suite_path": "experiments/weighted_lse_dp/configs/phase4/activation_suite_4a2.json",
+  "baseline_ref": "phase4/translation_study_4a2.json",
+  "comparison_protocol": "vs_simple_stagewise_baseline",
+  "seeds": [42, 123, 456],
+  "train_steps": 20000,
+  "n_pilot_episodes": 200
+}

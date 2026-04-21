@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T19:33:52Z",
+  "created_at": "2026-04-19T04:57:33Z",
   "phase": "phase3",
   "task": "taxi_bonus_shock",
   "algorithm": "SafeExpectedSARSA",
   "seed": 11,
-  "git_sha": "cc9414297e4e83c37b87f14e19791f2f5079e96e",
+  "git_sha": "209303bcbf621d95a65493ae456d72b00dcddaeb",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "task": "taxi_bonus_shock",
@@ -86,17 +86,17 @@
       "schedule_file": "results/weighted_lse_dp/phase3/calibration/taxi_bonus_shock/beta_constant_large.json"
     },
     "tail_risk_metrics": {
-      "return_q05": 0.8016305895390459,
-      "return_q25": 0.8179069375972308,
-      "return_q50": 0.8429431933839268,
-      "return_q75": 0.8429431933839268,
-      "return_q95": 0.8429431933839268,
-      "cvar_5pct": 0.7261677776816353,
-      "cvar_10pct": 0.7650328026258504,
-      "top5pct_mean": 4.285620610339102,
-      "top10pct_mean": 2.5642819018615146,
-      "event_rate": 0.042,
-      "event_conditioned_return": 4.941368689759135
+      "return_q05": 0.7177305325982749,
+      "return_q25": 0.7936142836436554,
+      "return_q50": 0.8097278682212584,
+      "return_q75": 0.8097278682212584,
+      "return_q95": 4.761685701861932,
+      "cvar_5pct": 0.6655997121360642,
+      "cvar_10pct": 0.6937576268954446,
+      "top5pct_mean": 4.846765624729341,
+      "top10pct_mean": 3.5495274380455033,
+      "event_rate": 0.07,
+      "event_conditioned_return": 4.7202219382376205
     }
   },
   "suite": "ablation_beta_constant_large",

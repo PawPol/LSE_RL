@@ -52,9 +52,11 @@ for _p in (_REPO_ROOT, _MUSHROOM_DEV):
 from experiments.weighted_lse_dp.common.callbacks import DPCurvesLogger
 from experiments.weighted_lse_dp.common.calibration import (
     build_calibration_stats_from_dp_tables,
+    get_task_sign,
 )
 from experiments.weighted_lse_dp.common.schemas import RunWriter
 from experiments.weighted_lse_dp.common.seeds import seed_everything
+from experiments.weighted_lse_dp.common.task_factories import build_ref_pi_for_task
 
 # Phase II stress-task factories
 from experiments.weighted_lse_dp.tasks.stress_families import (
@@ -328,22 +330,16 @@ def _build_run_list(
 # ---------------------------------------------------------------------------
 
 
-def _build_ref_pi(task_name: str, mdp: Any) -> np.ndarray:
-    """Build an always-right / always-action-0 reference policy for PE.
+def _build_ref_pi(task_name: str, task_cfg: dict, mdp: Any) -> np.ndarray:
+    """Build the reference policy for PE by dispatching on ``task_cfg['ref_policy']``.
 
-    For chain tasks, action 0 = right (toward goal).
-    For grid/taxi tasks, action 0 is used as a default reference.
+    Delegates to :func:`build_ref_pi_for_task` which handles
+    ``"always_right"`` (chains), ``"shortest_path"`` (grids), and
+    ``"pickup_then_deliver"`` (taxi).
 
     Returns shape ``(H, S)`` int64 array.
     """
-    p, _r, horizon, _gamma = extract_mdp_arrays(mdp)
-    n_states = p.shape[0]
-    action_per_state = np.zeros(n_states, dtype=np.int64)
-    return deterministic_policy_array(
-        horizon=horizon,
-        n_states=n_states,
-        action_per_state=action_per_state,
-    )
+    return build_ref_pi_for_task(task_name, task_cfg, mdp)
 
 
 # ---------------------------------------------------------------------------
@@ -529,6 +525,7 @@ def _run_dp_on_mdp(
         R=r,
         gamma=gamma_mdp,
         horizon=horizon,
+        sign=get_task_sign(task_label),
     )
     rw.set_calibration_stats(calib_stats)
 
@@ -607,7 +604,7 @@ def _run_single(
     if is_regime_shift and warmstart:
         # --- Pre-shift run ---
         pre_mdp = mdp_or_wrapper._pre
-        ref_pi_pre = _build_ref_pi(task_name, pre_mdp)
+        ref_pi_pre = _build_ref_pi(task_name, task_cfg, pre_mdp)
 
         # Run VI first to get exact V* for supnorm computation on other algos.
         vi_v_pre: np.ndarray | None = None
@@ -647,7 +644,7 @@ def _run_single(
 
         # --- Post-shift run (warm-started from pre-shift V) ---
         post_mdp = mdp_or_wrapper._post
-        ref_pi_post = _build_ref_pi(task_name, post_mdp)
+        ref_pi_post = _build_ref_pi(task_name, task_cfg, post_mdp)
 
         # PE does not support v_init; pass None for PE.
         v_init_post = v_pre if algo_name != "PE" else None
@@ -675,7 +672,7 @@ def _run_single(
         # regime); this is well-defined and avoids calling extract_mdp_arrays
         # on the wrapper itself (which does not expose p/r directly).
         pre_mdp = mdp_or_wrapper._pre
-        ref_pi = _build_ref_pi(task_name, pre_mdp)
+        ref_pi = _build_ref_pi(task_name, task_cfg, pre_mdp)
 
         _run_dp_on_mdp(
             mdp=pre_mdp,
@@ -695,7 +692,7 @@ def _run_single(
     else:
         # --- Standard (non-regime-shift) run ---
         mdp = _get_base_mdp(task_name, mdp_or_wrapper)
-        ref_pi = _build_ref_pi(task_name, mdp)
+        ref_pi = _build_ref_pi(task_name, task_cfg, mdp)
 
         _run_dp_on_mdp(
             mdp=mdp,

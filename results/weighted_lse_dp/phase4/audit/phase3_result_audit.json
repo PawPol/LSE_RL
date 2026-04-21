@@ -1,0 +1,18 @@
+{
+  "result_dirs_found": [
+    "chain_sparse_long",
+    "chain_jackpot",
+    "chain_catastrophe",
+    "chain_regime_shift",
+    "grid_sparse_goal",
+    "grid_hazard",
+    "grid_regime_shift",
+    "taxi_bonus_shock"
+  ],
+  "rho_all_nan_tasks": [],
+  "missing_tasks": [],
+  "result_count": 154,
+  "notes": "Total run artifact sets found: 154",
+  "git_sha": "04ae83ce0ad58e01ae067f48c8d6b1da9f9e8ac7",
+  "timestamp": "2026-04-19T04:29:14.903714+00:00"
+}

@@ -1,0 +1,71 @@
+{
+  "task": "chain_sparse_long",
+  "algorithm": "QLearning",
+  "seed": 29,
+  "gamma": 0.99,
+  "horizon": 120,
+  "n_base": 60,
+  "train_steps": 240000,
+  "checkpoint_every": 8000,
+  "eval_episodes_checkpoint": 50,
+  "success_threshold": 0.85,
+  "epsilon": 0.05,
+  "learning_rate": 0.2,
+  "stress_type": null,
+  "task_config": {
+    "state_n": 60,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 120,
+    "train_steps": 240000,
+    "checkpoint_every": 8000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 200,
+    "success_threshold": 0.85,
+    "dp_algorithms": [
+      "PE",
+      "VI",
+      "PI",
+      "MPI",
+      "AsyncVI"
+    ],
+    "rl_algorithms": [
+      "QLearning",
+      "ExpectedSARSA"
+    ],
+    "ref_policy": "always_right",
+    "severity": "sparse_reward",
+    "lr_multiplier": 2.0,
+    "epsilon_override": 0.05
+  },
+  "factory_config": {
+    "task": "chain_sparse_long",
+    "state_n": 60,
+    "prob": 0.9,
+    "gamma": 0.99,
+    "horizon": 120,
+    "goal_states": [
+      59
+    ],
+    "train_steps": 240000,
+    "checkpoint_every": 8000,
+    "eval_episodes_checkpoint": 50,
+    "eval_episodes_final": 200,
+    "success_threshold": 0.85,
+    "dp_algorithms": [
+      "PE",
+      "VI",
+      "PI",
+      "MPI",
+      "AsyncVI"
+    ],
+    "rl_algorithms": [
+      "QLearning",
+      "ExpectedSARSA"
+    ],
+    "ref_policy": "always_right",
+    "severity": "sparse_reward",
+    "lr_multiplier": 2.0,
+    "epsilon_override": 0.05
+  }
+}

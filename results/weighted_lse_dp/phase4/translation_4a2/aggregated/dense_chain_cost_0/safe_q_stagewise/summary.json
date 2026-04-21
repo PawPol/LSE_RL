@@ -1,0 +1,151 @@
+{
+  "algorithm": "safe_q_stagewise",
+  "metrics": {
+    "final_10pct_success_rate": {
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 5,
+      "std": 0.0
+    },
+    "final_disc_return_mean": {
+      "max": -0.25660563103658296,
+      "mean": -0.25660563103658296,
+      "min": -0.25660563103658296,
+      "n": 5,
+      "std": 0.0
+    },
+    "frac_u_ge_5e3": {
+      "max": 0.06025,
+      "mean": 0.05754,
+      "min": 0.05555,
+      "n": 5,
+      "std": 0.0017408331338758453
+    },
+    "mean_abs_delta_effective_discount": {
+      "max": 0.050853010139365766,
+      "mean": 0.05084717343362245,
+      "min": 0.05084427129649124,
+      "n": 5,
+      "std": 3.511618707142683e-06
+    },
+    "mean_abs_natural_shift": {
+      "max": 0.0022245034397203236,
+      "mean": 0.002211962255539484,
+      "min": 0.002207616921806439,
+      "n": 5,
+      "std": 7.07344570620755e-06
+    },
+    "mean_abs_target_gap": {
+      "max": 2.502707540612391e-05,
+      "mean": 2.484828072586669e-05,
+      "min": 2.473882965954197e-05,
+      "n": 5,
+      "std": 1.1611002361488887e-07
+    },
+    "mean_return": {
+      "max": -0.2565825926061124,
+      "mean": -0.25659331739271074,
+      "min": -0.25660563103658296,
+      "n": 5,
+      "std": 8.797198693562204e-06
+    },
+    "n_transitions": {
+      "max": 20000.0,
+      "mean": 20000.0,
+      "min": 20000.0,
+      "n": 5,
+      "std": 0.0
+    },
+    "train_steps": {
+      "max": 20000.0,
+      "mean": 20000.0,
+      "min": 20000.0,
+      "n": 5,
+      "std": 0.0
+    }
+  },
+  "n_seeds": 5,
+  "per_seed": [
+    {
+      "final_10pct_success_rate": 0.0,
+      "final_disc_return_mean": -0.25660563103658296,
+      "frac_u_ge_5e3": 0.05795,
+      "mean_abs_delta_effective_discount": 0.05084619831290877,
+      "mean_abs_natural_shift": 0.002207616921806439,
+      "mean_abs_target_gap": 2.4817154758377154e-05,
+      "mean_return": -0.2565980839645323,
+      "n_transitions": 20000.0,
+      "run_dir": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_q_stagewise/seed_1024",
+      "seed": 1024,
+      "status": "unknown",
+      "train_steps": 20000.0
+    },
+    {
+      "final_10pct_success_rate": 0.0,
+      "final_disc_return_mean": -0.25660563103658296,
+      "frac_u_ge_5e3": 0.06025,
+      "mean_abs_delta_effective_discount": 0.050853010139365766,
+      "mean_abs_natural_shift": 0.0022245034397203236,
+      "mean_abs_target_gap": 2.502707540612391e-05,
+      "mean_return": -0.256590139678163,
+      "n_transitions": 20000.0,
+      "run_dir": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_q_stagewise/seed_123",
+      "seed": 123,
+      "status": "unknown",
+      "train_steps": 20000.0
+    },
+    {
+      "final_10pct_success_rate": 0.0,
+      "final_disc_return_mean": -0.25660563103658296,
+      "frac_u_ge_5e3": 0.0569,
+      "mean_abs_delta_effective_discount": 0.050847601855879325,
+      "mean_abs_natural_shift": 0.002208520909181609,
+      "mean_abs_target_gap": 2.4893514565884765e-05,
+      "mean_return": -0.25660563103658296,
+      "n_transitions": 20000.0,
+      "run_dir": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_q_stagewise/seed_42",
+      "seed": 42,
+      "status": "unknown",
+      "train_steps": 20000.0
+    },
+    {
+      "final_10pct_success_rate": 0.0,
+      "final_disc_return_mean": -0.25660563103658296,
+      "frac_u_ge_5e3": 0.05705,
+      "mean_abs_delta_effective_discount": 0.05084427129649124,
+      "mean_abs_natural_shift": 0.0022102275731016477,
+      "mean_abs_target_gap": 2.473882965954197e-05,
+      "mean_return": -0.256590139678163,
+      "n_transitions": 20000.0,
+      "run_dir": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_q_stagewise/seed_456",
+      "seed": 456,
+      "status": "unknown",
+      "train_steps": 20000.0
+    },
+    {
+      "final_10pct_success_rate": 0.0,
+      "final_disc_return_mean": -0.25660563103658296,
+      "frac_u_ge_5e3": 0.05555,
+      "mean_abs_delta_effective_discount": 0.05084478556346715,
+      "mean_abs_natural_shift": 0.0022089424338874015,
+      "mean_abs_target_gap": 2.4764829239405633e-05,
+      "mean_return": -0.2565825926061124,
+      "n_transitions": 20000.0,
+      "run_dir": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_q_stagewise/seed_789",
+      "seed": 789,
+      "status": "unknown",
+      "train_steps": 20000.0
+    }
+  ],
+  "schema_version": "1.0.0",
+  "seeds": [
+    42,
+    123,
+    456,
+    789,
+    1024
+  ],
+  "suite": "translation_4a2",
+  "task_tag": "dense_chain_cost_0"
+}

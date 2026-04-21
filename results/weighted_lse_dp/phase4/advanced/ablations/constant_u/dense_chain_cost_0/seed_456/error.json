@@ -1,0 +1,8 @@
+{
+  "ablation": "constant_u",
+  "task_tag": "dense_chain_cost_0",
+  "seed": 456,
+  "status": "fail",
+  "error": "SafeTransitionLogger.__init__() missing 1 required positional argument: 'agent'",
+  "traceback": "Traceback (most recent call last):\n  File \"/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/weighted_lse_dp/runners/run_phase4C_certification_ablations.py\", line 240, in run_single\n    safe_logger = SafeTransitionLogger(n_base=n_base)\nTypeError: SafeTransitionLogger.__init__() missing 1 required positional argument: 'agent'\n"
+}

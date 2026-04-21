@@ -1,0 +1,9 @@
+{
+  "n_tasks_verified": 2,
+  "n_activated": 2,
+  "n_null_translation": 0,
+  "n_sweep_tasks": 2,
+  "n_matched_control_tasks": 2,
+  "n_negative_control_tasks": 0,
+  "negative_control_all_near_zero": true
+}

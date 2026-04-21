@@ -1,0 +1,50 @@
+{
+  "_description": "Phase IV-B: primary outcome metrics by task family type.",
+  "phase": "IV-B",
+  "outcomes_by_family_type": {
+    "sparse_credit": {
+      "primary": "steps_to_threshold",
+      "secondary": [
+        "mean_return"
+      ]
+    },
+    "jackpot": {
+      "primary": "cvar_10",
+      "secondary": [
+        "mean_return",
+        "tail_ratio"
+      ]
+    },
+    "catastrophe": {
+      "primary": "cvar_10",
+      "secondary": [
+        "worst_case_return"
+      ]
+    },
+    "regime_shift": {
+      "primary": "recovery_lag",
+      "secondary": [
+        "post_shift_mean"
+      ]
+    },
+    "hazard": {
+      "primary": "hazard_avoidance_rate",
+      "secondary": [
+        "mean_return"
+      ]
+    },
+    "taxi_bonus": {
+      "primary": "bonus_capture_rate",
+      "secondary": [
+        "mean_return"
+      ]
+    },
+    "dense_chain_cost": {
+      "primary": "mean_return",
+      "secondary": [
+        "final_disc_return_mean",
+        "steps_to_threshold"
+      ]
+    }
+  }
+}

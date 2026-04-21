@@ -1,0 +1,829 @@
+{
+  "audit_version": "1.0",
+  "timestamp": "2026-04-20",
+  "bhat_bug_fixed": true,
+  "known_value_check": {
+    "description": "Known-value: T=20, gamma=0.95, kappa=0.96, r_max=1.0",
+    "computed_Bhat0": 27.202381348378857,
+    "expected_Bhat0_exact": 27.202381348378864,
+    "error": 7.105427357601002e-15,
+    "passed": true,
+    "note": "Old fixed-point formula gave ~1e26; correct recursion gives ~27.2"
+  },
+  "task_audits": [
+    {
+      "task": "chain_sparse_credit_best",
+      "params": {
+        "name": "chain_sparse_credit_best",
+        "T": 20,
+        "gamma": 0.95,
+        "r_max": 1.0,
+        "alpha_min": 0.05,
+        "alpha_max": 0.2
+      },
+      "invariants": [
+        {
+          "id": "A",
+          "name": "kappa_t < 1 (contraction)",
+          "passed": true,
+          "value": 0.96,
+          "threshold": 1.0,
+          "detail": "max kappa = 0.960000"
+        },
+        {
+          "id": "B",
+          "name": "Bhat is non-increasing from t=0 to T (Bhat[0] >= ... >= Bhat[T]=0)",
+          "passed": true,
+          "value": 27.202381348378857,
+          "detail": "Bhat[0]=27.2024, Bhat[T]=0.0000, max_diff=-0.8978"
+        },
+        {
+          "id": "C",
+          "name": "Bhat in plausible range [0, 200]",
+          "passed": true,
+          "value": 27.202381348378857,
+          "threshold": 200.0,
+          "detail": "Bhat[0]=27.2024 (expected O(10-50) for T=20, gamma=0.95)"
+        },
+        {
+          "id": "D",
+          "name": "theta_safe_t > 0 for all t",
+          "passed": true,
+          "value": 0.02052163572079677,
+          "detail": "min theta_safe = 0.020522"
+        },
+        {
+          "id": "E",
+          "name": "A_t = r_max + Bhat[t+1] (formula consistency)",
+          "passed": true,
+          "value": 0.0,
+          "threshold": 1e-10,
+          "detail": "max |A_t - (r_max + Bhat[t+1])| = 0.00e+00"
+        }
+      ],
+      "invariants_pass": true,
+      "diagnostics": {
+        "T": 20,
+        "gamma": 0.95,
+        "r_max": 1.0,
+        "alpha_t0": 0.2,
+        "kappa_t0": 0.96,
+        "Bhat_0": 27.202381348378857,
+        "Bhat_T": 0.0,
+        "A_t0": 27.304563904561313,
+        "theta_safe_t0": 0.02052163572079677,
+        "U_safe_ref_abs_t0": 0.0061564907162390305,
+        "u_tr_cap_200ep": 0.0018310546875,
+        "c_t_200ep": 0.03367175148507369,
+        "u_ref_used_200ep": 0.0018310546875,
+        "u_ref_used_2000ep": 0.0048542022705078125,
+        "u_tr_cap_2000ep": 0.0048542022705078125,
+        "c_t_2000ep": 0.23570226039551584,
+        "trust_region_table": [
+          {
+            "n_ep": 50,
+            "n_t_per_stage": 2.5,
+            "c_t": 0.008729713347982069,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 1.090296726289809e-07,
+            "u_tr_cap": 0.00091552734375
+          },
+          {
+            "n_ep": 200,
+            "n_t_per_stage": 10.0,
+            "c_t": 0.03367175148507369,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 4.205430229974977e-07,
+            "u_tr_cap": 0.0018310546875
+          },
+          {
+            "n_ep": 500,
+            "n_t_per_stage": 25.0,
+            "c_t": 0.07856742013183861,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 9.81267053660828e-07,
+            "u_tr_cap": 0.002803802490234375
+          },
+          {
+            "n_ep": 1000,
+            "n_t_per_stage": 50.0,
+            "c_t": 0.14142135623730953,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 1.7662806965894909e-06,
+            "u_tr_cap": 0.003757476806640625
+          },
+          {
+            "n_ep": 2000,
+            "n_t_per_stage": 100.0,
+            "c_t": 0.23570226039551584,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 2.943801160982484e-06,
+            "u_tr_cap": 0.0048542022705078125
+          }
+        ]
+      }
+    },
+    {
+      "task": "chain_jackpot_mid",
+      "params": {
+        "name": "chain_jackpot_mid",
+        "T": 20,
+        "gamma": 0.95,
+        "r_max": 1.0,
+        "alpha_min": 0.05,
+        "alpha_max": 0.2
+      },
+      "invariants": [
+        {
+          "id": "A",
+          "name": "kappa_t < 1 (contraction)",
+          "passed": true,
+          "value": 0.96,
+          "threshold": 1.0,
+          "detail": "max kappa = 0.960000"
+        },
+        {
+          "id": "B",
+          "name": "Bhat is non-increasing from t=0 to T (Bhat[0] >= ... >= Bhat[T]=0)",
+          "passed": true,
+          "value": 27.202381348378857,
+          "detail": "Bhat[0]=27.2024, Bhat[T]=0.0000, max_diff=-0.8978"
+        },
+        {
+          "id": "C",
+          "name": "Bhat in plausible range [0, 200]",
+          "passed": true,
+          "value": 27.202381348378857,
+          "threshold": 200.0,
+          "detail": "Bhat[0]=27.2024 (expected O(10-50) for T=20, gamma=0.95)"
+        },
+        {
+          "id": "D",
+          "name": "theta_safe_t > 0 for all t",
+          "passed": true,
+          "value": 0.02052163572079677,
+          "detail": "min theta_safe = 0.020522"
+        },
+        {
+          "id": "E",
+          "name": "A_t = r_max + Bhat[t+1] (formula consistency)",
+          "passed": true,
+          "value": 0.0,
+          "threshold": 1e-10,
+          "detail": "max |A_t - (r_max + Bhat[t+1])| = 0.00e+00"
+        }
+      ],
+      "invariants_pass": true,
+      "diagnostics": {
+        "T": 20,
+        "gamma": 0.95,
+        "r_max": 1.0,
+        "alpha_t0": 0.2,
+        "kappa_t0": 0.96,
+        "Bhat_0": 27.202381348378857,
+        "Bhat_T": 0.0,
+        "A_t0": 27.304563904561313,
+        "theta_safe_t0": 0.02052163572079677,
+        "U_safe_ref_abs_t0": 0.0061564907162390305,
+        "u_tr_cap_200ep": 0.0018310546875,
+        "c_t_200ep": 0.03367175148507369,
+        "u_ref_used_200ep": 0.0018310546875,
+        "u_ref_used_2000ep": 0.0048542022705078125,
+        "u_tr_cap_2000ep": 0.0048542022705078125,
+        "c_t_2000ep": 0.23570226039551584,
+        "trust_region_table": [
+          {
+            "n_ep": 50,
+            "n_t_per_stage": 2.5,
+            "c_t": 0.008729713347982069,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 1.090296726289809e-07,
+            "u_tr_cap": 0.00091552734375
+          },
+          {
+            "n_ep": 200,
+            "n_t_per_stage": 10.0,
+            "c_t": 0.03367175148507369,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 4.205430229974977e-07,
+            "u_tr_cap": 0.0018310546875
+          },
+          {
+            "n_ep": 500,
+            "n_t_per_stage": 25.0,
+            "c_t": 0.07856742013183861,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 9.81267053660828e-07,
+            "u_tr_cap": 0.002803802490234375
+          },
+          {
+            "n_ep": 1000,
+            "n_t_per_stage": 50.0,
+            "c_t": 0.14142135623730953,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 1.7662806965894909e-06,
+            "u_tr_cap": 0.003757476806640625
+          },
+          {
+            "n_ep": 2000,
+            "n_t_per_stage": 100.0,
+            "c_t": 0.23570226039551584,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 2.943801160982484e-06,
+            "u_tr_cap": 0.0048542022705078125
+          }
+        ]
+      }
+    },
+    {
+      "task": "grid_hazard_best",
+      "params": {
+        "name": "grid_hazard_best",
+        "T": 20,
+        "gamma": 0.97,
+        "r_max": 1.0,
+        "alpha_min": 0.05,
+        "alpha_max": 0.2
+      },
+      "invariants": [
+        {
+          "id": "A",
+          "name": "kappa_t < 1 (contraction)",
+          "passed": true,
+          "value": 0.976,
+          "threshold": 1.0,
+          "detail": "max kappa = 0.976000"
+        },
+        {
+          "id": "B",
+          "name": "Bhat is non-increasing from t=0 to T (Bhat[0] >= ... >= Bhat[T]=0)",
+          "passed": true,
+          "value": 31.58798903075594,
+          "detail": "Bhat[0]=31.5880, Bhat[T]=0.0000, max_diff=-1.2417"
+        },
+        {
+          "id": "C",
+          "name": "Bhat in plausible range [0, 200]",
+          "passed": true,
+          "value": 31.58798903075594,
+          "threshold": 200.0,
+          "detail": "Bhat[0]=31.5880 (expected O(10-50) for T=20, gamma=0.95)"
+        },
+        {
+          "id": "D",
+          "name": "theta_safe_t > 0 for all t",
+          "passed": true,
+          "value": 0.012184587241227136,
+          "detail": "min theta_safe = 0.012185"
+        },
+        {
+          "id": "E",
+          "name": "A_t = r_max + Bhat[t+1] (formula consistency)",
+          "passed": true,
+          "value": 0.0,
+          "threshold": 1e-10,
+          "detail": "max |A_t - (r_max + Bhat[t+1])| = 0.00e+00"
+        }
+      ],
+      "invariants_pass": true,
+      "diagnostics": {
+        "T": 20,
+        "gamma": 0.97,
+        "r_max": 1.0,
+        "alpha_t0": 0.2,
+        "kappa_t0": 0.976,
+        "Bhat_0": 31.58798903075594,
+        "Bhat_T": 0.0,
+        "A_t0": 31.346300236430267,
+        "theta_safe_t0": 0.012184587241227136,
+        "U_safe_ref_abs_t0": 0.0036553761723681407,
+        "u_tr_cap_200ep": 0.0018310546875,
+        "c_t_200ep": 0.03367175148507369,
+        "u_ref_used_200ep": 0.0018310546875,
+        "u_ref_used_2000ep": 0.0036553761723681403,
+        "u_tr_cap_2000ep": 0.0048542022705078125,
+        "c_t_2000ep": 0.23570226039551584,
+        "trust_region_table": [
+          {
+            "n_ep": 50,
+            "n_t_per_stage": 2.5,
+            "c_t": 0.008729713347982069,
+            "eps_design": 1.2495676368674564e-05,
+            "eps_tr": 1.0908367278768245e-07,
+            "u_tr_cap": 0.00091552734375
+          },
+          {
+            "n_ep": 200,
+            "n_t_per_stage": 10.0,
+            "c_t": 0.03367175148507369,
+            "eps_design": 1.2495676368674564e-05,
+            "eps_tr": 4.2075130932391794e-07,
+            "u_tr_cap": 0.0018310546875
+          },
+          {
+            "n_ep": 500,
+            "n_t_per_stage": 25.0,
+            "c_t": 0.07856742013183861,
+            "eps_design": 1.2495676368674564e-05,
+            "eps_tr": 9.817530550891419e-07,
+            "u_tr_cap": 0.002803802490234375
+          },
+          {
+            "n_ep": 1000,
+            "n_t_per_stage": 50.0,
+            "c_t": 0.14142135623730953,
+            "eps_design": 1.2495676368674564e-05,
+            "eps_tr": 1.7671554991604558e-06,
+            "u_tr_cap": 0.003757476806640625
+          },
+          {
+            "n_ep": 2000,
+            "n_t_per_stage": 100.0,
+            "c_t": 0.23570226039551584,
+            "eps_design": 1.2495676368674564e-05,
+            "eps_tr": 2.9452591652674257e-06,
+            "u_tr_cap": 0.0048542022705078125
+          }
+        ]
+      }
+    },
+    {
+      "task": "regime_shift_best",
+      "params": {
+        "name": "regime_shift_best",
+        "T": 20,
+        "gamma": 0.97,
+        "r_max": 1.0,
+        "alpha_min": 0.05,
+        "alpha_max": 0.2
+      },
+      "invariants": [
+        {
+          "id": "A",
+          "name": "kappa_t < 1 (contraction)",
+          "passed": true,
+          "value": 0.976,
+          "threshold": 1.0,
+          "detail": "max kappa = 0.976000"
+        },
+        {
+          "id": "B",
+          "name": "Bhat is non-increasing from t=0 to T (Bhat[0] >= ... >= Bhat[T]=0)",
+          "passed": true,
+          "value": 31.58798903075594,
+          "detail": "Bhat[0]=31.5880, Bhat[T]=0.0000, max_diff=-1.2417"
+        },
+        {
+          "id": "C",
+          "name": "Bhat in plausible range [0, 200]",
+          "passed": true,
+          "value": 31.58798903075594,
+          "threshold": 200.0,
+          "detail": "Bhat[0]=31.5880 (expected O(10-50) for T=20, gamma=0.95)"
+        },
+        {
+          "id": "D",
+          "name": "theta_safe_t > 0 for all t",
+          "passed": true,
+          "value": 0.012184587241227136,
+          "detail": "min theta_safe = 0.012185"
+        },
+        {
+          "id": "E",
+          "name": "A_t = r_max + Bhat[t+1] (formula consistency)",
+          "passed": true,
+          "value": 0.0,
+          "threshold": 1e-10,
+          "detail": "max |A_t - (r_max + Bhat[t+1])| = 0.00e+00"
+        }
+      ],
+      "invariants_pass": true,
+      "diagnostics": {
+        "T": 20,
+        "gamma": 0.97,
+        "r_max": 1.0,
+        "alpha_t0": 0.2,
+        "kappa_t0": 0.976,
+        "Bhat_0": 31.58798903075594,
+        "Bhat_T": 0.0,
+        "A_t0": 31.346300236430267,
+        "theta_safe_t0": 0.012184587241227136,
+        "U_safe_ref_abs_t0": 0.0036553761723681407,
+        "u_tr_cap_200ep": 0.0018310546875,
+        "c_t_200ep": 0.03367175148507369,
+        "u_ref_used_200ep": 0.0018310546875,
+        "u_ref_used_2000ep": 0.0036553761723681403,
+        "u_tr_cap_2000ep": 0.0048542022705078125,
+        "c_t_2000ep": 0.23570226039551584,
+        "trust_region_table": [
+          {
+            "n_ep": 50,
+            "n_t_per_stage": 2.5,
+            "c_t": 0.008729713347982069,
+            "eps_design": 1.2495676368674564e-05,
+            "eps_tr": 1.0908367278768245e-07,
+            "u_tr_cap": 0.00091552734375
+          },
+          {
+            "n_ep": 200,
+            "n_t_per_stage": 10.0,
+            "c_t": 0.03367175148507369,
+            "eps_design": 1.2495676368674564e-05,
+            "eps_tr": 4.2075130932391794e-07,
+            "u_tr_cap": 0.0018310546875
+          },
+          {
+            "n_ep": 500,
+            "n_t_per_stage": 25.0,
+            "c_t": 0.07856742013183861,
+            "eps_design": 1.2495676368674564e-05,
+            "eps_tr": 9.817530550891419e-07,
+            "u_tr_cap": 0.002803802490234375
+          },
+          {
+            "n_ep": 1000,
+            "n_t_per_stage": 50.0,
+            "c_t": 0.14142135623730953,
+            "eps_design": 1.2495676368674564e-05,
+            "eps_tr": 1.7671554991604558e-06,
+            "u_tr_cap": 0.003757476806640625
+          },
+          {
+            "n_ep": 2000,
+            "n_t_per_stage": 100.0,
+            "c_t": 0.23570226039551584,
+            "eps_design": 1.2495676368674564e-05,
+            "eps_tr": 2.9452591652674257e-06,
+            "u_tr_cap": 0.0048542022705078125
+          }
+        ]
+      }
+    },
+    {
+      "task": "taxi_bonus_best",
+      "params": {
+        "name": "taxi_bonus_best",
+        "T": 20,
+        "gamma": 0.97,
+        "r_max": 1.0,
+        "alpha_min": 0.05,
+        "alpha_max": 0.2
+      },
+      "invariants": [
+        {
+          "id": "A",
+          "name": "kappa_t < 1 (contraction)",
+          "passed": true,
+          "value": 0.976,
+          "threshold": 1.0,
+          "detail": "max kappa = 0.976000"
+        },
+        {
+          "id": "B",
+          "name": "Bhat is non-increasing from t=0 to T (Bhat[0] >= ... >= Bhat[T]=0)",
+          "passed": true,
+          "value": 31.58798903075594,
+          "detail": "Bhat[0]=31.5880, Bhat[T]=0.0000, max_diff=-1.2417"
+        },
+        {
+          "id": "C",
+          "name": "Bhat in plausible range [0, 200]",
+          "passed": true,
+          "value": 31.58798903075594,
+          "threshold": 200.0,
+          "detail": "Bhat[0]=31.5880 (expected O(10-50) for T=20, gamma=0.95)"
+        },
+        {
+          "id": "D",
+          "name": "theta_safe_t > 0 for all t",
+          "passed": true,
+          "value": 0.012184587241227136,
+          "detail": "min theta_safe = 0.012185"
+        },
+        {
+          "id": "E",
+          "name": "A_t = r_max + Bhat[t+1] (formula consistency)",
+          "passed": true,
+          "value": 0.0,
+          "threshold": 1e-10,
+          "detail": "max |A_t - (r_max + Bhat[t+1])| = 0.00e+00"
+        }
+      ],
+      "invariants_pass": true,
+      "diagnostics": {
+        "T": 20,
+        "gamma": 0.97,
+        "r_max": 1.0,
+        "alpha_t0": 0.2,
+        "kappa_t0": 0.976,
+        "Bhat_0": 31.58798903075594,
+        "Bhat_T": 0.0,
+        "A_t0": 31.346300236430267,
+        "theta_safe_t0": 0.012184587241227136,
+        "U_safe_ref_abs_t0": 0.0036553761723681407,
+        "u_tr_cap_200ep": 0.0018310546875,
+        "c_t_200ep": 0.03367175148507369,
+        "u_ref_used_200ep": 0.0018310546875,
+        "u_ref_used_2000ep": 0.0036553761723681403,
+        "u_tr_cap_2000ep": 0.0048542022705078125,
+        "c_t_2000ep": 0.23570226039551584,
+        "trust_region_table": [
+          {
+            "n_ep": 50,
+            "n_t_per_stage": 2.5,
+            "c_t": 0.008729713347982069,
+            "eps_design": 1.2495676368674564e-05,
+            "eps_tr": 1.0908367278768245e-07,
+            "u_tr_cap": 0.00091552734375
+          },
+          {
+            "n_ep": 200,
+            "n_t_per_stage": 10.0,
+            "c_t": 0.03367175148507369,
+            "eps_design": 1.2495676368674564e-05,
+            "eps_tr": 4.2075130932391794e-07,
+            "u_tr_cap": 0.0018310546875
+          },
+          {
+            "n_ep": 500,
+            "n_t_per_stage": 25.0,
+            "c_t": 0.07856742013183861,
+            "eps_design": 1.2495676368674564e-05,
+            "eps_tr": 9.817530550891419e-07,
+            "u_tr_cap": 0.002803802490234375
+          },
+          {
+            "n_ep": 1000,
+            "n_t_per_stage": 50.0,
+            "c_t": 0.14142135623730953,
+            "eps_design": 1.2495676368674564e-05,
+            "eps_tr": 1.7671554991604558e-06,
+            "u_tr_cap": 0.003757476806640625
+          },
+          {
+            "n_ep": 2000,
+            "n_t_per_stage": 100.0,
+            "c_t": 0.23570226039551584,
+            "eps_design": 1.2495676368674564e-05,
+            "eps_tr": 2.9452591652674257e-06,
+            "u_tr_cap": 0.0048542022705078125
+          }
+        ]
+      }
+    },
+    {
+      "task": "short_horizon_T5",
+      "params": {
+        "name": "short_horizon_T5",
+        "T": 5,
+        "gamma": 0.95,
+        "r_max": 1.0,
+        "alpha_min": 0.05,
+        "alpha_max": 0.2
+      },
+      "invariants": [
+        {
+          "id": "A",
+          "name": "kappa_t < 1 (contraction)",
+          "passed": true,
+          "value": 0.96,
+          "threshold": 1.0,
+          "detail": "max kappa = 0.960000"
+        },
+        {
+          "id": "B",
+          "name": "Bhat is non-increasing from t=0 to T (Bhat[0] >= ... >= Bhat[T]=0)",
+          "passed": true,
+          "value": 9.000580992,
+          "detail": "Bhat[0]=9.0006, Bhat[T]=0.0000, max_diff=-1.6562"
+        },
+        {
+          "id": "C",
+          "name": "Bhat in plausible range [0, 200]",
+          "passed": true,
+          "value": 9.000580992,
+          "threshold": 200.0,
+          "detail": "Bhat[0]=9.0006 (expected O(10-50) for T=20, gamma=0.95)"
+        },
+        {
+          "id": "D",
+          "name": "theta_safe_t > 0 for all t",
+          "passed": true,
+          "value": 0.02052163572079677,
+          "detail": "min theta_safe = 0.020522"
+        },
+        {
+          "id": "E",
+          "name": "A_t = r_max + Bhat[t+1] (formula consistency)",
+          "passed": true,
+          "value": 0.0,
+          "threshold": 1e-10,
+          "detail": "max |A_t - (r_max + Bhat[t+1])| = 0.00e+00"
+        }
+      ],
+      "invariants_pass": true,
+      "diagnostics": {
+        "T": 5,
+        "gamma": 0.95,
+        "r_max": 1.0,
+        "alpha_t0": 0.2,
+        "kappa_t0": 0.96,
+        "Bhat_0": 9.000580992,
+        "Bhat_T": 0.0,
+        "A_t0": 8.344355199999999,
+        "theta_safe_t0": 0.02052163572079677,
+        "U_safe_ref_abs_t0": 0.0061564907162390305,
+        "u_tr_cap_200ep": 0.0034332275390625,
+        "c_t_200ep": 0.11785113019775792,
+        "u_ref_used_200ep": 0.0034332275390625,
+        "u_ref_used_2000ep": 0.0061564907162390305,
+        "u_tr_cap_2000ep": 0.006866455078125,
+        "c_t_2000ep": 0.4714045207910317,
+        "trust_region_table": [
+          {
+            "n_ep": 50,
+            "n_t_per_stage": 10.0,
+            "c_t": 0.03367175148507369,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 4.205430229974977e-07,
+            "u_tr_cap": 0.0018310546875
+          },
+          {
+            "n_ep": 200,
+            "n_t_per_stage": 40.0,
+            "c_t": 0.11785113019775792,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 1.471900580491242e-06,
+            "u_tr_cap": 0.0034332275390625
+          },
+          {
+            "n_ep": 500,
+            "n_t_per_stage": 100.0,
+            "c_t": 0.23570226039551584,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 2.943801160982484e-06,
+            "u_tr_cap": 0.0048542022705078125
+          },
+          {
+            "n_ep": 1000,
+            "n_t_per_stage": 200.0,
+            "c_t": 0.3535533905932738,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 4.415701741473726e-06,
+            "u_tr_cap": 0.005950927734375
+          },
+          {
+            "n_ep": 2000,
+            "n_t_per_stage": 400.0,
+            "c_t": 0.4714045207910317,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 5.887602321964968e-06,
+            "u_tr_cap": 0.006866455078125
+          }
+        ]
+      }
+    },
+    {
+      "task": "longer_horizon_T50",
+      "params": {
+        "name": "longer_horizon_T50",
+        "T": 50,
+        "gamma": 0.95,
+        "r_max": 1.0,
+        "alpha_min": 0.05,
+        "alpha_max": 0.2
+      },
+      "invariants": [
+        {
+          "id": "A",
+          "name": "kappa_t < 1 (contraction)",
+          "passed": true,
+          "value": 0.96,
+          "threshold": 1.0,
+          "detail": "max kappa = 0.960000"
+        },
+        {
+          "id": "B",
+          "name": "Bhat is non-increasing from t=0 to T (Bhat[0] >= ... >= Bhat[T]=0)",
+          "passed": true,
+          "value": 42.418067565800634,
+          "detail": "Bhat[0]=42.4181, Bhat[T]=0.0000, max_diff=-0.2638"
+        },
+        {
+          "id": "C",
+          "name": "Bhat in plausible range [0, 200]",
+          "passed": true,
+          "value": 42.418067565800634,
+          "threshold": 200.0,
+          "detail": "Bhat[0]=42.4181 (expected O(10-50) for T=20, gamma=0.95)"
+        },
+        {
+          "id": "D",
+          "name": "theta_safe_t > 0 for all t",
+          "passed": true,
+          "value": 0.02052163572079677,
+          "detail": "min theta_safe = 0.020522"
+        },
+        {
+          "id": "E",
+          "name": "A_t = r_max + Bhat[t+1] (formula consistency)",
+          "passed": true,
+          "value": 0.0,
+          "threshold": 1e-10,
+          "detail": "max |A_t - (r_max + Bhat[t+1])| = 0.00e+00"
+        }
+      ],
+      "invariants_pass": true,
+      "diagnostics": {
+        "T": 50,
+        "gamma": 0.95,
+        "r_max": 1.0,
+        "alpha_t0": 0.2,
+        "kappa_t0": 0.96,
+        "Bhat_0": 42.418067565800634,
+        "Bhat_T": 0.0,
+        "A_t0": 43.15423704770899,
+        "theta_safe_t0": 0.02052163572079677,
+        "U_safe_ref_abs_t0": 0.0061564907162390305,
+        "u_tr_cap_200ep": 0.0011444091796875,
+        "c_t_200ep": 0.01386483884679505,
+        "u_ref_used_200ep": 0.0011444091796875,
+        "u_ref_used_2000ep": 0.0034332275390625,
+        "u_tr_cap_2000ep": 0.0034332275390625,
+        "c_t_2000ep": 0.11785113019775792,
+        "trust_region_table": [
+          {
+            "n_ep": 50,
+            "n_t_per_stage": 1.0,
+            "c_t": 0.003517944185007699,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 4.39373307609326e-08,
+            "u_tr_cap": 0.0006103515625
+          },
+          {
+            "n_ep": 200,
+            "n_t_per_stage": 4.0,
+            "c_t": 0.01386483884679505,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 1.7316477417544025e-07,
+            "u_tr_cap": 0.0011444091796875
+          },
+          {
+            "n_ep": 500,
+            "n_t_per_stage": 10.0,
+            "c_t": 0.03367175148507369,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 4.205430229974977e-07,
+            "u_tr_cap": 0.0018310546875
+          },
+          {
+            "n_ep": 1000,
+            "n_t_per_stage": 20.0,
+            "c_t": 0.0642824346533225,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 8.028548620861322e-07,
+            "u_tr_cap": 0.002536773681640625
+          },
+          {
+            "n_ep": 2000,
+            "n_t_per_stage": 40.0,
+            "c_t": 0.11785113019775792,
+            "eps_design": 1.2489490580373276e-05,
+            "eps_tr": 1.471900580491242e-06,
+            "u_tr_cap": 0.0034332275390625
+          }
+        ]
+      }
+    }
+  ],
+  "all_invariants_pass": true,
+  "binding_constraint_analysis": {
+    "description": "With correct Bhat, three constraints bound u_ref_used: (1) u_target ~ 0.010-0.020, (2) u_tr_cap (pilot sample count), (3) U_safe_ref_abs ~ theta_safe * xi_ref.",
+    "with_200_episodes": {
+      "n_t_per_stage_T20": 10.0,
+      "c_t_approx_p05": 0.03367175148507369,
+      "u_tr_cap_approx": 0.0018310546875,
+      "binding_constraint": "trust_region_cap",
+      "expected_mean_abs_u": 0.0018310546875
+    },
+    "with_2000_episodes": {
+      "n_t_per_stage_T20": 100.0,
+      "c_t_approx_p05": 0.23570226039551584,
+      "u_tr_cap_approx": 0.0048542022705078125,
+      "binding_constraint": "trust_region_cap_or_u_target",
+      "expected_mean_abs_u": 0.0048542022705078125
+    },
+    "conclusion": "With 200 pilot episodes and T=20 stages: n_t \u2248 10/stage, c_t \u2248 0.034, eps_tr \u2248 3.4% of eps_design. u_tr_cap << 5e-3. Gate threshold (5e-3) requires ~450+ episodes per task family (n_t \u2248 23/stage, c_t \u2248 0.076). Bhat bug (old: ~1e26, fixed: ~27.2) was real but not the gate failure cause \u2014 the trust region was already the binding constraint."
+  },
+  "gate_failure_diagnosis": {
+    "gate_condition": "mean_abs_u >= 5e-3",
+    "best_observed": 0.00356,
+    "gate_threshold": 0.005,
+    "root_cause": "Trust region cap (not Bhat blowup) is the binding constraint. With 200 pilot episodes and T=20 stages, n_t\u224810 samples/stage \u2192 c_t\u22480.034 \u2192 u_tr_cap\u22480.003 < 5e-3 gate threshold. To pass the gate: increase pilot to ~500 episodes (n_t\u224825, c_t\u22480.08, u_tr_cap\u22480.006 \u2265 5e-3). Bhat fix: confirmed correct (Bhat[0]=27.2, was 1e26). After Bhat fix, U_safe_ref\u22480.02 (not binding). Scientific implication: activation is certifiably achievable with more pilot data; it is NOT a fundamental operator failure.",
+    "n_episodes_needed_to_pass": {
+      "calculation": "n_t_needed = tau_n * c_needed^2 / (p_align - c_needed^2*p_align) where c_needed s.t. u_tr_cap(c_needed) >= 5e-3",
+      "estimate_episodes": 500,
+      "confidence": "approximate \u2014 depends on p_align and exact family"
+    }
+  }
+}

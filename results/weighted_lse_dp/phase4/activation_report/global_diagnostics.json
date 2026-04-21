@@ -1,0 +1,23 @@
+{
+  "n_tasks_evaluated": 102,
+  "n_mainline_scored": 34,
+  "n_appendix_scored": 68,
+  "n_mainline_selected": 6,
+  "n_appendix_selected": 4,
+  "mainline_best_mean_abs_u": 0.005174875259399414,
+  "mainline_best_frac_ge5e3": 0.45,
+  "mainline_mean_abs_delta_eff_discount": 0.0008390866793118991,
+  "mainline_mean_abs_target_gap_norm": 9.941194230752575e-05,
+  "appendix_best_mean_abs_u": 0.012586593627929688,
+  "gate_conditions_met": {
+    "mean_abs_u": true,
+    "frac_ge5e3": true
+  },
+  "gate_threshold_u": 0.005,
+  "gate_threshold_frac": 0.1,
+  "n_pilot_episodes_mainline": 1000,
+  "n_pilot_episodes_appendix": 200,
+  "seed": 42,
+  "generated_at": "2026-04-20T01:31:49Z",
+  "git_sha": "7d6234eaaa60355dcd546c9e515f2b9758024554"
+}

@@ -1,0 +1,115 @@
+{
+  "started_at": "2026-04-19T04:14:10Z",
+  "finished_at": "2026-04-20T01:35:00Z",
+  "current_phase": "IV-A",
+  "phase_status": {
+    "IV-A": "complete",
+    "IV-A2": "complete",
+    "IV-B": "pending_user_approval",
+    "IV-C": "not_started"
+  },
+  "task_queue": [],
+  "completed_tasks": [56, 57, 58, 60, 61, 62, 63, 64, 65, 70, 72, 74, 76, 77, 78, 79, 80, 81, 83],
+  "failed_tasks": [],
+  "failure_count": 0,
+  "failure_budget": 3,
+  "gate_results": {
+    "IV-A": {
+      "result": "PASS",
+      "conditions_met": 11,
+      "conditions_total": 11,
+      "failing_condition": null,
+      "best_value": 0.005175,
+      "threshold": 0.005,
+      "timestamp": "2026-04-20T01:34:00Z",
+      "mainline_suite": {
+        "n_pilot_episodes": 1000,
+        "tau_n": 200,
+        "T_target": 20,
+        "gamma": 0.95,
+        "selected_families": ["chain_jackpot", "chain_sparse_credit", "grid_hazard"],
+        "n_tasks": 6,
+        "best_family": "chain_sparse_credit",
+        "best_mean_abs_u": 0.005175,
+        "best_frac_ge5e3": 0.45
+      },
+      "appendix_suite": {
+        "n_pilot_episodes": 200,
+        "tau_n": 200,
+        "T_variants": [5, 10],
+        "label": "short-horizon high-activation sanity checks",
+        "best_mean_abs_u": 0.012587
+      },
+      "binding_cap": "trust_clip (100% of 680 stages)",
+      "certification_cap_not_binding": true,
+      "git_sha": "7d6234eaaa60355dcd546c9e515f2b9758024554",
+      "bhat_bug_fixed": true,
+      "history": {
+        "initial_failure": {"conditions_met": 10, "root_cause": "random-policy pilot + Bhat blowup (1e26)"},
+        "after_bhat_fix": {"conditions_met": 10, "best_value": 0.00356, "root_cause": "trust-region cap with 200 episodes"},
+        "final_pass": {"n_ep_increased_to": 1000, "conditions_met": 11}
+      }
+    },
+    "IV-A2": {
+      "result": "PASS",
+      "gate_policy": "option_c",
+      "timestamp": "2026-04-20T06:11:00Z",
+      "best_family": "dense_chain_cost",
+      "best_cfg": {
+        "family": "dense_chain_cost",
+        "n_states": 20,
+        "step_reward": -0.02,
+        "terminal_reward": 0.0,
+        "horizon": 20,
+        "gamma": 0.95,
+        "reward_bound": 0.02,
+        "micro_reward": true
+      },
+      "gate1_mean_abs_u_pred": 0.016525,
+      "gate2a_mean_abs_u_replay_informative": 0.006348,
+      "gate2a_median_abs_u_replay_informative": 0.006708,
+      "gate2b_frac_informative": 0.8807,
+      "n_pilot_episodes": 1000,
+      "n_replay_episodes": 1000,
+      "n_informative_transitions": 17613,
+      "frac_u_ge_5e3_informative": 0.8355,
+      "root_cause_fix": "terminal_reward=0 keeps reward_bound=|step_reward|=0.02, giving A_t~0.4 instead of ~27, so beta~0.077 (vs 2.5e-4) and mean|u_replay|>5e-3",
+      "selected_tasks_path": "results/weighted_lse_dp/phase4/task_search/phase4A2_selected_tasks.json",
+      "eligibility_report_path": "results/weighted_lse_dp/phase4/activation_report/phase4A2_eligibility_report.md"
+    }
+  },
+  "codex_sessions": [],
+  "last_checkpoint": "2026-04-20T01:35:00Z",
+  "auto_resolutions": [
+    {
+      "question": "Phase II/III rerun (job b0ao4zigu) is still running concurrently with Phase IV-A initialization",
+      "resolution": "Proceeded with Phase IV-A additively. Phase III results used at audit time."
+    },
+    {
+      "question": "Activation search used random-policy pilot (non-spec-compliant)",
+      "resolution": "Fixed: replaced with DP backward-VI V* pilot (spec §S5.1). Re-ran with 200 episodes."
+    },
+    {
+      "question": "Gate failed 10/11 — Bhat recursion bug suspected",
+      "resolution": "Confirmed bug: old formula used fixed-point form, gave Bhat[0]~1e26. Fixed to canonical backward recursion. Bhat[0]=27.2 (correct). However gate still failed — true cause was trust-region cap with 200 episodes."
+    },
+    {
+      "question": "Gate still failed 10/11 after Bhat fix — trust-region cap is binding with 200 ep",
+      "resolution": "Pilot budget sensitivity study: n_ep=1000 gives c_t_med=0.276, u_tr_cap=0.00392, mean_abs_u=0.00517. Gate passes. User confirmed mainline=T20/n_ep=1000, appendix=T5-10/n_ep=200."
+    }
+  ],
+  "artifacts": {
+    "phase4_results_dir": "results/weighted_lse_dp/phase4/",
+    "selected_tasks_mainline": "results/weighted_lse_dp/phase4/task_search/selected_tasks.json",
+    "selected_tasks_appendix": "results/weighted_lse_dp/phase4/task_search/selected_tasks_appendix.json",
+    "gate_table": "results/weighted_lse_dp/phase4/activation_report/gate_table_by_family.md",
+    "global_diagnostics": "results/weighted_lse_dp/phase4/activation_report/global_diagnostics.json",
+    "event_conditioned_diagnostics": "results/weighted_lse_dp/phase4/activation_report/event_conditioned_diagnostics.json",
+    "binding_cap_summary": "results/weighted_lse_dp/phase4/activation_report/binding_cap_summary.json",
+    "activation_suite_config": "experiments/weighted_lse_dp/configs/phase4/activation_suite.json",
+    "gamma_matched_controls": "experiments/weighted_lse_dp/configs/phase4/gamma_matched_controls.json",
+    "cert_audit": "results/weighted_lse_dp/phase4/audit/certification_geometry_audit.json",
+    "sensitivity_study": "results/weighted_lse_dp/phase4/pilot_budget_sensitivity/results.json",
+    "counterfactual_replay": "results/weighted_lse_dp/phase4/counterfactual_replay/"
+  }
+}

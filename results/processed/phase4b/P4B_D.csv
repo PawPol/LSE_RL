@@ -1,0 +1,3 @@
+task,status,n_sweep_points,spearman_rho,spearman_p,max_diag_delta,max_outcome_delta
+dense_chain_cost_0,empty_sweep,,,,,
+dense_chain_cost_1,empty_sweep,,,,,

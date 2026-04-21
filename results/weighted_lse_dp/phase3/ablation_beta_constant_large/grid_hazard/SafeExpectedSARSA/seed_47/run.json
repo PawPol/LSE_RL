@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-04-18T19:31:39Z",
+  "created_at": "2026-04-19T04:55:27Z",
   "phase": "phase3",
   "task": "grid_hazard",
   "algorithm": "SafeExpectedSARSA",
   "seed": 47,
-  "git_sha": "cc9414297e4e83c37b87f14e19791f2f5079e96e",
+  "git_sha": "209303bcbf621d95a65493ae456d72b00dcddaeb",
   "host": "LIQs-Mac-Mini.local",
   "config": {
     "task": "grid_hazard",
@@ -99,11 +99,11 @@
     "tail_risk_metrics": {
       "return_q05": 0.8097278682212584,
       "return_q25": 0.8179069375972308,
-      "return_q50": 0.8687458127689782,
+      "return_q50": 0.8775210229989678,
       "return_q75": 0.8775210229989678,
       "return_q95": 0.8775210229989678,
-      "cvar_5pct": 0.7839907453884336,
-      "cvar_10pct": 0.7968593068048461,
+      "cvar_5pct": 0.7850978460258844,
+      "cvar_10pct": 0.7979036012861296,
       "top5pct_mean": 0.877521022998968,
       "top10pct_mean": 0.877521022998968,
       "event_rate": 0.0,

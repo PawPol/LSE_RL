@@ -1,0 +1,58 @@
+{
+  "note": "Classical controls matched to each safe-operator task by gamma and T. VI on the same (gamma, T, cfg) as the mainline safe run; the pairing is used for per-family overhead and effect-size reporting in Phase IV-B.",
+  "phase": "IV-A",
+  "generated_by": "run_phase4a_mainline_rerun.py",
+  "generated_at": "2026-04-20T01:31:49Z",
+  "git_sha": "7d6234eaaa60355dcd546c9e515f2b9758024554",
+  "seed": 42,
+  "controls": [
+    {
+      "family": "chain_jackpot",
+      "gamma": 0.95,
+      "T": 20,
+      "algo": "VI",
+      "n_episodes": 1000,
+      "cfg": {
+        "family": "chain_jackpot",
+        "jackpot_reward": 1.5,
+        "jackpot_prob": 0.2,
+        "gamma": 0.95,
+        "horizon": 20,
+        "state_n": 24,
+        "reward_bound": 1.5
+      }
+    },
+    {
+      "family": "chain_sparse_credit",
+      "gamma": 0.95,
+      "T": 20,
+      "algo": "VI",
+      "n_episodes": 1000,
+      "cfg": {
+        "family": "chain_sparse_credit",
+        "state_n": 30,
+        "gamma": 0.95,
+        "horizon": 20,
+        "step_cost": -0.01,
+        "reward_bound": 1.0
+      }
+    },
+    {
+      "family": "grid_hazard",
+      "gamma": 0.95,
+      "T": 20,
+      "algo": "VI",
+      "n_episodes": 1000,
+      "cfg": {
+        "family": "grid_hazard",
+        "hazard_reward": -1.0,
+        "hazard_prob": 0.3,
+        "gamma": 0.95,
+        "horizon": 20,
+        "n_rows": 5,
+        "n_cols": 5,
+        "reward_bound": 1.0
+      }
+    }
+  ]
+}

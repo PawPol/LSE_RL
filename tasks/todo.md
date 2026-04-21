@@ -1658,3 +1658,406 @@ Review inputs:
 ### Summary
 
 Triage summary: BLOCKER=1, MAJOR=0, MINOR=3, NIT=0, DISPUTE=0
+
+---
+
+## Phase IV — Infrastructure Setup (2026-04-18)
+
+Phase IV infrastructure scaffolding. All stubs raise `NotImplementedError`; implementation
+follows via `/lse:plan-phase IV-A` → `/lse:implement`.
+
+### Phase IV-A: Activation Audit and Counterfactual
+
+- [x] [infra] Create result directories: `results/weighted_lse_dp/phase4/{audit,task_search,counterfactual_replay}`
+- [x] [infra] Create config stubs: `phase4/{paper_suite_replay,activation_search,activation_suite,gamma_matched_controls}.json`
+- [x] [geometry] Create geometry package: `experiments/weighted_lse_dp/geometry/` with 11 module stubs
+- [x] [infra] Create runner stubs: `run_phase4_activation_search.py`, `run_phase4_counterfactual_replay.py`, `aggregate_phase4A.py`
+- [x] [infra] Create analysis stubs: `make_phase4A_{figures,tables}.py`
+- [x] [infra] Create task family stub: `tasks/phase4_operator_suite.py`
+- [x] [test] Create test stubs: 7 test modules (compat, geometry, activation, leakage, controls, tasks, smoke)
+- [x] [infra] Create figure directory: `figures/phase4/tables/`
+- [x] **Next**: `/lse:plan-phase IV-A` to decompose the spec into implementation tasks
+
+---
+
+## Phase IV-A — Activation Audit and Counterfactual (2026-04-18)
+
+Spec: `docs/specs/phase_IV_A_activation_audit_and_counterfactual.md`
+
+Tasks are numbered 1-55 within this phase. All stubs exist from the infrastructure
+scaffolding above; this plan fills them with implementation content.
+
+### Group A: Phase III compatibility audit (spec S3)
+
+1.  - [ ] [audit] Implement `geometry/phase3_audit.py`: code audit (schedule loading, reward_bound provenance, stage decoding, n_base derivation from env metadata) -> operator-theorist  (spec S3.1 checks 1-6)
+2.  - [ ] [audit] Implement Phase III result audit path in `phase3_audit.py`: parse old metrics/logs, verify beta_used/rho/eff_discount/targets match under Phase IV code path -> operator-theorist  (spec S3.1 check 4, S3.4)
+3.  - [ ] [audit] Implement replay smoke checks: one Phase III DP config + one Phase III RL config replayed through Phase IV code path with numerical equality assertions -> operator-theorist  (spec S3.4)
+4.  - [ ] [audit] Absorb Phase III observability fixes into Phase IV code path: safe_margin from swc.last_margin, per-task schedule_file overrides, DP rho from eff_discount, stage decoding from env metadata, flag missing reward_bound -> operator-theorist  (spec S3.2 fixes 1-5)
+5.  - [ ] [test] Implement `test_phase4_phase3_compat.py`: schedule adapter beta_used reproduction, Phase IV target eval matches Phase III when new features disabled, legacy result parsing, stage decoding from env metadata -> test-author  (spec S9.1)
+
+### Group B: Natural-shift geometry package (spec S2, S6)
+
+6.  - [ ] [operator] Implement `geometry/natural_shift.py`: u = beta*(r-v), xi_ref computation, sign-family scoring, aligned normalized margin, small-signal diagnostics -> operator-theorist  (spec S2.2-2.3, S6.2-6.3)
+7.  - [ ] [operator] Implement `geometry/trust_region.py`: Bernoulli KL cap, stagewise confidence, design radius, u_tr_cap solver -> operator-theorist  (spec S6.5)
+8.  - [ ] [operator] Implement `geometry/adaptive_headroom.py`: baseline headroom, kappa/Bhat/A/Theta_safe/U_safe_ref computation, fixed-point loop -> operator-theorist  (spec S6.6-6.7)
+9.  - [ ] [test] Implement `test_phase4_natural_shift_geometry.py`: u=beta*margin=theta*xi identity, delta_eff_discount exact derivative, small-signal expansion accuracy, trust and safe caps never increase |u| -> test-author  (spec S9.2)
+
+### Group C: Activation metrics and search pipeline (spec S4-5)
+
+10. - [ ] [operator] Implement `geometry/activation_metrics.py`: per-transition/per-backup logging fields (S8.1), aggregate geometry diagnostics (S8.2), event-conditioned diagnostics (S8.3), activation thresholds on informative stages -> operator-theorist  (spec S8.1-8.3, S5.3)
+11. - [ ] [operator] Implement `geometry/task_activation_search.py`: candidate scoring (S5.4), selection protocol (S5.2), minimum acceptance criteria (S5.3), informative-stage definition, triviality penalties -> operator-theorist  (spec S5.1-5.5)
+12. - [ ] [test] Implement `test_phase4_activation_metrics.py`: U_safe_ref=Theta_safe*xi_ref correctness, event-conditioned aggregation, counterfactual replay metrics match recomputation, thresholds on informative stages only -> test-author  (spec S9.3)
+13. - [ ] [test] Implement `test_phase4_task_search_no_safe_leakage.py`: activation-suite selection runner operates from classical pilot data + closed-form diagnostics only, no Phase IV safe performance files required -> test-author  (spec S9.5)
+
+### Group D: Schedule calibration v3 (spec S6)
+
+14. - [ ] [calibration] Implement `geometry/phase4_calibration_v3.py`: calibration source priority (S6.1), sign rule (S6.2), target natural shift (S6.3), optional target-discount-gap parameterization (S6.4), final deployed schedule (S6.10), schedule file format v3 (S6.11) -> calibration-engineer  (spec S6.1-6.4, S6.10-6.11)
+15. - [ ] [calibration] Implement lower-base-gamma branch in `phase4_calibration_v3.py`: gamma_base grid (S6.8), matched classical-control config emission (S6.9), safe-zero-nonlinearity control -> calibration-engineer  (spec S6.8-6.9)
+16. - [ ] [test] Implement `test_phase4_gamma_matched_controls.py`: classical matched-gamma control emitted when gamma_base != gamma_eval, safe-zero-nonlinearity reproduces classical target, target gaps against matched-gamma_base classical -> test-author  (spec S9.6)
+
+### Group E: Operator-sensitive activation-suite task factories (spec S4)
+
+17. - [ ] [env] Implement chain sparse-credit family in `tasks/phase4_operator_suite.py`: search grid state_n x gamma_eval x horizon x step_cost, goal reward ~1.0 -> env-builder  (spec S4.5.1)
+18. - [ ] [env] Implement chain jackpot family in `tasks/phase4_operator_suite.py`: search grid jackpot_reward x jackpot_prob x gamma_eval x horizon, background goal ~1.0 -> env-builder  (spec S4.5.2)
+19. - [ ] [env] Implement chain catastrophe family in `tasks/phase4_operator_suite.py`: search grid catastrophe_reward x risky_prob x shortcut_jump x gamma_eval x horizon -> env-builder  (spec S4.5.3)
+20. - [ ] [env] Implement grid hazard family in `tasks/phase4_operator_suite.py`: search grid hazard_reward x hazard_prob x detour_length x gamma_eval x horizon -> env-builder  (spec S4.5.4)
+21. - [ ] [env] Implement regime-shift family in `tasks/phase4_operator_suite.py`: gamma_eval x horizon x change_at_episode, goal/corridor/hazard flips -> env-builder  (spec S4.5.5)
+22. - [ ] [env] Implement taxi bonus family in `tasks/phase4_operator_suite.py`: bonus_reward x bonus_prob x gamma_eval x horizon -> env-builder  (spec S4.5.6)
+23. - [ ] [test] Implement `test_phase4_operator_sensitive_tasks.py`: selected configs instantiate, realized event rates in intended bands, severe variants preserve semantics, Phase III tasks accessible as negative controls -> test-author  (spec S9.4)
+
+### Group F: Negative-control replay suite config (spec S4.1, S10.1)
+
+24. - [ ] [infra] Write `configs/phase4/paper_suite_replay.json`: original Phase III task suite replayed through Phase IV code path as negative controls -> experiment-runner  (spec S4.1, S10.1)
+
+### Group G: Activation search runner (spec S5)
+
+25. - [ ] [infra] Implement `runners/run_phase4_activation_search.py`: classical pilot per candidate, candidate schedule construction from pilot diagnostics, predicted activation metrics, scoring, freezing selected tasks to `selected_tasks.json` -> experiment-runner  (spec S5.1-5.5)
+26. - [ ] [infra] Write `configs/phase4/activation_search.json`: candidate grid definition (all families x parameter sweeps) -> experiment-runner  (spec S5.1, S4.5)
+27. - [ ] [infra] Write `configs/phase4/activation_suite.json`: frozen selected tasks (populated by search runner output) -> experiment-runner  (spec S5.5)
+
+### Group H: Counterfactual target replay (spec S7, S10.2)
+
+28. - [ ] [operator] Implement `runners/run_phase4_counterfactual_replay.py`: frozen pilot transitions + frozen v_next, compute classical/safe targets, target gap, eff-discount gap, natural shift, cap utilization, event-conditioned diagnostics -> experiment-runner + operator-theorist  (spec S7)
+29. - [ ] [infra] Write `configs/phase4/gamma_matched_controls.json`: matched classical-control and safe-zero-nonlinearity control configs for every lower-base-gamma comparison -> experiment-runner  (spec S6.9, S10.2)
+
+### Group I: Diagnostic-strength sweep (spec S10.3)
+
+30. - [ ] [calibration] Implement u_max sweep support in `phase4_calibration_v3.py`: u_max in {0.0, 0.005, 0.010, 0.020} or equivalent delta_discount_target sweep -> calibration-engineer  (spec S10.3)
+
+### Group J: Aggregation (spec S11-12)
+
+31. - [ ] [infra] Implement `runners/aggregate_phase4A.py`: aggregate per-transition diagnostics by stage and globally, compute primary activation metrics (S11.1), activation-search metrics (S11.2) -> experiment-runner  (spec S11.1-11.2)
+
+### Group K: Activation gate evaluation (spec S13)
+
+32. - [ ] [operator] Implement activation-gate evaluation in `aggregate_phase4A.py` or separate module: check mean_abs_u >= 5e-3, frac(|u| >= 5e-3) >= 0.10, mean_abs(delta_eff_discount) >= 1e-3, mean_abs(target_gap)/reward_bound >= 5e-3; both global and event-conditioned -> operator-theorist  (spec S13)
+
+### Group L: Figures and tables (spec S12)
+
+33. - [ ] [plot] Implement `analysis/make_phase4A_figures.py` fig 1: activation frontier by stage (U_safe_ref, u_target, u_ref_used, trust cap, safe cap) -> plotter-analyst  (spec S12.1 fig 1)
+34. - [ ] [plot] Implement `analysis/make_phase4A_figures.py` fig 2: natural-shift distribution histogram -> plotter-analyst  (spec S12.1 fig 2)
+35. - [ ] [plot] Implement `analysis/make_phase4A_figures.py` fig 3: effective-discount separation distribution -> plotter-analyst  (spec S12.1 fig 3)
+36. - [ ] [plot] Implement `analysis/make_phase4A_figures.py` fig 4: safe-vs-classical target separation distribution -> plotter-analyst  (spec S12.1 fig 4)
+37. - [ ] [plot] Implement `analysis/make_phase4A_figures.py` fig 5: task-search frontier and rejected candidates -> plotter-analyst  (spec S12.1 fig 5)
+38. - [ ] [plot] Implement `analysis/make_phase4A_figures.py` fig 6: negative-control replay diagnostics -> plotter-analyst  (spec S12.1 fig 6)
+39. - [ ] [analysis] Implement `analysis/make_phase4A_tables.py` table P4A-A: activation-suite task definitions and pilot activation diagnostics -> plotter-analyst  (spec S12.2 table 1)
+40. - [ ] [analysis] Implement `analysis/make_phase4A_tables.py` table P4A-B: operator-activation diagnostics by candidate and selected task -> plotter-analyst  (spec S12.2 table 2)
+41. - [ ] [analysis] Implement `analysis/make_phase4A_tables.py` table P4A-C: matched classical-control configuration summary -> plotter-analyst  (spec S12.2 table 3)
+42. - [ ] [analysis] Implement `analysis/make_phase4A_tables.py` table P4A-D: negative-control replay summary -> plotter-analyst  (spec S12.2 table 4)
+43. - [ ] [analysis] Implement `analysis/make_phase4A_tables.py` table P4A-E: counterfactual replay summary -> plotter-analyst  (spec S12.2 table 5)
+
+### Group M: End-to-end smoke tests (spec S9.7)
+
+44. - [ ] [test] Implement `test_phase4A_smoke_runs.py`: audit runner completes, activation-search runner completes, counterfactual replay completes, one short activation-suite DP replay completes with geometry fields logged, aggregation + figure generation on smoke outputs -> test-author  (spec S9.7)
+
+### Group N: Schedule schema documentation
+
+45. - [ ] [infra] Write `geometry/schedule_v3_schema.md`: document schedule file format v3 fields per spec S6.11 -> calibration-engineer  (spec S6.11)
+
+### Group O: Experiment execution
+
+46. - [ ] [infra] Run Phase III compatibility audit and generate audit artifacts to `results/weighted_lse_dp/phase4/audit/` -> experiment-runner  (spec S3.3)
+47. - [ ] [infra] Run negative-control replay suite (Phase III tasks through Phase IV code path) -> experiment-runner  (spec S4.1, S10.1)
+48. - [ ] [infra] Run activation search pipeline, freeze activation suite -> experiment-runner  (spec S5.2, S5.5)
+49. - [ ] [calibration] Build v3 schedules for frozen activation suite (with trust-region caps and adaptive headroom) -> calibration-engineer  (spec S6)
+50. - [ ] [infra] Run counterfactual target replay on frozen activation suite -> experiment-runner  (spec S7, S10.2)
+51. - [ ] [infra] Run diagnostic-strength sweep (u_max in {0.0, 0.005, 0.010, 0.020}) -> experiment-runner  (spec S10.3)
+52. - [ ] [infra] Generate activation-gate report -> experiment-runner  (spec S13)
+53. - [ ] [plot] Generate all Phase IV-A figures and tables from run outputs -> plotter-analyst  (spec S12)
+
+### Group P: Verification and closing
+
+54. - [ ] [test] Verifier pass: full test suite + smoke runs + activation-gate report + figure regeneration -> verifier  (spec S15 exit criteria 1-11)
+55. - [ ] [infra] Audit `tasks/lessons.md` -- every bug found during Phase IV-A recorded -> planner  (spec S15 exit criterion 11)
+
+### Dependencies
+
+- Group A (1-5) blocks all other groups: Phase III compat must pass first (spec S3: "Do this before any new experiments").
+- 4 (observability fixes) blocks 6-8 (geometry package uses fixed safe_margin, DP rho, stage decoding).
+- Group B (6-9) blocks Group C (10-13): activation metrics depend on natural-shift geometry.
+- Group B (6-8) blocks Group D (14-16): calibration v3 consumes natural_shift, trust_region, adaptive_headroom.
+- Group E (17-23) is independent of Groups B-D: task factories do not depend on geometry code.
+- Group D (14-16) blocks Group G (25-27): search runner needs calibration v3 to build candidate schedules.
+- Group C (10-13) blocks Group G (25-27): search runner needs activation metrics for scoring.
+- Group E (17-22) blocks Group G (25-27): search runner needs task factories to instantiate candidates.
+- Group G (25-27) blocks Group H (28-29): counterfactual replay operates on the frozen activation suite.
+- Group D (14-16) blocks Group I (30): u_max sweep is a parameterization of calibration v3.
+- Group H (28-29) + Group I (30) block Group J (31): aggregation consumes replay and sweep outputs.
+- Group J (31) blocks Group K (32): gate evaluation requires aggregated diagnostics.
+- Group J (31) + Group K (32) block Group L (33-43): figures/tables depend on aggregated data and gate report.
+- Group G (25-27) blocks Group F (24) functionally: negative-control replay config can be written early but execution needs Phase IV code path working.
+- Group O (46-53) is the execution sequence that depends on all implementation groups completing.
+- Group P (54-55) blocks phase closure.
+
+### Parallelizable groups
+
+- **Batch 1** (after Group A passes): Groups B (6-9), E (17-23) can run in parallel.
+  - Within Group E: tasks 17, 18, 19, 20, 21, 22 are independent task families.
+- **Batch 2** (after Group B): Groups C (10-13), D (14-16) can run in parallel.
+  - Within Group D: 14 and 15 are sequential (15 extends 14), but 16 (tests) can start after 15.
+- **Batch 3** (after Groups C, D, E): Groups F (24), G (25-27) can run in parallel.
+- **Batch 4** (after Group G): Groups H (28-29), I (30), N (45) can run in parallel.
+- **Batch 5** (after Groups H, I): Group J (31), then Group K (32).
+- **Batch 6** (after Group K): Group L (33-43) -- all figures/tables are independent of each other.
+- **Batch 7** (execution): Group O tasks 46-53 are sequential.
+- **Batch 8** (closing): Group P (54-55).
+
+### Lessons applied
+
+- Task 1 explicitly requires stage decoding from env metadata, not hard-coded n_base (lesson: 2026-04-17 hard-coded state-count constants).
+- Task 4 explicitly absorbs safe_margin from swc.last_margin (lesson: 2026-04-18 safe_margin source).
+- Task 4 explicitly absorbs DP rho from eff_discount (lesson: 2026-04-18 DP rho derivation).
+- Task 14 requires reward_bound from task config, not empirical sample max (lesson: 2026-04-18 certification R_max).
+- Task 23 requires per-wrapper integration test with short episode asserting stress events fire (lesson: 2026-04-17 wrapper wiring).
+- Tasks 33-43 must be tested against real data fixtures, not demo mode (lesson: 2026-04-17 figure scripts against assumed JSON schema).
+- Task 25 must verify callee reads all override keys (lesson: 2026-04-17 config override keys).
+- All tasks use int(np.asarray(x).flat[0]) for MushroomRL state scalars (lesson: 2026-04-18 numpy int(state)).
+- Aggregation code must use per-key 1-D numpy arrays, not List[Dict] (lesson: 2026-04-18 aggregate() API).
+
+### Open questions
+
+1. **Calibration reference algorithm for Phase IV-A pilot data (spec S6.1).** Spec S6.1 says to use "compatible Phase III safe pilot logs if they exist and pass audit; otherwise Phase I/II classical logs plus a short Phase IV classical pilot." Should the classical pilot use exact DP (VI) only, or also run Q-learning / ExpectedSARSA pilots? This affects the xi_ref and p_align estimates that drive the entire schedule. (Inherited from Phase III open question 1, now concrete for Phase IV-A.)
+
+2. **Taxi family: mainline or appendix-only? (spec S4.5.6).** Spec says "If taxi remains too noisy, keep it appendix-only and do not let it block chain/grid." Should we run the search pipeline on taxi and let the acceptance criteria (S5.3) decide, or preemptively mark it appendix-only to save compute?
+
+3. **State-dependent sign ablation (spec S6.2).** Spec says "Use a common sign per task family unless a state-dependent sign ablation is explicitly enabled." Should we implement the state-dependent sign ablation stub now (Phase IV-A) or defer entirely to Phase IV-C? The spec says "reserve [state-dependent schedulers] for Phase IV-C unless explicitly needed for diagnostics" (S0.7).
+
+4. **Number of seeds for classical pilots in activation search (spec S5.2).** Spec requires "a short classical pilot" per candidate but does not specify seed count. Phase I/II used 3 seeds for main runs. Should pilots use 1 seed (fast but noisy xi_ref), 3 seeds (matches convention), or more?
+
+5. **Unresolved Phase III MINOR items.** Phase III R3 triage has 4 unresolved MINOR items (R3-1 q_current_beta0 naming, R3-2 schedule_file override assertion, R3-3 transition logger field names, R3-4 schedule validation cap). None affect Phase IV-A correctness but item R3-2 (schedule_file override) is absorbed by task 4 above. Confirm the remaining 3 MINORs can stay deferred.
+
+### Phase IV-B: Translation Experiments
+
+- [x] [infra] Create result directories: `results/weighted_lse_dp/phase4/translation/`
+- [x] [infra] Create config stubs: `phase4/{translation_study,diagnostic_strength_sweep,primary_outcomes}.json`
+- [x] [infra] Create runner stubs: `run_phase4_{dp,rl,diagnostic_sweep}.py`, `aggregate_phase4B.py`
+- [x] [infra] Create analysis stubs: `make_phase4B_{figures,tables}.py`, `translation_analysis.py`, `paired_bootstrap.py`
+- [x] [test] Create test stubs: 4 test modules (translation, outcomes, controls, smoke)
+- [ ] **Next**: `/lse:plan-phase IV-B` (blocked by IV-A activation gate)
+
+### Phase IV-C: Advanced Stabilization and Geometry Ablations
+
+- [x] [infra] Create result directories: `results/weighted_lse_dp/phase4/advanced/`
+- [x] [infra] Create config stubs: `phase4/{advanced_estimators,state_dependent_schedulers,geometry_priority_dp,certification_ablations}.json`
+- [x] [infra] Create geometry stubs: `schedule_smoothing.py`, `state_bins.py`, `geometry_priority.py`
+- [x] [infra] Create runner stubs: `run_phase4C_{advanced_rl,geometry_dp,scheduler_ablations,certification_ablations}.py`, `aggregate_phase4C.py`
+- [x] [infra] Create analysis stubs: `make_phase4C_{figures,tables}.py`, `estimator_stability_analysis.py`, `scheduler_localization_analysis.py`
+- [x] [test] Create test stubs: 6 test modules (double-q, target-q, statebin, geometry-dp, ablations, smoke)
+- [ ] **Next**: `/lse:plan-phase IV-C` (blocked by IV-B translation study)
+
+### Orchestration Updates
+
+- [x] [infra] Update AGENTS.md: subagent scopes, dispatch tags, phase-boundary focus strings, branch naming
+- [x] [infra] Update `/lse:plan-phase` to accept `IV-A|IV-B|IV-C`
+- [x] [infra] Update `/lse:review` with Phase IV adversarial focus strings
+- [x] [infra] Update README.md: Phase IV specs, status log
+- [x] [infra] Create Codex review directories: `results/processed/codex_reviews/phase_IV_{A,B,C}/`
+
+### Overnight Automation Layer
+
+- [x] [infra] Create `/lse:overnight` slash command with full autonomous pipeline protocol
+- [x] [infra] Create `scripts/overnight/checkpoint.py` — checkpoint state machine (init, update, gate, finish)
+- [x] [infra] Create `scripts/overnight/check_gate.py` — artifact-based gate checks for IV-A/B/C
+- [x] [infra] Update `docs/workflow.md` §7 with overnight mode documentation
+- [x] [infra] Update `AGENTS.md` §8 with overnight protocol reference
+- [x] [infra] Update README.md with `/lse:overnight` command
+
+---
+
+## Phase IV-A — Activation audit and counterfactual replay (2026-04-19)
+
+All stubs exist from the Phase IV infrastructure pass. Every task below
+implements the stub into a working module per the Phase IV-A spec at
+`docs/specs/phase_IV_A_activation_audit_and_counterfactual.md`.
+
+### Tier 0: Phase III audit (spec S3)
+
+- [ ] 56. [audit] Implement `phase3_audit.py`: code audit (`run_phase3_code_audit`) and result audit (`run_phase3_result_audit`) — verify schedule loading, reward_bound presence, stage decoding from env metadata, rho not all-NaN (spec S3.1-S3.3) -> operator-theorist
+- [ ] 57. [calibration] Implement `phase3_audit.py`: replay smoke checks — replay one Phase III DP and one RL config through Phase IV code path, assert bitwise-equal `beta_used_t`, `rho_t`, `effective_discount_t`, targets (spec S3.4) -> calibration-engineer
+- [ ] 58. [infra] Populate `paper_suite_replay.json` config — list original Phase III tasks as negative-control replay entries (spec S4.1, S14.3) -> experiment-runner
+- [ ] 59. [test] Implement `test_phase4_phase3_compat.py` — schedule adapter, target eval match, legacy directory parsing, stage decoding from env metadata (spec S9.1) -> test-author
+
+### Tier 1: Geometry modules (spec S2, S6)
+
+- [ ] 60. [operator] Implement `natural_shift.py` — `compute_natural_shift`, `compute_theta`, `compute_xi`, `compute_aligned_margin`, small-signal diagnostics (spec S2.1-S2.3) -> operator-theorist
+- [ ] 61. [operator] Implement `trust_region.py` — Bernoulli KL functions, `compute_trust_region_cap` with stagewise confidence (spec S6.5) -> operator-theorist
+- [ ] 62. [operator] Implement `adaptive_headroom.py` — `alpha_base_t` informativeness schedule, `kappa_t`/`Bhat_t`/`A_t` backward recursion, fixed-point loop (spec S6.6-S6.7) -> operator-theorist
+- [ ] 63. [operator] Implement `activation_metrics.py` — aggregate geometry diagnostics (mean/std/quantiles of u, delta_d, target_gap), event-conditioned diagnostics, informative-stage masking (spec S8.2-S8.3, S11.1) -> operator-theorist
+- [ ] 64. [test] Implement `test_phase4_natural_shift_geometry.py` — u=beta*margin=theta*xi identity, delta_d derivative, small-signal expansions, caps never increase |u| (spec S9.2) -> test-author
+- [ ] 65. [test] Implement `test_phase4_activation_metrics.py` — U_safe_ref computation, event-conditioned aggregation, counterfactual replay metric match, informative-stage-only thresholds (spec S9.3) -> test-author
+
+### Tier 2: Calibration v3 and schedule format (spec S6)
+
+- [ ] 66. [calibration] Implement `phase4_calibration_v3.py` — sign rule (spec S6.2), xi_ref computation (spec S6.3), u_target schedule (spec S6.3), optional delta_discount_target branch (spec S6.4), trust-region cap integration (spec S6.5), adaptive headroom fixed-point (spec S6.7), lower-base-gamma grid (spec S6.8), final deployed schedule (spec S6.10) -> calibration-engineer
+- [ ] 67. [calibration] Write `schedule_v3_schema.md` — document v3 JSON fields, all stagewise arrays, source provenance, clip flags (spec S6.11) -> calibration-engineer
+- [ ] 68. [infra] Populate `gamma_matched_controls.json` — for every lower-base-gamma config, emit classical matched-gamma and safe-zero-nonlinearity controls (spec S6.9, S14.3) -> experiment-runner
+- [ ] 69. [test] Implement `test_phase4_gamma_matched_controls.py` — classical control emitted when gamma_base != gamma_eval, safe-zero reproduces classical target, target gaps reported against matched gamma_base (spec S9.6) -> test-author
+
+### Tier 3: Task families (spec S4)
+
+- [ ] 70. [env] Implement `phase4_operator_suite.py` — 6 task family factories: chain_sparse_credit, chain_jackpot, chain_catastrophe, grid_hazard, regime_shift, taxi_bonus, each with search grids per spec S4.5.1-S4.5.6 -> env-builder
+- [ ] 71. [test] Implement `test_phase4_operator_sensitive_tasks.py` — configs instantiate, event rates in [1%,15%], severe variants preserve semantics, Phase III tasks accessible as negative controls (spec S9.4) -> test-author
+
+### Tier 4: Activation search pipeline (spec S5)
+
+- [ ] 72. [algo] Implement `task_activation_search.py` — candidate scoring (spec S5.4), selection protocol (spec S5.2), minimum acceptance criteria (spec S5.3), freeze selected tasks (spec S5.5) -> algo-implementer
+- [ ] 73. [infra] Populate `activation_search.json` — search grid config with family/gamma/horizon/reward cross-product (spec S5.1) -> experiment-runner
+- [ ] 74. [algo] Implement `run_phase4_activation_search.py` — pilot + score + freeze pipeline, must not read Phase IV safe return files (spec S5.2), writes candidate_grid.json, candidate_scores.csv, selected_tasks.json, activation_search_report.md (spec S5.5) -> algo-implementer
+- [ ] 75. [test] Implement `test_phase4_task_search_no_safe_leakage.py` — search runner operates from classical pilot + closed-form diagnostics only (spec S9.5) -> test-author
+
+### Tier 5: Counterfactual replay (spec S7)
+
+- [ ] 76. [infra] Implement `run_phase4_counterfactual_replay.py` — frozen pilot transitions, compute classical target, safe target, target gap, effective-discount gap, natural shift, cap utilization, event-conditioned diagnostics (spec S7) -> experiment-runner
+- [ ] 77. [logging] Add per-transition/per-backup logging fields to runners — all fields from spec S8.1 (stage, gamma_eval/base, reward_bound, A_t, xi_ref_t, u_target_t, u_tr_cap_t, U_safe_ref_t, u_ref_used_t, theta_used_t, beta_used_t, margin, margin_norm, natural_shift, trust/safe clip flags, rho_used, effective_discount_used, delta_effective_discount, safe_target, classical targets, safe_target_gap, KL_to_prior, event flags) -> experiment-runner
+
+### Tier 6: Aggregation and analysis (spec S12, S14)
+
+- [ ] 78. [infra] Implement `aggregate_phase4A.py` — collect counterfactual replay + activation search results, emit processed outputs to results/processed/ (spec S14.4) -> experiment-runner
+- [ ] 79. [analysis] Implement `make_phase4A_tables.py` — tables P4A-A (task definitions + pilot diagnostics), P4A-B (operator-activation diagnostics), P4A-C (matched classical-control configs), P4A-D (negative-control replay summary), P4A-E (counterfactual replay summary) (spec S12.2) -> plotter-analyst
+- [ ] 80. [plot] Implement `make_phase4A_figures.py` — 6 mandatory figures: activation frontier, natural-shift distribution, effective-discount separation, safe-vs-classical target separation, task-search frontier, negative-control replay diagnostics (spec S12.1) -> plotter-analyst
+- [ ] 81. [infra] Populate `activation_suite.json` — written by search runner, frozen selected tasks (spec S5.5, S14.3). This is an output of task 74, verified here. -> experiment-runner
+
+### Tier 7: Smoke and end-to-end tests (spec S9.7)
+
+- [ ] 82. [test] Implement `test_phase4A_smoke_runs.py` — audit runner completes, activation-search runner completes, counterfactual replay completes, one short activation-suite DP replay logs geometry fields, aggregation + figure generation run on smoke outputs (spec S9.7) -> test-author
+
+### Tier 8: Activation gate evaluation (spec S13)
+
+- [ ] 83. [analysis] Evaluate activation gate — run counterfactual replay on frozen activation suite, check global gate (mean_abs_u >= 5e-3, frac(|u|>=5e-3) >= 0.10, mean_abs(delta_d) >= 1e-3, mean_abs(target_gap)/R_max >= 5e-3) and event-conditioned gate, classify each family as activated or negative control (spec S13) -> plotter-analyst
+
+### Dependencies
+
+- Tasks 57, 58 depend on task 56 (audit must run first)
+- Task 59 depends on tasks 56-57 (tests verify audit outputs)
+- Tasks 64, 65 depend on tasks 60-63 (tests verify geometry modules)
+- Tasks 66, 67 depend on tasks 60-62 (calibration v3 consumes geometry modules)
+- Task 69 depends on task 66 (matched control tests verify calibration)
+- Task 68 depends on task 66 (gamma_matched_controls config uses calibration v3)
+- Task 70 depends on nothing (task factories are self-contained)
+- Task 71 depends on task 70 (task tests need factories)
+- Tasks 72-74 depend on tasks 60-63, 66, 70 (search uses geometry, calibration, and task factories)
+- Task 75 depends on task 74 (leakage test verifies search runner)
+- Tasks 76-77 depend on tasks 60-63, 66, 72-74 (replay uses geometry, calibration, frozen tasks)
+- Task 78 depends on tasks 76-77 (aggregation reads replay outputs)
+- Tasks 79-80 depend on task 78 (tables/figures read aggregated data)
+- Task 81 depends on task 74 (activation_suite.json is output of search runner)
+- Task 82 depends on tasks 56-80 (end-to-end smoke test exercises full pipeline)
+- Task 83 depends on tasks 76-80 (gate evaluation requires counterfactual replay and aggregation)
+
+### Parallelizable groups
+
+- **Group A** (Tier 0): Tasks 56-59 — Phase III audit. Sequential within group (56 -> 57 -> 58 -> 59).
+- **Group B** (Tier 1): Tasks 60-65 — Geometry modules + their tests. Can run in parallel with Group C and Group D. Within group: 60-63 are parallelizable among themselves; 64-65 wait for 60-63.
+- **Group C** (Tier 3): Task 70-71 — Task families. Fully parallel with Groups A and B. Task 71 waits for 70.
+- **Group D** (Tier 2): Tasks 66-69 — Calibration v3. Depends on Group B (tasks 60-62). Tasks 67, 68, 69 can parallel after 66.
+- **Group E** (Tier 4): Tasks 72-75 — Activation search. Depends on Groups B, C, D.
+- **Group F** (Tier 5-6): Tasks 76-81 — Counterfactual replay + aggregation + analysis. Depends on Group E.
+- **Group G** (Tier 7-8): Tasks 82-83 — End-to-end smoke + activation gate. Depends on Group F.
+
+### Design choices (autonomous mode — no human input required)
+
+- Conservative interpretation for spec S4.3 rule 1: mainline reward shocks capped at |reward| <= 3.0 (spec says "should usually lie in"). Larger values only in negative-control variants.
+- Conservative interpretation for spec S6.7: max_fixed_point_iters = 4 (spec default). alpha_budget_max = 0.30 (spec default). No expansion beyond spec defaults without gate passing first.
+- Conservative interpretation for spec S6.8: initial gamma_base grid restricted to {gamma_eval, max(0.95, gamma_eval - 0.02)} per spec recommendation. Full grid expansion deferred to after activation gate.
+- For taxi_bonus (spec S4.5.6): if too noisy during search, classify as appendix-only and do not block chain/grid families per spec instruction.
+
+---
+
+## Phase IV-A Review Triage (2026-04-20)
+
+BLOCKER: 4 | MAJOR: 5 | MINOR: 6 | NIT: 2 | DISPUTE: 2
+
+Sources: `results/processed/codex_reviews/phase_IV_A/review.md` (standard) and `.../adversarial.md`. Spec: `docs/specs/phase_IV_A_activation_audit_and_counterfactual.md`.
+
+### BLOCKER
+
+1. [BLOCKER] Activation gate evaluates *predicted* search scores, not the *actual* counterfactual replay results — `scripts/overnight/check_gate.py:99-127` — Spec §13 explicitly says the gate must be evaluated on counterfactual replay (§7 mandates replay before full RL). Verified: `check_gate.py` reads `task_search/candidate_scores.csv` (`mean_abs_u_pred = 5.17e-3` for chain_sparse_credit) instead of `counterfactual_replay/all_replay_summaries.json`, where the actual `mean_abs_u = 6.50e-4` and `frac_u_ge_5e3 = 0.0` (7.9× below the 5e-3 threshold and the `frac >= 0.10` clause is also failed). Pipeline reports gate PASS while measured activation is FAIL. Action: replace the candidate-scores branch with a reader for `all_replay_summaries.json` and require both `mean_abs_u >= 5e-3` and `frac_u_ge_5e3 >= 0.10` per task family (and aggregate). Re-run gate. Acceptance: `check_gate.py --phase IV-A --json` returns FAIL for the current artifacts and PASS only when the per-family replay metrics meet §13 thresholds. Standard review #1; adversarial #2 partially overlaps but is about a different denominator concern (filed separately as MAJOR-5 below).
+
+2. [BLOCKER] `load_selected_task_cfgs` iterates dict keys instead of the `tasks` list — `scripts/overnight/pilot_budget_sensitivity.py:124` — `selected_tasks.json` is a dict `{"suite_type", "tasks", "selected_families", ...}`. The current loop `for entry in raw: cfg = dict(entry["cfg"])` will run `entry = "suite_type"` first and crash with `TypeError: string indices must be integers, not 'str'`. The pilot budget sensitivity study cannot run at all. Action: change to `for entry in raw["tasks"]:` (or `raw.get("tasks", [])` with a clear error if missing). Acceptance: `pilot_budget_sensitivity.py --dry-run` enumerates the 3 selected task families without TypeError. Standard review #2.
+
+3. [BLOCKER] Pilot vs. replay terminal-step convention mismatch breaks counterfactual isolation — `experiments/weighted_lse_dp/runners/run_phase4_counterfactual_replay.py:155` vs `experiments/weighted_lse_dp/geometry/task_activation_search.py:225` — The pilot zeros `v_next` only when the episode terminated early (`if i == T_ep - 1 and len(ep_rewards) < max_steps:`); the replay zeros `v_next` whenever `step_idx == horizon - 1` regardless of absorbing status. For trajectories that exhaust the horizon non-absorbingly the schedule was built from margins that used `r - V*(s_{T-1}^next)` while the replay scores those same transitions with `r - 0`, producing a systematic margin shift. This violates the §7 counterfactual isolation guarantee that the schedule and the replayed transitions come from the same data. Action: align the two conventions (preferred: only zero `v_next` on `absorbing`, since fixed-horizon non-absorbing transitions still have a well-defined V*(s')). Also remove the dead walrus `(i := step_idx)` while there. Acceptance: an integration test that builds a pilot, replays it, and asserts that for every transition the `margin` used in the schedule equals `margin_all` in the replay (atol 1e-12). Adversarial review BLOCKER (terminal mismatch).
+
+4. [BLOCKER] Pilot vs. replay non-idempotency under shared seed — `run_phase4_counterfactual_replay.py:84-167` — `_replay_task` calls `run_classical_pilot(cfg, seed)` and then re-builds the MDP and re-runs episodes inside `_run_pilot_with_transitions(cfg, seed)`. Each call invokes `seed_everything(seed)` and `build_phase4_task(cfg, seed)`. If `build_phase4_task` consumes any global RNG state during construction (the wrappered phase-4 envs do), the replayed transitions are not the same trajectories as the ones that produced `pilot_data`, so the schedule is calibrated on one set of margins and replayed on a different one. This is the same class of failure as the lessons.md 2026-04-17 entry (wrapper vs. base MDP slip) and corrupts the §7 replay claim. Action: collect transitions inside `run_classical_pilot` once and have `_replay_task` reuse them — do not re-run rollouts. Acceptance: a test that calls `_run_pilot_with_transitions(cfg, seed)` twice in a row and asserts the per-transition reward and next-state arrays are byte-identical. Adversarial review BLOCKER (seed/idempotency).
+
+### MAJOR
+
+5. [MAJOR] `mean_abs_u_pred` denominator inconsistent with §9.3 informative-stage rule — `experiments/weighted_lse_dp/geometry/task_activation_search.py:340` — Spec §9.3 requirement 4 ("activation thresholds are evaluated only on informative stages") and §13 (gate "globally and on event-conditioned subsets") are not consistent in the code. `mean_abs_u_pred = float(np.mean(np.abs(u_ref_used)))` averages over all T stages (including dead stages where xi_ref=xi_min and informativeness ≈ 0). Replay-side `mean_abs_u` averages over all transitions. Neither matches the §9.3 informative-stage restriction. Note: this is *not* a gate-decision blocker once BLOCKER-1 is fixed (the replay denominator is well-defined), but it is the right place to surface a SPEC-GAP. Action: (a) add an `informative_mask` to the score reporter; (b) emit both `mean_abs_u_global` and `mean_abs_u_informative`; (c) clarify in spec §13 which denominator is authoritative. Acceptance: aggregator and gate both report both denominators; spec §13 amended to disambiguate. Adversarial review BLOCKER #2 (re-classified as MAJOR + SPEC-GAP).
+
+6. [MAJOR] `safe_clip_active` and `trust_clip_active` flags are logically broken — `experiments/weighted_lse_dp/geometry/phase4_calibration_v3.py:287-293` — The current code is:
+   ```
+   trust_clip_active = (u_ref_used_arr < u_target_arr - 1e-10).tolist()
+   safe_clip_active  = ((u_ref_used_arr < U_safe_abs - 1e-10) & ~trust_clip_active).tolist()
+   ```
+   Two failure modes (consistent across both reviews): (A) when the safe cap is binding (`U_safe_abs < u_tr_cap < u_target`), `u_ref_used == U_safe_abs`, so `trust_clip` evaluates True (because `u_ref_used < u_target`) and `safe_clip` evaluates False — the safe-binding event is mislabeled as a trust-binding event; (B) when neither cap binds (`u_ref_used == u_target < U_safe_abs, u_tr_cap`), `safe_clip` evaluates True even though no cap is binding. This corrupts cap-utilization fractions in tables P4A-B/E and §13 secondary diagnostics (it does not affect the primary gate metric `mean_abs_u`, hence MAJOR not BLOCKER). Action: replace with explicit "which cap is the argmin" logic, e.g.
+   ```
+   trust_clip_active = (np.abs(u_ref_used_arr - u_tr_cap_arr) <= 1e-10) & (u_tr_cap_arr < u_target_arr - 1e-10)
+   safe_clip_active  = (np.abs(u_ref_used_arr - U_safe_abs)   <= 1e-10) & (U_safe_abs   < u_tr_cap_arr - 1e-10) & (U_safe_abs < u_target_arr - 1e-10)
+   ```
+   Acceptance: a unit test parametrising the three regimes (target binding / trust binding / safe binding / tied) and asserting the flags match the analytic argmin in each. Standard review MAJOR-1 + adversarial review MAJOR (merged).
+
+7. [MAJOR] `xi_ref` normalised by `r_max` instead of `A_t` — `experiments/weighted_lse_dp/geometry/phase4_calibration_v3.py:100-113, 198-207` — Spec §S6.2/§S6.3 defines `a_t^s = s * (r - v_ref) / A_t`; the implementation uses `a_t = s * margins / max(r_max, 1e-8)`. For T=20, gamma=0.95, the spec's `A_t ≈ R_max + Bhat[1]` is ~26× `r_max`, so the code's `a_t` is ~26× the spec value. Clipping to `[0.02, 1.0]` masks the magnitude error but the sign-selection score and the unclipped `xi_ref` (when below `xi_max`) are scaled wrong; downstream `theta_used = sign * u_ref_used / max(xi_ref, xi_floor)` and hence `beta_used` are affected. There is a chicken-and-egg here (A_t depends on alpha which depends on I_t = f(xi_ref)), so the fix is a two-pass scheme: provisional A_t with `alpha = alpha_base`, then refine inside the existing fixed-point loop. Action: replace `r_denom` with `A_t` once a provisional headroom is available. Acceptance: a regression test on chain_sparse_credit asserting that the spec-conformant `xi_ref` differs from the current value by ≥ 5% on at least one informative stage, then that the new value matches the analytic spec formula at convergence. Standard review MAJOR-2.
+
+8. [MAJOR] Adaptive-headroom fixed-point convergence criterion does not match spec §6.7 — `experiments/weighted_lse_dp/geometry/adaptive_headroom.py:324-340` — Spec §6.7 says "increase alpha_t only where needed" relative to the feasibility constraint `u_target_t <= U_safe_ref_t`. The code instead bumps alpha when `theta_safe_t / theta_safe_max < 0.8` (a heuristic), which is neither necessary nor sufficient for the feasibility constraint. Result: alpha can be inflated where unnecessary (weaker certification) or fail to inflate where `u_target` is genuinely infeasible. Action: replace the heuristic with the explicit feasibility check `u_target_t > U_safe_ref_t` as the bump trigger and add a stopping criterion based on `max_t (u_target_t - U_safe_ref_t) <= 0`. Acceptance: a test constructing a stage where `theta_safe / theta_safe_max = 0.5` but `u_target = 0.5 * U_safe_ref` (no infeasibility) and asserting alpha is *not* bumped; and conversely when `theta_safe / theta_safe_max = 0.9` but `u_target > U_safe_ref` asserting it *is* bumped. Adversarial review MAJOR.
+
+9. [MAJOR] Trust-region bisection fragile near eps_tr ≈ 0 — `experiments/weighted_lse_dp/geometry/trust_region.py:156-163` — When `eps_tr` is sub-1e-10 (low-alignment early stages), floating-point residuals in `kl_bernoulli(rho(0), p0)` can flip the sign of `kl_mid - eps_tr` at `lo=0` and force the bisection to return `lo=0` (i.e., `u_tr_cap=0`). This is conservative but converts the cap to a hard zero rather than smoothly shrinking. Action: at the start of `solve_u_tr_cap`, if `eps_tr < kl_eps_floor` (e.g., 1e-12), short-circuit with a closed-form linearisation `u_tr_cap = sqrt(2 * eps_tr / sigmoid'(eta0)^2 * (1-p0)/(p0))` (or simply pin `u_tr_cap = u_target * sqrt(eps_tr / eps_design)` to preserve the smoothness limit). Acceptance: a test sweeping `eps_tr` from 1 down to 1e-15 and asserting `u_tr_cap` is monotone-non-decreasing in `eps_tr` and continuous (no jump to 0). Adversarial review MAJOR.
+
+### MINOR
+
+10. [MINOR] `select_activation_suite` acceptance thresholds (`min_mean_abs_u_pred=2e-3`, `min_frac_active_stages=0.05`) are looser than the §13 gate (`5e-3` and `0.10`) — `experiments/weighted_lse_dp/geometry/task_activation_search.py:413-489` — This is a screen-then-gate pattern, but the screen admits the chain_jackpot tasks at `mean_abs_u_pred ≈ 2.4e-3` which then fail the §13 gate. Action: tighten the search-phase floor to match §5.3 minimum (`mean_abs_u_pred >= 2e-3`, OK) but document the intentional gap; or align both to §13. Acceptance: regenerate `selected_tasks.json` and confirm only candidates with `mean_abs_u_pred >= 5e-3` are kept (or document why looser screening is desired). Adversarial review MAJOR (re-classified as MINOR — the screen-then-gate pattern is itself defensible; the bug is only that the gate is wrong, see BLOCKER-1).
+
+11. [MINOR] `U_safe_abs = np.abs(U_safe_ref_t)` silently flips a negative binding constraint — `experiments/weighted_lse_dp/geometry/phase4_calibration_v3.py:271` — In normal operation `theta_safe_t > 0` and `xi_ref_t > 0`, so `U_safe_ref_t > 0` and `np.abs` is a no-op. But if numerical issues drive `theta_safe_t` (which uses `log(kappa / (gamma * (1+gamma-kappa)))`) negative, `np.abs` would silently flip a negative cap into a large positive value, effectively removing the safety constraint. Action: replace `np.abs` with `np.where(U_safe_ref_t < 0, 0.0, U_safe_ref_t)` and add `assert (U_safe_ref_t >= -1e-12).all()` with a logged warning otherwise. Acceptance: assertion failure path unit-tested. Adversarial review BLOCKER (re-classified as MINOR — current parameter regime never hits the negative branch, so this is a defensive hardening, not a live bug; the live BLOCKER status is overstated).
+
+12. [MINOR] Module docstring describes random-policy pilot but implementation uses DP V* + ε-greedy Q* — `experiments/weighted_lse_dp/runners/run_phase4_counterfactual_replay.py:1-8` — Contradicts lessons.md 2026-04-20. Action: rewrite docstring to "Replay frozen DP V* / ε-greedy Q* pilot transitions through Phase IV schedule." Acceptance: docstring grep for "random-policy" returns no hits in this file. Standard review MINOR-1.
+
+13. [MINOR] Two `grid_hazard` mainline entries with bitwise-identical scoring metrics — `experiments/weighted_lse_dp/configs/phase4/activation_suite.json` — Different `hazard_prob` values (0.3 vs 0.2) yielded `mean_abs_u_pred = 0.003763914...` and `frac_u_ge_5e3 = 0.35` for both, suggesting the search returned the same pilot or the scoring is insensitive to `hazard_prob` in this regime. Both are below the §13 5e-3 threshold. Action: investigate whether the pilots really degenerate to the same diagnostics; if so, deduplicate. Acceptance: either both entries are explained in the activation report, or one is removed. Standard review MINOR-3.
+
+14. [MINOR] Dead walrus `(i := step_idx)` — `experiments/weighted_lse_dp/runners/run_phase4_counterfactual_replay.py:155` — `i` is never read again. Subsumed by BLOCKER-3 fix (rewrite the terminal condition entirely). Standard review MINOR-2 + adversarial MINOR.
+
+15. [MINOR] Redundant `xi_ref_arr[t] = xi_min` after `np.clip` already produced the same value — `experiments/weighted_lse_dp/geometry/phase4_calibration_v3.py:209-211` — Harmless but confusing. Action: delete the explicit re-assignment (the clip already handles q75=0). Adversarial MINOR.
+
+### NIT
+
+16. [NIT] `expected_bhat0 = (1 + gamma) * r_max / (1 - kappa_const)` is dead, computes the wrong (infinite-series) limit — `scripts/overnight/cert_audit.py:289` — Variable is computed and immediately superseded by `bhat0_exact`. Action: delete the dead variable to avoid future cargo-culting of the wrong formula. Standard review NIT-1.
+
+17. [NIT] `selected_families` length check accepts empty list when key absent — `scripts/overnight/check_gate.py:82-92` — Fallback `data.get("selected_families", [])` makes a missing-key failure silently report "0 families selected". Action: distinguish missing-key from empty-list and surface the cause in the details string. Standard review NIT-2.
+
+### DISPUTE
+
+18. [DISPUTE] Adversarial Challenge 7 ("systematic downward bias from negative margins") — Investigated: `select_sign` flips the sign family when most margins are negative, restoring positive `a_t > 0` density before the q75 is computed. The bias concern does not survive sign selection. No action.
+
+19. [DISPUTE] Adversarial concern about `U_safe_ref` `np.abs` as BLOCKER (separate from the silent-flip concern itself) — Investigated: in the parameter regime used by Phase IV-A (gamma=0.95, alpha in [0.05, 0.30]), `theta_safe_t = log(kappa / (gamma * (1+gamma-kappa)))` is strictly positive (kappa > gamma ⇒ numerator > denominator's gamma factor), so `np.abs` is a no-op and there is no live correctness failure. Re-classified as MINOR (defensive hardening) — see #11.
+
+### Open questions / SPEC-GAP
+
+- §9.3 requirement 4 ("activation thresholds are evaluated only on informative stages") vs §13 ("the gate must be evaluated both globally and on event-conditioned subsets") — these are not the same denominator. Which wins for the formal gate decision? The fix for BLOCKER-1 needs a spec ruling. Default (until the user rules): require the global denominator from replay (§13 plain reading) AND surface the informative-stage and event-conditioned denominators as secondary diagnostics.
+- §S6.2/§S6.3 spec writes `a_t = s * (r - v_ref) / A_t` but A_t depends on alpha which depends on xi_ref via I_t — circular dependency. Spec is silent on iteration order. MAJOR-7 (xi_ref denominator fix) needs a spec clarification on which provisional A_t to use. Default: A_t with `alpha = alpha_base` for the first pass, then refine inside the existing §6.7 fixed-point loop.
+
+### Routing (per AGENTS.md §4)
+
+- BLOCKERs 1, 2, 3, 4 → experiment-runner (wiring fixes in scripts/runners) with verifier sign-off.
+- MAJOR 6, 9 → operator-theorist + algo-implementer (geometry-layer correctness).
+- MAJOR 7, 8 → calibration-engineer (schedule v3 spec compliance).
+- MAJOR 5 → planner (spec amendment) then plotter-analyst (denominator surfacing).
+- MINOR 11, 13 → calibration-engineer.
+- MINOR 10 → planner (search threshold policy).
+- MINOR 12, 14, 15, NIT 16, 17 → any code-owning role.

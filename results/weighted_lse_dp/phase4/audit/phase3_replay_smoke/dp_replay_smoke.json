@@ -1,0 +1,8 @@
+{
+  "dp_replay_passed": true,
+  "rl_replay_skipped": true,
+  "dp_beta_nonzero": true,
+  "dp_rho_valid": true,
+  "timestamp": "2026-04-19T04:29:15.993551+00:00",
+  "notes": "chain_sparse_long replay: V shape=(121, 60), V range=[0.000000, 31.778998], beta_used range=[0.000000, 0.000000], rho range=[0.502513, 0.502513], n_sweeps=1; chain_sparse_long: sparse-data fallback triggered (all beta_used=0). This is expected for tasks with insufficient aligned-margin data.; chain_jackpot replay (nonzero-beta verification): V shape=(61, 26), V range=[0.000000, 20.629085], beta_used range=[0.000000, 0.000201]"
+}

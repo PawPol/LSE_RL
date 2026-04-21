@@ -1,6 +1,6 @@
 {
   "schedule_path": "results/weighted_lse_dp/phase3/calibration/grid_sparse_goal/schedule.json",
-  "calibration_source_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase2/calibration/grid_sparse_goal.json",
-  "calibration_hash": "8606b7c92579b29e3f4b0a3e4836baa05fbf2f341ebfd85a6e737c754221c71a",
+  "calibration_source_path": "results/weighted_lse_dp/phase2/calibration/grid_sparse_goal.json",
+  "calibration_hash": "8bf465e816fd3eabce9027dfc4aa51517cf801590d056ad8775d313ef8decbb3",
   "source_phase": "phase2"
 }

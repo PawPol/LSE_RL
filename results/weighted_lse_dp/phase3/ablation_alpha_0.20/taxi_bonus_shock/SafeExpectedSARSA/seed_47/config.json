@@ -77,16 +77,16 @@
     "schedule_file": "results/weighted_lse_dp/phase3/calibration/taxi_bonus_shock/alpha_0.20.json"
   },
   "tail_risk_metrics": {
-    "return_q05": 0.8097278682212584,
-    "return_q25": 0.8179069375972308,
-    "return_q50": 0.8429431933839268,
-    "return_q75": 0.8429431933839268,
-    "return_q95": 0.8429431933839268,
-    "cvar_5pct": 0.6642851970585668,
-    "cvar_10pct": 0.7384787651275876,
-    "top5pct_mean": 4.627197568946702,
-    "top10pct_mean": 2.7350703811653143,
-    "event_rate": 0.046,
-    "event_conditioned_return": 4.956263166821727
+    "return_q05": 0.7623427143471035,
+    "return_q25": 0.7936142836436554,
+    "return_q50": 0.7936142836436554,
+    "return_q75": 0.7936142836436554,
+    "return_q95": 4.574056286082621,
+    "cvar_5pct": 0.6786706017170663,
+    "cvar_10pct": 0.720814675290407,
+    "top5pct_mean": 4.770239704783111,
+    "top10pct_mean": 3.026953158835303,
+    "event_rate": 0.056,
+    "event_conditioned_return": 4.749220052779486
   }
 }

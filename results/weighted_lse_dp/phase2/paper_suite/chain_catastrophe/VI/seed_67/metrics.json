@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-20T12:05:58Z",
+  "phase": "phase2",
+  "task": "chain_catastrophe",
+  "algorithm": "VI",
+  "seed": 67,
+  "final_bellman_residual": 20.62906695327968,
+  "n_sweeps": 1,
+  "wall_clock_s": 0.00023966599837876856,
+  "converged": true,
+  "sweeps_to_1e-2": null,
+  "sweeps_to_1e-4": null,
+  "sweeps_to_1e-6": null
+}

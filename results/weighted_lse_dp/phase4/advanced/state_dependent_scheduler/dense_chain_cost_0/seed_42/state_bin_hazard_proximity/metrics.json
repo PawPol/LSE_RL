@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "phase4C",
+  "task": "dense_chain_cost_0",
+  "algorithm": "safe_q_scheduler_state_bin_hazard_proximity",
+  "scheduler_type": "state_bin_hazard_proximity",
+  "seed": 42,
+  "train_steps": 20000,
+  "n_transitions": 20000,
+  "mean_return": -0.2565980839645323,
+  "final_disc_return_mean": -0.2565553172229116
+}

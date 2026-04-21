@@ -1,0 +1,229 @@
+{
+  "entries": [
+    {
+      "algorithm": "classical_expected_sarsa",
+      "n_seeds": 5,
+      "seeds": [
+        42,
+        123,
+        456,
+        789,
+        1024
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_0/classical_expected_sarsa/summary.json",
+      "task_tag": "dense_chain_cost_0"
+    },
+    {
+      "algorithm": "classical_q",
+      "n_seeds": 5,
+      "seeds": [
+        42,
+        123,
+        456,
+        789,
+        1024
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_0/classical_q/summary.json",
+      "task_tag": "dense_chain_cost_0"
+    },
+    {
+      "algorithm": "classical_vi",
+      "n_seeds": 3,
+      "seeds": [
+        42,
+        123,
+        456
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_0/classical_vi/summary.json",
+      "task_tag": "dense_chain_cost_0"
+    },
+    {
+      "algorithm": "safe_expected_sarsa_stagewise",
+      "n_seeds": 5,
+      "seeds": [
+        42,
+        123,
+        456,
+        789,
+        1024
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_0/safe_expected_sarsa_stagewise/summary.json",
+      "task_tag": "dense_chain_cost_0"
+    },
+    {
+      "algorithm": "safe_expected_sarsa_zero",
+      "n_seeds": 5,
+      "seeds": [
+        42,
+        123,
+        456,
+        789,
+        1024
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_0/safe_expected_sarsa_zero/summary.json",
+      "task_tag": "dense_chain_cost_0"
+    },
+    {
+      "algorithm": "safe_q_stagewise",
+      "n_seeds": 5,
+      "seeds": [
+        42,
+        123,
+        456,
+        789,
+        1024
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_0/safe_q_stagewise/summary.json",
+      "task_tag": "dense_chain_cost_0"
+    },
+    {
+      "algorithm": "safe_q_zero",
+      "n_seeds": 5,
+      "seeds": [
+        42,
+        123,
+        456,
+        789,
+        1024
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_0/safe_q_zero/summary.json",
+      "task_tag": "dense_chain_cost_0"
+    },
+    {
+      "algorithm": "safe_vi",
+      "n_seeds": 3,
+      "seeds": [
+        42,
+        123,
+        456
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_0/safe_vi/summary.json",
+      "task_tag": "dense_chain_cost_0"
+    },
+    {
+      "algorithm": "safe_vi_zero",
+      "n_seeds": 3,
+      "seeds": [
+        42,
+        123,
+        456
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_0/safe_vi_zero/summary.json",
+      "task_tag": "dense_chain_cost_0"
+    },
+    {
+      "algorithm": "classical_expected_sarsa",
+      "n_seeds": 5,
+      "seeds": [
+        42,
+        123,
+        456,
+        789,
+        1024
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_1/classical_expected_sarsa/summary.json",
+      "task_tag": "dense_chain_cost_1"
+    },
+    {
+      "algorithm": "classical_q",
+      "n_seeds": 5,
+      "seeds": [
+        42,
+        123,
+        456,
+        789,
+        1024
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_1/classical_q/summary.json",
+      "task_tag": "dense_chain_cost_1"
+    },
+    {
+      "algorithm": "classical_vi",
+      "n_seeds": 3,
+      "seeds": [
+        42,
+        123,
+        456
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_1/classical_vi/summary.json",
+      "task_tag": "dense_chain_cost_1"
+    },
+    {
+      "algorithm": "safe_expected_sarsa_stagewise",
+      "n_seeds": 5,
+      "seeds": [
+        42,
+        123,
+        456,
+        789,
+        1024
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_1/safe_expected_sarsa_stagewise/summary.json",
+      "task_tag": "dense_chain_cost_1"
+    },
+    {
+      "algorithm": "safe_expected_sarsa_zero",
+      "n_seeds": 5,
+      "seeds": [
+        42,
+        123,
+        456,
+        789,
+        1024
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_1/safe_expected_sarsa_zero/summary.json",
+      "task_tag": "dense_chain_cost_1"
+    },
+    {
+      "algorithm": "safe_q_stagewise",
+      "n_seeds": 5,
+      "seeds": [
+        42,
+        123,
+        456,
+        789,
+        1024
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_1/safe_q_stagewise/summary.json",
+      "task_tag": "dense_chain_cost_1"
+    },
+    {
+      "algorithm": "safe_q_zero",
+      "n_seeds": 5,
+      "seeds": [
+        42,
+        123,
+        456,
+        789,
+        1024
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_1/safe_q_zero/summary.json",
+      "task_tag": "dense_chain_cost_1"
+    },
+    {
+      "algorithm": "safe_vi",
+      "n_seeds": 3,
+      "seeds": [
+        42,
+        123,
+        456
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_1/safe_vi/summary.json",
+      "task_tag": "dense_chain_cost_1"
+    },
+    {
+      "algorithm": "safe_vi_zero",
+      "n_seeds": 3,
+      "seeds": [
+        42,
+        123,
+        456
+      ],
+      "summary_path": "results/weighted_lse_dp/phase4/translation_4a2/aggregated/dense_chain_cost_1/safe_vi_zero/summary.json",
+      "task_tag": "dense_chain_cost_1"
+    }
+  ],
+  "n_groups": 18,
+  "schema_version": "1.0.0",
+  "suite": "translation_4a2"
+}

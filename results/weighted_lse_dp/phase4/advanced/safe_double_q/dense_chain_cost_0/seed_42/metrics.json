@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "phase4C",
+  "task": "dense_chain_cost_0",
+  "algorithm": "safe_double_q",
+  "seed": 42,
+  "train_steps": 20000,
+  "n_transitions": 20000,
+  "mean_return": -0.2565746483197433,
+  "final_disc_return_mean": -0.25660563103658296,
+  "mean_double_gap": 0.0010921894629302067,
+  "mean_natural_shift_double": -0.0014777675828389133,
+  "mean_beta_used": 0.08500354200582821
+}

@@ -88,13 +88,13 @@
     "schedule_file": "results/weighted_lse_dp/phase3/calibration/grid_hazard/alpha_0.05.json"
   },
   "tail_risk_metrics": {
-    "return_q05": 0.7856781408072188,
+    "return_q05": 0.8345137614500875,
     "return_q25": 0.8775210229989678,
     "return_q50": 0.8775210229989678,
     "return_q75": 0.8863848717161292,
     "return_q95": 0.8863848717161292,
-    "cvar_5pct": 0.7436769837053574,
-    "cvar_10pct": 0.7705378367334323,
+    "cvar_5pct": 0.8125843584388321,
+    "cvar_10pct": 0.8365572394456382,
     "top5pct_mean": 0.8863848717161292,
     "top10pct_mean": 0.8863848717161293,
     "event_rate": 0.0,

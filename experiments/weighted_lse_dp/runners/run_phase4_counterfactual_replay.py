@@ -1,0 +1,539 @@
+#!/usr/bin/env python
+"""Phase IV-A: counterfactual target replay.
+
+Freezes transitions from classical random-policy pilots and replays them
+through the safe TAB formula to isolate operator effects from exploration
+differences.  For each task in the activation suite, collects (r, v_next)
+pairs and computes exact safe targets, discount shifts, and natural-shift
+diagnostics.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+import sys
+import time
+from collections import defaultdict
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+from numpy.typing import NDArray
+
+# Ensure repo root and mushroom-rl-dev are on the path when run as a script.
+_REPO_ROOT = str(Path(__file__).resolve().parents[3])
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+_MUSHROOM_DEV = str(Path(_REPO_ROOT) / "mushroom-rl-dev")
+if _MUSHROOM_DEV not in sys.path:
+    sys.path.insert(0, _MUSHROOM_DEV)
+
+from experiments.weighted_lse_dp.common.seeds import seed_everything
+from experiments.weighted_lse_dp.geometry.phase4_calibration_v3 import (
+    build_schedule_v3_from_pilot,
+    select_sign,
+)
+from experiments.weighted_lse_dp.geometry.task_activation_search import (
+    run_classical_pilot,
+)
+from experiments.weighted_lse_dp.geometry.trust_region import kl_bernoulli
+from experiments.weighted_lse_dp.tasks.phase4_operator_suite import (
+    build_phase4_task,
+)
+
+logger = logging.getLogger(__name__)
+
+# --------------------------------------------------------------------------
+# Numerics
+# --------------------------------------------------------------------------
+
+def _sigmoid(x: NDArray[np.float64]) -> NDArray[np.float64]:
+    """Numerically stable sigmoid."""
+    x = np.asarray(x, dtype=np.float64)
+    pos = x >= 0
+    result = np.empty_like(x)
+    exp_neg = np.exp(-np.where(pos, x, 0.0))
+    result[pos] = 1.0 / (1.0 + exp_neg[pos])
+    exp_pos = np.exp(np.where(~pos, x, 0.0))
+    result[~pos] = exp_pos[~pos] / (1.0 + exp_pos[~pos])
+    return result
+
+
+# --------------------------------------------------------------------------
+# Pilot that also captures per-transition (r, v_next, stage)
+# --------------------------------------------------------------------------
+
+def _run_pilot_with_transitions(
+    cfg: dict[str, Any],
+    seed: int,
+    n_episodes: int,
+    prebuilt_env: tuple[Any, Any, dict[str, Any]] | None = None,
+) -> tuple[dict[str, Any], list[tuple[float, float, int]]]:
+    """Run classical pilot AND collect frozen (r, v_next, stage) transitions.
+
+    A single rollout drives both the standard pilot statistics AND the
+    counterfactual replay diagnostics. This guarantees that the transitions
+    used for the safe-target computation are bit-identical to those that
+    produced the schedule (no second sampler, no second env build, no
+    second seed). The ``v_next`` convention matches ``run_classical_pilot``:
+    zero only on absorbing transitions; horizon exhaustion does NOT zero
+    v_next (per lessons.md margin formula).
+
+    Returns
+    -------
+    pilot_data : dict
+        Standard pilot data from ``run_classical_pilot``.
+    transitions : list of (r, v_next, stage)
+        One entry per transition across all episodes.
+    """
+    pilot_data = run_classical_pilot(
+        cfg,
+        seed=seed,
+        n_episodes=n_episodes,
+        prebuilt_env=prebuilt_env,
+        collect_transitions=True,
+    )
+    transitions = pilot_data.pop("transitions", [])
+    return pilot_data, transitions
+
+
+# --------------------------------------------------------------------------
+# Core counterfactual replay for one task
+# --------------------------------------------------------------------------
+
+def _replay_task(
+    task_entry: dict[str, Any],
+    seed: int,
+    n_episodes: int,
+    output_dir: Path,
+    task_idx: int,
+) -> dict[str, Any]:
+    """Run counterfactual replay for a single task and write results.
+
+    Returns the replay summary dict.
+    """
+    cfg = task_entry["cfg"]
+    family = task_entry["family"]
+    tag = f"{family}_{task_idx}"
+
+    logger.info("=== Replaying task %s (idx=%d) ===", family, task_idx)
+
+    # Build the Phase IV task ONCE per (task, seed) so the pilot and the
+    # replay share the exact same environment instance and seed lineage.
+    # Without this, ``build_phase4_task`` runs twice and any global RNG
+    # consumption between the two builds would shift trajectories,
+    # breaking counterfactual isolation.
+    seed_everything(seed)
+    prebuilt_env = build_phase4_task(cfg, seed=seed)
+
+    # Step 1-2: pilot + transitions (single rollout driving both)
+    pilot_data, transitions = _run_pilot_with_transitions(
+        cfg, seed=seed, n_episodes=n_episodes, prebuilt_env=prebuilt_env,
+    )
+
+    gamma_val = float(cfg.get("gamma", 0.97))
+    r_max = float(cfg.get("reward_bound", 1.0))
+
+    # Step 3: determine sign, then recompute sign-aligned p_align before
+    # building the schedule.  Without this correction, negative-sign families
+    # (e.g. grid_hazard) receive p_align=0 (raw margin > 0 is rare for
+    # hazard-avoidance) which collapses informativeness and beta to zero,
+    # making all replay diagnostics invalid.
+    resolved_sign = select_sign(pilot_data["margins_by_stage"], r_max)
+    corrected_p_align: list[float] = []
+    for margins_arr in pilot_data["margins_by_stage"]:
+        m = np.asarray(margins_arr, dtype=np.float64)
+        corrected_p_align.append(
+            float(np.mean(resolved_sign * m > 0.0)) if len(m) > 0 else 0.0
+        )
+    pilot_data = {**pilot_data, "p_align_by_stage": corrected_p_align}
+
+    schedule = build_schedule_v3_from_pilot(
+        pilot_data=pilot_data,
+        r_max=r_max,
+        gamma_base=gamma_val,
+        gamma_eval=gamma_val,
+        sign_family=resolved_sign,
+        task_family=family,
+        source_phase="counterfactual_replay",
+        notes=f"counterfactual replay task {tag}",
+    )
+
+    gamma_b = float(schedule["gamma_base"])
+    log_gamma_b = np.log(gamma_b)
+    log_1_plus_gamma = np.log(1.0 + gamma_b)
+    one_plus_gamma = 1.0 + gamma_b
+
+    beta_arr = np.asarray(schedule["beta_used_t"], dtype=np.float64)
+    T_schedule = len(beta_arr)
+
+    # Schedule arrays
+    xi_ref_t = np.asarray(schedule["xi_ref_t"], dtype=np.float64)
+    u_target_t = np.asarray(schedule["u_target_t"], dtype=np.float64)
+    u_tr_cap_t = np.asarray(schedule["u_tr_cap_t"], dtype=np.float64)
+    U_safe_ref_t = np.asarray(schedule["U_safe_ref_t"], dtype=np.float64)
+    u_ref_used_t = np.asarray(schedule["u_ref_used_t"], dtype=np.float64)
+    trust_clip_active_t = schedule["trust_clip_active_t"]
+    safe_clip_active_t = schedule["safe_clip_active_t"]
+
+    # Informativeness per stage: xi_ref_t * sqrt(p_align_t) >= 0.05.
+    # The pilot's p_align_by_stage aligns 1:1 with the schedule's xi_ref_t
+    # (both derive from the same margins_by_stage); pad/truncate defensively
+    # so lengths match.
+    p_align_list = pilot_data.get("p_align_by_stage", [])
+    p_align_arr = np.asarray(p_align_list, dtype=np.float64)
+    T_info = min(len(xi_ref_t), len(p_align_arr)) if len(p_align_arr) > 0 else 0
+    if T_info == 0:
+        informative_stage_mask = np.zeros(len(xi_ref_t), dtype=bool)
+    else:
+        info_score_t = np.zeros(len(xi_ref_t), dtype=np.float64)
+        info_score_t[:T_info] = xi_ref_t[:T_info] * np.sqrt(
+            np.maximum(p_align_arr[:T_info], 0.0)
+        )
+        informative_stage_mask = info_score_t >= 0.05
+
+    # A_t: from schedule or recompute
+    A_t_list = schedule.get("A_t")
+    Bhat_t_list = schedule.get("Bhat_t")
+
+    N = len(transitions)
+    if N == 0:
+        logger.warning("Task %s: no transitions collected.", tag)
+        empty_summary: dict[str, Any] = {"family": family, "tag": tag, "n_transitions": 0}
+        task_dir = output_dir / tag
+        task_dir.mkdir(parents=True, exist_ok=True)
+        with open(task_dir / "replay_summary.json", "w") as f:
+            json.dump(empty_summary, f, indent=2)
+        return empty_summary
+
+    # Pre-allocate arrays
+    r_all = np.zeros(N, dtype=np.float64)
+    v_next_all = np.zeros(N, dtype=np.float64)
+    stage_all = np.zeros(N, dtype=np.int64)
+    classical_target = np.zeros(N, dtype=np.float64)
+    safe_target = np.zeros(N, dtype=np.float64)
+    rho_all = np.zeros(N, dtype=np.float64)
+    eff_discount = np.zeros(N, dtype=np.float64)
+    delta_eff_discount = np.zeros(N, dtype=np.float64)
+    natural_shift = np.zeros(N, dtype=np.float64)
+    target_gap = np.zeros(N, dtype=np.float64)
+    margin_all = np.zeros(N, dtype=np.float64)
+    beta_used_all = np.zeros(N, dtype=np.float64)
+    kl_to_prior_all = np.zeros(N, dtype=np.float64)
+    A_t_all = np.zeros(N, dtype=np.float64)
+    xi_ref_all = np.zeros(N, dtype=np.float64)
+    u_target_all = np.zeros(N, dtype=np.float64)
+    u_tr_cap_all = np.zeros(N, dtype=np.float64)
+    U_safe_ref_all = np.zeros(N, dtype=np.float64)
+    u_ref_used_all = np.zeros(N, dtype=np.float64)
+    trust_clip_all = np.zeros(N, dtype=np.bool_)
+    safe_clip_all = np.zeros(N, dtype=np.bool_)
+
+    for i, (r, v_next, t) in enumerate(transitions):
+        r_all[i] = r
+        v_next_all[i] = v_next
+        stage_all[i] = t
+
+        # Clamp stage index to schedule length
+        t_clamped = min(t, T_schedule - 1)
+        beta = beta_arr[t_clamped]
+        beta_used_all[i] = beta
+
+        # Classical target (same gamma_base for fair comparison)
+        classical_target[i] = r + gamma_b * v_next
+
+        # Safe target
+        if abs(beta) < 1e-12:
+            safe_target[i] = r + gamma_b * v_next
+        else:
+            c = one_plus_gamma / beta
+            safe_target[i] = c * (
+                np.logaddexp(beta * r, beta * v_next + log_gamma_b)
+                - log_1_plus_gamma
+            )
+
+        # rho = sigmoid(log(1/gamma_b) + beta*(r - v_next))
+        arg = -log_gamma_b + beta * (r - v_next)
+        rho_all[i] = 1.0 / (1.0 + np.exp(-arg)) if arg >= 0 else np.exp(arg) / (1.0 + np.exp(arg))
+
+        eff_discount[i] = one_plus_gamma * (1.0 - rho_all[i])
+        delta_eff_discount[i] = eff_discount[i] - gamma_b
+        natural_shift[i] = beta * (r - v_next)
+        target_gap[i] = safe_target[i] - classical_target[i]
+        margin_all[i] = r - v_next
+
+        # Schedule diagnostics at this stage
+        if A_t_list is not None and t_clamped < len(A_t_list):
+            A_t_all[i] = A_t_list[t_clamped]
+        elif Bhat_t_list is not None and t_clamped + 1 < len(Bhat_t_list):
+            A_t_all[i] = r_max + Bhat_t_list[t_clamped + 1]
+        else:
+            A_t_all[i] = r_max
+
+        if t_clamped < len(xi_ref_t):
+            xi_ref_all[i] = xi_ref_t[t_clamped]
+        if t_clamped < len(u_target_t):
+            u_target_all[i] = u_target_t[t_clamped]
+        if t_clamped < len(u_tr_cap_t):
+            u_tr_cap_all[i] = u_tr_cap_t[t_clamped]
+        if t_clamped < len(U_safe_ref_t):
+            U_safe_ref_all[i] = U_safe_ref_t[t_clamped]
+        if t_clamped < len(u_ref_used_t):
+            u_ref_used_all[i] = u_ref_used_t[t_clamped]
+        if t_clamped < len(trust_clip_active_t):
+            trust_clip_all[i] = trust_clip_active_t[t_clamped]
+        if t_clamped < len(safe_clip_active_t):
+            safe_clip_all[i] = safe_clip_active_t[t_clamped]
+
+    # KL to prior (vectorized)
+    p0 = 1.0 / one_plus_gamma
+    kl_to_prior_all = np.asarray(
+        kl_bernoulli(rho_all, np.full(N, p0, dtype=np.float64)),
+        dtype=np.float64,
+    ).ravel()
+
+    # Write NPZ
+    task_dir = output_dir / tag
+    task_dir.mkdir(parents=True, exist_ok=True)
+
+    np.savez_compressed(
+        task_dir / "replay_diagnostics.npz",
+        schema_version="1.1",
+        r=r_all,
+        v_next=v_next_all,
+        stage=stage_all,
+        classical_target=classical_target,
+        safe_target=safe_target,
+        rho=rho_all,
+        effective_discount=eff_discount,
+        delta_effective_discount=delta_eff_discount,
+        natural_shift=natural_shift,
+        target_gap_same_gamma_base=target_gap,
+        margin=margin_all,
+        beta_used=beta_used_all,
+        KL_to_prior=kl_to_prior_all,
+        A_t=A_t_all,
+        xi_ref=xi_ref_all,
+        u_target=u_target_all,
+        u_tr_cap=u_tr_cap_all,
+        U_safe_ref=U_safe_ref_all,
+        u_ref_used=u_ref_used_all,
+        trust_clip_active=trust_clip_all,
+        safe_clip_active=safe_clip_all,
+        informative_stage_mask=informative_stage_mask.astype(np.bool_),
+        p_align_by_stage=p_align_arr.astype(np.float64)
+        if len(p_align_arr) > 0
+        else np.zeros(0, dtype=np.float64),
+    )
+
+    # Compute summary
+    abs_u = np.abs(natural_shift)
+    abs_dd = np.abs(delta_eff_discount)
+    abs_tg = np.abs(target_gap)
+    abs_margin = np.abs(margin_all)
+    rb = max(r_max, 1e-8)
+
+    # Informative-conditioned subset:
+    #   transition i is informative iff
+    #     informative_stage_mask[stage_i] AND (margin_i > 0)
+    # Stage indices are clamped to schedule length (same convention used
+    # above when writing NPZ arrays).
+    stage_clamped = np.minimum(stage_all, max(len(informative_stage_mask) - 1, 0))
+    if len(informative_stage_mask) == 0:
+        informative_mask = np.zeros(N, dtype=bool)
+    else:
+        informative_mask = informative_stage_mask[stage_clamped] & (margin_all > 0.0)
+    n_informative = int(np.sum(informative_mask))
+    frac_informative = float(n_informative) / float(N)
+
+    # Top-quartile fallback (|margin| >= Q75 of all |margins|).
+    q75_margin = float(np.percentile(abs_margin, 75))
+    topquartile_mask = abs_margin >= q75_margin
+    n_topquartile = int(np.sum(topquartile_mask))
+
+    def _safe_mean(x: NDArray[np.float64], mask: NDArray[np.bool_]) -> float:
+        if not np.any(mask):
+            return 0.0
+        return float(np.mean(x[mask]))
+
+    def _safe_median(x: NDArray[np.float64], mask: NDArray[np.bool_]) -> float:
+        if not np.any(mask):
+            return 0.0
+        return float(np.median(x[mask]))
+
+    def _safe_frac(x: NDArray[np.float64], mask: NDArray[np.bool_],
+                   threshold: float) -> float:
+        if not np.any(mask):
+            return 0.0
+        return float(np.mean(x[mask] >= threshold))
+
+    summary: dict[str, Any] = {
+        "family": family,
+        "tag": tag,
+        "n_transitions": N,
+        "gamma_base": gamma_b,
+        "r_max": r_max,
+        "seed": seed,
+        "n_episodes": n_episodes,
+        # natural_shift
+        "mean_natural_shift": float(np.mean(natural_shift)),
+        "std_natural_shift": float(np.std(natural_shift)),
+        "p25_natural_shift": float(np.percentile(natural_shift, 25)),
+        "p75_natural_shift": float(np.percentile(natural_shift, 75)),
+        "mean_abs_u": float(np.mean(abs_u)),
+        # Global replay diagnostic (alias for clarity). Kept identical to
+        # mean_abs_u for backward compat; the suffix '_global' marks it
+        # explicitly as the diluted whole-task mean.
+        "mean_abs_u_replay_global": float(np.mean(abs_u)),
+        # delta_effective_discount
+        "mean_delta_effective_discount": float(np.mean(delta_eff_discount)),
+        "std_delta_effective_discount": float(np.std(delta_eff_discount)),
+        "p25_delta_effective_discount": float(np.percentile(delta_eff_discount, 25)),
+        "p75_delta_effective_discount": float(np.percentile(delta_eff_discount, 75)),
+        "mean_abs_delta_d": float(np.mean(abs_dd)),
+        "mean_abs_delta_discount_global": float(np.mean(abs_dd)),
+        # target_gap_same_gamma_base
+        "mean_target_gap_same_gamma_base": float(np.mean(target_gap)),
+        "std_target_gap_same_gamma_base": float(np.std(target_gap)),
+        "p25_target_gap_same_gamma_base": float(np.percentile(target_gap, 25)),
+        "p75_target_gap_same_gamma_base": float(np.percentile(target_gap, 75)),
+        "mean_abs_target_gap": float(np.mean(abs_tg)),
+        "target_gap_norm_global": float(np.mean(abs_tg / rb)),
+        # Fractions (global)
+        "frac_u_ge_5e3": float(np.mean(abs_u >= 5e-3)),
+        "frac_delta_d_ge_1e3": float(np.mean(abs_dd >= 1e-3)),
+        "frac_target_gap_ge_5e3_normed": float(np.mean(abs_tg / rb >= 5e-3)),
+        # Informative-conditioned metrics
+        "n_informative_transitions": n_informative,
+        "frac_informative_transitions": frac_informative,
+        "mean_abs_u_replay_informative": _safe_mean(abs_u, informative_mask),
+        "median_abs_u_replay_informative": _safe_median(abs_u, informative_mask),
+        "frac_informative_u_ge_5e3": _safe_frac(abs_u, informative_mask, 5e-3),
+        "mean_abs_delta_discount_informative": _safe_mean(abs_dd, informative_mask),
+        "target_gap_norm_informative": _safe_mean(abs_tg / rb, informative_mask),
+        # Top-quartile fallback metrics
+        "n_topquartile_transitions": n_topquartile,
+        "frac_topquartile": float(n_topquartile) / float(N),
+        "q75_abs_margin": q75_margin,
+        "mean_abs_u_replay_topquartile": _safe_mean(abs_u, topquartile_mask),
+        "frac_topquartile_u_ge_5e3": _safe_frac(abs_u, topquartile_mask, 5e-3),
+        # Other
+        "mean_beta_used": float(np.mean(beta_used_all)),
+        "mean_KL_to_prior": float(np.mean(kl_to_prior_all)),
+    }
+
+    with open(task_dir / "replay_summary.json", "w") as f:
+        json.dump(summary, f, indent=2)
+
+    # Print summary
+    logger.info(
+        "Task %s: %d transitions | global: mean|u|=%.6f frac(|u|>=5e-3)=%.4f "
+        "mean|delta_d|=%.6f | informative: n=%d (%.2f%%) mean|u|=%.6f "
+        "median|u|=%.6f frac(|u|>=5e-3)=%.4f | topQ: n=%d mean|u|=%.6f "
+        "| mean_beta=%.6f mean_KL=%.8f",
+        tag, N,
+        summary["mean_abs_u_replay_global"], summary["frac_u_ge_5e3"],
+        summary["mean_abs_delta_d"],
+        summary["n_informative_transitions"],
+        100.0 * summary["frac_informative_transitions"],
+        summary["mean_abs_u_replay_informative"],
+        summary["median_abs_u_replay_informative"],
+        summary["frac_informative_u_ge_5e3"],
+        summary["n_topquartile_transitions"],
+        summary["mean_abs_u_replay_topquartile"],
+        summary["mean_beta_used"], summary["mean_KL_to_prior"],
+    )
+
+    return summary
+
+
+# --------------------------------------------------------------------------
+# Main
+# --------------------------------------------------------------------------
+
+def main(args: argparse.Namespace) -> None:
+    """Run Phase IV-A counterfactual target replay."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+
+    suite_path = Path(args.suite)
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    with open(suite_path) as f:
+        suite = json.load(f)
+
+    # Support three schema variants:
+    # 1. top-level "selected_tasks" (legacy)
+    # 2. top-level "tasks" (selected_tasks.json v2)
+    # 3. nested "mainline.tasks" (activation_suite.json)
+    if "selected_tasks" in suite:
+        selected_tasks = suite["selected_tasks"]
+    elif "tasks" in suite:
+        selected_tasks = suite["tasks"]
+    elif "mainline" in suite:
+        selected_tasks = suite["mainline"].get("tasks", [])
+    else:
+        selected_tasks = []
+    logger.info(
+        "Loaded activation suite with %d tasks from %s",
+        len(selected_tasks), suite_path,
+    )
+
+    seed = args.seed
+    n_episodes = args.n_episodes
+
+    all_summaries: list[dict[str, Any]] = []
+    t_start = time.time()
+
+    for idx, task_entry in enumerate(selected_tasks):
+        summary = _replay_task(
+            task_entry=task_entry,
+            seed=seed,
+            n_episodes=n_episodes,
+            output_dir=output_dir,
+            task_idx=idx,
+        )
+        all_summaries.append(summary)
+
+    t_end = time.time()
+
+    # Write top-level summary
+    top_summary = {
+        "n_tasks": len(selected_tasks),
+        "seed": seed,
+        "n_episodes": n_episodes,
+        "elapsed_s": round(t_end - t_start, 2),
+        "tasks": all_summaries,
+    }
+    with open(output_dir / "all_replay_summaries.json", "w") as f:
+        json.dump(top_summary, f, indent=2)
+
+    logger.info(
+        "Counterfactual replay complete: %d tasks in %.1f s. "
+        "Results in %s",
+        len(selected_tasks), t_end - t_start, output_dir,
+    )
+
+
+def parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument(
+        "--suite", type=str, required=True,
+        help="Path to activation_suite.json",
+    )
+    p.add_argument("--seed", type=int, default=42)
+    p.add_argument("--n-episodes", type=int, default=200)
+    p.add_argument(
+        "--output-dir", type=str,
+        default="results/weighted_lse_dp/phase4/counterfactual_replay/",
+    )
+    return p.parse_args()
+
+
+if __name__ == "__main__":
+    main(parse_args())

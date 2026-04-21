@@ -353,15 +353,9 @@ class SafeWeightedAsyncValueIteration:
         self._stage_frac_eff_lt_gamma = []
 
         for t in range(self._T - 1, -1, -1):
-            # Step 1: expected next-state value for all (s, a).
-            # E_v_next[s, a] = sum_{s'} P[s, a, s'] * V[t+1, s']
-            E_v_next = np.einsum(
-                "ijk,k->ij", self._p, self.V[t + 1]
-            )  # (S, A)
-
-            # Step 2: safe Q slab for all (s, a).
-            Q_t = self._safe.compute_safe_target_batch(
-                self._r_bar, E_v_next, t
+            # Safe Q slab: E_{s'}[g_t^safe(r_bar, V[t+1,s'])].
+            Q_t = self._safe.compute_safe_target_ev_batch(
+                self._r_bar, self.V[t + 1], self._p, t
             )  # (S, A)
             self._record_stage_diagnostics(t)
 

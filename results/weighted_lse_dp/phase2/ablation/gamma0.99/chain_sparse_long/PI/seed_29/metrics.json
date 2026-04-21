@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-19T05:14:49Z",
+  "phase": "phase2",
+  "task": "chain_sparse_long",
+  "algorithm": "PI",
+  "seed": 29,
+  "final_bellman_residual": 31.276766319516625,
+  "n_sweeps": 2,
+  "wall_clock_s": 0.003913666005246341,
+  "converged": true,
+  "sweeps_to_1e-2": null,
+  "sweeps_to_1e-4": null,
+  "sweeps_to_1e-6": null
+}

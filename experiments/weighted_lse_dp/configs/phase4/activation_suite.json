@@ -1,0 +1,10 @@
+{
+  "phase": "IV-A",
+  "status": "frozen",
+  "generated_by": "run_phase4_activation_search.py",
+  "seed": 42,
+  "n_pilot_episodes": 200,
+  "generated_at": "2026-04-20T11:43:15Z",
+  "git_sha": "01a22b9945b1a74a643b82b1f38fefc5e36ee5f8",
+  "selected_tasks": []
+}

@@ -132,19 +132,19 @@
       "ci_high": 1.0
     },
     "wall_clock_s": {
-      "mean": 0.0024075579887721686,
-      "std": 0.00010957291791688419,
-      "median": 0.0023934169730637223,
-      "q25": 0.0023661659797653556,
-      "q75": 0.0023939579841680825,
-      "iqr": 2.779200440272689e-05,
-      "ci_low": 0.002334224799415097,
-      "ci_high": 0.002505824388936162
+      "mean": 0.0026826581990462726,
+      "std": 0.0002725816308727307,
+      "median": 0.002552666002884507,
+      "q25": 0.0024820839971653186,
+      "q75": 0.0028158329951111227,
+      "iqr": 0.00033374899794580415,
+      "ci_low": 0.0024885167978936805,
+      "ci_high": 0.00291948320082156
     }
   },
   "provenance": {
     "schedule_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/weighted_lse_dp/phase3/calibration/chain_regime_shift/schedule.json",
-    "calibration_hash": "e5bbaea13fe72a1304efd145532cc89d8dbafeb50e5927168df48c2c6b7b1686",
+    "calibration_hash": "bb30c7ed62e7c04d52e7991d66fad0aa7b6ba2b6ae61d511a9590bc4261adb86",
     "source_phase": "phase2"
   }
 }
