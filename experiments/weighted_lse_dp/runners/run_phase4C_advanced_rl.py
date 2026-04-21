@@ -81,7 +81,7 @@ _LR = 0.1
 _N_PILOT = 200
 _SYNC_EVERY = 200
 _POLYAK_TAU = 0.05
-_SEEDS = [42, 123, 456]
+_SEEDS = [42, 123, 456, 789, 1024]
 
 
 def _build_schedule(

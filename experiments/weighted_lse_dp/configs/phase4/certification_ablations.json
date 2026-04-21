@@ -12,7 +12,13 @@
   ],
   "baseline_ref": "phase4/translation_study.json",
   "activation_suite_path": "experiments/weighted_lse_dp/configs/phase4/activation_suite_4a2.json",
-  "seeds": [42, 123, 456],
+  "seeds": [
+    42,
+    123,
+    456,
+    789,
+    1024
+  ],
   "train_steps": 20000,
   "n_pilot_episodes": 200
 }

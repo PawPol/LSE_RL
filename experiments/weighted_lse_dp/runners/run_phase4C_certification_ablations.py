@@ -98,7 +98,9 @@ _ABLATION_OVERRIDES: dict[str, dict[str, Any]] = {
     "adaptive_headroom_aggressive": {"alpha_min": 0.05, "alpha_max": 0.50, "alpha_budget_max": 0.60},
     "wrong_sign": {"_flip_sign": True},
     "constant_u": {"_constant_u": True},
-    "raw_unclipped": {"tau_n": 1e-9, "u_max": 0.10, "alpha_max": 0.40, "alpha_budget_max": 0.50},
+    # raw_unclipped: trust region removed AND safe certification cap bypassed (spec §6.5)
+    "raw_unclipped": {"tau_n": 1e-9, "u_max": 0.10, "alpha_max": 0.40,
+                      "alpha_budget_max": 0.50, "_skip_safe_cap": True},
 }
 
 _TRAIN_STEPS = 20000
@@ -123,6 +125,7 @@ def _build_ablated_schedule(
     overrides = dict(_ABLATION_OVERRIDES.get(ablation, {}))
     flip_sign = overrides.pop("_flip_sign", False)
     constant_u = overrides.pop("_constant_u", False)
+    skip_safe_cap = overrides.pop("_skip_safe_cap", False)
 
     base_sign = int(get_task_sign(cfg.get("family", "unknown")))
     # wrong_sign isolation: pilot always runs with correct base_sign so that
@@ -181,7 +184,31 @@ def _build_ablated_schedule(
         with open(schedule_v3_path, "w") as f:
             json.dump(v3, f, indent=2)
 
-    wrapped = _wrap_v3_schedule_for_betaschedule(v3, gamma=gamma_base)
+    if skip_safe_cap:
+        # Bypass the certification cap: let beta_used_t exceed beta_cap_t (spec §6.5).
+        # We still need a valid BetaSchedule, so we set beta_cap_t = |beta_used_t| + margin
+        # so the consistency check passes without clipping.
+        import warnings as _warnings
+        _warnings.warn(
+            f"raw_unclipped ablation: bypassing safe certification cap. "
+            f"beta_used_t will not be clipped to beta_cap_t.",
+            stacklevel=2,
+        )
+        base_wrapped = _wrap_v3_schedule_for_betaschedule(v3, gamma=gamma_base)
+        beta_arr = np.asarray(base_wrapped["beta_used_t"], dtype=np.float64)
+        # Set cap to |beta| + 0.1 so Check 2 (clip consistency) passes.
+        # Remove reward_bound to skip Check 3 (certification recurrence) —
+        # the whole point of raw_unclipped is to operate outside the certified region.
+        uncapped = (np.abs(beta_arr) + 0.1).tolist()
+        base_wrapped["beta_cap_t"] = uncapped
+        base_wrapped["beta_raw_t"] = beta_arr.tolist()
+        base_wrapped["clip_active_t"] = [False] * len(beta_arr)
+        base_wrapped.pop("reward_bound", None)
+        base_wrapped["notes"] = (base_wrapped.get("notes", "") +
+                                 " [raw_unclipped: safe cap bypassed per spec §6.5]")
+        wrapped = base_wrapped
+    else:
+        wrapped = _wrap_v3_schedule_for_betaschedule(v3, gamma=gamma_base)
     return BetaSchedule(wrapped), str(schedule_v3_path)
 
 
@@ -199,7 +226,7 @@ def build_plan(
     ))
     tasks = _load_activation_suite(suite_path)
     ablation_list = [ablation_filter] if ablation_filter else list(ALL_ABLATIONS)
-    seeds = config.get("seeds", [42, 123, 456])
+    seeds = config.get("seeds", [42, 123, 456, 789, 1024])
 
     plan = []
     for ablation in ablation_list:
@@ -276,10 +303,10 @@ def run_single(
 
     try:
         seed_everything(seed)
-        _, mdp_rl, _ = build_phase4_task(cfg, seed=seed)
+        _, mdp_rl, resolved_cfg = build_phase4_task(cfg, seed=seed)
         mdp_eval = _copy.deepcopy(mdp_rl)
-        gamma = float(cfg.get("gamma", 0.95))
-        horizon = int(cfg.get("horizon", 20))
+        gamma = float(resolved_cfg.get("gamma", cfg.get("gamma", 0.95)))
+        horizon = int(resolved_cfg.get("horizon", cfg.get("horizon", 20)))
         n_base = mdp_rl.info.observation_space.n // horizon
 
         schedule, sched_path = _build_ablated_schedule(
@@ -337,7 +364,7 @@ def main(argv: list[str] | None = None) -> int:
     config = json.loads(config_path.read_text())
     config.setdefault("activation_suite_path",
                       "experiments/weighted_lse_dp/configs/phase4/activation_suite_4a2.json")
-    config.setdefault("seeds", [42, 123, 456])
+    config.setdefault("seeds", [42, 123, 456, 789, 1024])
 
     out_root = args.out_root
     plan = build_plan(

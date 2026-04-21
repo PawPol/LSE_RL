@@ -68,7 +68,7 @@ PRIORITY_MODES: dict[str, dict[str, float]] = {
 }
 
 _N_PILOT = 200
-_SEEDS = [42, 123, 456]
+_SEEDS = [42, 123, 456, 789, 1024]
 
 
 def _build_v3_schedule(
@@ -162,7 +162,8 @@ def run_single(
             "task": task_tag, "algorithm": f"geometry_priority_dp_{mode}",
             "mode": mode, "seed": seed,
             "n_sweeps": result["n_sweeps"],
-            "n_backups": result["n_backups"],
+            "n_backups": result["n_backups"],              # (s,t,a) triples
+            "n_state_stage_backups": result.get("n_state_stage_backups", result["n_backups"]),
             "final_residual": result["final_residual"],
             "convergence_sweep_1e-2": result.get("convergence_sweep_1e-2"),
             "wall_clock_s": result["wall_clock_s"],

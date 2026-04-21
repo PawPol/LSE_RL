@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "phase4C",
+  "task": "dense_chain_cost_1",
+  "algorithm": "safe_q_stagewise_ablation_wrong_sign",
+  "ablation": "wrong_sign",
+  "seed": 789,
+  "elapsed_s": 0.8926482500100974,
+  "schedule_v3_path": "results/weighted_lse_dp/phase4/advanced/ablations/wrong_sign/dense_chain_cost_1/seed_789/schedule_v3_wrong_sign.json",
+  "config": {
+    "family": "dense_chain_cost",
+    "n_states": 20,
+    "step_reward": -0.05,
+    "terminal_reward": 0.0,
+    "horizon": 20,
+    "gamma": 0.95,
+    "reward_bound": 0.05,
+    "micro_reward": true
+  },
+  "final_mean_return": -0.6415140775914574,
+  "leakage_limitation": "pilot and train share seed; no cross-fitting (spec \u00a74.5)"
+}

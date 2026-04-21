@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "phase4C",
+  "task": "dense_chain_cost_0",
+  "algorithm": "safe_q_scheduler_state_bin_reward_region",
+  "scheduler_type": "state_bin_reward_region",
+  "seed": 789,
+  "train_steps": 20000,
+  "n_transitions": 20000,
+  "mean_return": -0.2565746483197433,
+  "final_disc_return_mean": -0.2565023553137838
+}

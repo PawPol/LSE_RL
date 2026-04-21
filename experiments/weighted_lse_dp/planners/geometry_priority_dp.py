@@ -162,8 +162,12 @@ class GeometryPriorityDP:
         """
         t0 = time.perf_counter()
         V = np.zeros((self._T + 1, self._S))
+        # residual_history stores the *pre-update* sweep max residual (R11).
+        # With top_k_fraction < 1.0 not all high-residual (s,t) pairs are
+        # updated each sweep, so history may oscillate — this is expected.
         residual_history = []
-        n_backups = 0
+        n_state_stage_backups = 0   # (s, t) pairs updated
+        n_backups = 0               # (s, t, a) backups = n_state_stage * A (spec §5.3)
         high_act_backups = 0
         convergence_sweep_1e2 = None
         backup_log: list[dict[str, Any]] = []
@@ -193,7 +197,8 @@ class GeometryPriorityDP:
                     V_next = V[t_idx + 1]
                 Q = self._safe_q_batch(V_next, t_idx)
                 V[t_idx, s_idx] = float(np.max(Q[s_idx]))
-                n_backups += 1
+                n_state_stage_backups += 1
+                n_backups += self._A   # count each (s,t,a) triple (spec §5.3)
                 if self._u_ref_t[t_idx] >= 5e-3:
                     high_act_backups += 1
                 if log_backups:
@@ -222,13 +227,14 @@ class GeometryPriorityDP:
             Q_final[t] = self._safe_q_batch(V_next, t)
 
         elapsed = time.perf_counter() - t0
-        frac_high = high_act_backups / max(n_backups, 1)
+        frac_high = high_act_backups / max(n_state_stage_backups, 1)
 
         result: dict[str, Any] = {
             "V": V[:self._T],
             "Q": Q_final,
             "n_sweeps": sweep + 1,
-            "n_backups": n_backups,
+            "n_backups": n_backups,              # (s,t,a) triples (spec §5.3)
+            "n_state_stage_backups": n_state_stage_backups,
             "residual_history": residual_history,
             "final_residual": residual_history[-1] if residual_history else 0.0,
             "convergence_sweep_1e-2": convergence_sweep_1e2,

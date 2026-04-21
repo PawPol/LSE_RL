@@ -45,6 +45,14 @@ import numpy as np  # noqa: E402
 __all__ = ["main", "aggregate"]
 
 _ADVANCED_RL_ALGOS = (
+    "safe_q_single_table",          # architectural control baseline
+    "safe_double_q",
+    "safe_target_q",
+    "safe_target_q_polyak",
+    "safe_target_expected_sarsa",
+)
+# Algorithms compared against the single-table architectural control (R9/A2)
+_ESTIMATOR_ALGOS = (
     "safe_double_q",
     "safe_target_q",
     "safe_target_q_polyak",
@@ -94,27 +102,55 @@ def _aggregate_algo_group(
         return {"algorithm": algo, "status": "missing", "n_runs": 0}
 
     records = []
+    per_task: dict[str, list[dict]] = {}
     for task_dir in sorted(algo_dir.iterdir()):
         if not task_dir.is_dir():
             continue
+        task_records = []
         for seed_dir in _seed_dirs(task_dir):
             m = _load_metrics(seed_dir / "metrics.json")
             if m:
                 records.append(m)
+                task_records.append(m)
+        if task_records:
+            per_task[task_dir.name] = task_records
 
-    n_pass = len(records)
     if not records:
         return {"algorithm": algo, "status": "no_data", "n_runs": 0}
+
+    # Per-task breakdown (R10: spec §12.2 requires per-task-family tables)
+    per_task_summary = {
+        tag: {
+            "n_runs": len(recs),
+            "mean_final_return": _mean_field(recs, "final_disc_return_mean"),
+            "std_final_return": (
+                float(np.std([r["final_disc_return_mean"] for r in recs
+                               if "final_disc_return_mean" in r]))
+                if len(recs) > 1 else None
+            ),
+            "mean_double_gap": _mean_field(recs, "mean_double_gap"),
+            "mean_q_target_gap": _mean_field(recs, "mean_q_target_gap"),
+            "mean_td_error": _mean_field(recs, "mean_td_error"),
+            "std_beta_used": _mean_field(recs, "std_beta_used"),
+        }
+        for tag, recs in per_task.items()
+    }
 
     return {
         "algorithm": algo,
         "status": "aggregated",
-        "n_runs": n_pass,
+        "n_runs": len(records),
         "mean_final_return": _mean_field(records, "final_disc_return_mean"),
         "mean_mean_return": _mean_field(records, "mean_return"),
         "mean_beta_used": _mean_field(records, "mean_beta_used"),
         "mean_double_gap": _mean_field(records, "mean_double_gap"),
         "mean_q_target_gap": _mean_field(records, "mean_q_target_gap"),
+        "std_final_return": (
+            float(np.std([r["final_disc_return_mean"] for r in records
+                           if "final_disc_return_mean" in r]))
+            if len(records) > 1 else None
+        ),
+        "per_task": per_task_summary,
     }
 
 
@@ -139,11 +175,14 @@ def _aggregate_ablations(advanced_dir: Path) -> list[dict[str, Any]]:
         if not records:
             results.append({"ablation": ablation, "status": "no_data", "n_runs": 0})
             continue
+        finals = [r["final_disc_return_mean"] for r in records
+                  if "final_disc_return_mean" in r]
         results.append({
             "ablation": ablation,
             "status": "aggregated",
             "n_runs": len(records),
-            "mean_final_return": _mean_field(records, "final_disc_return_mean"),
+            "mean_final_return": float(np.mean(finals)) if finals else None,
+            "std_final_return": float(np.std(finals)) if len(finals) > 1 else None,
             "mean_mean_return": _mean_field(records, "mean_return"),
         })
     return results
@@ -211,20 +250,32 @@ def _build_attribution(
     geo_dp: list[dict[str, Any]],
     scheduler: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    baseline_return = None
-    for r in scheduler:
-        if r.get("scheduler") == "stagewise_baseline":
-            baseline_return = r.get("mean_final_return")
+    # Architecture-matched baseline: same hand-rolled loop, single Q-table (R9/A2)
+    arch_baseline_return: float | None = None
+    for r in advanced_rl:
+        if r.get("algorithm") == "safe_q_single_table":
+            arch_baseline_return = r.get("mean_final_return")
             break
 
-    advanced_rl_gains: dict[str, float | None] = {}
+    # Framework baseline: MushroomRL SafeQLearning stagewise (for ablation deltas)
+    framework_baseline_return: float | None = None
+    for r in scheduler:
+        if r.get("scheduler") == "stagewise_baseline":
+            framework_baseline_return = r.get("mean_final_return")
+            break
+
+    # Estimator gains vs architecture-matched single-table control
+    estimator_gains: dict[str, float | None] = {}
     for r in advanced_rl:
         algo = r.get("algorithm", "?")
+        if algo == "safe_q_single_table":
+            continue
         ret = r.get("mean_final_return")
-        if ret is not None and baseline_return is not None:
-            advanced_rl_gains[algo] = ret - baseline_return
-        else:
-            advanced_rl_gains[algo] = None
+        estimator_gains[algo] = (
+            ret - arch_baseline_return
+            if ret is not None and arch_baseline_return is not None
+            else None
+        )
 
     geo_gains: dict[str, float | None] = {}
     baseline_sweeps = None
@@ -233,41 +284,62 @@ def _build_attribution(
             baseline_sweeps = r.get("mean_n_sweeps")
         geo_gains[r.get("mode", "?")] = r.get("mean_n_sweeps")
 
+    # Ablation deltas vs framework baseline (both use SafeQLearning — clean comparison)
     ablation_impact: list[dict[str, Any]] = []
     for r in ablations:
         abl = r.get("ablation", "?")
         ret = r.get("mean_final_return")
-        impact = None
-        if ret is not None and baseline_return is not None:
-            impact = ret - baseline_return
+        impact = (
+            ret - framework_baseline_return
+            if ret is not None and framework_baseline_return is not None
+            else None
+        )
         ablation_impact.append({
             "ablation": abl,
             "mean_final_return": ret,
-            "delta_vs_baseline": impact,
+            "delta_vs_framework_baseline": impact,
         })
+
+    # A10: paired-seed test for wrong_sign (replace any() with mean/std over seeds)
+    wrong_sign_impact = next(
+        (r for r in ablation_impact if r["ablation"] == "wrong_sign"), {}
+    )
+    ws_delta = wrong_sign_impact.get("delta_vs_framework_baseline")
+    ws_std = wrong_sign_impact.get("std_final_return")
+    # "hurts" = mean delta < 0 AND magnitude > 0.5 * std (weak paired test with available data)
+    wrong_sign_hurts: bool | None = None
+    if ws_delta is not None:
+        threshold = 0.5 * ws_std if ws_std else 0.01
+        wrong_sign_hurts = bool(ws_delta < -threshold)
+
+    # A18: fix max() with None values (was `or -1e9` which treats 0.0 as missing)
+    valid_gains = {k: v for k, v in estimator_gains.items() if v is not None}
+    best_estimator = max(valid_gains, key=lambda k: valid_gains[k]) if valid_gains else None
 
     return {
         "schema_version": "1.0.0",
         "phase": "phase4C",
         "analysis_type": "attribution",
-        "baseline_scheduler_return": baseline_return,
-        "advanced_rl_gains_vs_baseline": advanced_rl_gains,
+        "architecture_baseline_algo": "safe_q_single_table",
+        "architecture_baseline_return": arch_baseline_return,
+        "framework_baseline_return": framework_baseline_return,
+        "estimator_gains_vs_arch_baseline": estimator_gains,
         "geometry_dp_sweeps_by_mode": geo_gains,
         "geometry_dp_baseline_sweeps": baseline_sweeps,
         "ablation_impact": ablation_impact,
+        "attribution_note": (
+            "estimator_gains use the hand-rolled single-table baseline (same loop/seed). "
+            "ablation_impact uses the MushroomRL framework baseline (same agent class). "
+            "These two baselines are not interchangeable."
+        ),
         "summary": {
-            "best_advanced_algo": (
-                max(advanced_rl_gains, key=lambda k: advanced_rl_gains[k] or -1e9)
-                if advanced_rl_gains else None
-            ),
+            "best_estimator_algo": best_estimator,
             "geometry_priority_reduces_sweeps": (
                 (geo_gains.get("combined") or 0) < (baseline_sweeps or 0)
                 if baseline_sweeps else None
             ),
-            "wrong_sign_ablation_hurts": any(
-                (r.get("delta_vs_baseline") or 0) < -0.01
-                for r in ablation_impact if r["ablation"] == "wrong_sign"
-            ),
+            "wrong_sign_ablation_hurts": wrong_sign_hurts,
+            "wrong_sign_delta": ws_delta,
         },
     }
 

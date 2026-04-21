@@ -297,7 +297,7 @@
   "source_phase": "phase4C_ablation_raw_unclipped",
   "notes": "Phase IV-C ablation: raw_unclipped",
   "provenance": {
-    "git_sha": "fa077e0a75d850a63da597f54fff569ff627e6ec",
+    "git_sha": "fbfc9b1e68f00da6c711fb85148cb8edfd458e85",
     "calibration_code_version": "v3.0",
     "input_hashes": {
       "margins": "ceada405a7c1d7a9",

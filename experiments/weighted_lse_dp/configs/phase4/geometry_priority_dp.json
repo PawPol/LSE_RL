@@ -13,6 +13,12 @@
     "residual_curve",
     "value_error"
   ],
-  "seeds": [42, 123, 456],
+  "seeds": [
+    42,
+    123,
+    456,
+    789,
+    1024
+  ],
   "n_pilot_episodes": 200
 }

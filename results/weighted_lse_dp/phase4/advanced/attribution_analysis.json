@@ -2,59 +2,63 @@
   "schema_version": "1.0.0",
   "phase": "phase4C",
   "analysis_type": "attribution",
-  "baseline_scheduler_return": -0.44905985431402023,
-  "advanced_rl_gains_vs_baseline": {
-    "safe_double_q": 0.0,
-    "safe_target_q": 0.0,
-    "safe_target_q_polyak": 0.0,
-    "safe_target_expected_sarsa": 0.0
+  "architecture_baseline_algo": "safe_q_single_table",
+  "architecture_baseline_return": -0.4489875613080607,
+  "framework_baseline_return": -0.44905985431402023,
+  "estimator_gains_vs_arch_baseline": {
+    "safe_double_q": -7.229300595951171e-05,
+    "safe_target_q": -7.229300595951171e-05,
+    "safe_target_q_polyak": -7.229300595951171e-05,
+    "safe_target_expected_sarsa": -7.229300595951171e-05
   },
   "geometry_dp_sweeps_by_mode": {
-    "residual_only": 21.333333333333332,
-    "geometry_gain_only": 20.0,
-    "combined": 19.0
+    "residual_only": 21.2,
+    "geometry_gain_only": 21.9,
+    "combined": 19.5
   },
-  "geometry_dp_baseline_sweeps": 21.333333333333332,
+  "geometry_dp_baseline_sweeps": 21.2,
   "ablation_impact": [
     {
       "ablation": "trust_region_off",
       "mean_final_return": -0.44905985431402023,
-      "delta_vs_baseline": 0.0
+      "delta_vs_framework_baseline": 0.0
     },
     {
       "ablation": "trust_region_tighter",
       "mean_final_return": -0.44905985431402023,
-      "delta_vs_baseline": 0.0
+      "delta_vs_framework_baseline": 0.0
     },
     {
       "ablation": "adaptive_headroom_off",
       "mean_final_return": -0.44905985431402023,
-      "delta_vs_baseline": 0.0
+      "delta_vs_framework_baseline": 0.0
     },
     {
       "ablation": "adaptive_headroom_aggressive",
-      "mean_final_return": -0.4490305045893786,
-      "delta_vs_baseline": 2.934972464163632e-05
+      "mean_final_return": -0.4490422444792352,
+      "delta_vs_framework_baseline": 1.7609834785048406e-05
     },
     {
       "ablation": "wrong_sign",
-      "mean_final_return": -0.44905985431402023,
-      "delta_vs_baseline": 0.0
+      "mean_final_return": -0.4490422444792352,
+      "delta_vs_framework_baseline": 1.7609834785048406e-05
     },
     {
       "ablation": "constant_u",
       "mean_final_return": -0.44905985431402023,
-      "delta_vs_baseline": 0.0
+      "delta_vs_framework_baseline": 0.0
     },
     {
       "ablation": "raw_unclipped",
-      "mean_final_return": -0.44899961014238743,
-      "delta_vs_baseline": 6.0244171632806154e-05
+      "mean_final_return": -0.44899788888034076,
+      "delta_vs_framework_baseline": 6.196543367947838e-05
     }
   ],
+  "attribution_note": "estimator_gains use the hand-rolled single-table baseline (same loop/seed). ablation_impact uses the MushroomRL framework baseline (same agent class). These two baselines are not interchangeable.",
   "summary": {
-    "best_advanced_algo": "safe_double_q",
+    "best_estimator_algo": "safe_double_q",
     "geometry_priority_reduces_sweeps": true,
-    "wrong_sign_ablation_hurts": false
+    "wrong_sign_ablation_hurts": false,
+    "wrong_sign_delta": 1.7609834785048406e-05
   }
 }

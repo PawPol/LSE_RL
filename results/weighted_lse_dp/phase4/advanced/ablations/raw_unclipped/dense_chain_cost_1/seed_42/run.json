@@ -5,7 +5,7 @@
   "algorithm": "safe_q_stagewise_ablation_raw_unclipped",
   "ablation": "raw_unclipped",
   "seed": 42,
-  "elapsed_s": 0.7918739169981563,
+  "elapsed_s": 0.7771089159941766,
   "schedule_v3_path": "results/weighted_lse_dp/phase4/advanced/ablations/raw_unclipped/dense_chain_cost_1/seed_42/schedule_v3_raw_unclipped.json",
   "config": {
     "family": "dense_chain_cost",

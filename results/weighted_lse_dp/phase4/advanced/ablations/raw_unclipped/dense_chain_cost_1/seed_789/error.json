@@ -1,0 +1,8 @@
+{
+  "ablation": "raw_unclipped",
+  "task_tag": "dense_chain_cost_1",
+  "seed": 789,
+  "status": "fail",
+  "error": "Certification recurrence mismatch for beta_cap_t: max |stored - recomputed| = 1.93e-01 exceeds atol=1e-09.",
+  "traceback": "Traceback (most recent call last):\n  File \"/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/weighted_lse_dp/runners/run_phase4C_certification_ablations.py\", line 309, in run_single\n    schedule, sched_path = _build_ablated_schedule(\n                           ~~~~~~~~~~~~~~~~~~~~~~~^\n        cfg=cfg, seed=seed, n_pilot_episodes=n_pilot_episodes,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        gamma=gamma, ablation=ablation, run_dir=run_dir,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/weighted_lse_dp/runners/run_phase4C_certification_ablations.py\", line 209, in _build_ablated_schedule\n    return BetaSchedule(wrapped), str(schedule_v3_path)\n           ~~~~~~~~~~~~^^^^^^^^^\n  File \"/Users/liq/Documents/Claude/Projects/LSE_RL/mushroom-rl-dev/mushroom_rl/algorithms/value/dp/safe_weighted_common.py\", line 117, in __init__\n    self._validate_certification()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/Users/liq/Documents/Claude/Projects/LSE_RL/mushroom-rl-dev/mushroom_rl/algorithms/value/dp/safe_weighted_common.py\", line 208, in _validate_certification\n    raise ValueError(\n    ...<3 lines>...\n    )\nValueError: Certification recurrence mismatch for beta_cap_t: max |stored - recomputed| = 1.93e-01 exceeds atol=1e-09.\n"
+}

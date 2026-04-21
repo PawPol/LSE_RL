@@ -1,18 +1,23 @@
 #!/usr/bin/env python
-"""Phase IV-C: state-dependent scheduler and schedule-quality ablations.
+"""Phase IV-C: schedule headroom / trust-region quality ablations.
 
-Ablates scheduler components by varying schedule construction parameters
-to simulate different state-adaptive schedule qualities. Four scheduler
-types:
+Ablates schedule construction parameters (alpha_min, alpha_max, tau_n) to
+test whether headroom and trust-region choices affect outcome. Four tiers:
 
-    stagewise_baseline           (default v3 schedule — reference)
-    state_bin_uniform            (alpha_min=0.02, alpha_max=0.10 — low variance)
-    state_bin_hazard_proximity   (alpha_min=0.10, alpha_max=0.40 — high alpha)
+    stagewise_baseline           (default v3 — reference)
+    state_bin_uniform            (alpha_min=0.02, alpha_max=0.10 — tight headroom)
+    state_bin_hazard_proximity   (alpha_min=0.10, alpha_max=0.40 — relaxed headroom)
     state_bin_reward_region      (tau_n=50, alpha_max=0.30 — fast trust release)
 
-Uses SafeQLearning from MushroomRL (same as Phase IV-B baseline) so
-comparison is fair. Results show whether schedule quality tier affects
-outcome relative to the stagewise baseline.
+NOTE (R8): these variants sweep the stagewise headroom/trust-region parameter
+space; they do NOT implement per-state-bin scheduling (spec §4 state-bin
+machinery). Full state-bin scheduling requires per-bin xi_ref_{t,b}
+calibration via state_bins.construct_bins + schedule_smoothing.smooth_schedule,
+which is not yet wired into this runner. Results here answer "does schedule
+headroom tier matter?" not "does state localization matter?".
+
+Uses SafeQLearning from MushroomRL (same as Phase IV-B) for architectural
+consistency with the framework baseline.
 
 Layout::
 
@@ -89,7 +94,7 @@ _EVAL_EPISODES = 50
 _EPSILON = 0.1
 _LR = 0.1
 _N_PILOT = 200
-_SEEDS = [42, 123, 456]
+_SEEDS = [42, 123, 456, 789, 1024]
 
 
 def _build_scheduler(
