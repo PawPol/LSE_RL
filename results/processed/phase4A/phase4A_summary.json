@@ -1,12 +1,13 @@
 {
-  "n_tasks_replayed": 4,
+  "n_tasks_replayed": 5,
   "n_search_candidates": 168,
   "n_gate_pass": 0,
-  "n_gate_fail": 4,
+  "n_gate_fail": 5,
   "tasks_passing": [],
   "tasks_failing": [
     "chain_sparse_credit_0",
     "chain_sparse_credit_1",
+    "grid_hazard_1",
     "grid_hazard_2",
     "grid_hazard_3"
   ]

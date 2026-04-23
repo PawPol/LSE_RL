@@ -4,39 +4,39 @@
   "per_family": {
     "chain_catastrophe": {
       "n_candidates": 36,
-      "mean_score": -2.2024865152777777,
-      "max_score": -1.20619671,
-      "min_score": -2.28553397
+      "mean_score": -1.0081810255555554,
+      "max_score": 1.01147568,
+      "min_score": -3.00642909
     },
     "chain_jackpot": {
       "n_candidates": 36,
-      "mean_score": -2.27655103,
-      "max_score": -2.21219237,
-      "min_score": -2.28553397
+      "mean_score": -1.320663093611111,
+      "max_score": 0.50837297,
+      "min_score": -3.00344219
     },
     "chain_sparse_credit": {
       "n_candidates": 36,
-      "mean_score": 2.693633500277778,
-      "max_score": 9.74574632,
-      "min_score": -1.71377208
+      "mean_score": 5.362609324722222,
+      "max_score": 10.20619447,
+      "min_score": 1.84962776
     },
     "grid_hazard": {
       "n_candidates": 36,
-      "mean_score": 3.2705382983333333,
-      "max_score": 8.1045665,
-      "min_score": 1.85051508
+      "mean_score": -1.7014586730555556,
+      "max_score": -1.3183138,
+      "min_score": -1.85038311
     },
     "regime_shift": {
       "n_candidates": 6,
-      "mean_score": -2.284403906666667,
-      "max_score": -2.27875359,
-      "min_score": -2.28553397
+      "mean_score": -2.540500403333333,
+      "max_score": -2.11977251,
+      "min_score": -3.00665684
     },
     "taxi_bonus": {
       "n_candidates": 18,
-      "mean_score": -2.2088005433333335,
-      "max_score": -2.11210623,
-      "min_score": -2.27985543
+      "mean_score": -1.817779597777778,
+      "max_score": -1.7722834,
+      "min_score": -1.93945387
     }
   }
 }

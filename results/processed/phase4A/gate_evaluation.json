@@ -3,6 +3,7 @@
     "family": "chain_sparse_credit",
     "tag": "chain_sparse_credit_0",
     "global_gate_pass": false,
+    "gate_basis": "informative_stage_denominator",
     "individual_checks": {
       "mean_abs_u_ge_5e3": false,
       "frac_abs_u_ge_5e3_ge_0.10": false,
@@ -10,16 +11,27 @@
       "mean_abs_target_gap_normed_ge_5e3": false
     },
     "values": {
-      "mean_abs_u": 1.1891654223280791e-05,
-      "frac_active": 0.0005,
-      "mean_abs_delta_d": 5.7937387213048695e-06,
-      "normalized_mean_abs_target_gap": 4.470060714496137e-06
-    }
+      "mean_abs_u": 0.00036816303174877057,
+      "frac_active": 0.026570359860699083,
+      "mean_abs_delta_d": 0.00017937335557996215,
+      "normalized_mean_abs_target_gap": 5.941140794704669e-05
+    },
+    "global_replay_diagnostic": {
+      "mean_abs_u": 0.0023336381509280867,
+      "frac_u_ge_5e3": 0.19895,
+      "mean_abs_delta_d": 0.0011368550428564785,
+      "mean_abs_target_gap": 0.0014107701260622338,
+      "normalized_mean_abs_target_gap": 0.0014107701260622338
+    },
+    "informative_fields_missing": false,
+    "n_informative_transitions": 7753,
+    "frac_informative_transitions": 0.38765
   },
   {
     "family": "chain_sparse_credit",
     "tag": "chain_sparse_credit_1",
     "global_gate_pass": false,
+    "gate_basis": "informative_stage_denominator",
     "individual_checks": {
       "mean_abs_u_ge_5e3": false,
       "frac_abs_u_ge_5e3_ge_0.10": false,
@@ -27,16 +39,55 @@
       "mean_abs_target_gap_normed_ge_5e3": false
     },
     "values": {
+      "mean_abs_u": 0.0,
+      "frac_active": 0.0,
+      "mean_abs_delta_d": 0.0,
+      "normalized_mean_abs_target_gap": 0.0
+    },
+    "global_replay_diagnostic": {
       "mean_abs_u": 9.960183019477818e-06,
-      "frac_active": 0.0005,
+      "frac_u_ge_5e3": 0.0005,
       "mean_abs_delta_d": 4.852767744086791e-06,
+      "mean_abs_target_gap": 1.8683844756404076e-06,
       "normalized_mean_abs_target_gap": 1.8683844756404076e-06
-    }
+    },
+    "informative_fields_missing": true,
+    "n_informative_transitions": null,
+    "frac_informative_transitions": null
+  },
+  {
+    "family": "grid_hazard",
+    "tag": "grid_hazard_1",
+    "global_gate_pass": false,
+    "gate_basis": "informative_stage_denominator",
+    "individual_checks": {
+      "mean_abs_u_ge_5e3": false,
+      "frac_abs_u_ge_5e3_ge_0.10": false,
+      "mean_abs_delta_d_ge_1e3": false,
+      "mean_abs_target_gap_normed_ge_5e3": false
+    },
+    "values": {
+      "mean_abs_u": 0.0014596193359125026,
+      "frac_active": 0.0,
+      "mean_abs_delta_d": 0.0007111100245861717,
+      "normalized_mean_abs_target_gap": 0.00035555278591654975
+    },
+    "global_replay_diagnostic": {
+      "mean_abs_u": 0.0007004606760480373,
+      "frac_u_ge_5e3": 0.0,
+      "mean_abs_delta_d": 0.00034124808162888003,
+      "mean_abs_target_gap": 0.00015245607617783043,
+      "normalized_mean_abs_target_gap": 0.00015245607617783043
+    },
+    "informative_fields_missing": false,
+    "n_informative_transitions": 157,
+    "frac_informative_transitions": 0.015897124341838802
   },
   {
     "family": "grid_hazard",
     "tag": "grid_hazard_2",
     "global_gate_pass": false,
+    "gate_basis": "informative_stage_denominator",
     "individual_checks": {
       "mean_abs_u_ge_5e3": false,
       "frac_abs_u_ge_5e3_ge_0.10": false,
@@ -44,16 +95,27 @@
       "mean_abs_target_gap_normed_ge_5e3": false
     },
     "values": {
-      "mean_abs_u": 5.723082865322786e-06,
+      "mean_abs_u": 0.0014599628890398493,
       "frac_active": 0.0,
-      "mean_abs_delta_d": 2.7882262693518365e-06,
-      "normalized_mean_abs_target_gap": 1.791513076705248e-06
-    }
+      "mean_abs_delta_d": 0.0007112774029567076,
+      "normalized_mean_abs_target_gap": 0.0003556364739920674
+    },
+    "global_replay_diagnostic": {
+      "mean_abs_u": 0.0006997219769672419,
+      "frac_u_ge_5e3": 0.0,
+      "mean_abs_delta_d": 0.00034088821256470306,
+      "mean_abs_target_gap": 0.00015203604326886967,
+      "normalized_mean_abs_target_gap": 0.00015203604326886967
+    },
+    "informative_fields_missing": false,
+    "n_informative_transitions": 157,
+    "frac_informative_transitions": 0.015897124341838802
   },
   {
     "family": "grid_hazard",
     "tag": "grid_hazard_3",
     "global_gate_pass": false,
+    "gate_basis": "informative_stage_denominator",
     "individual_checks": {
       "mean_abs_u_ge_5e3": false,
       "frac_abs_u_ge_5e3_ge_0.10": false,
@@ -61,10 +123,20 @@
       "mean_abs_target_gap_normed_ge_5e3": false
     },
     "values": {
-      "mean_abs_u": 3.552481725966305e-06,
+      "mean_abs_u": 0.0,
       "frac_active": 0.0,
+      "mean_abs_delta_d": 0.0,
+      "normalized_mean_abs_target_gap": 0.0
+    },
+    "global_replay_diagnostic": {
+      "mean_abs_u": 3.552481725966305e-06,
+      "frac_u_ge_5e3": 0.0,
       "mean_abs_delta_d": 1.7306914505160837e-06,
+      "mean_abs_target_gap": 1.1592357765781974e-06,
       "normalized_mean_abs_target_gap": 1.1592357765781974e-06
-    }
+    },
+    "informative_fields_missing": true,
+    "n_informative_transitions": null,
+    "frac_informative_transitions": null
   }
 ]
