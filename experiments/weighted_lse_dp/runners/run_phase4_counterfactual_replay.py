@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """Phase IV-A: counterfactual target replay.
 
-Freezes transitions from classical random-policy pilots and replays them
-through the safe TAB formula to isolate operator effects from exploration
+Replays frozen DP V* / epsilon-greedy Q* pilot transitions through the
+Phase IV calibration schedule to isolate operator effects from exploration
 differences.  For each task in the activation suite, collects (r, v_next)
 pairs and computes exact safe targets, discount shifts, and natural-shift
 diagnostics.

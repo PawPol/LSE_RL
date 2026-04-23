@@ -247,6 +247,7 @@ def run_fixed_point(
     alpha_min: float = 0.05,
     alpha_max: float = 0.20,
     alpha_budget_max: float = 0.30,
+    u_target_t: NDArray[np.float64] | None = None,
     max_iters: int = 4,
 ) -> dict[str, NDArray[np.float64]]:
     """Fixed-point iteration for adaptive headroom (spec S6.7).
@@ -255,8 +256,8 @@ def run_fixed_point(
     1. Compute informativeness I_t from xi_ref and p_align.
     2. Compute alpha_base from I_t.
     3. Compute kappa, Bhat, A_t, theta_safe, U_safe_ref.
-    4. If u_target > U_safe_ref at some stage, increase alpha (clipped by
-       alpha_budget_max) and repeat.
+    4. If u_target_t > U_safe_ref at some stage, bump alpha upward and repeat.
+       Stopping criterion: max_t(u_target_t - U_safe_ref_t) <= 0 (all feasible).
 
     Parameters
     ----------
@@ -274,6 +275,11 @@ def run_fixed_point(
         Maximum headroom at full informativeness (default 0.20).
     alpha_budget_max : float
         Hard ceiling on alpha to maintain contraction (default 0.30).
+    u_target_t : NDArray[np.float64], shape (T,), optional
+        Desired natural-shift target per stage.  When supplied, alpha is
+        bumped only at stages where u_target_t > U_safe_ref_t (spec S6.7
+        feasibility constraint).  When None the iteration runs for a fixed
+        ``max_iters`` passes without a feasibility check.
     max_iters : int
         Maximum fixed-point iterations (default 4).
 
@@ -291,49 +297,33 @@ def run_fixed_point(
     p_align_t = np.asarray(p_align_t, dtype=np.float64)
     T = len(xi_ref_t)
 
+    if u_target_t is not None:
+        u_target_t = np.asarray(u_target_t, dtype=np.float64)
+
     # Step 1: informativeness and base alpha
     I_t = compute_informativeness(xi_ref_t, p_align_t)
     alpha_t = compute_alpha_base(I_t, alpha_min, alpha_max)
 
     for _it in range(max_iters):
-        # Clip alpha
         alpha_t = np.clip(alpha_t, 0.0, alpha_budget_max)
 
-        # Compute the chain
         kappa_t = compute_kappa(alpha_t, gamma_base)
         bhat = compute_bhat_backward(kappa_t, r_max, T, gamma_base)
         a_t_arr = compute_a_t(r_max, bhat)
         theta_safe_t = compute_theta_safe(kappa_t, gamma_base)
         u_safe_ref_t = compute_u_safe_ref(theta_safe_t, xi_ref_t)
 
-        # Compute u_target as theta_safe * xi_ref (the desired activation)
-        # If u_target exceeds U_safe_ref at any stage, we need to increase alpha.
-        # In the initial iteration, u_target == U_safe_ref by construction,
-        # so we check if the constraint is tight or violated after adjusting.
-        # The fixed-point adjusts alpha upward where needed.
-        # For the first iteration, u_target is simply the desired level.
-        # After first pass, check if the certified radius accommodates
-        # the target. If Bhat grew (due to alpha increase), A_t changes,
-        # which changes xi and thus U_safe_ref.
+        if u_target_t is not None:
+            # Spec S6.7: bump alpha only where feasibility is violated.
+            # Stopping criterion: all stages satisfy u_target <= U_safe_ref.
+            needs_increase = u_target_t > u_safe_ref_t - 1e-10
+        else:
+            # No feasibility reference: run for full max_iters without early stop.
+            needs_increase = np.zeros(T, dtype=bool)
 
-        # Recompute xi_ref with updated A_t
-        # xi_ref_t is given and fixed (it's the empirical margin from data),
-        # but A_t changes, so the effective u_target changes.
-        # If |u_safe_ref| < desired activation, increase alpha.
-        # We use a heuristic: stages where theta_safe is small relative
-        # to what alpha_max would allow get a bump.
-        kappa_max = compute_kappa(
-            np.full(T, alpha_budget_max), gamma_base
-        )
-        theta_safe_max = compute_theta_safe(kappa_max, gamma_base)
-        headroom_ratio = theta_safe_t / np.maximum(theta_safe_max, 1e-8)
-
-        # Stages with low headroom_ratio get alpha increased
-        needs_increase = headroom_ratio < 0.8
         if not np.any(needs_increase):
             break
 
-        # Gentle increase: move alpha toward alpha_budget_max for needy stages
         alpha_t = np.where(
             needs_increase,
             np.minimum(alpha_t * 1.3, alpha_budget_max),

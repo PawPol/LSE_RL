@@ -205,16 +205,21 @@ def build_schedule_v3(
     for t in range(T):
         a_t = sign_family * np.asarray(margins_by_stage[t], dtype=np.float64) / r_denom
         q75 = _quantile_positive(a_t, 0.75)
+        # np.clip(0.0, xi_min, xi_max) == xi_min (xi_min > 0), so the
+        # q75 == 0.0 case is already handled by the clip.
         xi_ref_arr[t] = float(np.clip(q75, xi_min, xi_max))
-        if q75 == 0.0:
-            xi_ref_arr[t] = xi_min
 
     p_align_arr = np.asarray(p_align_by_stage, dtype=np.float64)
     n_arr = np.asarray(n_by_stage, dtype=np.float64)
 
     # ------------------------------------------------------------------
     # Step 2: Fixed-point headroom iteration (pass 1 — bootstrap xi_ref)
+    # u_target is precomputed so the fixed-point can use the spec S6.7
+    # feasibility criterion (u_target > U_safe_ref triggers alpha bump).
     # ------------------------------------------------------------------
+    I_t_pass1 = compute_informativeness(xi_ref_arr, p_align_arr)
+    u_target_pass1 = u_min + (u_max - u_min) * I_t_pass1
+
     fp_result = run_fixed_point(
         xi_ref_t=xi_ref_arr,
         p_align_t=p_align_arr,
@@ -223,6 +228,7 @@ def build_schedule_v3(
         alpha_min=alpha_min,
         alpha_max=alpha_max,
         alpha_budget_max=alpha_budget_max,
+        u_target_t=u_target_pass1,
         max_iters=max_fixed_point_iters,
     )
     A_t_pass1 = fp_result["A_t"]          # shape (T,)
@@ -237,14 +243,15 @@ def build_schedule_v3(
         a_denom = max(float(A_t_pass1[t]), 1e-8)
         a_t = sign_family * np.asarray(margins_by_stage[t], dtype=np.float64) / a_denom
         q75 = _quantile_positive(a_t, 0.75)
+        # np.clip already maps q75 == 0.0 to xi_min (see pass-1 note above).
         xi_ref_arr_refined[t] = float(np.clip(q75, xi_min, xi_max))
-        if q75 == 0.0:
-            xi_ref_arr_refined[t] = xi_min
 
     # Only use refined xi_ref if it differs meaningfully (avoids churn when
     # A_t ≈ r_max, e.g. at horizon boundary where Bhat=0).
     if not np.allclose(xi_ref_arr_refined, xi_ref_arr, atol=1e-6):
         xi_ref_arr = xi_ref_arr_refined
+        I_t_pass2 = compute_informativeness(xi_ref_arr, p_align_arr)
+        u_target_pass2 = u_min + (u_max - u_min) * I_t_pass2
         fp_result = run_fixed_point(
             xi_ref_t=xi_ref_arr,
             p_align_t=p_align_arr,
@@ -253,6 +260,7 @@ def build_schedule_v3(
             alpha_min=alpha_min,
             alpha_max=alpha_max,
             alpha_budget_max=alpha_budget_max,
+            u_target_t=u_target_pass2,
             max_iters=max_fixed_point_iters,
         )
 
@@ -264,7 +272,7 @@ def build_schedule_v3(
     U_safe_ref_t = fp_result["U_safe_ref_t"]
 
     # ------------------------------------------------------------------
-    # Step 3: Compute informativeness
+    # Step 3: Compute informativeness (from final xi_ref_arr)
     # ------------------------------------------------------------------
     I_t = compute_informativeness(xi_ref_arr, p_align_arr)
 
@@ -297,9 +305,19 @@ def build_schedule_v3(
     # ------------------------------------------------------------------
     # Step 7: u_ref_used = min(u_target, u_tr_cap, U_safe_ref)
     # ------------------------------------------------------------------
-    # U_safe_ref can be negative if theta_safe is negative and xi_ref > 0.
-    # We take the absolute value for comparison, since u is a magnitude.
-    U_safe_abs = np.abs(U_safe_ref_t)
+    # In the current parameter regime (kappa > gamma and kappa < 1 + gamma),
+    # theta_safe_t = log(kappa / (gamma * (1 + gamma - kappa))) is strictly
+    # positive, so U_safe_ref_t = theta_safe_t * xi_ref_t > 0. Defensive
+    # hardening: if numerical drift ever drives theta_safe_t negative,
+    # silently np.abs-ing the cap would flip a negative safety constraint
+    # into a large positive value (effectively disabling it). Instead we
+    # assert that any negativity is at round-off scale only and clamp to 0
+    # so the safe cap binds maximally rather than being removed.
+    assert (U_safe_ref_t >= -1e-12).all(), (
+        f"U_safe_ref_t contains significantly-negative values; "
+        f"min={U_safe_ref_t.min():.3e}. Check theta_safe_t positivity."
+    )
+    U_safe_abs = np.where(U_safe_ref_t < 0, 0.0, U_safe_ref_t)
     u_ref_used_arr = np.minimum(np.minimum(u_target_arr, u_tr_cap_arr), U_safe_abs)
 
     # ------------------------------------------------------------------
@@ -315,12 +333,18 @@ def build_schedule_v3(
     # ------------------------------------------------------------------
     # Step 10: Clip flags
     # ------------------------------------------------------------------
-    trust_clip_active = (u_ref_used_arr < u_target_arr - 1e-10).tolist()
-    # safe_clip_active: u_ref_used < u_tr_cap (trust wasn't binding) but
-    # safe cap was the binding constraint
+    # Identify which cap is the binding argmin (mutually exclusive labels).
+    # trust_clip: u_ref_used equals u_tr_cap and trust cap is strictly below u_target.
+    # safe_clip: u_ref_used equals U_safe_abs and safe cap is stricter than both trust and target.
+    _atol = 1e-10
+    trust_clip_active = (
+        (np.abs(u_ref_used_arr - u_tr_cap_arr) <= _atol)
+        & (u_tr_cap_arr < u_target_arr - _atol)
+    ).tolist()
     safe_clip_active = (
-        (u_ref_used_arr < U_safe_abs - 1e-10)
-        & ~np.array(trust_clip_active)
+        (np.abs(u_ref_used_arr - U_safe_abs) <= _atol)
+        & (U_safe_abs < u_tr_cap_arr - _atol)
+        & (U_safe_abs < u_target_arr - _atol)
     ).tolist()
 
     # ------------------------------------------------------------------

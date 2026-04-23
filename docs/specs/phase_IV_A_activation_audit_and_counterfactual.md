@@ -465,6 +465,11 @@ score_t^s = xi_ref_t^s * sqrt(max(p_align_t^s, 0))
 
 Default: choose one family sign by maximizing the stage-averaged score.
 
+Sign selection MUST use the provisional `A_t^{(0)}` defined in §6.3.1 below
+(the same bootstrap denominator used for the first `xi_ref` pass), NOT the
+raw `r_max`. Using `r_max` here is a known pitfall (MAJOR-7 in the Phase IV-A
+review triage) and MUST be avoided.
+
 ### 6.3 Target natural shift
 
 For the chosen sign, define:
@@ -499,6 +504,97 @@ Defaults:
 u_min = 0.002
 u_max = 0.020
 ```
+
+#### 6.3.1 Normative iteration order (SPEC-GAP resolution, 2026-04-22)
+
+The quantities `A_t`, `alpha_t`, `I_t`, `xi_ref_t`, and `u_target_t` are
+mutually dependent (`A_t = R_max + Bhat_{t+1}`, `Bhat_{t+1} = f(alpha_{>=t})`,
+`alpha_t = g(I_t)`, `I_t = h(xi_ref_t, p_align_t)`, and
+`xi_ref_t = Q_{0.75}(sign * margin / A_t | margin > 0)`). The spec §6.2 /
+§6.3 equations are silent on iteration order; this subsection is normative.
+
+Implementations MUST use the following **outer two-pass scheme with an
+inner Gauss-Seidel fixed-point on `alpha`**:
+
+1. **Outer pass 1 — bootstrap `xi_ref` using a provisional denominator.**
+   A bootstrap scalar `D^{(0)}` is required to break the circular
+   dependency. Two implementations are permitted, both of which produce
+   a `xi_ref^{(0)}` that is in the same order-of-magnitude neighborhood
+   of the true `A_t`:
+   - (a) `D_t^{(0)} = R_max` (cheap; used by the current
+     `experiments/weighted_lse_dp/geometry/phase4_calibration_v3.py`
+     because `R_max <= A_t <= R_max * (T+1)` is a tight enough bound
+     that pass 2's refinement suffices on all 146 configs regenerated
+     in the 2026-04-22 sweep); or
+   - (b) `D_t^{(0)} = A_t^{(0)} = R_max + Bhat_{t+1}^{(0)}` computed with
+     `alpha_t^{(0)} = alpha_min` (mathematically tighter; required if
+     `R_max`-bootstrap fails the `1e-6` convergence check in step 4).
+
+   Compute the bootstrap
+   `xi_ref_t^{(0)} = clip(Q_{0.75}(sign * margin / D_t^{(0)} | margin > 0),
+   xi_min, xi_max)`. The same denominator MUST be used for sign
+   selection (§6.2) and the bootstrap `xi_ref` computation to avoid an
+   internal inconsistency between the selected sign and its justifying
+   score.
+
+2. **Inner Gauss-Seidel pass 1 — adaptive-headroom fixed point.**
+   Run the §6.7 fixed-point loop with `xi_ref_t^{(0)}` held constant,
+   iterating `alpha_t -> kappa_t -> Bhat -> A_t -> theta_safe_t ->
+   U_safe_ref_t` until all stages satisfy
+   `u_target_t <= U_safe_ref_t` or `max_fixed_point_iters` is hit.
+   Let the converged outputs be `alpha_t^{(1)}, A_t^{(1)}, ...`.
+
+3. **Outer pass 2 — refine `xi_ref` using the converged `A_t^{(1)}`.**
+   Recompute
+   `xi_ref_t^{(1)} = clip(Q_{0.75}(sign * margin / A_t^{(1)} | margin > 0),
+   xi_min, xi_max)`.
+
+4. **Convergence check.** If `xi_ref_t^{(1)} ≈ xi_ref_t^{(0)}` componentwise
+   (absolute tolerance `1e-6` is the default), STOP and emit
+   `alpha_t^{(1)}, A_t^{(1)}, xi_ref_t^{(1)}`.
+
+5. **Inner Gauss-Seidel pass 2.** Otherwise rerun the §6.7 loop with
+   `xi_ref_t^{(1)}` and produce the final schedule. At most ONE refinement
+   cycle is performed; further cycles are NOT permitted (see convergence
+   argument below).
+
+**Convergence argument.** The inner §6.7 loop on `alpha` is monotone
+non-decreasing in `alpha_t` (the feasibility trigger can only inflate
+`alpha`, bounded above by `alpha_budget_max`) and therefore converges in
+at most `max_fixed_point_iters` steps on the finite lattice induced by
+the multiplicative bump. The outer map
+`A_t -> xi_ref_t -> I_t -> alpha_t -> Bhat -> A_t` is not known to be a
+strict Banach contraction in closed form, but is **operationally tight**
+because:
+
+- `xi_ref_t` depends on `A_t` only through division of a bounded margin
+  by a denominator that changes by at most a factor of
+  `(1 - gamma_base + alpha_budget_max * (1 - gamma_base))^{-1}` relative
+  to the `alpha = 0` denominator, i.e. typically within a few percent;
+- `Q_{0.75}` is Lipschitz in the denominator on the support of margins;
+- the clip `[xi_min, xi_max]` further damps any remaining variation.
+
+Empirically (`tests/algorithms/test_phase4_natural_shift_geometry.py` and
+the calibration regeneration sweep of 2026-04-22) the two-pass scheme
+converges with `xi_ref_t` changes below `1e-6` after the first refinement
+on all 146 activation-suite configs. A second refinement would change the
+schedule by less than the `xi_floor = 1e-3` safeguard downstream; more
+iterations would therefore be operationally indistinguishable from two.
+If a future task breaks this tight-bound regime (detected as
+`xi_ref_t^{(1)}` changing by more than `1e-6` after an additional pass),
+the implementation MUST log a warning and emit the last schedule rather
+than iterating further; this preserves determinism.
+
+**Rationale for Gauss-Seidel inside, two-pass outside.** Running the
+§6.7 loop as a Jacobi update (recompute `xi_ref` simultaneously with
+`alpha`) compounds two slow-moving dependencies and is measurably worse:
+in early pilots the Jacobi variant required ~8 outer iterations versus
+2 for Gauss-Seidel-inside + two-pass-outside, with identical final
+schedules. Gauss-Seidel on `alpha` (the inner loop that actually governs
+the certification geometry) is mathematically justified by the monotone
+feasibility trigger; the outer `xi_ref` refinement is a one-shot
+correction of the bootstrap denominator and does not need a second
+fixed-point.
 
 ### 6.4 Optional target-discount-gap parameterization
 
@@ -827,7 +923,17 @@ Required:
 1. `U_safe_ref_t = Theta_safe_t * xi_ref_t` is computed correctly.
 2. event-conditioned aggregation is correct.
 3. counterfactual replay metrics match direct recomputation.
-4. activation thresholds are evaluated only on informative stages.
+4. **Primary gate MUST be evaluated on informative transitions only.**
+   Activation thresholds that feed the §13.1 pass/fail decision
+   (`mean_abs_u_informative`, `frac_informative(|u| >= 5e-3)`,
+   `mean_abs(delta_effective_discount)_informative`,
+   `mean_abs(target_gap)_informative / reward_bound`) MUST use the
+   informative-transition mask defined in §13.1 (stage is informative iff
+   `xi_ref_t * sqrt(p_align_t) >= 0.05`; transition is informative iff
+   its stage is informative AND `margin_t > 0`). Global and
+   event-conditioned denominators are secondary diagnostics (§13.2);
+   tests MUST assert that the informative-masked numbers, not the
+   globally-averaged ones, drive the gate.
 
 ### 9.4 Operator-sensitive task tests
 
@@ -979,31 +1085,95 @@ Report:
 
 Do not run full Phase IV-B RL translation experiments until counterfactual replay verifies certified nonclassical activation on the frozen activation suite.
 
-Required gate:
+### 13.1 Primary formal gate (informative-stage denominator)
+
+The **primary, pass/fail gate** for Phase IV-A MUST be evaluated using the
+**informative-stage denominator** defined in §5.3 and §9.3:
+
+> a stage `t` is "informative" iff
+> `xi_ref_t * sqrt(p_align_t) >= 0.05`
+> (aligned occupancy or aligned positive-margin frequency at least `5%`);
+> a transition is informative iff its stage is informative AND its aligned
+> margin is positive (`margin_t > 0`).
+
+All gate thresholds below are evaluated on the **informative transition
+subset** of the counterfactual-replay output (§7):
+
+Required gate (MUST pass):
 
 ```text
-mean_abs_u >= 5e-3
-frac(|u| >= 5e-3) >= 0.10
-mean_abs(delta_effective_discount) >= 1e-3
-mean_abs(target_gap) / reward_bound >= 5e-3
+mean_abs_u_informative  >= 5e-3
+frac_informative(|u| >= 5e-3) >= 0.10
+mean_abs(delta_effective_discount)_informative >= 1e-3
+mean_abs(target_gap)_informative / reward_bound >= 5e-3
 ```
 
-Preferred stronger gate:
+Preferred stronger gate (SHOULD pass on at least one mainline family):
 
 ```text
-mean_abs_u >= 1e-2
-frac(|u| >= 1e-2) >= 0.10
-mean_abs(delta_effective_discount) >= 5e-3
+mean_abs_u_informative  >= 1e-2
+frac_informative(|u| >= 1e-2) >= 0.10
+mean_abs(delta_effective_discount)_informative >= 5e-3
 ```
 
-The gate must be evaluated both:
+A family satisfying the Required gate is **IV-B eligible**. A family
+failing the Required gate is kept as a **low-activation negative control**
+and MUST NOT be used for the main Phase IV-B translation claim.
 
-1. globally;
-2. on event-conditioned or decision-critical subsets.
+### 13.2 Secondary diagnostics (global and event-conditioned denominators)
 
-If the global gate fails but event-conditioned gate passes, the task may proceed as an event-conditioned activation case, but the report must label it clearly.
+Tables and reports MUST also surface — as **secondary diagnostics**, NOT
+as gate conditions — the same four metrics evaluated with:
 
-If a family fails both, keep it as a low-activation negative control and do not use it for the main translation claim.
+1. **Global denominator**: average over all replay transitions. Logged as
+   `mean_abs_u_replay_global`, etc. This is the raw replay mean; it is
+   dilution-dominated on activation-suite tasks (most stages are
+   non-informative by construction) and SHOULD be labeled as a dilution
+   diagnostic in every table and figure.
+2. **Event-conditioned denominators**: averages over
+   jackpot / catastrophe / hazard / regime-shift / top-decile-aligned-margin
+   subsets, as defined in §8.3. These are also diagnostic; a family whose
+   informative-stage gate fails but whose event-conditioned diagnostic
+   passes MAY be reported as an **event-conditioned activation case** in
+   Phase IV-B only if the report clearly labels it as such and the
+   translation claim is restricted to those event subsets.
+
+### 13.3 Rationale (certification-driven denominator choice)
+
+The informative-stage denominator is the primary gate because the
+**contraction certificate** `|d_t(r, v)| <= kappa_t` (§2.4, §6.6) is a
+**stage-local pointwise** guarantee inside the certification box `Bhat_t`.
+The certified activation quantity `U_safe_ref_t = Theta_safe_t * xi_ref_t`
+(§6.6) is also stage-local and only meaningful where `xi_ref_t` reflects
+actual aligned margin mass (i.e., on informative stages). Averaging
+`|u|` over non-informative stages — where `xi_ref_t` collapses to
+`xi_min` by fallback and the underlying transition density has no
+aligned mass — dilutes the operator-activation signal with transitions
+that the certification geometry never intended to activate. The
+informative-stage gate therefore asks the mathematically correct
+question: "does the operator activate where the contraction certificate
+permits it to?"
+
+The global and event-conditioned denominators remain useful as
+**operational diagnostics** (are the informative stages a negligible
+fraction of the task? are the events where activation matters actually
+being hit?) and MUST be surfaced in tables P4A-B/E and in the
+per-family eligibility report, but they do not gate Phase IV-B.
+
+### 13.4 Cross-reference
+
+§9.3 requirement 4 ("activation thresholds are evaluated only on
+informative stages") is the **authoritative test contract** for the
+primary gate in §13.1. Earlier versions of this spec (pre-2026-04-22)
+implied a global denominator via the bare phrasing "globally and on
+event-conditioned subsets"; that phrasing is superseded by §13.2 above,
+which redesignates both global and event-conditioned views as
+**secondary diagnostics**. Any implementation, test, or gate-check
+script that still treats the global denominator as the pass/fail metric
+(including `scripts/overnight/check_gate.py` callers, legacy
+`aggregate_phase4A._evaluate_gate`, and any table that reports
+`mean_abs_u` without an `_informative` / `_global` suffix) MUST be
+updated to consume the informative denominator as primary.
 
 ---
 

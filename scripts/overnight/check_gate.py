@@ -258,12 +258,38 @@ def check_gate_iva(results_dir: Path, configs_dir: Path, suffix: str = "") -> li
     if selected.exists():
         try:
             data = json.loads(selected.read_text())
-            families = data if isinstance(data, list) else data.get("selected_families", [])
-            checks.append(_check(
-                len(families) > 0,
-                "At least one task family selected",
-                f"{len(families)} families selected",
-            ))
+            # Distinguish three cases so failure details are unambiguous:
+            #   1. top-level list (legacy format) or dict with "selected_families" key
+            #      populated -> normal path, report family count.
+            #   2. dict missing "selected_families" entirely -> structural failure,
+            #      report the missing-key cause (not "0 families selected").
+            #   3. dict with "selected_families" present but empty -> genuine empty
+            #      list, report that explicitly.
+            if isinstance(data, list):
+                families: list | None = data
+            elif isinstance(data, dict) and "selected_families" in data:
+                families = data["selected_families"]
+            else:
+                families = None
+
+            if families is None:
+                checks.append(_check(
+                    False,
+                    "At least one task family selected",
+                    f"'selected_families' key missing from {selected}",
+                ))
+            elif len(families) == 0:
+                checks.append(_check(
+                    False,
+                    "At least one task family selected",
+                    f"'selected_families' is present but empty in {selected}",
+                ))
+            else:
+                checks.append(_check(
+                    True,
+                    "At least one task family selected",
+                    f"{len(families)} families selected",
+                ))
         except (json.JSONDecodeError, KeyError) as e:
             checks.append(_check(False, "selected_tasks.json is valid JSON", str(e)))
     else:

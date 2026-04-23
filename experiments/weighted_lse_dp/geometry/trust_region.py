@@ -20,6 +20,11 @@ __all__ = [
 ]
 
 _EPS = 1e-10
+# Below this KL threshold use the Taylor linearisation instead of bisection.
+# The bisection tol=1e-8 means it prematurley exits when kl_mid ≈ tol, not
+# when kl_mid == eps_tr, for eps_tr << tol.  Setting the floor at 10*tol
+# ensures the Taylor branch and bisection branch agree at the boundary.
+_KL_EPS_FLOOR = 1e-7
 
 
 def _sigmoid(x: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -152,6 +157,12 @@ def solve_u_tr_cap(
         return 0.0
 
     p0 = 1.0 / (1.0 + gamma_base)
+
+    # Short-circuit for sub-floor eps_tr: Taylor expansion of
+    # KL(rho(u) || p0) ≈ u^2 * p0*(1-p0)/2  gives a smooth, monotone cap
+    # without risking bisection collapse to lo=0.
+    if eps_tr < _KL_EPS_FLOOR:
+        return float(np.sqrt(2.0 * eps_tr / max(p0 * (1.0 - p0), 1e-15)))
 
     # KL_Bern(rho(u) || p0) is monotonically increasing for u >= 0
     # (rho moves away from p0 as u increases from 0).

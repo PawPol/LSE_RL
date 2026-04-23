@@ -83,6 +83,22 @@ def _load_search_scores(search_dir: Path) -> list[dict[str, Any]]:
 # Gate evaluation
 # --------------------------------------------------------------------------
 
+def _coerce_float(value: Any, default: float = 0.0) -> float:
+    """Coerce a replay-summary field to float, treating None/missing as ``default``.
+
+    The counterfactual replay runner emits informative-suffixed fields as
+    ``null`` when an older version produced the summary or when the
+    informative mask is empty. We conservatively map None to 0.0 so that a
+    missing informative denominator fails the gate rather than raising.
+    """
+    if value is None:
+        return default
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def _evaluate_gate(
     summary: dict[str, Any],
     min_mean_abs_u: float = 5e-3,
@@ -90,36 +106,92 @@ def _evaluate_gate(
     min_mean_abs_delta_d: float = 1e-3,
     min_mean_abs_target_gap_normed: float = 5e-3,
 ) -> dict[str, Any]:
-    """Evaluate activation gate for a single task.
+    """Evaluate the Phase IV-A activation gate for a single task.
 
-    Returns a dict with individual check results and the global pass flag.
+    Primary pass/fail is driven by the **informative-stage denominator**
+    per spec §13.1 (informative-masked metrics emitted by
+    ``run_phase4_counterfactual_replay.py``). The legacy global-denominator
+    numbers are preserved verbatim under ``global_replay_diagnostic`` as
+    secondary diagnostics (spec §13.2) so downstream readers that still
+    want the dilution-dominated whole-task averages can find them.
+
+    Notes
+    -----
+    - ``target_gap_norm_informative`` is already ``r_max``-normalized
+      upstream (see ``run_phase4_counterfactual_replay.py`` line ~415),
+      so we do NOT re-divide here.
+    - Informative fields may be missing / ``None`` for replay summaries
+      produced by an older runner; we treat those as 0.0 (conservative
+      FAIL) and surface the condition via
+      ``informative_fields_missing`` in the verdict.
     """
     r_max = max(float(summary.get("r_max", 1.0)), 1e-8)
-    mean_abs_u = float(summary.get("mean_abs_u", 0.0))
-    frac_active = float(summary.get("frac_u_ge_5e3", 0.0))
-    mean_abs_dd = float(summary.get("mean_abs_delta_d", 0.0))
-    mean_abs_tg = float(summary.get("mean_abs_target_gap", 0.0))
-    normalized_tg = mean_abs_tg / r_max
+
+    # --- Primary (informative-stage) metrics — spec §13.1 ---
+    raw_mean_abs_u_info = summary.get("mean_abs_u_replay_informative")
+    raw_frac_u_info = summary.get("frac_informative_u_ge_5e3")
+    raw_mean_abs_dd_info = summary.get("mean_abs_delta_discount_informative")
+    raw_target_gap_norm_info = summary.get("target_gap_norm_informative")
+
+    informative_fields_missing = any(
+        v is None for v in (
+            raw_mean_abs_u_info,
+            raw_frac_u_info,
+            raw_mean_abs_dd_info,
+            raw_target_gap_norm_info,
+        )
+    )
+
+    mean_abs_u_info = _coerce_float(raw_mean_abs_u_info)
+    frac_u_info = _coerce_float(raw_frac_u_info)
+    mean_abs_dd_info = _coerce_float(raw_mean_abs_dd_info)
+    # Already r_max-normalized upstream — do NOT re-divide (spec §13.1, Q2).
+    target_gap_norm_info = _coerce_float(raw_target_gap_norm_info)
 
     checks = {
-        "mean_abs_u_ge_5e3": mean_abs_u >= min_mean_abs_u,
-        "frac_abs_u_ge_5e3_ge_0.10": frac_active >= min_frac_active,
-        "mean_abs_delta_d_ge_1e3": mean_abs_dd >= min_mean_abs_delta_d,
-        "mean_abs_target_gap_normed_ge_5e3": normalized_tg >= min_mean_abs_target_gap_normed,
+        "mean_abs_u_ge_5e3": mean_abs_u_info >= min_mean_abs_u,
+        "frac_abs_u_ge_5e3_ge_0.10": frac_u_info >= min_frac_active,
+        "mean_abs_delta_d_ge_1e3": mean_abs_dd_info >= min_mean_abs_delta_d,
+        "mean_abs_target_gap_normed_ge_5e3":
+            target_gap_norm_info >= min_mean_abs_target_gap_normed,
     }
 
-    return {
+    # --- Secondary (global) diagnostics — spec §13.2 ---
+    # Preserve the original key names so pre-spec-§13 readers still resolve.
+    global_mean_abs_u = _coerce_float(summary.get("mean_abs_u"))
+    global_frac_u = _coerce_float(summary.get("frac_u_ge_5e3"))
+    global_mean_abs_dd = _coerce_float(summary.get("mean_abs_delta_d"))
+    global_mean_abs_tg = _coerce_float(summary.get("mean_abs_target_gap"))
+    global_normalized_tg = global_mean_abs_tg / r_max
+
+    verdict: dict[str, Any] = {
         "family": summary.get("family", "unknown"),
         "tag": summary.get("tag", "unknown"),
         "global_gate_pass": all(checks.values()),
+        "gate_basis": "informative_stage_denominator",
         "individual_checks": checks,
+        # Primary (informative) numbers, under the legacy key names
+        # (spec §13.1 / Q1: existing `values` carries informative-stage basis).
         "values": {
-            "mean_abs_u": mean_abs_u,
-            "frac_active": frac_active,
-            "mean_abs_delta_d": mean_abs_dd,
-            "normalized_mean_abs_target_gap": normalized_tg,
+            "mean_abs_u": mean_abs_u_info,
+            "frac_active": frac_u_info,
+            "mean_abs_delta_d": mean_abs_dd_info,
+            "normalized_mean_abs_target_gap": target_gap_norm_info,
         },
+        # Secondary (global) numbers, under their original field names
+        # (spec §13.2 / Q1: `global_replay_diagnostic` carries dilution diag).
+        "global_replay_diagnostic": {
+            "mean_abs_u": global_mean_abs_u,
+            "frac_u_ge_5e3": global_frac_u,
+            "mean_abs_delta_d": global_mean_abs_dd,
+            "mean_abs_target_gap": global_mean_abs_tg,
+            "normalized_mean_abs_target_gap": global_normalized_tg,
+        },
+        "informative_fields_missing": informative_fields_missing,
+        "n_informative_transitions": summary.get("n_informative_transitions"),
+        "frac_informative_transitions": summary.get("frac_informative_transitions"),
     }
+    return verdict
 
 
 # --------------------------------------------------------------------------

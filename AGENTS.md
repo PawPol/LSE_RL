@@ -26,7 +26,7 @@ diagram is in `docs/workflow.md`.
    test-author   plotter-analyst   verifier   review-triage   (Codex via /codex:*)
 ```
 
-All Claude subagents run `claude-opus-4-6`. Codex runs its strongest
+All Claude subagents run `claude-opus-4-7`. Codex runs its strongest
 available model at `model_reasoning_effort = "high"` — see `docs/workflow.md`
 for the `.codex/config.toml` stanza.
 

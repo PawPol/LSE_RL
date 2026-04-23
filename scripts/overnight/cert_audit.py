@@ -286,7 +286,6 @@ def run_cert_audit() -> dict:
     )
     kappa_known = np.full(T, kappa_const, dtype=np.float64)
     bhat_known = compute_bhat_backward(kappa_known, r_max, T, gamma)
-    expected_bhat0 = (1 + gamma) * r_max / (1 - kappa_const)  # geometric series sum
     # Correct formula: Bhat_t = (1+g)*R * sum_{k=0}^{T-1-t} kappa^k
     # Exact for constant kappa: Bhat[0] = (1+g)*R*(1-kappa^T)/(1-kappa)
     bhat0_exact = (1.0 + gamma) * r_max * (1.0 - kappa_const**T) / (1.0 - kappa_const)
