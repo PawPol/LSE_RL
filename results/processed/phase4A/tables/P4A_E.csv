@@ -1,6 +1,6 @@
-task_id,family,n_transitions,n_informative,mean_abs_u_informative,frac_u_ge_5e3_informative,mean_abs_delta_d_informative,target_gap_norm_informative,mean_abs_u_global,frac_u_ge_5e3_global,mean_abs_delta_d_global,target_gap_norm_global,classification
-chain_sparse_credit_0,chain_sparse_credit,20000,7753,3.681630e-04,0.026570,1.793734e-04,5.941141e-05,2.333638e-03,0.198950,1.136855e-03,1.410770e-03,inactive
-chain_sparse_credit_1,chain_sparse_credit,6000,,,,,,9.960183e-06,5.000000e-04,4.852768e-06,1.868384e-06,unknown
-grid_hazard_1,grid_hazard,9876,157,1.459619e-03,0.000000,7.111100e-04,3.555528e-04,7.004607e-04,0.000000,3.412481e-04,1.524561e-04,inactive
-grid_hazard_2,grid_hazard,9876,157,1.459963e-03,0.000000,7.112774e-04,3.556365e-04,6.997220e-04,0.000000,3.408882e-04,1.520360e-04,inactive
-grid_hazard_3,grid_hazard,3948,,,,,,3.552482e-06,0.000000,1.730691e-06,1.159236e-06,unknown
+task_id,family,n_transitions,n_informative,mean_abs_u_informative,frac_u_ge_5e3_informative,mean_abs_delta_d_informative,target_gap_norm_informative,mean_abs_u_global,frac_u_ge_5e3_global,mean_abs_delta_d_global,target_gap_norm_global,classification,gate_pass
+chain_sparse_credit_0,chain_sparse_credit,20000,7753,3.681630e-04,0.026570,1.793734e-04,5.941141e-05,2.333638e-03,0.198950,1.136855e-03,1.410770e-03,inactive,False
+chain_sparse_credit_1,chain_sparse_credit,6000,0,0.000000,0.000000,0.000000,0.000000,9.960183e-06,5.000000e-04,4.852768e-06,1.868384e-06,inactive,False
+grid_hazard_1,grid_hazard,9876,157,1.459619e-03,0.000000,7.111100e-04,3.555528e-04,7.004607e-04,0.000000,3.412481e-04,1.524561e-04,inactive,False
+grid_hazard_2,grid_hazard,9876,157,1.459963e-03,0.000000,7.112774e-04,3.556365e-04,6.997220e-04,0.000000,3.408882e-04,1.520360e-04,inactive,False
+grid_hazard_3,grid_hazard,3948,0,0.000000,0.000000,0.000000,0.000000,3.552482e-06,0.000000,1.730691e-06,1.159236e-06,inactive,False
