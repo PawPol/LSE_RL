@@ -118,7 +118,14 @@ def _build_P4A_A(input_dir: Path, project_root: Path) -> list[dict]:
 
 
 def _build_P4A_B(input_dir: Path) -> list[dict]:
-    """P4A-B: Operator-activation diagnostics by task."""
+    """P4A-B: Operator-activation diagnostics by task.
+
+    Primary columns (``*_informative``) carry the informative-stage
+    diagnostics that drive the Phase IV-A activation gate (spec §13.1).
+    Secondary columns (``*_global``) carry the legacy whole-replay
+    averages (spec §13.2) for transparency.  ``gate_pass`` is the
+    primary gate verdict from ``gate_evaluation.json``.
+    """
     diag_path = input_dir / "activation_diagnostics.json"
     gate_path = input_dir / "gate_evaluation.json"
 
@@ -135,14 +142,26 @@ def _build_P4A_B(input_dir: Path) -> list[dict]:
     rows: list[dict] = []
     for d in diags:
         tag = d["tag"]
+        # Global target gap: prefer the r_max-normalized field when the
+        # replay runner emitted it; fall back to the raw mean for older
+        # summaries that only carried `mean_abs_target_gap`.
+        tg_global = d.get("target_gap_norm_global", d.get("mean_abs_target_gap", ""))
         rows.append({
             "task_id": tag,
             "family": d["family"],
-            "mean_abs_u": _fmt(d["mean_abs_u"]),
-            "frac_u_ge_5e3": _fmt(d["frac_u_ge_5e3"]),
-            "mean_abs_delta_d": _fmt(d["mean_abs_delta_d"]),
-            "frac_delta_d_ge_1e3": _fmt(d.get("frac_delta_d_ge_1e3", "")),
-            "mean_abs_target_gap_normed": _fmt(d.get("mean_abs_target_gap", d.get("mean_abs_target_gap_normed", ""))),
+            # Primary (informative-stage, spec §13.1 — gate basis)
+            "mean_abs_u_informative": _fmt(d.get("mean_abs_u_replay_informative", "")),
+            "frac_u_ge_5e3_informative": _fmt(d.get("frac_informative_u_ge_5e3", "")),
+            "mean_abs_delta_d_informative": _fmt(d.get("mean_abs_delta_discount_informative", "")),
+            "target_gap_norm_informative": _fmt(d.get("target_gap_norm_informative", "")),
+            "n_informative": d.get("n_informative_transitions", ""),
+            "frac_informative": _fmt(d.get("frac_informative_transitions", "")),
+            # Secondary (global, spec §13.2)
+            "mean_abs_u_global": _fmt(d["mean_abs_u"]),
+            "frac_u_ge_5e3_global": _fmt(d["frac_u_ge_5e3"]),
+            "mean_abs_delta_d_global": _fmt(d["mean_abs_delta_d"]),
+            "frac_delta_d_ge_1e3_global": _fmt(d.get("frac_delta_d_ge_1e3", "")),
+            "target_gap_norm_global": _fmt(tg_global),
             "mean_beta_used": _fmt(d.get("mean_beta_used", "")),
             "mean_KL_to_prior": _fmt(d.get("mean_KL_to_prior", "")),
             "gate_pass": gate_map.get(tag, ""),
@@ -232,26 +251,43 @@ def _build_P4A_D(project_root: Path) -> list[dict]:
 
 
 def _build_P4A_E(input_dir: Path) -> list[dict]:
-    """P4A-E: Counterfactual replay summary."""
+    """P4A-E: Counterfactual replay summary.
+
+    ``classification`` is driven by the informative-stage mean-|u| against
+    the spec §13.1 threshold of 5e-3, matching the primary gate basis.
+    When the informative field is missing (older replay summaries), the
+    task is tagged ``unknown`` rather than silently falling back to the
+    dilution-dominated global average.
+    """
     diag_path = input_dir / "activation_diagnostics.json"
     if not diag_path.exists():
         warnings.warn(f"activation_diagnostics.json not found at {diag_path}")
         return []
 
     diags = _load_json(diag_path)
+    threshold = 5e-3
     rows: list[dict] = []
     for d in diags:
-        mean_abs_u = d["mean_abs_u"]
-        threshold = 5e-3
-        classification = "active" if mean_abs_u >= threshold else "inactive"
+        mean_abs_u_info = d.get("mean_abs_u_replay_informative")
+        if mean_abs_u_info is None:
+            classification = "unknown"
+        else:
+            classification = "active" if float(mean_abs_u_info) >= threshold else "inactive"
         rows.append({
             "task_id": d["tag"],
             "family": d["family"],
             "n_transitions": d["n_transitions"],
-            "mean_abs_u": _fmt(mean_abs_u),
-            "frac_u_ge_5e3": _fmt(d["frac_u_ge_5e3"]),
-            "mean_abs_delta_d": _fmt(d["mean_abs_delta_d"]),
-            "mean_abs_tg_normed": _fmt(d.get("mean_abs_target_gap", "")),
+            "n_informative": d.get("n_informative_transitions", ""),
+            # Primary (informative-stage, spec §13.1)
+            "mean_abs_u_informative": _fmt(mean_abs_u_info) if mean_abs_u_info is not None else "",
+            "frac_u_ge_5e3_informative": _fmt(d.get("frac_informative_u_ge_5e3", "")),
+            "mean_abs_delta_d_informative": _fmt(d.get("mean_abs_delta_discount_informative", "")),
+            "target_gap_norm_informative": _fmt(d.get("target_gap_norm_informative", "")),
+            # Secondary (global, spec §13.2)
+            "mean_abs_u_global": _fmt(d["mean_abs_u"]),
+            "frac_u_ge_5e3_global": _fmt(d["frac_u_ge_5e3"]),
+            "mean_abs_delta_d_global": _fmt(d["mean_abs_delta_d"]),
+            "target_gap_norm_global": _fmt(d.get("target_gap_norm_global", d.get("mean_abs_target_gap", ""))),
             "classification": classification,
         })
     return rows

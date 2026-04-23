@@ -1,5 +1,6 @@
-task_id,family,mean_abs_u,frac_u_ge_5e3,mean_abs_delta_d,frac_delta_d_ge_1e3,mean_abs_target_gap_normed,mean_beta_used,mean_KL_to_prior,gate_pass
-chain_sparse_credit_0,chain_sparse_credit,1.189165e-05,5.000000e-04,5.793739e-06,5.000000e-04,4.470061e-06,-5.940086e-04,8.156252e-09,False
-chain_sparse_credit_1,chain_sparse_credit,9.960183e-06,5.000000e-04,4.852768e-06,5.000000e-04,1.868384e-06,-3.965309e-04,8.149425e-09,False
-grid_hazard_2,grid_hazard,5.723083e-06,0.000000,2.788226e-06,5.065856e-04,1.791513e-06,-2.448271e-04,1.501153e-09,False
-grid_hazard_3,grid_hazard,3.552482e-06,0.000000,1.730691e-06,0.000000,1.159236e-06,9.511933e-05,2.458612e-10,False
+task_id,family,mean_abs_u_informative,frac_u_ge_5e3_informative,mean_abs_delta_d_informative,target_gap_norm_informative,n_informative,frac_informative,mean_abs_u_global,frac_u_ge_5e3_global,mean_abs_delta_d_global,frac_delta_d_ge_1e3_global,target_gap_norm_global,mean_beta_used,mean_KL_to_prior,gate_pass
+chain_sparse_credit_0,chain_sparse_credit,3.681630e-04,0.026570,1.793734e-04,5.941141e-05,7753,0.387650,2.333638e-03,0.198950,1.136855e-03,0.412800,1.410770e-03,-2.957123e-03,1.657543e-06,False
+chain_sparse_credit_1,chain_sparse_credit,,,,,,,9.960183e-06,5.000000e-04,4.852768e-06,5.000000e-04,1.868384e-06,-3.965309e-04,8.149425e-09,False
+grid_hazard_1,grid_hazard,1.459619e-03,0.000000,7.111100e-04,3.555528e-04,157,0.015897,7.004607e-04,0.000000,3.412481e-04,1.012556e-04,1.524561e-04,-7.956213e-04,6.924285e-08,False
+grid_hazard_2,grid_hazard,1.459963e-03,0.000000,7.112774e-04,3.556365e-04,157,0.015897,6.997220e-04,0.000000,3.408882e-04,1.012556e-04,1.520360e-04,-7.957148e-04,6.905601e-08,False
+grid_hazard_3,grid_hazard,,,,,,,3.552482e-06,0.000000,1.730691e-06,0.000000,1.159236e-06,9.511933e-05,2.458612e-10,False

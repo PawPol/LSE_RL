@@ -258,8 +258,12 @@ def main(args: argparse.Namespace) -> None:
             "gamma_base": s.get("gamma_base"),
             "r_max": s.get("r_max"),
         }
-        # Copy all diagnostic keys
+        # Copy diagnostic keys.  Both the global-denominator (spec §13.2,
+        # legacy) and informative-stage (spec §13.1, primary) views are
+        # surfaced so downstream table builders can emit the informative
+        # values as primary and keep the global values as secondary.
         for k in [
+            # Global-denominator (spec §13.2, secondary diagnostics)
             "mean_natural_shift", "std_natural_shift",
             "p25_natural_shift", "p75_natural_shift",
             "mean_abs_u",
@@ -269,9 +273,18 @@ def main(args: argparse.Namespace) -> None:
             "mean_target_gap_same_gamma_base", "std_target_gap_same_gamma_base",
             "p25_target_gap_same_gamma_base", "p75_target_gap_same_gamma_base",
             "mean_abs_target_gap",
+            "target_gap_norm_global",
             "frac_u_ge_5e3", "frac_delta_d_ge_1e3",
             "frac_target_gap_ge_5e3_normed",
             "mean_beta_used", "mean_KL_to_prior",
+            # Informative-stage (spec §13.1, primary gate basis)
+            "mean_abs_u_replay_informative",
+            "median_abs_u_replay_informative",
+            "frac_informative_u_ge_5e3",
+            "mean_abs_delta_discount_informative",
+            "target_gap_norm_informative",
+            "n_informative_transitions",
+            "frac_informative_transitions",
         ]:
             if k in s:
                 entry[k] = s[k]
