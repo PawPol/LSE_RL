@@ -2393,3 +2393,30 @@ Codex review of HEAD `8a9918a0` on `phase-iv-a/post-review-cleanup`. Per-finding
   - **Byte-identity verified**: snapshotted `P4A_B_cap_binding.{csv,md}` and `P4A_E_headroom.{csv,md}` to `/tmp/p4a_pre_r4/` before the edit, re-ran `python3 scripts/figures/phase4A/rebuild_P4A_B_P4A_E.py` from `/tmp` (non-repo cwd, no flags) → `diff -q` reports no differences across all four files.
   - **Aggregator sanity check**: snapshotted `results/processed/phase4A/` before running `python3 experiments/weighted_lse_dp/runners/aggregate_phase4A.py` → byte-identical across `activation_diagnostics.json`, `gate_evaluation.json`, `phase4A_summary.json`, `search_results_summary.json`, `activation_gate_report.md` (aggregator was not touched, this confirms the pipeline is isolated from the R1/R2 edits).
   - **Open questions**: none.
+
+### Tracks A/B/C — refresh + paper update (2026-04-23, autonomous)
+
+Following the user's "do all three tracks in a sequence without me prompting you in between" directive after Phase IV-C commit `6202151f`.
+
+- [x] **Track A — refresh tables & figures from existing raw data.**
+  - Phase IV-A: P4A-B / P4A-E already regenerated under commit `12a73fe7` (informative-stage columns) and `4c220dad` (legacy-row P2 fixes).
+  - Phase IV-B: `results/weighted_lse_dp/phase4/translation_4a2/` already held the full 2-task × 8-algo × up-to-5-seed matrix plus `analysis/step{1..5}*.json`. The figures/tables scripts were looking for a `<suite>/translation/` wrapper (spec §Q12) and flat-scalar summaries, neither of which matches the runner's output.
+  - Patched `make_phase4B_figures.py` (`_resolve_translation_dir`, `_resolve_counterfactual_dir`) and `make_phase4B_tables.py` (P4B-A reads nested `metrics[primary_metric].mean/std/n` from the aggregated tree; P4B-F falls back to sibling `counterfactual_replay/`). Commit `86dba6a7`.
+  - Effect: all 6 main Phase IV-B figures regenerate (3 previously silently skipped), and P4B_A.csv now carries real means/stds for the 5-seed RL rows.
+
+- [x] **Track B — generate new results for the paper.**
+  - Re-examined: the premise that Phase IV-B data was missing was mistaken. The summary at `results/weighted_lse_dp/phase4/translation_4a2/analysis/translation_analysis_summary.json` confirms `n_activated=2`, `n_tasks_verified=2`, matched-control nonlinearity/total/path effects all exactly 0.0 across both tasks (step3_matched_control.json). Honest null translation — consistent with §14.6's prediction.
+  - Phase IV-C figures (4 PDFs under `figures/phase4C/`) produced by commit `6202151f` are in place.
+  - No new compute runs launched: the existing matrix already establishes the honest null. Expanding the matrix to more tasks is a compute-budget / scope decision flagged for author.
+
+- [x] **Track C — paper TeX update.**
+  - Added Appendix §C "Activation follow-up experiments" to `paper/neurips_selective_temporal_credit_assignment_positioned.tex` (label `app:phase4`, after `app:exp-figures`). Includes: activation_frontier figure (Phase IV-A), hand-written translation summary table, matched_control + diagnostic_sweep figures (Phase IV-B), and estimator_comparison / attribution_delta_bars / ablation_impact_bars figures (Phase IV-C). Six figure paths verified to exist relative to `paper/`.
+  - Narrative is conservative: anchors every Phase IV claim back to §14.6's mechanism prediction, reports null translation honestly, flags $\alpha_t = 0.10$ / $R_{\max}$ tightening as the natural extensions.
+  - Main-text §14 left intact — Phase IV is presented purely as an appendix extension.
+
+**Open follow-ups (author review required)**
+
+- [ ] [author] Decide whether Appendix §C "Activation follow-up" should be promoted to a §14.7 subsection in the main text. The honest-null finding is consistent with §14.6's mechanism prediction, so either placement is defensible; main-text promotion strengthens the claim that the certification theory is empirically validated but also forces the reviewer to confront the null translation earlier.
+- [ ] [author] Hand-written summary table in Appendix §C lists only RL rows (DP runs have no `mean_return` metric). Verify the selection matches how you want to present the null translation.
+- [ ] [infra] TeX build cannot be verified locally (no `pdflatex`/`latexmk` installed). Please re-compile the PDF on a TeX-capable machine and sanity-check that the `\Cref` references to `fig:phase4-activation-frontier`, `tab:phase4-activation`, `fig:phase4-matched-control`, `fig:phase4-diagnostic-sweep`, and the three Phase IV-C figures resolve correctly.
+- [ ] [infra] The `\resizebox{\linewidth}{!}{...}` wrapper around the summary table assumes the `graphicx` package is already loaded (it is — `\includegraphics` is used elsewhere). If compilation flags an issue, switching to `\small` or removing the wrapper is a one-line fix.

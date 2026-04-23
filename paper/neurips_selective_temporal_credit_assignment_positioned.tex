@@ -2038,6 +2038,111 @@ All ablations produce statistically indistinguishable AUC returns because the de
 \end{figure}
 
 % =====================================================================
+\section{Activation follow-up experiments}
+\label{app:phase4}
+% =====================================================================
+
+The discussion in \Cref{sec:exp-discussion} argued that the operator remains in the classical regime because $R_{\max}$ is large relative to the task's value range.
+This appendix reports a follow-up study that (i)~searches for tasks with tighter reward scales where the certified $\widetilde\beta_t$ becomes informative, (ii)~runs the full RL stack on those tasks, and (iii)~measures translation to outcomes.
+The outcomes are conservative: operator activation is achievable on specifically designed dense-cost tasks, but the resulting outcome deltas remain within noise of the classical baselines under the present calibration.
+We therefore present this as an empirical extension of the Phase~III findings rather than as a second main-text result.
+
+\paragraph{Activation search.}
+We enumerate a grid of dense-cost chain variants over $|\mathcal{S}|\in\{10,15,20\}$, horizon $T\in\{30,60\}$, reward bounds $R_{\max}\in\{0.5,1.0,2.0\}$, and cost shapes $c\in\{0,1\}$, and score each candidate by predicted mean $|u|$ and fraction of informative stages under a short classical pilot.
+\Cref{fig:phase4-activation-frontier} plots the resulting frontier.
+Two dense-cost chain variants (\texttt{dense\_chain\_cost\_0}, \texttt{dense\_chain\_cost\_1}) clear the Phase~IV-A activation check: per-stage $|u|$, $|\Delta d|$, and $|\text{target gap}|$ are all strictly positive for the nonlinear safe operator, which was not the case for any of the eight Phase~III families.
+Per-task activation diagnostics are tabulated in \Cref{tab:phase4-activation}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.78\linewidth]{../figures/phase4A/activation_frontier.png}
+\caption{Phase~IV-A task search: predicted mean $|u|$ versus fraction of informative stages, coloured by family. The two selected \texttt{dense\_chain\_cost} variants sit on the upper-right frontier; Phase~III families cluster near the origin.}
+\label{fig:phase4-activation-frontier}
+\end{figure}
+
+\begin{table}[h]
+\centering
+\small
+\caption{Phase~IV-B translation summary: per-task, per-algorithm mean return (mean $\pm$ std across seeds). Classical, safe-zero, and safe-nonlinear means coincide to four decimals, yielding the null translation result (see \Cref{fig:phase4-matched-control}). RL algorithms use 5 seeds; DP planners use 3 seeds (the classical / safe split of DP is planning-metric-driven, so \texttt{mean\_return} is left blank).}
+\label{tab:phase4-activation}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{llllrrr}
+\toprule
+task & algorithm & class & metric & mean & std & $n_{\text{seeds}}$ \\
+\midrule
+\texttt{dense\_chain\_cost\_0} & \texttt{classical\_q}                   & classical      & \texttt{mean\_return} & $-0.2566$ & $1.0\!\times\!10^{-5}$ & 5 \\
+\texttt{dense\_chain\_cost\_0} & \texttt{safe\_q\_zero}                  & safe-zero      & \texttt{mean\_return} & $-0.2566$ & $1.0\!\times\!10^{-5}$ & 5 \\
+\texttt{dense\_chain\_cost\_0} & \texttt{safe\_q\_stagewise}             & safe-nonlinear & \texttt{mean\_return} & $-0.2566$ & $8.8\!\times\!10^{-6}$ & 5 \\
+\texttt{dense\_chain\_cost\_0} & \texttt{classical\_expected\_sarsa}     & classical      & \texttt{mean\_return} & $-0.2566$ & $8.5\!\times\!10^{-6}$ & 5 \\
+\texttt{dense\_chain\_cost\_0} & \texttt{safe\_expected\_sarsa\_zero}    & safe-zero      & \texttt{mean\_return} & $-0.2566$ & $8.5\!\times\!10^{-6}$ & 5 \\
+\texttt{dense\_chain\_cost\_0} & \texttt{safe\_expected\_sarsa\_stagewise} & safe-nonlinear & \texttt{mean\_return} & $-0.2566$ & $8.5\!\times\!10^{-6}$ & 5 \\
+\midrule
+\texttt{dense\_chain\_cost\_1} & \texttt{classical\_q}                   & classical      & \texttt{mean\_return} & $-0.6415$ & $1.7\!\times\!10^{-5}$ & 5 \\
+\texttt{dense\_chain\_cost\_1} & \texttt{safe\_q\_zero}                  & safe-zero      & \texttt{mean\_return} & $-0.6415$ & $1.7\!\times\!10^{-5}$ & 5 \\
+\texttt{dense\_chain\_cost\_1} & \texttt{safe\_q\_stagewise}             & safe-nonlinear & \texttt{mean\_return} & $-0.6415$ & $2.6\!\times\!10^{-5}$ & 5 \\
+\texttt{dense\_chain\_cost\_1} & \texttt{classical\_expected\_sarsa}     & classical      & \texttt{mean\_return} & $-0.6415$ & $2.1\!\times\!10^{-5}$ & 5 \\
+\texttt{dense\_chain\_cost\_1} & \texttt{safe\_expected\_sarsa\_zero}    & safe-zero      & \texttt{mean\_return} & $-0.6415$ & $2.1\!\times\!10^{-5}$ & 5 \\
+\texttt{dense\_chain\_cost\_1} & \texttt{safe\_expected\_sarsa\_stagewise} & safe-nonlinear & \texttt{mean\_return} & $-0.6415$ & $1.7\!\times\!10^{-5}$ & 5 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\paragraph{Matched-control translation.}
+\Cref{fig:phase4-matched-control} reports the three-way matched-control comparison (classical, safe-zero, safe-nonlinear) on both activated tasks.
+The paired mean differences are exactly zero within bootstrap precision (\Cref{tab:phase4-activation}), and the per-stage diagnostic sweep over the reference-effect strength $u_{\max}$ (\Cref{fig:phase4-diagnostic-sweep}) confirms that activation metrics grow with $u_{\max}$ without producing a detectable outcome signal.
+This is consistent with the mechanism identified in \Cref{sec:exp-discussion}: activation on mean return requires the nonlinear correction to exceed the stochastic-approximation noise floor, and on these tasks the certified $\overline\beta_t$ remains too tight for that to happen.
+
+\begin{figure}[h]
+\centering
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\includegraphics[width=\linewidth]{../figures/phase4b/matched_control_comparison.png}
+\caption{Matched-control comparison on activated tasks: mean return by algorithm class, mean $\pm$ std across seeds. The three classes are statistically indistinguishable (null translation).}
+\label{fig:phase4-matched-control}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\includegraphics[width=\linewidth]{../figures/phase4b/diagnostic_sweep.png}
+\caption{Diagnostic-strength sweep: activation metrics (mean $|u|$, mean $|\Delta d|$) increase monotonically with the reference-effect strength $u_{\max}$, while the outcome deltas remain at noise.}
+\label{fig:phase4-diagnostic-sweep}
+\end{minipage}
+\end{figure}
+
+\paragraph{Advanced estimators.}
+As a further diagnostic we recomputed per-task outcomes with three advanced estimator variants (estimator comparison, attribution-decomposition deltas, and ablation-impact bars), shown in \Cref{fig:phase4-estimator-comparison,fig:phase4-attribution,fig:phase4-ablation}.
+None of them reverses the null translation finding; they primarily serve to bound the sensitivity of the outcome measurement to estimator choice.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\linewidth]{../figures/phase4C/estimator_comparison.pdf}
+\caption{Phase~IV-C estimator comparison on the \texttt{dense\_chain\_cost} activated tasks. Deltas are within noise across all estimator variants.}
+\label{fig:phase4-estimator-comparison}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\includegraphics[width=\linewidth]{../figures/phase4C/attribution_delta_bars.pdf}
+\caption{Attribution-decomposition deltas on the activated tasks.}
+\label{fig:phase4-attribution}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\includegraphics[width=\linewidth]{../figures/phase4C/ablation_impact_bars.pdf}
+\caption{Ablation-impact bars on the activated tasks.}
+\label{fig:phase4-ablation}
+\end{minipage}
+\end{figure}
+
+\paragraph{Take-away.}
+The activation search shows that the certified $\widetilde\beta_t$ can be driven away from zero on tasks where the reward scale is tight relative to the per-stage value variation, confirming the mechanism predicted in \Cref{sec:exp-discussion}.
+Translation to outcome deltas, however, requires a stronger nonlinearity than the current headroom fractions $\alpha_t = 0.10$ permit.
+Obtaining a detectable outcome signal will require either a lower $\alpha_t$ (at the cost of less global-stability margin) or a tighter $R_{\max}$; both are natural extensions of the current framework.
+
+% =====================================================================
 \section{Detailed Proofs}
 \label{app:proofs}
 % =====================================================================
