@@ -1,6 +1,2 @@
 task,mean_abs_u,frac_active,mean_abs_delta_d,near_zero
-chain_sparse_credit_0,2.3336e-03,0.1989,1.1369e-03,
-chain_sparse_credit_1,9.9602e-06,5.0000e-04,4.8528e-06,
-grid_hazard_1,7.0046e-04,0.0000,3.4125e-04,
-grid_hazard_2,6.9972e-04,0.0000,3.4089e-04,
-grid_hazard_3,3.5525e-06,0.0000,1.7307e-06,
+__summary__,,,,all_near_zero=

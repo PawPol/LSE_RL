@@ -110,7 +110,27 @@ def _algo_class(name: str) -> str:
 
 def _build_P4B_A(results_dir: Path) -> list[dict]:
     """P4B-A: Per-task/per-class mean return and primary outcome with CI."""
-    trans_dir = results_dir / "translation"
+    # Prefer the aggregated/ tree: it holds per-(task, algo) summary.json
+    # emitted by aggregate_phase4B. Fall back to the spec-§Q12 `translation/`
+    # wrapper, or the runner's flat layout with task dirs directly under the
+    # suite root.
+    trans_dir: Path | None = None
+    aggregated = results_dir / "aggregated"
+    if aggregated.is_dir():
+        trans_dir = aggregated
+    else:
+        wrapped = results_dir / "translation"
+        if wrapped.is_dir():
+            trans_dir = wrapped
+        else:
+            excluded = {"translation", "counterfactual_replay",
+                        "diagnostic_sweep", "analysis", "aggregated"}
+            if any(
+                d.is_dir() and d.name not in excluded
+                for d in results_dir.iterdir()
+            ):
+                trans_dir = results_dir
+
     step3_path = results_dir / "analysis" / "step3_matched_control.json"
     step4_path = results_dir / "analysis" / "step4_outcome_interpretation.json"
 
@@ -123,12 +143,14 @@ def _build_P4B_A(results_dir: Path) -> list[dict]:
         step4 = _load_json(step4_path)
 
     rows: list[dict] = []
-    if not trans_dir.is_dir():
+    if trans_dir is None:
         warnings.warn("No translation dir; P4B-A will be empty")
         return rows
 
+    excluded = {"translation", "counterfactual_replay",
+                "diagnostic_sweep", "analysis", "aggregated"}
     for task_dir in sorted(trans_dir.iterdir()):
-        if not task_dir.is_dir():
+        if not task_dir.is_dir() or task_dir.name in excluded:
             continue
         tag = task_dir.name
         primary_metric = step4.get(tag, {}).get("primary_metric", "mean_return")
@@ -147,9 +169,18 @@ def _build_P4B_A(results_dir: Path) -> list[dict]:
                 warnings.warn(f"Could not read {summary_path}: {exc}")
                 continue
 
-            mean_r = d.get("primary_outcome", d.get("mean_return", ""))
-            std_r = d.get("std_return", d.get("std_primary_outcome", ""))
-            n_seeds = d.get("n_seeds", "")
+            # aggregate_phase4B writes nested metrics (dict-of-dicts with
+            # mean/std/n); legacy callers wrote flat scalars. Support both.
+            metrics = d.get("metrics")
+            if isinstance(metrics, dict):
+                m_entry = metrics.get(primary_metric) or metrics.get("mean_return") or {}
+                mean_r = m_entry.get("mean", "")
+                std_r = m_entry.get("std", "")
+                n_seeds = d.get("n_seeds", m_entry.get("n", ""))
+            else:
+                mean_r = d.get("primary_outcome", d.get("mean_return", ""))
+                std_r = d.get("std_return", d.get("std_primary_outcome", ""))
+                n_seeds = d.get("n_seeds", "")
 
             rows.append({
                 "task": tag,
@@ -322,8 +353,12 @@ def _build_P4B_F(results_dir: Path) -> list[dict]:
     """
     step5_path = results_dir / "analysis" / "step5_negative_control.json"
     if not step5_path.exists():
-        # Fall back to reading replay summaries directly
+        # Fall back to reading replay summaries directly. Spec §Q8 keeps the
+        # negative control suite-agnostic, so look at the sibling
+        # counterfactual_replay/ dir when the suite-local one is absent.
         neg_dir = results_dir / "counterfactual_replay"
+        if not neg_dir.is_dir():
+            neg_dir = results_dir.parent / "counterfactual_replay"
         if not neg_dir.is_dir():
             warnings.warn("No negative-control data found; P4B-F will be empty")
             return []

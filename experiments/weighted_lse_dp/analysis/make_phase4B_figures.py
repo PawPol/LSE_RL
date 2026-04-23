@@ -96,18 +96,61 @@ def _ci_bar(ax: plt.Axes, x: float, lo: float, hi: float, **kw: Any) -> None:
     ax.plot([x, x], [lo, hi], linewidth=2, **kw)
 
 
+def _resolve_translation_dir(results_dir: Path) -> Path | None:
+    """Return the directory holding per-task translation runs.
+
+    The runner writes raw seed data to ``<results_dir>/<task>/<algo>/seed_N/``
+    (task dirs directly under the suite root), while the spec Q12 layout wraps
+    these in ``<results_dir>/translation/``. Accept both.
+    """
+    nested = results_dir / "translation"
+    if nested.is_dir():
+        return nested
+    task_dirs = [
+        d for d in results_dir.iterdir()
+        if d.is_dir() and d.name not in {
+            "translation", "counterfactual_replay", "diagnostic_sweep",
+            "analysis", "aggregated",
+        }
+    ]
+    if not task_dirs:
+        return None
+    return results_dir
+
+
+def _resolve_counterfactual_dir(results_dir: Path) -> Path | None:
+    """Return the directory holding negative-control replay summaries.
+
+    Prefer ``<results_dir>/counterfactual_replay/``; fall back to a sibling
+    ``counterfactual_replay/`` at the parent level (the runner's default
+    output site — spec §Q8 keeps the negative control suite-agnostic).
+    """
+    nested = results_dir / "counterfactual_replay"
+    if nested.is_dir():
+        return nested
+    sibling = results_dir.parent / "counterfactual_replay"
+    if sibling.is_dir():
+        return sibling
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Figure 1: RL learning curves
 # ---------------------------------------------------------------------------
 
 def _fig_rl_learning_curves(results_dir: Path, output_dir: Path) -> None:
     """Plot discounted-return learning curves per task, coloured by class."""
-    trans_dir = results_dir / "translation"
-    if not trans_dir.is_dir():
+    trans_dir = _resolve_translation_dir(results_dir)
+    if trans_dir is None:
         warnings.warn("No translation dir; skipping rl_learning_curves")
         return
 
-    task_dirs = sorted(d for d in trans_dir.iterdir() if d.is_dir())
+    excluded = {"translation", "counterfactual_replay", "diagnostic_sweep",
+                "analysis", "aggregated"}
+    task_dirs = sorted(
+        d for d in trans_dir.iterdir()
+        if d.is_dir() and d.name not in excluded
+    )
     if not task_dirs:
         warnings.warn("No task dirs in translation/; skipping rl_learning_curves")
         return
@@ -280,12 +323,17 @@ def _fig_scatter_outcome_vs_diagnostic(results_dir: Path, output_dir: Path) -> N
 
 def _fig_matched_control(results_dir: Path, output_dir: Path) -> None:
     """Three-way bar plot: classical vs safe-zero vs safe-nonlinear per task."""
-    trans_dir = results_dir / "translation"
-    if not trans_dir.is_dir():
+    trans_dir = _resolve_translation_dir(results_dir)
+    if trans_dir is None:
         warnings.warn("No translation dir; skipping matched_control_comparison")
         return
 
-    task_dirs = sorted(d for d in trans_dir.iterdir() if d.is_dir())
+    excluded = {"translation", "counterfactual_replay", "diagnostic_sweep",
+                "analysis", "aggregated"}
+    task_dirs = sorted(
+        d for d in trans_dir.iterdir()
+        if d.is_dir() and d.name not in excluded
+    )
     if not task_dirs:
         return
 
@@ -424,8 +472,8 @@ def _fig_negative_control_outcomes(results_dir: Path, output_dir: Path) -> None:
 
     Uses counterfactual_replay/ (NOT counterfactual_replay_4a2/) (spec §Q8).
     """
-    neg_dir = results_dir / "counterfactual_replay"  # negative control (spec §Q8)
-    if not neg_dir.is_dir():
+    neg_dir = _resolve_counterfactual_dir(results_dir)  # negative control (spec §Q8)
+    if neg_dir is None:
         warnings.warn("No counterfactual_replay dir; skipping negative_control_outcomes")
         return
 
@@ -471,11 +519,16 @@ def _fig_negative_control_outcomes(results_dir: Path, output_dir: Path) -> None:
 
 def _fig_per_stage_diagnostics(results_dir: Path, output_dir: Path) -> None:
     """Per-stage mean |natural_shift| and |delta_effective_discount| by task."""
-    trans_dir = results_dir / "translation"
-    if not trans_dir.is_dir():
+    trans_dir = _resolve_translation_dir(results_dir)
+    if trans_dir is None:
         return
 
-    task_dirs = sorted(d for d in trans_dir.iterdir() if d.is_dir())
+    excluded = {"translation", "counterfactual_replay", "diagnostic_sweep",
+                "analysis", "aggregated"}
+    task_dirs = sorted(
+        d for d in trans_dir.iterdir()
+        if d.is_dir() and d.name not in excluded
+    )
     if not task_dirs:
         return
 
