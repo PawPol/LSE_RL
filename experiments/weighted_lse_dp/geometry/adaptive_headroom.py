@@ -313,13 +313,22 @@ def run_fixed_point(
         theta_safe_t = compute_theta_safe(kappa_t, gamma_base)
         u_safe_ref_t = compute_u_safe_ref(theta_safe_t, xi_ref_t)
 
-        if u_target_t is not None:
-            # Spec S6.7: bump alpha only where feasibility is violated.
-            # Stopping criterion: all stages satisfy u_target <= U_safe_ref.
-            needs_increase = u_target_t > u_safe_ref_t - 1e-10
-        else:
-            # No feasibility reference: run for full max_iters without early stop.
-            needs_increase = np.zeros(T, dtype=bool)
+        if u_target_t is None:
+            # Legacy contract (docstring): "runs for a fixed ``max_iters``
+            # passes without a feasibility check."  No u_target means we have
+            # no feasibility reference, so there is nothing to bump toward and
+            # nothing to early-exit on.  Do NOT break here and do NOT mutate
+            # alpha — the loop simply re-derives (kappa, Bhat, A_t, ...) from
+            # the base alpha each pass.  Callers (legacy tests in
+            # test_phase4_natural_shift_geometry.py; feasibility-baseline
+            # calls that intentionally use max_iters=1) depend on this
+            # semantics.  Option A from Codex R3: restore legacy behavior
+            # for callers that do not pass u_target_t.
+            continue
+
+        # Spec S6.7: bump alpha only where feasibility is violated.
+        # Stopping criterion: all stages satisfy u_target <= U_safe_ref.
+        needs_increase = u_target_t > u_safe_ref_t - 1e-10
 
         if not np.any(needs_increase):
             break

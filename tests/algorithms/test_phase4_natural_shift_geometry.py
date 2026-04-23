@@ -893,6 +893,50 @@ class TestAdaptiveHeadroomFeasibility:
             "Alpha was not bumped despite u_target > U_safe_ref (infeasibility)"
         )
 
+    def test_no_u_target_runs_full_max_iters(self, monkeypatch) -> None:
+        """Codex R3 (Option A): ``run_fixed_point(u_target_t=None)`` must run
+        the full ``max_iters`` loop as documented — the MAJOR-8 fix introduced
+        a regression where the ``None`` branch triggered an iteration-1 early
+        exit via ``needs_increase = zeros`` followed by
+        ``if not np.any(needs_increase): break``.
+
+        Sentinel: count calls to ``compute_kappa``.  Each fixed-point pass
+        invokes ``compute_kappa`` exactly once, so ``max_iters`` passes must
+        produce exactly ``max_iters`` calls.
+        """
+        import experiments.weighted_lse_dp.geometry.adaptive_headroom as ah
+
+        call_count = {"n": 0}
+        real_compute_kappa = ah.compute_kappa
+
+        def counting_compute_kappa(alpha_t, gamma_base):
+            call_count["n"] += 1
+            return real_compute_kappa(alpha_t, gamma_base)
+
+        monkeypatch.setattr(ah, "compute_kappa", counting_compute_kappa)
+
+        max_iters = 5
+        _ = ah.run_fixed_point(
+            xi_ref_t=self._xi,
+            p_align_t=self._p,
+            r_max=self._r_max,
+            gamma_base=self._gamma,
+            alpha_min=0.05,
+            alpha_max=0.20,
+            alpha_budget_max=0.30,
+            u_target_t=None,
+            max_iters=max_iters,
+        )
+
+        # With u_target_t=None, no early break is allowed: the loop must run
+        # exactly ``max_iters`` passes, calling compute_kappa once per pass.
+        assert call_count["n"] == max_iters, (
+            f"Expected {max_iters} compute_kappa calls for u_target_t=None "
+            f"(legacy full-loop contract), got {call_count['n']}.  This "
+            f"indicates the early-break regression from the MAJOR-8 fix has "
+            f"returned."
+        )
+
 
 # ---------------------------------------------------------------------------
 # MAJOR-6: Integration test through build_schedule_v3_from_pilot

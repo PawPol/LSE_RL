@@ -1,9 +1,11 @@
 {
-  "generated_at": "2026-04-21T03:33:50Z",
-  "gate_version": "option_c_v1",
+  "generated_at": "2026-04-23T03:06:25Z",
+  "gate_version": "spec_13_1_v1",
   "thresholds": {
     "mean_abs_u": 0.005,
-    "frac_informative_u_ge_5e3": 0.1
+    "frac_informative_u_ge_5e3": 0.1,
+    "mean_abs_delta_discount_informative": 0.001,
+    "target_gap_norm_informative": 0.005
   },
   "families": [
     {
@@ -18,8 +20,12 @@
         "frac_u_ge_5e3": 0.9392632315224995,
         "n_informative": 17156,
         "frac_informative": 0.8578,
+        "mean_abs_delta_discount": 0.00429852487202294,
+        "target_gap_norm": 0.014696126501734649,
         "gate_pass_mean_or_median": true,
-        "gate_pass_frac": true
+        "gate_pass_frac": true,
+        "gate_pass_delta_discount": true,
+        "gate_pass_target_gap": true
       },
       "topquartile_replay": {
         "mean_abs_u": 0.009625798768206016,
@@ -31,7 +37,7 @@
         "is_dilution_only": true
       },
       "iv_b_eligible": true,
-      "eligibility_reason": "all three conditions pass",
+      "eligibility_reason": "all spec-\u00a713.1 conditions pass",
       "tag": "dense_chain_cost_0"
     },
     {
@@ -46,8 +52,12 @@
         "frac_u_ge_5e3": 0.0,
         "n_informative": 0,
         "frac_informative": 0.0,
+        "mean_abs_delta_discount": 0.0,
+        "target_gap_norm": 0.0,
         "gate_pass_mean_or_median": false,
-        "gate_pass_frac": false
+        "gate_pass_frac": false,
+        "gate_pass_delta_discount": false,
+        "gate_pass_target_gap": false
       },
       "topquartile_replay": {
         "mean_abs_u": 0.0,
@@ -74,8 +84,12 @@
         "frac_u_ge_5e3": 0.0,
         "n_informative": 0,
         "frac_informative": 0.0,
+        "mean_abs_delta_discount": 0.0,
+        "target_gap_norm": 0.0,
         "gate_pass_mean_or_median": false,
-        "gate_pass_frac": false
+        "gate_pass_frac": false,
+        "gate_pass_delta_discount": false,
+        "gate_pass_target_gap": false
       },
       "topquartile_replay": {
         "mean_abs_u": 0.0,
@@ -102,8 +116,12 @@
         "frac_u_ge_5e3": 0.0,
         "n_informative": 0,
         "frac_informative": 0.0,
+        "mean_abs_delta_discount": 0.0,
+        "target_gap_norm": 0.0,
         "gate_pass_mean_or_median": false,
-        "gate_pass_frac": false
+        "gate_pass_frac": false,
+        "gate_pass_delta_discount": false,
+        "gate_pass_target_gap": false
       },
       "topquartile_replay": {
         "mean_abs_u": 0.0,

@@ -75,7 +75,11 @@ import numpy as np
 # Constants
 # ---------------------------------------------------------------------------
 
-PROJECT_ROOT = Path("/Users/liq/Documents/Claude/Projects/LSE_RL")
+# Derive the repo root from this script's location so the defaults remain
+# correct on any checkout (no hard-coded absolute paths).  The script lives at
+# ``<repo_root>/scripts/figures/phase4A/rebuild_P4A_B_P4A_E.py``, so
+# ``parents[3]`` walks up three directories to the repo root.
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SCHEDULE_ROOT = PROJECT_ROOT / "results" / "weighted_lse_dp" / "phase4"
 OUTPUT_DIR = PROJECT_ROOT / "results" / "processed" / "phase4A" / "tables"
 

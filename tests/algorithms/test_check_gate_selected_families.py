@@ -151,3 +151,256 @@ def test_populated_selected_families_passes() -> None:
     family_check = _find_family_check(checks)
     assert family_check["passed"] is True
     assert family_check["details"] == "2 families selected"
+
+
+# ---------------------------------------------------------------------------
+# R2 (2026-04-22) — accept the runner's canonical schemas without declaring
+# structural failure.  ``run_phase4_activation_search.py::_write_selected_tasks``
+# emits a top-level list of task dicts (each with a ``family`` field);
+# ``_write_frozen_suite_config`` emits ``{"selected_tasks": [...]}``;
+# some 4a2 curations use ``{"tasks": [...]}``.  All three MUST be accepted.
+# ---------------------------------------------------------------------------
+
+def test_canonical_runner_top_level_list_of_tasks_accepted() -> None:
+    """Fixture matching the current runner's ``_write_selected_tasks`` output:
+    a top-level list of task dicts with ``family`` keys.  Must PASS.
+    """
+    mod = _load_check_gate()
+    payload = [
+        {"family": "dense_chain_cost", "idx": 0, "cfg": {}},
+        {"family": "grid_hazard", "idx": 1, "cfg": {}},
+    ]
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        _build_min_results_dir(root, selected_payload=payload)
+        checks = mod.check_gate_iva(
+            root, _REPO_ROOT / "experiments" / "weighted_lse_dp" / "configs"
+        )
+    family_check = _find_family_check(checks)
+    assert family_check["passed"] is True, family_check
+    assert "2 families selected" in family_check["details"]
+
+
+def test_canonical_selected_tasks_dict_accepted() -> None:
+    """Fixture matching ``{"selected_tasks": [...]}`` — the frozen
+    activation-suite schema and the schema the review flagged as being
+    rejected by the previous NIT-17 fix.  Must PASS.
+    """
+    mod = _load_check_gate()
+    payload = {
+        "phase": "IV-A",
+        "status": "frozen",
+        "selected_tasks": [
+            {"family": "dense_chain_cost", "cfg": {}},
+            {"family": "grid_hazard", "cfg": {}},
+            {"family": "dense_chain_cost", "cfg": {}},  # duplicate family
+        ],
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        _build_min_results_dir(root, selected_payload=payload)
+        checks = mod.check_gate_iva(
+            root, _REPO_ROOT / "experiments" / "weighted_lse_dp" / "configs"
+        )
+    family_check = _find_family_check(checks)
+    assert family_check["passed"] is True, family_check
+    # De-duplication happens on the ``family`` field.
+    assert "2 families selected" in family_check["details"]
+
+
+def test_canonical_tasks_key_accepted() -> None:
+    """Fixture matching ``{"tasks": [...]}`` — the manually-curated 4a2
+    selected_tasks shape observed on disk.  Must PASS.
+    """
+    mod = _load_check_gate()
+    payload = {
+        "schema_version": "phase4A2.selected_tasks.v1",
+        "tasks": [
+            {"family": "dense_chain_cost"},
+            {"family": "grid_hazard"},
+        ],
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        _build_min_results_dir(root, selected_payload=payload)
+        checks = mod.check_gate_iva(
+            root, _REPO_ROOT / "experiments" / "weighted_lse_dp" / "configs"
+        )
+    family_check = _find_family_check(checks)
+    assert family_check["passed"] is True, family_check
+    assert "2 families selected" in family_check["details"]
+
+
+# ---------------------------------------------------------------------------
+# R1 (spec §13.1, amended 2026-04-22) — four-condition primary formal gate.
+# The gate MUST check not only mean_abs_u and frac_informative_u_ge_5e3, but
+# also mean_abs_delta_discount_informative >= 1e-3 AND
+# target_gap_norm_informative >= 5e-3.
+# ---------------------------------------------------------------------------
+
+def _build_replay_results_dir(
+    root: pathlib.Path,
+    replay_task: dict,
+    design_point_u_pred: float = 1.0e-2,
+    family: str = "dense_chain_cost",
+) -> None:
+    """Set up a results directory populated enough for GATE 1-4 to run.
+
+    Writes:
+    * task_search/selected_tasks.json (top-level list with a single family)
+    * task_search/candidate_scores.csv (one row driving GATE 1)
+    * counterfactual_replay/all_replay_summaries.json (one task dict)
+    """
+    (root / "audit").mkdir(parents=True, exist_ok=True)
+    (root / "task_search").mkdir(parents=True, exist_ok=True)
+    (root / "counterfactual_replay").mkdir(parents=True, exist_ok=True)
+
+    # Selected tasks (top-level list, matches current runner output).
+    (root / "task_search" / "selected_tasks.json").write_text(
+        json.dumps([{"family": family, "idx": 0, "cfg": {}}])
+    )
+
+    # Design-point prediction for GATE 1.
+    (root / "task_search" / "candidate_scores.csv").write_text(
+        "family,mean_abs_u_pred\n"
+        f"{family},{design_point_u_pred}\n"
+    )
+
+    # Replay summary for GATE 2a/2b/3/4.
+    replay_task.setdefault("family", family)
+    replay_task.setdefault("tag", f"{family}_0")
+    (root / "counterfactual_replay" / "all_replay_summaries.json").write_text(
+        json.dumps({"tasks": [replay_task]})
+    )
+
+
+def _find_check(checks: list[dict], prefix: str) -> dict:
+    for c in checks:
+        if c["condition"].startswith(prefix):
+            return c
+    raise AssertionError(
+        f"No check starting with {prefix!r}; observed: "
+        f"{[c['condition'] for c in checks]}"
+    )
+
+
+def test_gate3_fails_when_delta_discount_informative_too_small() -> None:
+    """mean_abs_u and frac pass, but mean_abs_delta_discount_informative = 0.
+
+    The gate MUST fail with [GATE 3] and the details must mention the
+    discount-gap metric.
+    """
+    mod = _load_check_gate()
+    replay = {
+        "mean_abs_u_replay_informative": 1.0e-2,
+        "median_abs_u_replay_informative": 1.0e-2,
+        "frac_informative_u_ge_5e3": 0.8,
+        "mean_abs_delta_discount_informative": 0.0,    # fails C3
+        "target_gap_norm_informative": 1.0e-2,         # passes C4
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        _build_replay_results_dir(root, replay)
+        checks = mod.check_gate_iva(
+            root, _REPO_ROOT / "experiments" / "weighted_lse_dp" / "configs"
+        )
+    gate3 = _find_check(checks, "[GATE 3]")
+    assert gate3["passed"] is False, gate3
+    assert "mean_abs_delta_discount" in gate3["condition"]
+    # Detailed numeric surfaced.
+    assert "best=0.000000" in gate3["details"]
+
+    # The sibling Condition 4 check should still pass.
+    gate4 = _find_check(checks, "[GATE 4]")
+    assert gate4["passed"] is True
+
+    # The per-family eligibility record must flag the family as ineligible
+    # with the discount-gap reason populated.
+    elig_check = None
+    for c in checks:
+        if "_eligibility_records" in c:
+            elig_check = c
+            break
+    assert elig_check is not None
+    recs = elig_check["_eligibility_records"]
+    assert any(
+        r["family"] == "dense_chain_cost"
+        and r["iv_b_eligible"] is False
+        and "mean_abs_delta_discount" in r["eligibility_reason"]
+        for r in recs
+    ), recs
+
+
+def test_gate4_fails_when_target_gap_norm_informative_too_small() -> None:
+    """mean_abs_u, frac, and delta-discount all pass, but
+    target_gap_norm_informative = 0.  GATE 4 MUST fail.
+    """
+    mod = _load_check_gate()
+    replay = {
+        "mean_abs_u_replay_informative": 1.0e-2,
+        "median_abs_u_replay_informative": 1.0e-2,
+        "frac_informative_u_ge_5e3": 0.8,
+        "mean_abs_delta_discount_informative": 5.0e-3,  # passes C3
+        "target_gap_norm_informative": 0.0,             # fails C4
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        _build_replay_results_dir(root, replay)
+        checks = mod.check_gate_iva(
+            root, _REPO_ROOT / "experiments" / "weighted_lse_dp" / "configs"
+        )
+    gate4 = _find_check(checks, "[GATE 4]")
+    assert gate4["passed"] is False, gate4
+    assert "target_gap_norm" in gate4["condition"]
+    assert "best=0.000000" in gate4["details"]
+
+    # Condition 3 still passes.
+    gate3 = _find_check(checks, "[GATE 3]")
+    assert gate3["passed"] is True
+
+    # Eligibility reason surfaces the target-gap shortfall.
+    elig_check = next(c for c in checks if "_eligibility_records" in c)
+    recs = elig_check["_eligibility_records"]
+    assert any(
+        r["family"] == "dense_chain_cost"
+        and r["iv_b_eligible"] is False
+        and "target_gap_norm" in r["eligibility_reason"]
+        for r in recs
+    ), recs
+
+
+def test_all_four_gates_pass_and_iv_b_eligible() -> None:
+    """Regression: a replay payload that clears all four spec-§13.1
+    conditions MUST surface PASS for [GATE 2a], [GATE 2b], [GATE 3], and
+    [GATE 4] and mark the family ``iv_b_eligible=True``.
+    """
+    mod = _load_check_gate()
+    replay = {
+        "mean_abs_u_replay_informative": 1.0e-2,
+        "median_abs_u_replay_informative": 1.0e-2,
+        "frac_informative_u_ge_5e3": 0.8,
+        "mean_abs_delta_discount_informative": 5.0e-3,
+        "target_gap_norm_informative": 1.0e-2,
+        "n_informative_transitions": 1000,
+        "frac_informative_transitions": 0.9,
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        _build_replay_results_dir(root, replay)
+        checks = mod.check_gate_iva(
+            root, _REPO_ROOT / "experiments" / "weighted_lse_dp" / "configs"
+        )
+    for prefix in ("[GATE 1]", "[GATE 2a]", "[GATE 2b]", "[GATE 3]", "[GATE 4]"):
+        c = _find_check(checks, prefix)
+        assert c["passed"] is True, (prefix, c)
+
+    elig_check = next(c for c in checks if "_eligibility_records" in c)
+    recs = elig_check["_eligibility_records"]
+    fam_rec = next(r for r in recs if r["family"] == "dense_chain_cost")
+    assert fam_rec["iv_b_eligible"] is True, fam_rec
+    # All four informative gate_pass_* flags set.
+    info = fam_rec["informative_replay"]
+    assert info["gate_pass_mean_or_median"] is True
+    assert info["gate_pass_frac"] is True
+    assert info["gate_pass_delta_discount"] is True
+    assert info["gate_pass_target_gap"] is True

@@ -52,9 +52,12 @@ def _dir_nonempty(path: Path, description: str) -> dict:
 # IV-A: Activation gate (spec §13) — Option C, three-condition design
 # ---------------------------------------------------------------------------
 
-GATE_VERSION = "option_c_v1"
+GATE_VERSION = "spec_13_1_v1"
 U_THRESHOLD = 5e-3
 FRAC_THRESHOLD = 0.10
+# Spec §13.1 (amended 2026-04-22) primary formal gate thresholds.
+DELTA_DISCOUNT_THRESHOLD = 1e-3
+TARGET_GAP_NORM_THRESHOLD = 5e-3
 
 
 def _read_candidate_predictions(scores_file: Path) -> dict[str, list[float]]:
@@ -120,9 +123,19 @@ def _family_eligibility(
             mean_topq = float(best.get("mean_abs_u_replay_topquartile", 0.0))
             frac_topq_u = float(best.get("frac_topquartile_u_ge_5e3", 0.0))
             n_topq = int(best.get("n_topquartile_transitions", 0))
+            mean_abs_delta_d_info = float(
+                best.get("mean_abs_delta_discount_informative", 0.0)
+            )
+            target_gap_norm_info = float(
+                best.get("target_gap_norm_informative", 0.0)
+            )
             c2a_pass = (mean_info >= U_THRESHOLD) or (median_info >= U_THRESHOLD)
             c2b_pass = frac_info_u >= FRAC_THRESHOLD
-            iv_b_eligible = bool(c1_pass and c2a_pass and c2b_pass)
+            c3_pass = mean_abs_delta_d_info >= DELTA_DISCOUNT_THRESHOLD
+            c4_pass = target_gap_norm_info >= TARGET_GAP_NORM_THRESHOLD
+            iv_b_eligible = bool(
+                c1_pass and c2a_pass and c2b_pass and c3_pass and c4_pass
+            )
             reason_parts = []
             if not c1_pass:
                 reason_parts.append(
@@ -138,8 +151,18 @@ def _family_eligibility(
                     f"informative frac(|u|>={U_THRESHOLD:.0e})={frac_info_u:.4f} "
                     f"< {FRAC_THRESHOLD:.2f}"
                 )
+            if not c3_pass:
+                reason_parts.append(
+                    f"informative mean_abs_delta_discount={mean_abs_delta_d_info:.6f}"
+                    f" < {DELTA_DISCOUNT_THRESHOLD:.0e}"
+                )
+            if not c4_pass:
+                reason_parts.append(
+                    f"informative target_gap_norm={target_gap_norm_info:.6f}"
+                    f" < {TARGET_GAP_NORM_THRESHOLD:.0e}"
+                )
             reason = (
-                "all three conditions pass"
+                "all spec-§13.1 conditions pass"
                 if iv_b_eligible
                 else "; ".join(reason_parts)
             )
@@ -155,8 +178,12 @@ def _family_eligibility(
                     "frac_u_ge_5e3": frac_info_u,
                     "n_informative": n_info,
                     "frac_informative": frac_info,
+                    "mean_abs_delta_discount": mean_abs_delta_d_info,
+                    "target_gap_norm": target_gap_norm_info,
                     "gate_pass_mean_or_median": bool(c2a_pass),
                     "gate_pass_frac": bool(c2b_pass),
+                    "gate_pass_delta_discount": bool(c3_pass),
+                    "gate_pass_target_gap": bool(c4_pass),
                 },
                 "topquartile_replay": {
                     "mean_abs_u": mean_topq,
@@ -184,8 +211,12 @@ def _family_eligibility(
                     "frac_u_ge_5e3": 0.0,
                     "n_informative": 0,
                     "frac_informative": 0.0,
+                    "mean_abs_delta_discount": 0.0,
+                    "target_gap_norm": 0.0,
                     "gate_pass_mean_or_median": False,
                     "gate_pass_frac": False,
+                    "gate_pass_delta_discount": False,
+                    "gate_pass_target_gap": False,
                 },
                 "topquartile_replay": {
                     "mean_abs_u": 0.0,
@@ -218,6 +249,8 @@ def _write_eligibility_report(
         "thresholds": {
             "mean_abs_u": U_THRESHOLD,
             "frac_informative_u_ge_5e3": FRAC_THRESHOLD,
+            "mean_abs_delta_discount_informative": DELTA_DISCOUNT_THRESHOLD,
+            "target_gap_norm_informative": TARGET_GAP_NORM_THRESHOLD,
         },
         "families": records,
     }
@@ -227,20 +260,32 @@ def _write_eligibility_report(
 
 
 def check_gate_iva(results_dir: Path, configs_dir: Path, suffix: str = "") -> list[dict]:
-    """Phase IV-A activation gate (Option C, v1).
+    """Phase IV-A activation gate (spec §13.1, amended 2026-04-22).
 
-    Three-condition activation gate:
+    Spec §13.1 primary formal gate — four informative-denominator conditions
+    (all MUST pass for a family to be IV-B eligible):
 
-    * Condition 1 — design-point activation: at least one family has
-      ``mean_abs_u_pred >= 5e-3`` in ``task_search/candidate_scores.csv``.
-    * Condition 2a — informative-conditioned replay activation: at least one
-      replay task has ``mean_abs_u_replay_informative >= 5e-3`` OR
-      ``median_abs_u_replay_informative >= 5e-3``.
-    * Condition 2b — informative active fraction: at least one replay task
-      has ``frac_informative_u_ge_5e3 >= 0.10``.
+    * Condition 1 (informative mean |u|):
+      ``mean_abs_u_replay_informative >= 5e-3``.
+    * Condition 2 (informative active fraction):
+      ``frac_informative_u_ge_5e3 >= 0.10``.
+    * Condition 3 (informative effective-discount gap):
+      ``mean_abs_delta_discount_informative >= 1e-3``.
+    * Condition 4 (informative normalized target gap):
+      ``target_gap_norm_informative >= 5e-3``  (already r_max-normalized
+      upstream by ``run_phase4_counterfactual_replay.py``).
+
+    Condition 1 is also evaluated on the upstream ``candidate_scores.csv``
+    design-point prediction (``mean_abs_u_pred``) so a stage-local
+    ``[GATE 1]`` check fires even when replay artifacts are missing.
+    Condition 1 with a *median* fallback is retained as ``[GATE 2a]`` per
+    the v1 Option C contract (a family passes 2a if either mean OR median
+    informative |u| >= 5e-3); this is strictly weaker than the spec-§13.1
+    mean-only condition, so a family passing the primary (mean) gate
+    necessarily passes 2a.
 
     The global replay mean is reported as an ``[INFO]`` dilution diagnostic
-    only; it is not a pass/fail condition.
+    only; it is not a pass/fail condition (spec §13.2).
     """
     checks: list[dict] = []
     audit_dir = results_dir / "audit"
@@ -258,25 +303,71 @@ def check_gate_iva(results_dir: Path, configs_dir: Path, suffix: str = "") -> li
     if selected.exists():
         try:
             data = json.loads(selected.read_text())
-            # Distinguish three cases so failure details are unambiguous:
-            #   1. top-level list (legacy format) or dict with "selected_families" key
-            #      populated -> normal path, report family count.
-            #   2. dict missing "selected_families" entirely -> structural failure,
-            #      report the missing-key cause (not "0 families selected").
-            #   3. dict with "selected_families" present but empty -> genuine empty
-            #      list, report that explicitly.
-            if isinstance(data, list):
-                families: list | None = data
-            elif isinstance(data, dict) and "selected_families" in data:
-                families = data["selected_families"]
-            else:
-                families = None
+            # Accept the repo's canonical shapes BEFORE declaring structural
+            # failure.  ``run_phase4_activation_search.py`` emits a top-level
+            # list of task dicts via ``_write_selected_tasks``; a
+            # manually-curated 4a2 payload uses ``{"tasks": [...]}``; a
+            # future runner schema may wrap entries in ``{"selected_tasks":
+            # [...]}`` (which is already how the frozen suite config is
+            # emitted by ``_write_frozen_suite_config``).  The legacy
+            # ``selected_families`` key is still accepted.  For any shape
+            # that contains task dicts, derive families by de-duplicating
+            # the ``family`` field (falling back to the task's index/idx
+            # when ``family`` is absent).
+            #
+            # Distinguish three failure-visible cases so details strings
+            # are distinguishable (NIT-17):
+            #   1. recognised shape, populated -> PASS with family count.
+            #   2. recognised shape, present but empty -> FAIL
+            #      ("present but empty"), distinct from case (3).
+            #   3. unrecognised shape (no canonical key on a dict, and not
+            #      a list) -> FAIL ("... key missing from ..."), distinct
+            #      from case (2).
+            def _extract_items(payload: object) -> list | None:
+                if isinstance(payload, list):
+                    return payload
+                if isinstance(payload, dict):
+                    for key in ("selected_families", "selected_tasks", "tasks"):
+                        if key in payload:
+                            v = payload[key]
+                            return v if isinstance(v, list) else []
+                return None
+
+            def _to_families(items: list) -> list:
+                """Deduplicate to family names when items are task dicts."""
+                if not items:
+                    return []
+                # If items are strings (legacy ``selected_families``), pass
+                # through directly.
+                if all(isinstance(x, str) for x in items):
+                    return list(items)
+                # Otherwise treat each item as a task dict; deduplicate by
+                # ``family`` field with graceful fallback.
+                fams: list[str] = []
+                seen: set[str] = set()
+                for t in items:
+                    if not isinstance(t, dict):
+                        continue
+                    fam = str(t.get("family")
+                              or t.get("idx")
+                              or t.get("task_id")
+                              or f"task_{len(fams)}")
+                    if fam not in seen:
+                        seen.add(fam)
+                        fams.append(fam)
+                return fams
+
+            items = _extract_items(data)
+            families: list | None = (
+                _to_families(items) if items is not None else None
+            )
 
             if families is None:
                 checks.append(_check(
                     False,
                     "At least one task family selected",
-                    f"'selected_families' key missing from {selected}",
+                    f"'selected_families' key missing from {selected} "
+                    f"(also tried 'selected_tasks', 'tasks', top-level list)",
                 ))
             elif len(families) == 0:
                 checks.append(_check(
@@ -386,6 +477,45 @@ def check_gate_iva(results_dir: Path, configs_dir: Path, suffix: str = "") -> li
                 f"best={best_frac_info:.4f} across {len(replay_tasks)} replay tasks",
             ))
 
+            # Condition 3 — spec §13.1: informative effective-discount gap.
+            has_3 = any(
+                float(t.get("mean_abs_delta_discount_informative", 0.0))
+                >= DELTA_DISCOUNT_THRESHOLD
+                for t in replay_tasks
+            )
+            best_delta_d_info = max(
+                (float(t.get("mean_abs_delta_discount_informative", 0.0))
+                 for t in replay_tasks),
+                default=0.0,
+            )
+            checks.append(_check(
+                has_3,
+                "[GATE 3] Informative replay: mean_abs_delta_discount >= 1e-3",
+                f"best={best_delta_d_info:.6f} across "
+                f"{len(replay_tasks)} replay tasks "
+                f"(spec §13.1 primary gate; informative denominator)",
+            ))
+
+            # Condition 4 — spec §13.1: informative normalized target gap.
+            has_4 = any(
+                float(t.get("target_gap_norm_informative", 0.0))
+                >= TARGET_GAP_NORM_THRESHOLD
+                for t in replay_tasks
+            )
+            best_target_gap_info = max(
+                (float(t.get("target_gap_norm_informative", 0.0))
+                 for t in replay_tasks),
+                default=0.0,
+            )
+            checks.append(_check(
+                has_4,
+                "[GATE 4] Informative replay: target_gap_norm >= 5e-3",
+                f"best={best_target_gap_info:.6f} across "
+                f"{len(replay_tasks)} replay tasks "
+                f"(spec §13.1 primary gate; informative denominator, "
+                f"r_max-normalized upstream)",
+            ))
+
             # [INFO] line (not a gate) — global replay diagnostic.
             best_global = max(
                 (float(t.get("mean_abs_u_replay_global",
@@ -412,6 +542,16 @@ def check_gate_iva(results_dir: Path, configs_dir: Path, suffix: str = "") -> li
                 "No tasks in all_replay_summaries.json",
             ))
             checks.append(_check(
+                False,
+                "[GATE 3] Informative replay: mean_abs_delta_discount >= 1e-3",
+                "No tasks in all_replay_summaries.json",
+            ))
+            checks.append(_check(
+                False,
+                "[GATE 4] Informative replay: target_gap_norm >= 5e-3",
+                "No tasks in all_replay_summaries.json",
+            ))
+            checks.append(_check(
                 True,
                 "[INFO] Global replay mean_abs_u (dilution diagnostic, not gated)",
                 "No replay tasks to report.",
@@ -428,6 +568,16 @@ def check_gate_iva(results_dir: Path, configs_dir: Path, suffix: str = "") -> li
             "[GATE 2b] Informative replay: frac(|u|>=5e-3) >= 10%",
             replay_parse_error,
         ))
+        checks.append(_check(
+            False,
+            "[GATE 3] Informative replay: mean_abs_delta_discount >= 1e-3",
+            replay_parse_error,
+        ))
+        checks.append(_check(
+            False,
+            "[GATE 4] Informative replay: target_gap_norm >= 5e-3",
+            replay_parse_error,
+        ))
     else:
         checks.append(_check(
             False,
@@ -437,6 +587,16 @@ def check_gate_iva(results_dir: Path, configs_dir: Path, suffix: str = "") -> li
         checks.append(_check(
             False,
             "[GATE 2b] Informative replay: frac(|u|>=5e-3) >= 10%",
+            f"{replay_summary_file} missing",
+        ))
+        checks.append(_check(
+            False,
+            "[GATE 3] Informative replay: mean_abs_delta_discount >= 1e-3",
+            f"{replay_summary_file} missing",
+        ))
+        checks.append(_check(
+            False,
+            "[GATE 4] Informative replay: target_gap_norm >= 5e-3",
             f"{replay_summary_file} missing",
         ))
 
@@ -722,6 +882,14 @@ def main() -> None:
                     f" ({100.0*info['frac_informative']:.2f}%)"
                     f"  [2a={'PASS' if info['gate_pass_mean_or_median'] else 'FAIL'},"
                     f" 2b={'PASS' if info['gate_pass_frac'] else 'FAIL'}]"
+                )
+                # Spec §13.1 Conditions 3 and 4 — informative denominator.
+                print(
+                    f"  Informative:   "
+                    f"mean_abs_delta_discount={info.get('mean_abs_delta_discount', 0.0):.6f}"
+                    f"  target_gap_norm={info.get('target_gap_norm', 0.0):.6f}"
+                    f"  [3={'PASS' if info.get('gate_pass_delta_discount') else 'FAIL'},"
+                    f" 4={'PASS' if info.get('gate_pass_target_gap') else 'FAIL'}]"
                 )
                 if topq:
                     print(
