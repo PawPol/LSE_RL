@@ -39,6 +39,12 @@ Thumbs.db
 *.swp
 *.swo
 
+# ---------- Claude Code ephemeral state ----------
+# Subagent worktrees are transient and should never be committed.
+# Tracked Claude artifacts (agents/, commands/) remain under git.
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+
 # ---------- LaTeX (paper/) ----------
 # Keep the compiled .pdf that ships with the manuscript; ignore build junk.
 paper/*.aux
