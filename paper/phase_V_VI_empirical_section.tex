@@ -106,10 +106,26 @@ policy is therefore \emph{Pareto-better on the dual-objective surface}.
 This reframes the RL translation question: any return-AUC comparison
 under a single (classical) metric measures zero by the classical-tie
 construction; the mechanism lives in the \emph{objective}, not in a
-sample-noise advantage. A risk-sensitive evaluator (CVaR, exponential
-utility, variance-penalized return) in principle witnesses the safe-eval
-advantage --- but exact policy evaluation under the safe objective
-already demonstrates the gap without appealing to an RL sampler.
+sample-noise advantage.
+
+\paragraph{Risk profile (VI-G): the safe operator is a signed tie-breaker, not a universal risk-reducer.}
+Ten-thousand Monte-Carlo rollouts per policy per task produce return
+distributions from which we compute variance and conditional
+value-at-risk $\mathrm{CVaR}_\alpha$ at $\alpha \in \{0.05, 0.10, 0.25\}$.
+On Family~A's optimistic sign branch ($\mathrm{sign\_family}=+1$):
+(i) $\mathbb{E}[G | \pi^*_\mathrm{safe}] \approx \mathbb{E}[G | \pi^*_\mathrm{cl}]$ (matches the dual-eval result);
+(ii) $\mathrm{Var}[G | \pi^*_\mathrm{safe}] \gg \mathrm{Var}[G | \pi^*_\mathrm{cl}]$ (safe picks the delayed-jackpot branch whose return distribution is bimodal);
+(iii) $\mathrm{CVaR}_{0.05}[G | \pi^*_\mathrm{safe}] < \mathrm{CVaR}_{0.05}[G | \pi^*_\mathrm{cl}]$ (safe has worse worst-case).
+
+This is theoretically consistent: with optimistic sign, the safe
+operator amplifies gains rather than penalizing losses, producing
+risk-seeking credit assignment. The pessimistic sign (Family~B/D
+failure mode) would symmetrically produce a CVaR-improving safe
+policy, had B or D promoted tasks. The correct interpretation is that
+the safe weighted-LSE operator is a \emph{signed, theorem-linked
+tie-breaker between statistically-equivalent policies}, with the sign
+determining whether the correction favors gain amplification or loss
+penalization. It is not a universal risk-reducer.
 
 \paragraph{Safety: clipping preserves the contraction cert.}
 On the stronger Family~C shortlist (84 tasks, $\beta_\mathrm{raw}$ up to
