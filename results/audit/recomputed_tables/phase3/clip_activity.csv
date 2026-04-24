@@ -1,0 +1,13 @@
+task,n_runs,clip_fraction_mean,effective_discount_mean,beta_used_abs_mean
+chain_catastrophe,35,0.571429,1.000988,3.424518e-06
+chain_jackpot,35,0.028571,0.990549,4.486325e-06
+chain_regime_shift,10,0.050000,0.989994,4.496687e-05
+chain_regime_shift_post_shift,25,0.020000,0.990000,4.496687e-05
+chain_regime_shift_pre_shift,25,0.020000,0.990000,4.496687e-05
+chain_sparse_long,35,0.000000,0.990000,0.000000e+00
+grid_hazard,6,0.962500,0.990000,4.485206e-06
+grid_regime_shift,6,1.000000,0.989999,3.774036e-05
+grid_regime_shift_post_shift,15,0.400000,1.006001,3.774036e-05
+grid_regime_shift_pre_shift,15,0.400000,1.006001,3.774036e-05
+grid_sparse_goal,21,0.571429,0.995832,2.621752e-05
+taxi_bonus_shock,6,0.508333,0.990000,2.529767e-06

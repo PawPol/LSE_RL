@@ -1,0 +1,1110 @@
+{
+  "schema_version": "1.0.0",
+  "git_sha": "28ea65220603adedb3204f81ac1bd1ddc12200de",
+  "generated_at": "2026-04-24T00:57:56.320047+00:00",
+  "summary": {
+    "blockers": 83,
+    "minors": 18,
+    "infos": 2,
+    "phases_completed": [
+      "phase1",
+      "phase2",
+      "phase3",
+      "phase4A",
+      "phase4B",
+      "phase4C"
+    ]
+  },
+  "phases": [
+    {
+      "phase": "phase1",
+      "started": "2026-04-24T00:57:56.134131+00:00",
+      "ended": "2026-04-24T00:57:56.135053+00:00",
+      "tasks": [
+        "chain_base",
+        "grid_base",
+        "taxi_base"
+      ]
+    },
+    {
+      "phase": "phase2",
+      "started": "2026-04-24T00:57:56.135060+00:00",
+      "ended": "2026-04-24T00:57:56.138580+00:00",
+      "tasks": [
+        "chain_sparse_long",
+        "chain_jackpot",
+        "chain_catastrophe",
+        "chain_regime_shift",
+        "grid_sparse_goal",
+        "grid_hazard",
+        "grid_regime_shift",
+        "taxi_bonus_shock"
+      ]
+    },
+    {
+      "phase": "phase3",
+      "started": "2026-04-24T00:57:56.138592+00:00",
+      "ended": "2026-04-24T00:57:56.277305+00:00",
+      "tasks": [
+        "chain_sparse_long",
+        "chain_jackpot",
+        "chain_catastrophe",
+        "chain_regime_shift",
+        "grid_sparse_goal",
+        "grid_hazard",
+        "grid_regime_shift",
+        "taxi_bonus_shock"
+      ],
+      "n_safe_runs": 234
+    },
+    {
+      "phase": "phase4A",
+      "started": "2026-04-24T00:57:56.277324+00:00",
+      "ended": "2026-04-24T00:57:56.277335+00:00"
+    },
+    {
+      "phase": "phase4B",
+      "started": "2026-04-24T00:57:56.277337+00:00",
+      "ended": "2026-04-24T00:57:56.298352+00:00",
+      "n_safe_runs": 78
+    },
+    {
+      "phase": "phase4C",
+      "started": "2026-04-24T00:57:56.298362+00:00",
+      "ended": "2026-04-24T00:57:56.302168+00:00",
+      "n_safe_runs": 0
+    }
+  ],
+  "findings": [
+    {
+      "id": "C-phaseIII-001",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_11",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028461692308e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-002",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_11",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-003",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_29",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028461692308e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-004",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_29",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-005",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_47",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028461692308e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-006",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_47",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-007",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_67",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028461692308e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-008",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_67",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-009",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_83",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028461692308e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-010",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_83",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-011",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_11",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028461692308e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-012",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_11",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-013",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_29",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028461692308e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-014",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_29",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-015",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_47",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028461692308e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-016",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_47",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-017",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_67",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028461692308e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-018",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_67",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-019",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_83",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028461692308e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-020",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_83",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-021",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_11",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028462341633e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-022",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_11",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826186e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-023",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_29",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028462341633e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-024",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_29",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826186e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-025",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_47",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028462341633e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-026",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_47",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826186e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-027",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_67",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028462341633e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-028",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_67",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826186e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-029",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_83",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028462341633e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-030",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_83",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826186e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-031",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_11",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028462341633e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-032",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_11",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826205e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-033",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_29",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028462341633e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-034",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_29",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826205e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-035",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_47",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028462341633e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-036",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_47",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826205e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-037",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_67",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028462341633e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-038",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_67",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826205e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-039",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_83",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.028462341633e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-040",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_83",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826205e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-041",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafePE/seed_11",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.030002599094e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-042",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafePE/seed_11",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=75 d_eff=1.030003e+00 kappa=9.902001e-01 diff=3.980252e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-043",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafePE/seed_29",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.030002599094e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-044",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafePE/seed_29",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=75 d_eff=1.030003e+00 kappa=9.902001e-01 diff=3.980252e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-045",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafePE/seed_47",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.030002599094e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-046",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafePE/seed_47",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=75 d_eff=1.030003e+00 kappa=9.902001e-01 diff=3.980252e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-047",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafeVI/seed_11",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.030011148231e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-048",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafeVI/seed_11",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-049",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafeVI/seed_29",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.030011148231e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-050",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafeVI/seed_29",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-051",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafeVI/seed_47",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.030011148231e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-052",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafeVI/seed_47",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-053",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafePE/seed_11",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.030011148231e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-054",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafePE/seed_11",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-055",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafePE/seed_29",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.030011148231e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-056",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafePE/seed_29",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-057",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafePE/seed_47",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.030011148231e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-058",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafePE/seed_47",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-059",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafeVI/seed_11",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.030011148231e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-060",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafeVI/seed_11",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-061",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafeVI/seed_29",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.030011148231e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-062",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafeVI/seed_29",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-063",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafeVI/seed_47",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.030011148231e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-064",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafeVI/seed_47",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-065",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafePE/seed_11",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.010416098429e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-066",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafePE/seed_11",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=110 d_eff=1.010416e+00 kappa=9.902000e-01 diff=2.021610e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-067",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafePE/seed_29",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.010416098429e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-068",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafePE/seed_29",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=110 d_eff=1.010416e+00 kappa=9.902000e-01 diff=2.021610e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-069",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafePE/seed_47",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.010416098429e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-070",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafePE/seed_47",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=110 d_eff=1.010416e+00 kappa=9.902000e-01 diff=2.021610e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-071",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafeVI/seed_11",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.010416098429e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-072",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafeVI/seed_11",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=110 d_eff=1.010416e+00 kappa=9.902000e-01 diff=2.021610e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-073",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafeVI/seed_29",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.010416098429e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-074",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafeVI/seed_29",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=110 d_eff=1.010416e+00 kappa=9.902000e-01 diff=2.021610e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-075",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafeVI/seed_47",
+      "check": "d_eff_bound",
+      "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
+      "actual": "max=1.010416098429e+00",
+      "tolerance": "1e-08"
+    },
+    {
+      "id": "C-phaseIII-076",
+      "severity": "BLOCKER",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafeVI/seed_47",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=110 d_eff=1.010416e+00 kappa=9.902000e-01 diff=2.021610e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIII-077",
+      "severity": "INFO",
+      "phase": "phaseIII",
+      "artifact": "results/audit/recomputed_tables/phase3/clip_activity.csv",
+      "check": "recompute_write",
+      "expected": "clip-activity table recomputed",
+      "actual": "12 tasks",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseIV-B-001",
+      "severity": "BLOCKER",
+      "phase": "phaseIV-B",
+      "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_vi/seed_123",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=17 d_eff=9.958331e-01 kappa=9.614450e-01 diff=3.438805e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIV-B-002",
+      "severity": "BLOCKER",
+      "phase": "phaseIV-B",
+      "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_vi/seed_42",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=17 d_eff=9.958795e-01 kappa=9.611501e-01 diff=3.472946e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIV-B-003",
+      "severity": "BLOCKER",
+      "phase": "phaseIV-B",
+      "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_vi/seed_456",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=17 d_eff=9.957880e-01 kappa=9.617165e-01 diff=3.407148e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIV-B-004",
+      "severity": "BLOCKER",
+      "phase": "phaseIV-B",
+      "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_1/safe_vi/seed_123",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=17 d_eff=9.958331e-01 kappa=9.614450e-01 diff=3.438805e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIV-B-005",
+      "severity": "BLOCKER",
+      "phase": "phaseIV-B",
+      "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_1/safe_vi/seed_42",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=17 d_eff=9.958795e-01 kappa=9.611501e-01 diff=3.472946e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIV-B-006",
+      "severity": "BLOCKER",
+      "phase": "phaseIV-B",
+      "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_1/safe_vi/seed_456",
+      "check": "cert_bound",
+      "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
+      "actual": "stage=17 d_eff=9.957880e-01 kappa=9.617165e-01 diff=3.407148e-02",
+      "tolerance": "1e-06"
+    },
+    {
+      "id": "C-phaseIV-B-007",
+      "severity": "INFO",
+      "phase": "phaseIV-B",
+      "artifact": "results/processed/phase4b/P4B_A.csv",
+      "check": "table_diff",
+      "expected": "recomputed table matches reference",
+      "actual": "18 rows match within tolerance",
+      "tolerance": "abs=1e-06 rel=1e-05"
+    },
+    {
+      "id": "C-paper-001",
+      "severity": "BLOCKER",
+      "phase": "paper",
+      "artifact": "paper clip-fraction claim vs grid_hazard",
+      "check": "text_vs_table",
+      "expected": "clip_fraction(grid_hazard) ~= 0.79 (paper L1856)",
+      "actual": "recomputed mean clip_fraction = 0.9625",
+      "tolerance": "0.01"
+    },
+    {
+      "id": "C-phaseI-001",
+      "severity": "MINOR",
+      "phase": "phaseI",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase1_ablation.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseI-002",
+      "severity": "MINOR",
+      "phase": "phaseI",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase1_dp.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseI-003",
+      "severity": "MINOR",
+      "phase": "phaseI",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase1_rl.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseI-004",
+      "severity": "MINOR",
+      "phase": "phaseI",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase1_smoke.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseII-001",
+      "severity": "MINOR",
+      "phase": "phaseII",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase2_ablation.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseII-002",
+      "severity": "MINOR",
+      "phase": "phaseII",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase2_dp.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseII-003",
+      "severity": "MINOR",
+      "phase": "phaseII",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase2_rl.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseIII-078",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase3_dp.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseIII-079",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase3_rl.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseIV-C-001",
+      "severity": "MINOR",
+      "phase": "phaseIV-C",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase4C_advanced_rl.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseIV-C-002",
+      "severity": "MINOR",
+      "phase": "phaseIV-C",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase4C_certification_ablations.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseIV-C-003",
+      "severity": "MINOR",
+      "phase": "phaseIV-C",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase4C_geometry_dp.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseIV-C-004",
+      "severity": "MINOR",
+      "phase": "phaseIV-C",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase4C_scheduler_ablations.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseIV-001",
+      "severity": "MINOR",
+      "phase": "phaseIV",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase4_activation_search.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseIV-002",
+      "severity": "MINOR",
+      "phase": "phaseIV",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase4_counterfactual_replay.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseIV-003",
+      "severity": "MINOR",
+      "phase": "phaseIV",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase4_diagnostic_sweep.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseIV-004",
+      "severity": "MINOR",
+      "phase": "phaseIV",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase4_dp.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    },
+    {
+      "id": "C-phaseIV-005",
+      "severity": "MINOR",
+      "phase": "phaseIV",
+      "artifact": "experiments/weighted_lse_dp/runners/run_phase4_rl.py",
+      "check": "manifest_post_hoc",
+      "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
+      "actual": "no 'experiment_manifest' string found in runner source",
+      "tolerance": "exact"
+    }
+  ]
+}

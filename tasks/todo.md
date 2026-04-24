@@ -2448,6 +2448,7 @@ Spec: `docs/specs/phase_V_mechanism_experiments.md` (commit `2cd283fb` on `main`
 - [ ] [test-author] [test] Unit tests for `tie_solver`: closed-form warm-start agreement within `1e-8` for A/B, bisection convergence under synthetic `Δ₀` profiles, and divergence-raise when no tie exists in the scan window (spec §5 step 2 fidelity). Depends on WP1a.
 - [ ] [test-author] [test] Unit tests for `d_ref` occupancy: conservation (`sum(d) ≈ 1` per stage within `1e-8`), consistency between analytic and Monte-Carlo estimates on a toy chain, and correct fallback to start-state flip when `contest_occupancy_ref < 0.05` (spec §3).
 - [ ] [test-author] [test] Unit tests for the §6 metric module: each metric matches a closed-form reference on a 3-state 2-action toy MDP, `value_gap_norm` uses `reward_scale = max(R_max, |V*_{0,γ,0}(s₀)|, 1e-8)`, and no metric silently rounds small quantities to zero (spec §2 rule 5 "never print `0.0000`").
+- [x] [operator-theorist] Open question: calibration-helper canonical source. **Resolved (2026-04-23):** `calibration_utils.py` is the canonical source for β_raw/β_used helpers (both `phase4_calibration_v3.py` and `calibration_utils.py` live in `experiments/weighted_lse_dp/calibration/`; the spec's reference to "phase4_calibration_v3" was loose). WP1a's import from `calibration_utils` is correct. WP1c will do the same.
 
 ### WP2 — task factories (A/B/C) — depends on WP1a + WP1 `contest_state` attr
 
