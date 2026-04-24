@@ -106,6 +106,9 @@ from experiments.weighted_lse_dp.tasks.family_b_catastrophe import (  # noqa: E4
 from experiments.weighted_lse_dp.tasks.family_c_raw_stress import (  # noqa: E402
     family_c,
 )
+from experiments.weighted_lse_dp.tasks.family_d_preventive import (  # noqa: E402
+    family_d,
+)
 
 __all__ = [
     "ConfigError",
@@ -127,7 +130,7 @@ class ConfigError(ValueError):
 # ---------------------------------------------------------------------------
 
 DEFAULT_CONFIG: dict[str, Any] = {
-    "families": ["A", "B", "C"],
+    "families": ["A", "B", "C", "D"],
     "family_params": {
         "A": {
             "L_range": [4, 8, 12],
@@ -190,6 +193,7 @@ _FAMILY_REGISTRY: dict[str, FamilySpec] = {
     "A": family_a,
     "B": family_b,
     "C": family_c,
+    "D": family_d,
 }
 
 
@@ -424,10 +428,51 @@ def _psi_grid_family_c(params: dict[str, Any]) -> list[dict[str, Any]]:
     return grid
 
 
+def _psi_grid_family_d(params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Family D (preventive intervention): cartesian product bounded by
+    ``warning_lead <= L - 1`` per the family constructor's validation.
+
+    Emits one ψ dict per combination of
+    ``(L, C, gamma, p_warn, warning_lead, variant)`` with fixed
+    ``p_cat_given_warn`` and a variant-conditional ``r_shallow``.
+    """
+    grid: list[dict[str, Any]] = []
+    p_cat = float(params.get("p_cat_given_warn", 1.0))
+    r_shallow_frac = float(params.get("r_shallow_frac_of_C", 0.1))
+    for L, C, gamma, p_warn, warning_lead, variant in itertools.product(
+        params["L_range"],
+        params["C_range"],
+        params["gamma_range"],
+        params["p_warn_range"],
+        params["warning_lead_range"],
+        params["variants"],
+    ):
+        L_i = int(L)
+        wl_i = int(warning_lead)
+        if wl_i < 1 or wl_i > L_i - 1:
+            continue
+        psi: dict[str, Any] = {
+            "L": L_i,
+            "C": float(C),
+            "gamma": float(gamma),
+            "p_warn": float(p_warn),
+            "p_cat_given_warn": p_cat,
+            "warning_lead": wl_i,
+            "variant": str(variant),
+        }
+        if variant == "shallow_early_warning":
+            psi["r_shallow"] = r_shallow_frac * float(C)
+        else:
+            psi["r_shallow"] = 0.0
+        grid.append(psi)
+    return grid
+
+
 _PSI_GRID_BUILDERS = {
     "A": _psi_grid_family_a,
     "B": _psi_grid_family_b,
     "C": _psi_grid_family_c,
+    "D": _psi_grid_family_d,
 }
 
 
@@ -951,12 +996,29 @@ def run_search(
     )
 
     # ------ 1. psi grids ------
+    # Skip families whose family_params block is absent (allows minimal
+    # synthetic configs used in tests to opt out of specific families
+    # without listing them explicitly). This only applies to registered
+    # families; unknown labels still raise.
+    resolved_families: list[str] = []
+    for fam_label in families:
+        if fam_label not in _FAMILY_REGISTRY:
+            raise ConfigError(f"unknown family label: {fam_label!r}")
+        if fam_label not in cfg["family_params"]:
+            logger.warning(
+                "family %s listed in 'families' but no family_params.%s block "
+                "found; skipping.",
+                fam_label,
+                fam_label,
+            )
+            continue
+        resolved_families.append(fam_label)
+    families = resolved_families
+
     total_psi = 0
     grids_summary: dict[str, int] = {}
     grids: dict[str, list[dict[str, Any]]] = {}
     for fam_label in families:
-        if fam_label not in _FAMILY_REGISTRY:
-            raise ConfigError(f"unknown family label: {fam_label!r}")
         # Family B: pick default vs refinement config block + grid builder.
         if fam_label == "B" and family_b_variant == "refinement":
             if "B_refinement" not in cfg["family_params"]:

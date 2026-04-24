@@ -9,7 +9,7 @@
 # section 4 the response to an empty shortlist is family refinement, not
 # threshold drift.
 
-families: ["A", "B", "C"]
+families: ["A", "B", "C", "D"]
 
 family_params:
   A:
@@ -124,6 +124,22 @@ family_params:
     R_penalty_range: [1.0, 2.0]
     beta_raw_multiplier_range: [1.5, 2.5, 4.0]
     gamma: 0.95
+  # Spec §14.4 Family D — early-warning preventive intervention.
+  # Positive family (same promotion gate as A). Tie parameter = preventive
+  # cost; geometry parameters = catastrophe severity / warning timing /
+  # warning probability. Grid size 2*3*2*3*2*2 = 144 psi (orchestrator
+  # decision 2026-04-23); at 7-point eps band <= 1008 admitted candidates.
+  D:
+    L_range: [6, 10]
+    C_range: [5.0, 10.0, 20.0]
+    gamma_range: [0.95, 0.99]
+    p_warn_range: [0.1, 0.3, 0.5]
+    warning_lead_range: [2, 3]
+    variants: ["single_warning", "shallow_early_warning"]
+    p_cat_given_warn: 1.0
+    r_shallow_frac_of_C: 0.1   # r_shallow = 0.1 * C for the shallow variant
+    eps_band_pts: 7
+    eps_band_frac: 0.2
 
 # Hard cap on admitted candidates per search invocation (spec section 13.3).
 max_candidates: 5000
