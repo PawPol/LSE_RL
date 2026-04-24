@@ -1,15 +1,37 @@
-\begin{table*}[t]
+\begin{table}[t]
 \centering
 \small
-\caption{Phase V + Phase VI empirical summary. Family A (deterministic): Pareto-better-on-safe-metric via \texttt{safe\_active\_no\_distortion} clipping regime. Family A (stochastic, VI-E/F): dual-objective result $V_\mathrm{cl}^{\pi^*_\mathrm{cl}} - V_\mathrm{cl}^{\pi^*_\mathrm{safe}} \approx 0$ but $V_\mathrm{safe}^{\pi^*_\mathrm{safe}} - V_\mathrm{safe}^{\pi^*_\mathrm{cl}} > 0$. Family C (VI-A): clipping preserves contraction cert where raw breaches it.}
+\caption{Headline empirical claims. All numbers are from exact
+finite-horizon planning / exact policy evaluation on tabular MDPs;
+no RL learning curves are included in the main text. Abbreviations:
+$|vgn|=|V^*_{\mathrm{safe}}(s_0)-V^*_{\mathrm{cl}}(s_0)|/R_{\mathrm{scale}}$;
+\emph{PD}, policy disagreement under $d_{\mathrm{ref}}$;
+\emph{flip rate}, fraction of shortlisted tasks on which the
+safe-optimal and classical-optimal greedy actions differ at $s_0$.}
 \label{tab:phaseVI_summary}
-\begin{tabular}{l l r l r r r r r r r}
+\begin{tabular}{l l r l}
 \toprule
-Family & Interpretation & $n$ & Promo mode & $\max |vgn|$ & $\max \mathrm{PD}$ & Flip rate & $\max d_\mathrm{raw}$ & $\max \mathrm{clip}$ & $\bar g_\mathrm{cl}$ & $\bar g_\mathrm{safe}$ \\
+Claim & Evidence & Tasks & Headline numbers \\
 \midrule
-A (det.) & Jackpot vs smooth stream, deterministic & 5 & \texttt{safe\_active\_no\_distortion} & 0.0078 & 0.2500 & 1.0000 & 0.9544 & 0.0000 & — & — \\
-A (stoch., VI-E) & Jackpot vs smooth stream, p\_transit<1 & 6 & \texttt{safe\_active\_no\_distortion} & 0.0062 & 0.2500 & 1.0000 & 0.9525 & 0.0000 & 2.96e-16 & 0.1560 \\
-C (safety, VI-A) & Raw-stress: safe preserves cert, raw breaches it & 84 & \texttt{binding\_clip} & — & — & — & 1.2848 & 1.0000 & — & — \\
+Objective-level
+  & deterministic Family~A & $5$
+  & max $|vgn|=7.82\!\times\!10^{-3}$,\,max PD $=0.25$,\,flip rate $=1.0$ \\
+policy improvement
+  & (near-tie, \texttt{safe\_active\_no\_distortion}) & & \\
+\addlinespace[3pt]
+Dual-objective
+  & stochastic Family~A & $6$
+  & classical-eval regret $\le 4.4\!\times\!10^{-16}$; \\
+Pareto improvement
+  & (near-tie, $p_{\mathrm{transit}}=0.95$) & &
+  safe-eval advantage $\in[1.2\!\times\!10^{-2},\,4.99\!\times\!10^{-1}]$, \\
+  & & & mean $\approx 0.156$, flip rate $=1.0$ \\
+\addlinespace[3pt]
+Certified stability
+  & Family~C raw-stress & $84$
+  & safe $d_t\le\kappa_t\in[0.95,0.96]$;\,raw $d_t$ up to $1.416$; \\
+  & (\texttt{binding\_clip}) & &
+  safe/classical $V[0,s_0]\!\approx\!4.92/4.86$; raw $V[0,s_0]\!\approx\!16.9$ \\
 \bottomrule
 \end{tabular}
-\end{table*}
+\end{table}

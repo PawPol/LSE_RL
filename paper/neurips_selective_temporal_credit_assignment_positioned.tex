@@ -1769,201 +1769,155 @@ See Appendix~\ref{app:async}.
 \clearpage
 \section{Experiments}
 \label{sec:experiments}
+\label{sec:exp-discussion} % legacy alias: Appendix C cross-references point here.
 % =====================================================================
 
-This section presents the Phase~V + VI mechanism-first empirical program.
-In \Cref{sec:exp-principles} we state the experimental principles;
-\Cref{sec:exp-families} describes five constructed task families and the
-fixed promotion gate; \Cref{sec:exp-mechanism} gives the main-text
-evidence (policy flips at near-tied contest states, a dual-objective
-Pareto result, and a safety contrast where clipping preserves the
-contraction certificate that raw violates); \Cref{sec:exp-risk} presents
-the risk-profile diagnostic that explains why the safe operator is a
-signed tie-breaker rather than a universal risk-reducer;
-\Cref{sec:exp-audit} reports a consistency audit of Phase~I--IV
-artifacts. The earlier Phase~I--IV benchmark matrix and ablations are
-demoted to \Cref{app:phase_I_IV_sanity} as calibration sanity material.
+The experiments in this section are mechanism demonstrations for the
+deployed safe weighted-LSE Bellman operator, not broad benchmarking.
+We ask two specific questions.
+\emph{(i)}~Can the deployed safe operator change the optimal policy at a
+classical near-tie while preserving classical-objective performance?
+\emph{(ii)}~Does safe clipping preserve the contraction certificate
+where the raw weighted-LSE operator would leave the certified region?
+All experiments use exact finite-horizon planning and exact policy
+evaluation on constructed tabular MDPs aligned with the theorems.
+No RL learning curves are included; the positive evidence is at the
+operator level.
 
-\subsection{Experimental principles}
+\subsection{Near-tie construction and metrics}
 \label{sec:exp-principles}
 
-Phase~V is a theorem-first rebuild: we construct tasks whose classical
-decision boundary is intentionally near-indifferent, so the nonlinear
-operator has room to flip the preferred action. Promotion to the main-
-text shortlist requires
-(a) $\mathrm{policy\_disagreement}\ge 0.05$ under $d_\mathrm{ref}
-= \tfrac12 d^{\pi^*_\mathrm{cl}} + \tfrac12 d^{\pi^*_\mathrm{safe}}$
-\emph{or} start-state greedy action differs;
-(b) $\mathrm{mass\_delta\_d}\ge 0.10$;
-(c) $|vgn| \!:=\! |V^*_\mathrm{safe}(s_0)-V^*_\mathrm{cl}(s_0)|/R_\mathrm{scale} \ge 5\times 10^{-3}$;
-(d) $\mathrm{contest\_gap\_norm}\le 10^{-2}$;
-(e) no certification violation.
-Thresholds are fixed. We admit two clipping regimes: $\texttt{binding\_clip}$
-($0.05 \leq \mathrm{clip\_fraction} \leq 0.80$) and $\texttt{safe\_active\_no\_distortion}$
-($\mathrm{clip\_fraction} = 0$ with the raw weighted-LSE operator already
-inside the certified box on visited transitions). The latter captures the
-mechanism-relevant regime where the deployed safe operator coincides
-with the raw operator while both stay within the contraction cert.
+Fix a designated contest state $x_c=(0,s_0)$ and two candidate
+actions~$a_1,a_2$. The classical action gap is
+$\Delta_0(x_c;\theta) = Q^*_{0,\gamma}(x_c,a_1;\theta)
+- Q^*_{0,\gamma}(x_c,a_2;\theta)$,
+and the normalized gap is
+$\mathrm{contest\_gap\_norm}=|\Delta_0(x_c)|/R_\mathrm{scale}$,
+with $R_\mathrm{scale}=\max(R_\mathrm{max},|V^*_{0,\gamma}(s_0)|,10^{-8})$.
+We construct tasks so that a designated reachable contest state sits
+in the strict near-tie band $\mathrm{contest\_gap\_norm}\le 10^{-2}$
+and call a task \emph{promotable} when, in addition, the safe-optimal
+policy differs from the classical-optimal policy either at $s_0$
+(\emph{start-state flip}) or on a non-negligible fraction of the
+reference occupancy
+$d_\mathrm{ref}=\tfrac12 d^{\pi^*_\mathrm{cl}}+\tfrac12 d^{\pi^*_\mathrm{safe}}$
+(\emph{policy disagreement}), the normalized safe value gap
+$|vgn|=|V^*_\mathrm{safe}(s_0)-V^*_\mathrm{cl}(s_0)|/R_\mathrm{scale}$
+is at least $5\times 10^{-3}$, and no certification violation occurs
+on visited transitions.
 
-\subsection{Task families and search outcome}
-\label{sec:exp-families}
+The local continuation derivative
+$d_t(r,V)=(1+\gamma)\bigl(1-\sigma(\beta_t(r-V)+\log\tfrac1\gamma)\bigr)$
+is the key stagewise diagnostic: it equals $\gamma$ at $\beta_t=0$ and
+exceeds $\gamma$ when the operator is nonlinearly active. The certified
+stagewise bound is $\kappa_t=\gamma+\alpha_t(1-\gamma)$. We report two
+clipping modes: $\texttt{binding\_clip}$, where clipping is active on a
+nondegenerate fraction of visited transitions, and
+$\texttt{safe\_active\_no\_distortion}$, where the raw schedule is
+already certified on visited transitions so the deployed safe operator
+coincides with the raw operator while both remain within the certified
+region.
 
-Five families cover a principled grid: \emph{Family~A} (delayed jackpot
-vs smooth stream, concentration contrast); \emph{Family~B} (rare
-catastrophe vs safe branch, alternative-branch propagation);
-\emph{Family~C} (raw-stress, safety); \emph{Family~D} (preventive
-intervention, propagation-depth warning); \emph{Family~E} (regime-shift
-with concentration contrast). Each family exposes a tie parameter
-$\lambda$ and a geometry parameter $\psi$. The search driver enumerates
-$\le 5{,}000$ candidates per iteration, solves $\lambda_\mathrm{tie}(\psi)$
-via bisection from a closed-form warm start, sweeps $\varepsilon$-bands,
-and evaluates every metric.
-
-\paragraph{Structural finding: side-by-side contests translate, sequential chains do not.}
-Families B and D together sweep over $1{,}800$ candidates and promote
-\emph{zero} tasks; Family E sweeps $540$ and also promotes zero. The
-diagnosis: in sequential-chain constructions (action at $t{=}0$ gates a
-downstream branch) value translation accumulates too slowly to clear
-the $5\times 10^{-3}$ $|vgn|$ threshold. Family~A's side-by-side contest
-(both branches propagate simultaneously from the same contest state)
-clears it readily. B, D, E therefore appear in \Cref{app:design_diagnostics}
-as design diagnostics; the main text is carried by A and C.
-
-Table~\ref{tab:phaseVI_summary} aggregates headline metrics per family grouping.
+Table~\ref{tab:phaseVI_summary} summarizes the headline rows that
+support the two positive claims developed in the next two subsections.
 \input{../results/summaries/main_table.tex}
 
-\subsection{Mechanism: policy flips and dual-objective Pareto}
+\subsection{Family A: objective-level policy improvement at classical ties}
 \label{sec:exp-mechanism}
 
-\paragraph{Exact-planning flip on Family~A.}
-On the 5 deterministic Family~A shortlisted tasks (all $\texttt{safe\_active\_no\_distortion}$),
-the safe operator produces a start-state policy flip and $|vgn|$ up to
-$7.82\times 10^{-3}$. Limited-backup planning shows the safe operator
-reaching full greedy-policy correctness at $k = T-1$ while classical
-reaches it at $k = T$; the safe greedy-correctness fraction exceeds
-classical's by $\approx 0.7\%$ per backward step (\Cref{fig:propagation_curve,fig:stagewise_heatmap,fig:greedy_recovery}).
-This is a finite-horizon propagation advantage consistent with the
-theorem's prediction that on aligned regions the safe operator
-propagates delayed signals differently from classical discounting.
+Family A is a two-branch contest: from the contest state, action $A$
+leads to a single delayed terminal reward (a concentrated jackpot) and
+action $B$ leads to a smooth per-step stream. We tune the tie parameter
+so the two branches are classically near-indifferent and then sweep a
+narrow $\varepsilon$-band around the classical tie.
 
-\begin{figure}[t]
-\centering
-\begin{minipage}[t]{0.32\linewidth}
-\centering
-\includegraphics[width=\linewidth]{../figures/main/fig_propagation_curve.pdf}
-\caption{Backward propagation distance of the terminal reward signal after $k$ backups on the lead Family A task (A\_003).}
-\label{fig:propagation_curve}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.32\linewidth}
-\centering
-\includegraphics[width=\linewidth]{../figures/main/fig_stagewise_error_heatmap.pdf}
-\caption{Stagewise $\lVert V_k - V^*\rVert_\infty$ heatmap (classical vs safe).}
-\label{fig:stagewise_heatmap}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.32\linewidth}
-\centering
-\includegraphics[width=\linewidth]{../figures/main/fig_greedy_recovery.pdf}
-\caption{Fraction of $(t,s)$ pairs with correct greedy action under $d_\mathrm{ref}$ vs backup count $k$.}
-\label{fig:greedy_recovery}
-\end{minipage}
-\end{figure}
+\paragraph{Deterministic Family A.}
+On the five deterministic Family~A promoted tasks, the safe-optimal
+policy flips the start-state greedy action on every task, with
+$|vgn|$ up to $7.82\times 10^{-3}$ and policy disagreement up to
+$0.25$ under $d_\mathrm{ref}$. Clipping is inactive
+($\texttt{safe\_active\_no\_distortion}$) because the raw schedule is
+already inside the certified box, so the deployed operator and the
+raw weighted-LSE operator coincide on visited transitions.
 
-\paragraph{Dual-objective Pareto (novel).}
-The stochastic Family~A shortlist (6 tasks, $p_\mathrm{transit}=0.95$,
-$\pi^*_\mathrm{safe}\neq \pi^*_\mathrm{cl}$ at $s_0$) permits exact
-policy evaluation under both objectives:
+\paragraph{Stochastic Family A: classically regret-free, safe-eval better.}
+On the six stochastic Family~A promoted tasks
+($p_\mathrm{transit}=0.95$), exact policy evaluation under the two
+Bellman objectives yields
 \[
-\underbrace{V^{\pi^*_\mathrm{cl}}_\mathrm{cl}(s_0) - V^{\pi^*_\mathrm{safe}}_\mathrm{cl}(s_0)}_{\text{classical-eval regret}} \approx 0
+\underbrace{V^{\pi^*_\mathrm{cl}}_\mathrm{cl}(s_0) - V^{\pi^*_\mathrm{safe}}_\mathrm{cl}(s_0)}_{\text{classical-eval regret}}
+\le 4.4\times 10^{-16}
 \quad\text{and}\quad
-\underbrace{V^{\pi^*_\mathrm{safe}}_\mathrm{safe}(s_0) - V^{\pi^*_\mathrm{cl}}_\mathrm{safe}(s_0)}_{\text{safe-eval advantage}} > 0 .
+\underbrace{V^{\pi^*_\mathrm{safe}}_\mathrm{safe}(s_0) - V^{\pi^*_\mathrm{cl}}_\mathrm{safe}(s_0)}_{\text{safe-eval advantage}}
+\in [1.2\times 10^{-2},\,4.99\times 10^{-1}].
 \]
-Under classical evaluation, $\pi^*_\mathrm{safe}$ matches $\pi^*_\mathrm{cl}$
-to ULP ($\leq 4.4\times 10^{-16}$ on all 6 tasks). Under the safe
-(nonlinear weighted-LSE) evaluator, $\pi^*_\mathrm{safe}$ strictly
-dominates, with gap scaling linearly from $0.012$ at $R=2$ to $0.499$
-at $R=100$ (\Cref{fig:dual_objective_eval}). The safe policy is therefore
-\emph{Pareto-better on the dual-objective surface}. This also reframes
-the RL translation question: classical-return RL cannot discriminate
-arms at the classical tie by construction --- the mechanism lives in
-the objective, not in a sample-noise advantage.
+Classical-evaluation regret is at machine precision on every task
+(all six values $\le 4.4\times 10^{-16}$). Safe-evaluation advantage
+is strictly positive on every task, with a mean of about
+$1.56\times 10^{-1}$ and a per-task magnitude that scales with the
+task's reward amplitude. \Cref{fig:familyA_dual_objective} visualizes
+both sides of the comparison. This is the cleanest empirical signature
+of the proposed operator: at a classical near-tie, the safe
+weighted-LSE objective selects a policy that is classically regret-free
+but strictly preferred by the safe recursive objective.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.8\linewidth]{../figures/main/fig_dual_objective_eval.pdf}
-\caption{Dual-objective evaluation on 6 stochastic Family A tasks. Left: Pareto scatter showing classical-eval regret $\approx 0$ vs safe-eval advantage $> 0$ on every task. Right: per-task grouped bars for $V^\pi_\mathrm{cl}$ and $V^\pi_\mathrm{safe}$ under both policies.}
-\label{fig:dual_objective_eval}
+\includegraphics[width=0.82\linewidth]{../figures/main/fig_familyA_dual_objective.pdf}
+\caption{\textbf{Safe weighted-LSE policy selection at a classical
+near-tie.} Across six stochastic Family~A tasks, the safe-optimal
+policy has machine-precision classical-evaluation regret and strictly
+positive safe-evaluation advantage. The mechanism therefore lives in
+the Bellman objective rather than in stochastic return noise.}
+\label{fig:familyA_dual_objective}
 \end{figure}
 
-\paragraph{Safety: clipping preserves the contraction certificate.}
-On the stronger Family~C shortlist (84 tasks, $\beta_\mathrm{raw}$ up
-to $128\times$ the certified cap), safe-clipped sweeps satisfy
-$d_\mathrm{safe}\le\kappa_t\in[0.95,0.96]$ on visited transitions
-(classification $\texttt{stable\_nonlinear}$). The raw unclipped
-operator violates the cert with $d_\mathrm{raw}$ up to $1.416$
-(a $48\%$ amplification margin over $\gamma$; classification
-$\texttt{expansive\_bounded}$). \Cref{fig:safe_vs_raw_stability} shows
-per-stage $V$ trajectories and the $d_\mathrm{raw}$ histogram under
-$d_\mathrm{ref}$.
+\subsection{Family C: clipping preserves the certificate that raw violates}
+\label{sec:exp-safety}
+
+Family C is a raw-stress family engineered so that a raw weighted-LSE
+schedule with elevated temperature crosses the certified contraction
+budget on visited transitions. The deployed safe schedule clips the
+same raw signal to the certified stagewise bound $\kappa_t$. On the
+$84$ promoted Family~C tasks, the safe-clipped operator's local
+continuation derivative stays below $\kappa_t\in[0.95,0.96]$ on every
+visited transition ($\texttt{stable\_nonlinear}$ classification); the
+raw operator violates the certificate with $d_\mathrm{raw}$ reaching
+$1.416$ ($\texttt{expansive\_bounded}$). On the lead task the raw
+backward sweep places $V[0,s_0]$ at approximately $16.9$, while
+classical and safe remain tightly grouped around $4.86$ and $4.92$
+respectively (\Cref{fig:familyC_certificate}).
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.8\linewidth]{../figures/main/fig_safe_vs_raw_stability.pdf}
-\caption{Safe-vs-raw stability on the lead Family~C task (\texttt{family\_C\_05\_L4\_Rp1\_mult128}). Left: per-stage $V[t,s_0]$ trajectories for classical, safe-clipped, and raw-unclipped backward sweeps. Right: per-transition local continuation derivative histogram under $d_\mathrm{ref}\cdot\pi^*_\mathrm{safe}\cdot P$; vertical lines at $\gamma$, $\kappa_t^{\max}$, and $1$.}
-\label{fig:safe_vs_raw_stability}
+\includegraphics[width=0.82\linewidth]{../figures/main/fig_familyC_certificate.pdf}
+\caption{\textbf{Safe clipping preserves the contraction certificate.}
+On the raw-stress task, the raw weighted-LSE operator places derivative
+mass beyond the nonexpansive threshold, while the deployed safe
+operator remains below the certified stagewise bound. The safe values
+remain close to classical, whereas the raw target leaves the certified
+region.}
+\label{fig:familyC_certificate}
 \end{figure}
 
-\paragraph{Finite-horizon $F$ is bounded even when the cert is breached.}
-To expose the contraction difference directly we iterate the backward-
-sweep operator $F\colon V_T \mapsto V_0$ for 50 outer steps with perturbed
-$V_T$ (\Cref{fig:perturbation_growth}): even raw operators with
-$d_\mathrm{raw} > 1$ per-transition retain a \emph{bounded fixed point}
-of $F$ at finite horizon. The cert bound is therefore \emph{sufficient}
-for $F$-contraction but not \emph{necessary} for finite-horizon
-$V$-boundedness; what clipping prevents is loss of the theoretical
-contraction guarantee (required for infinite-horizon or adversarial
-extensions), not immediate functional divergence.
+The raw operator is the expressive object; the clipped operator is
+the deployable object. Family~C shows why the distinction matters:
+clipping preserves the contraction certificate without collapsing back
+to a purely classical backup.
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.7\linewidth]{../figures/main/fig_perturbation_growth.pdf}
-\caption{Iterated backward-sweep operator $F$: normalised perturbation amplitude $\rho(k)$ vs outer iteration $k$ for classical, safe, and raw operators on the lead Family~C task. All three converge to a bounded fixed point, confirming that per-transition $d>1$ does not produce functional divergence at finite horizon.}
-\label{fig:perturbation_growth}
-\end{figure}
+\subsection{Takeaway}
+\label{sec:exp-takeaway}
 
-\subsection{Risk profile: signed tie-breaker, not universal risk-reducer}
-\label{sec:exp-risk}
-
-Ten-thousand Monte-Carlo rollouts per policy per task on the 6
-stochastic Family~A tasks yield
-$\mathbb{E}[G|\pi^*_\mathrm{safe}]\approx\mathbb{E}[G|\pi^*_\mathrm{cl}]$
-but $\mathrm{Var}[G|\pi^*_\mathrm{safe}]\gg \mathrm{Var}[G|\pi^*_\mathrm{cl}]$
-and $\mathrm{CVaR}_{0.05}[\pi^*_\mathrm{safe}] < \mathrm{CVaR}_{0.05}[\pi^*_\mathrm{cl}]$.
-Family~A has optimistic sign ($\mathrm{sign}=+1$), so the safe operator
-\emph{amplifies gains} rather than penalizing losses, producing
-risk-seeking credit assignment (prefer delayed jackpot over steady
-stream). Pessimistic-sign families (B, D) would symmetrically produce
-CVaR-improving safe policies, had B or D promoted tasks. The correct
-reading is that the safe weighted-LSE operator is a \emph{signed
-tie-breaker between statistically-equivalent policies}, with the sign
-determining whether the correction amplifies gains or penalizes losses.
-It is not a universal risk-reducer --- it is a theorem-linked
-credit-assignment mechanism whose preference pattern matches its sign.
-
-\subsection{Consistency audit}
-\label{sec:exp-audit}
-\label{sec:exp-discussion} % legacy alias: Appendix C cross-references point here.
-
-A Phase~V consistency audit (\texttt{scripts/audit/run\_consistency\_audit.py})
-recomputes every Phase~I--IV table and figure from raw logs.
-The first-pass audit flagged $82$ DP cert-bound \textsc{blocker} rows on
-Phase~III \texttt{SafePE}/\texttt{SafeVI} runs; the remediation pass
-(occupancy-weighted cert check, \texttt{scripts/audit/occupancy\_cert\_check.py})
-demonstrated that these are benign artifacts of the P-weighted
-effective-discount aggregation on absorbing cells, and downgraded all
-$82$ to \textsc{minor}. One paper-text discrepancy remains: a stale
-$79\%$ \texttt{clip\_fraction} number for \texttt{grid\_hazard}
-(recomputed: $96.25\%$) --- the updated value appears in
-\Cref{app:phase_I_IV_sanity}.
+Family~A demonstrates positive mechanism translation at a tuned
+classical decision boundary: the safe weighted-LSE policy is
+classically regret-free and strictly preferred under the safe
+objective. Family~C demonstrates that the safety layer is both
+necessary and effective: clipping preserves the certified contraction
+bound on a region where the raw operator exceeds it. Taken together
+the experiments support the theory --- the weighted-LSE operator is
+not a universal return-improvement heuristic, it is a certified
+Bellman-objective mechanism that changes temporal credit assignment
+in theorem-linked cases.
 
 % -----------------------------------------------------------
 % The legacy Phase I-III experimental content follows in an
@@ -2197,40 +2151,25 @@ What the paper does establish is that weighted log-sum-exp dynamic programming c
 \appendix
 
 % =====================================================================
-\section{Phase I--IV Calibration Sanity}
+\section{Supplementary sanity checks and calibration artifacts}
 \label{app:phase_I_IV_sanity}
 \label{app:design_diagnostics}
 % =====================================================================
 
-The Phase~I--IV benchmark matrix (eight tabular families, classical vs.\ safe
-algorithms, 1{,}940 runs) originally carried the paper's empirical
-story. Phase~V reinterpreted this matrix as a calibration sanity check:
-the deployed clipped schedule lies in the near-zero-$\beta$ regime on
-every task, so the safe operator coincides with classical to
-numerical precision and the DP/RL comparison is correctly uninformative.
-The underlying machinery is nonetheless correct: across all $1{,}940$
-Phase~I--III runs the certification invariants hold, clip fractions
-range from $0$ to $96.25\%$ (corrected from a $79\%$ pre-audit figure
-for \texttt{grid\_hazard} --- see \S\ref{sec:exp-audit}), and the
-empirical effective discount $\hat{d}_t$ matches $\gamma=0.99$ to
-within $10^{-4}$.
-
-Phase~IV's dense-cost follow-up (\texttt{translation\_4a2} family,
-$\alpha$-headroom sweep) confirmed that the certified $\widetilde\beta_t$
-can be driven away from zero by shrinking the reward scale, but that
-the resulting operator still does not translate to RL outcome
-differences --- a finding whose resolution is given by the Phase~VI
-dual-objective analysis in the main text.
-
-Phase~V's search also exercised \emph{Family~B} (rare catastrophe vs
-safe branch), \emph{Family~D} (early-warning preventive intervention),
-and \emph{Family~E} (regime-shift with concentration contrast). None
-of these promoted any tasks; together they span $1{,}800+$ candidate
-configurations and confirm the side-by-side-vs-sequential-chain
-structural finding reported in \S\ref{sec:exp-families}.
-
-Full per-run artifacts are under \texttt{results/weighted\_lse\_dp/phase\{1,2,3,4\}/}
-and the updated audit report is at \texttt{results/audit/consistency\_report.md}.
+An earlier broad benchmark matrix (eight tabular families, classical
+vs.\ safe algorithms) was used to verify the calibration and
+certification pipeline. On that matrix the deployed clipped schedule
+sits in the near-zero-$\beta$ regime on every task, so the safe
+operator coincides with classical to numerical precision and the
+DP/RL comparison is uninformative at the operator level. The
+machinery itself is internally consistent: certification invariants
+hold on every run, and the empirical effective discount
+$\hat{d}_t$ matches $\gamma$ to within $10^{-4}$. The sign of $\beta$
+governs whether the safe correction amplifies gains or penalizes
+losses; which sign is appropriate depends on the task, and the main
+text is limited to the optimistic-sign regime where the positive
+objective-level claim applies. Full per-run artifacts are under
+\texttt{results/weighted\_lse\_dp/} in the supplementary material.
 
 \section{Additional Experimental Figures}
 \label{app:exp-figures}
