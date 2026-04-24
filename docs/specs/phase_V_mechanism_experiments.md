@@ -418,6 +418,59 @@ All experiment entry points take `--seed` and `--config`. Raw artifacts: `result
 
 ---
 
+## 14. Final-decision addendum (2026-04-24) — Theory track + family-specific clip gate
+
+User decision docs `docs/specs/phase_V_source_decision_v4_final.md` and `docs/specs/phase_V_source_reply_v5_current.md` supersede the clip-fraction portion of §4 item 6 and §13.1. Everything else in the spec stands.
+
+### 14.1 Submission framing
+Target **NeurIPS 2026 Theory**. The main contribution is operator theory + safe deployment; experiments study formalized insights on a small set of theorem-linked constructed families. Do not pivot to a broad empirical benchmark paper.
+
+### 14.2 Family-specific promotion gate (supersedes §4 item 6 for positive families)
+
+**Positive families (A, B, D, E)** promote when every mechanism gate passes AND either of two clip conditions holds:
+- `promotion_mode = binding_clip`: `0.05 ≤ clip_fraction ≤ 0.80`, **or**
+- `promotion_mode = safe_active_no_distortion`: clipping is provably inactive because the raw schedule is already safe on the certified domain (`clip_fraction == 0` AND the raw-operator local derivative stays within `κ_t + 1e-6` on visited mass).
+
+Log `promotion_mode` explicitly in `shortlist.csv`.
+
+**Safety family (C)** keeps the strict gate: clipping must bind, raw must materially differ from safe, raw must show instability, safe must remain stable.
+
+### 14.3 Family B one bounded refinement + Family D fallback
+Family B gets one bounded refinement pass focused on value translation (not activation): catastrophe severity `C`, warning depth/timing, matched-concentration variants, `γ ∈ {0.99, 0.95, 0.90}`, asymmetry, prevention-cost tie tuning. If Family B still fails after that pass, add **Family D (early-warning preventive intervention)** instead of widening B indefinitely.
+
+### 14.4 Family D — early-warning preventive intervention
+- Contest state: one action continues nominal, another pays a small preventive cost.
+- A warning signal arrives before a possible catastrophe.
+- Safe pessimistic operator should propagate the warning backward faster than classical.
+- Tie parameter = preventive cost; geometry parameter = warning timing / concentration / catastrophe severity.
+- Practical interpretations: predictive maintenance, early medical intervention, risk-aware shutdown, fraud blocking after early warning.
+
+### 14.5 Tightened RL promotion rule
+Only exact-planning tasks with strong translation go to RL. Require:
+- start-state action flip OR `policy_disagreement ≥ 0.10`, AND
+- `|value_gap_norm| ≥ 0.01` preferred, AND
+- nontrivial `mass_delta_d`, AND
+- stable safe planning.
+
+Run RL on at most **2 positive tasks** (ideally one A, one B/D) + **1 optional safety task** if the stability story needs an RL analogue. Do not pad.
+
+### 14.6 Main-paper figure target (refined from §7 WP6)
+1. Decision-boundary / phase diagram (A + one pessimistic: B or D).
+2. Propagation / limited-backup (aligned family — A).
+3. Safe-vs-raw stability (C).
+4. RL translation for 1–2 promoted tasks.
+5. Mechanism diagnostics (δ_d, clip activity, value-gap traces).
+Plus one compact summary table with `promotion_mode` per family.
+
+### 14.7 Each promoted family documents both technical + practical interpretations
+- Family A: delayed payoff vs smooth incremental gains → exploration/exploitation, R&D, long-route vs short-route.
+- Family B / D: preventive intervention under early warning → predictive maintenance, early medical intervention, risk-aware shutdown.
+- Family C: aggressive temporal reallocation needs guardrails → safety certificate is not cosmetic.
+
+Stylized use-cases, not real datasets.
+
+---
+
 ## 13. Planner-resolution addendum (2026-04-23)
 
 Resolutions to ambiguities flagged by the Phase V planner:

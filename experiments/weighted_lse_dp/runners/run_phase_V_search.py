@@ -567,8 +567,17 @@ def apply_promotion_gate(
             <= float(row[kappa_t_max_column]) + cert_tol
         )
 
-    def _positive_gate(row: pd.Series) -> bool:
-        # spec section 4 conjunctive gate.
+    def _positive_gate(row: pd.Series) -> tuple[bool, str]:
+        """Positive-family gate per spec §14 (decision doc v4/v5, 2026-04-24).
+
+        A candidate promotes if every mechanism gate passes AND clipping is
+        either bound nondegenerately (``binding_clip``) or provably inactive
+        because the raw schedule is already safe on the certified domain
+        (``safe_active_no_distortion``).
+
+        Returns ``(ok, promotion_mode)`` where ``promotion_mode`` is one of
+        ``"binding_clip"``, ``"safe_active_no_distortion"``, ``"none"``.
+        """
         disagree = float(row["policy_disagreement"]) >= float(
             promotion["policy_disagreement_min"]
         )
@@ -580,46 +589,65 @@ def apply_promotion_gate(
             promotion["value_gap_norm_min"]
         )
         tie_ok = float(row["contest_gap_norm"]) <= float(strict_band)
-        clip_lo = float(row["clip_fraction"]) >= float(promotion["clip_fraction_min"])
-        clip_hi = float(row["clip_fraction"]) <= float(promotion["clip_fraction_max"])
-        return bool(
-            (disagree or start_flip)
-            and mass_ok
-            and vgap_ok
-            and tie_ok
-            and clip_lo
-            and clip_hi
-            and _cert_ok(row)
-        )
+        cert = _cert_ok(row)
 
-    def _stress_gate(row: pd.Series) -> bool:
+        mechanism_ok = (
+            (disagree or start_flip) and mass_ok and vgap_ok and tie_ok and cert
+        )
+        if not mechanism_ok:
+            return False, "none"
+
+        clip_frac = float(row["clip_fraction"])
+        clip_binding = (
+            float(promotion["clip_fraction_min"]) <= clip_frac
+            <= float(promotion["clip_fraction_max"])
+        )
+        # "Provably inactive because the raw schedule is already safe on the
+        # certified domain": clip never bit AND the raw-operator local
+        # derivative stays within the certified stagewise cap on visited
+        # mass (_cert_ok already asserts this).
+        clip_inactive_safe = (clip_frac == 0.0) and cert
+
+        if clip_binding:
+            return True, "binding_clip"
+        if clip_inactive_safe:
+            return True, "safe_active_no_distortion"
+        return False, "none"
+
+    def _stress_gate(row: pd.Series) -> tuple[bool, str]:
         # Family C bypasses the tie criteria; stress criterion per spec
-        # section 5 Family C.
+        # §5 Family C and §14 (safety family keeps strict clip gate).
         p90_ok = float(row["raw_local_deriv_p90"]) > float(row[kappa_t_max_column])
         clip_ok = float(row["clip_fraction"]) > float(
             family_c_cfg.get("clip_fraction_min", 0.05)
         )
-        return bool(p90_ok and clip_ok)
+        if p90_ok and clip_ok:
+            return True, "binding_clip"
+        return False, "none"
 
     mask: list[bool] = []
     reasons: list[str] = []
+    modes: list[str] = []
     for _, row in df.iterrows():
         fam = str(row["family"])
         if fam == "C":
-            ok = _stress_gate(row)
+            ok, mode = _stress_gate(row)
             reasons.append(
                 "Family-C stress (raw_p90 > kappa_max AND clip_fraction > min)"
                 if ok
                 else "Family-C stress gate FAIL"
             )
         else:
-            ok = _positive_gate(row)
-            reasons.append(
-                "positive-family conjunctive gate PASS" if ok else "positive-family gate FAIL"
-            )
+            ok, mode = _positive_gate(row)
+            if ok:
+                reasons.append(f"positive-family PASS (mode={mode})")
+            else:
+                reasons.append("positive-family gate FAIL")
         mask.append(ok)
+        modes.append(mode)
     df["_promoted"] = mask
     df["_promotion_reason"] = reasons
+    df["promotion_mode"] = modes
     return df
 
 
