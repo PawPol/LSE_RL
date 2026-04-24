@@ -415,3 +415,14 @@ All experiment entry points take `--seed` and `--config`. Raw artifacts: `result
 > **Stop asking "Where does safe beat classical on return?"**
 >
 > **Start asking "Where does the theorem imply a nontrivial policy/value difference, does that difference survive safe clipping, and does it show up in planning or RL?"**
+
+---
+
+## 13. Planner-resolution addendum (2026-04-23)
+
+Resolutions to ambiguities flagged by the Phase V planner:
+
+1. **Soft near-tie band.** Only the strict band `gap_norm ≤ 0.01` promotes. The soft band `≤ 0.02` is exploration-only; promotion from the soft band requires (a) an explicit plotter-analyst note in `shortlist_report.md` justifying why the state still acts as a near-indifference pivot, and (b) orchestrator sign-off. Default: strict only.
+2. **Family C necessity.** The stopping rule is **conjunctive**: the shortlist must contain ≥ 2 promotable positive exact-planning families **and** ≥ 1 safety/stability family before WP5 RL may start. If A/B exceed 2 but C is missing, the refinement loop continues on Family C until a safety task promotes or the lever space is exhausted.
+3. **5,000-candidate cap.** Per-search-iteration, not lifetime. Each refinement pass resets the budget. `run_phase_V_search.py` enforces the cap per invocation and emits a warning (not a failure) if any family exceeds 60% of the cap alone.
+4. **Manifest retroactivity.** The in-runner `experiment_manifest.json` contract is **forward-looking** and applies to every Phase V runner. WP0 flags every Phase I–IV runner that emits a manifest post hoc as a **MINOR drift finding** in `consistency_report.md` — to be remediated only if that Phase I–IV code is touched again, not as a blocking gate.
