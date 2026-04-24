@@ -1771,213 +1771,14 @@ See Appendix~\ref{app:async}.
 \label{sec:experiments}
 % =====================================================================
 
-This section presents the Phase~V + VI mechanism-first empirical program.
-In \Cref{sec:exp-principles} we state the experimental principles;
-\Cref{sec:exp-families} describes five constructed task families and the
-fixed promotion gate; \Cref{sec:exp-mechanism} gives the main-text
-evidence (policy flips at near-tied contest states, a dual-objective
-Pareto result, and a safety contrast where clipping preserves the
-contraction certificate that raw violates); \Cref{sec:exp-risk} presents
-the risk-profile diagnostic that explains why the safe operator is a
-signed tie-breaker rather than a universal risk-reducer;
-\Cref{sec:exp-audit} reports a consistency audit of Phase~I--IV
-artifacts. The earlier Phase~I--IV benchmark matrix and ablations are
-demoted to \Cref{app:phase_I_IV_sanity} as calibration sanity material.
+The theory in the preceding sections establishes the certified safe family in the abstract.
+The experiments serve three specific validation purposes.
+First, they verify that the end-to-end calibration pipeline---from empirical Phase~I/II data to a stagewise $\beta$ schedule---produces certified schedules that pass all structural checks.
+Second, they confirm that the deployed safe algorithms reproduce the safe Bellman operator exactly at runtime and that the per-stage certification invariant holds throughout training and planning.
+Third, they establish a quantitative baseline: how much clipping the certification requires in practice, and how the safe algorithms compare to classical dynamic programming when the deployed $\beta$ is near zero due to tight certification.
 
-\subsection{Experimental principles}
-\label{sec:exp-principles}
-
-Phase~V is a theorem-first rebuild: we construct tasks whose classical
-decision boundary is intentionally near-indifferent, so the nonlinear
-operator has room to flip the preferred action. Promotion to the main-
-text shortlist requires
-(a) $\mathrm{policy\_disagreement}\ge 0.05$ under $d_\mathrm{ref}
-= \tfrac12 d^{\pi^*_\mathrm{cl}} + \tfrac12 d^{\pi^*_\mathrm{safe}}$
-\emph{or} start-state greedy action differs;
-(b) $\mathrm{mass\_delta\_d}\ge 0.10$;
-(c) $|vgn| \!:=\! |V^*_\mathrm{safe}(s_0)-V^*_\mathrm{cl}(s_0)|/R_\mathrm{scale} \ge 5\times 10^{-3}$;
-(d) $\mathrm{contest\_gap\_norm}\le 10^{-2}$;
-(e) no certification violation.
-Thresholds are fixed. We admit two clipping regimes: $\texttt{binding\_clip}$
-($0.05 \leq \mathrm{clip\_fraction} \leq 0.80$) and $\texttt{safe\_active\_no\_distortion}$
-($\mathrm{clip\_fraction} = 0$ with the raw weighted-LSE operator already
-inside the certified box on visited transitions). The latter captures the
-mechanism-relevant regime where the deployed safe operator coincides
-with the raw operator while both stay within the contraction cert.
-
-\subsection{Task families and search outcome}
-\label{sec:exp-families}
-
-Five families cover a principled grid: \emph{Family~A} (delayed jackpot
-vs smooth stream, concentration contrast); \emph{Family~B} (rare
-catastrophe vs safe branch, alternative-branch propagation);
-\emph{Family~C} (raw-stress, safety); \emph{Family~D} (preventive
-intervention, propagation-depth warning); \emph{Family~E} (regime-shift
-with concentration contrast). Each family exposes a tie parameter
-$\lambda$ and a geometry parameter $\psi$. The search driver enumerates
-$\le 5{,}000$ candidates per iteration, solves $\lambda_\mathrm{tie}(\psi)$
-via bisection from a closed-form warm start, sweeps $\varepsilon$-bands,
-and evaluates every metric.
-
-\paragraph{Structural finding: side-by-side contests translate, sequential chains do not.}
-Families B and D together sweep over $1{,}800$ candidates and promote
-\emph{zero} tasks; Family E sweeps $540$ and also promotes zero. The
-diagnosis: in sequential-chain constructions (action at $t{=}0$ gates a
-downstream branch) value translation accumulates too slowly to clear
-the $5\times 10^{-3}$ $|vgn|$ threshold. Family~A's side-by-side contest
-(both branches propagate simultaneously from the same contest state)
-clears it readily. B, D, E therefore appear in \Cref{app:design_diagnostics}
-as design diagnostics; the main text is carried by A and C.
-
-Table~\ref{tab:phaseVI_summary} aggregates headline metrics per family grouping.
-\begin{table*}[t]
-\centering
-\small
-\input{../results/summaries/main_table.tex}
-\end{table*}
-
-\subsection{Mechanism: policy flips and dual-objective Pareto}
-\label{sec:exp-mechanism}
-
-\paragraph{Exact-planning flip on Family~A.}
-On the 5 deterministic Family~A shortlisted tasks (all $\texttt{safe\_active\_no\_distortion}$),
-the safe operator produces a start-state policy flip and $|vgn|$ up to
-$7.82\times 10^{-3}$. Limited-backup planning shows the safe operator
-reaching full greedy-policy correctness at $k = T-1$ while classical
-reaches it at $k = T$; the safe greedy-correctness fraction exceeds
-classical's by $\approx 0.7\%$ per backward step (\Cref{fig:propagation_curve,fig:stagewise_heatmap,fig:greedy_recovery}).
-This is a finite-horizon propagation advantage consistent with the
-theorem's prediction that on aligned regions the safe operator
-propagates delayed signals differently from classical discounting.
-
-\begin{figure}[t]
-\centering
-\begin{minipage}[t]{0.32\linewidth}
-\centering
-\includegraphics[width=\linewidth]{../figures/main/fig_propagation_curve.pdf}
-\caption{Backward propagation distance of the terminal reward signal after $k$ backups on the lead Family A task (A\_003).}
-\label{fig:propagation_curve}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.32\linewidth}
-\centering
-\includegraphics[width=\linewidth]{../figures/main/fig_stagewise_error_heatmap.pdf}
-\caption{Stagewise $\lVert V_k - V^*\rVert_\infty$ heatmap (classical vs safe).}
-\label{fig:stagewise_heatmap}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.32\linewidth}
-\centering
-\includegraphics[width=\linewidth]{../figures/main/fig_greedy_recovery.pdf}
-\caption{Fraction of $(t,s)$ pairs with correct greedy action under $d_\mathrm{ref}$ vs backup count $k$.}
-\label{fig:greedy_recovery}
-\end{minipage}
-\end{figure}
-
-\paragraph{Dual-objective Pareto (novel).}
-The stochastic Family~A shortlist (6 tasks, $p_\mathrm{transit}=0.95$,
-$\pi^*_\mathrm{safe}\neq \pi^*_\mathrm{cl}$ at $s_0$) permits exact
-policy evaluation under both objectives:
-\[
-\underbrace{V^{\pi^*_\mathrm{cl}}_\mathrm{cl}(s_0) - V^{\pi^*_\mathrm{safe}}_\mathrm{cl}(s_0)}_{\text{classical-eval regret}} \approx 0
-\quad\text{and}\quad
-\underbrace{V^{\pi^*_\mathrm{safe}}_\mathrm{safe}(s_0) - V^{\pi^*_\mathrm{cl}}_\mathrm{safe}(s_0)}_{\text{safe-eval advantage}} > 0 .
-\]
-Under classical evaluation, $\pi^*_\mathrm{safe}$ matches $\pi^*_\mathrm{cl}$
-to ULP ($\leq 4.4\times 10^{-16}$ on all 6 tasks). Under the safe
-(nonlinear weighted-LSE) evaluator, $\pi^*_\mathrm{safe}$ strictly
-dominates, with gap scaling linearly from $0.012$ at $R=2$ to $0.499$
-at $R=100$ (\Cref{fig:dual_objective_eval}). The safe policy is therefore
-\emph{Pareto-better on the dual-objective surface}. This also reframes
-the RL translation question: classical-return RL cannot discriminate
-arms at the classical tie by construction --- the mechanism lives in
-the objective, not in a sample-noise advantage.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.8\linewidth]{../figures/main/fig_dual_objective_eval.pdf}
-\caption{Dual-objective evaluation on 6 stochastic Family A tasks. Left: Pareto scatter showing classical-eval regret $\approx 0$ vs safe-eval advantage $> 0$ on every task. Right: per-task grouped bars for $V^\pi_\mathrm{cl}$ and $V^\pi_\mathrm{safe}$ under both policies.}
-\label{fig:dual_objective_eval}
-\end{figure}
-
-\paragraph{Safety: clipping preserves the contraction certificate.}
-On the stronger Family~C shortlist (84 tasks, $\beta_\mathrm{raw}$ up
-to $128\times$ the certified cap), safe-clipped sweeps satisfy
-$d_\mathrm{safe}\le\kappa_t\in[0.95,0.96]$ on visited transitions
-(classification $\texttt{stable\_nonlinear}$). The raw unclipped
-operator violates the cert with $d_\mathrm{raw}$ up to $1.416$
-(a $48\%$ amplification margin over $\gamma$; classification
-$\texttt{expansive\_bounded}$). \Cref{fig:safe_vs_raw_stability} shows
-per-stage $V$ trajectories and the $d_\mathrm{raw}$ histogram under
-$d_\mathrm{ref}$.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.8\linewidth]{../figures/main/fig_safe_vs_raw_stability.pdf}
-\caption{Safe-vs-raw stability on the lead Family~C task (\texttt{family\_C\_05\_L4\_Rp1\_mult128}). Left: per-stage $V[t,s_0]$ trajectories for classical, safe-clipped, and raw-unclipped backward sweeps. Right: per-transition local continuation derivative histogram under $d_\mathrm{ref}\cdot\pi^*_\mathrm{safe}\cdot P$; vertical lines at $\gamma$, $\kappa_t^{\max}$, and $1$.}
-\label{fig:safe_vs_raw_stability}
-\end{figure}
-
-\paragraph{Finite-horizon $F$ is bounded even when the cert is breached.}
-To expose the contraction difference directly we iterate the backward-
-sweep operator $F\colon V_T \mapsto V_0$ for 50 outer steps with perturbed
-$V_T$ (\Cref{fig:perturbation_growth}): even raw operators with
-$d_\mathrm{raw} > 1$ per-transition retain a \emph{bounded fixed point}
-of $F$ at finite horizon. The cert bound is therefore \emph{sufficient}
-for $F$-contraction but not \emph{necessary} for finite-horizon
-$V$-boundedness; what clipping prevents is loss of the theoretical
-contraction guarantee (required for infinite-horizon or adversarial
-extensions), not immediate functional divergence.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.7\linewidth]{../figures/main/fig_perturbation_growth.pdf}
-\caption{Iterated backward-sweep operator $F$: normalised perturbation amplitude $\rho(k)$ vs outer iteration $k$ for classical, safe, and raw operators on the lead Family~C task. All three converge to a bounded fixed point, confirming that per-transition $d>1$ does not produce functional divergence at finite horizon.}
-\label{fig:perturbation_growth}
-\end{figure}
-
-\subsection{Risk profile: signed tie-breaker, not universal risk-reducer}
-\label{sec:exp-risk}
-
-Ten-thousand Monte-Carlo rollouts per policy per task on the 6
-stochastic Family~A tasks yield
-$\mathbb{E}[G|\pi^*_\mathrm{safe}]\approx\mathbb{E}[G|\pi^*_\mathrm{cl}]$
-but $\mathrm{Var}[G|\pi^*_\mathrm{safe}]\gg \mathrm{Var}[G|\pi^*_\mathrm{cl}]$
-and $\mathrm{CVaR}_{0.05}[\pi^*_\mathrm{safe}] < \mathrm{CVaR}_{0.05}[\pi^*_\mathrm{cl}]$.
-Family~A has optimistic sign ($\mathrm{sign}=+1$), so the safe operator
-\emph{amplifies gains} rather than penalizing losses, producing
-risk-seeking credit assignment (prefer delayed jackpot over steady
-stream). Pessimistic-sign families (B, D) would symmetrically produce
-CVaR-improving safe policies, had B or D promoted tasks. The correct
-reading is that the safe weighted-LSE operator is a \emph{signed
-tie-breaker between statistically-equivalent policies}, with the sign
-determining whether the correction amplifies gains or penalizes losses.
-It is not a universal risk-reducer --- it is a theorem-linked
-credit-assignment mechanism whose preference pattern matches its sign.
-
-\subsection{Consistency audit}
-\label{sec:exp-audit}
-\label{sec:exp-discussion} % legacy alias: Appendix C cross-references point here.
-
-A Phase~V consistency audit (\texttt{scripts/audit/run\_consistency\_audit.py})
-recomputes every Phase~I--IV table and figure from raw logs.
-The first-pass audit flagged $82$ DP cert-bound \textsc{blocker} rows on
-Phase~III \texttt{SafePE}/\texttt{SafeVI} runs; the remediation pass
-(occupancy-weighted cert check, \texttt{scripts/audit/occupancy\_cert\_check.py})
-demonstrated that these are benign artifacts of the P-weighted
-effective-discount aggregation on absorbing cells, and downgraded all
-$82$ to \textsc{minor}. One paper-text discrepancy remains: a stale
-$79\%$ \texttt{clip\_fraction} number for \texttt{grid\_hazard}
-(recomputed: $96.25\%$) --- the updated value appears in
-\Cref{app:phase_I_IV_sanity}.
-
-% -----------------------------------------------------------
-% The legacy Phase I-III experimental content follows in an
-% \iffalse...\fi block so TeX skips it. The content is
-% preserved for relocation into app:phase_I_IV_sanity but does
-% not compile into the main text.
-% -----------------------------------------------------------
-\iffalse
 \subsection{Setup}
-\label{sec:exp-setup-legacy}
+\label{sec:exp-setup}
 
 \paragraph{Task families.}
 We use eight tabular finite-horizon environments spanning three structural axes of interest to the theory.
@@ -2111,7 +1912,6 @@ This is expected from the theory: the certified $\overline\beta_t$ is a worst-ca
 Third, returning to \Cref{thm:aligned-contraction}, the local improvement regime requires $\beta(r-V)\ge\eta>0$ with a positive margin $\eta$; in the current experiments $\widetilde\beta$ is too small to produce a detectable margin.
 Activating the improvement mechanism in practice will require either tasks with tighter reward scales (where $R_{\max}$ is smaller relative to the value range) or a refinement of the calibration objective that trades off headroom against expressivity more aggressively.
 Both directions are natural extensions of the current framework.
-\fi % end legacy Phase I-III Experiments content (see app:phase_I_IV_sanity)
 
 % =====================================================================
 \clearpage
@@ -2199,43 +1999,6 @@ Those questions are outside the scope of the present manuscript.
 What the paper does establish is that weighted log-sum-exp dynamic programming can be made simultaneously variationally expressive, classically calibrated, and globally stable, with a coherent finite-horizon theory in the main text and a detailed appendix of proofs.
 
 \appendix
-
-% =====================================================================
-\section{Phase I--IV Calibration Sanity}
-\label{app:phase_I_IV_sanity}
-\label{app:design_diagnostics}
-% =====================================================================
-
-The Phase~I--IV benchmark matrix (eight tabular families, classical vs.\ safe
-algorithms, 1{,}940 runs) originally carried the paper's empirical
-story. Phase~V reinterpreted this matrix as a calibration sanity check:
-the deployed clipped schedule lies in the near-zero-$\beta$ regime on
-every task, so the safe operator coincides with classical to
-numerical precision and the DP/RL comparison is correctly uninformative.
-The underlying machinery is nonetheless correct: across all $1{,}940$
-Phase~I--III runs the certification invariants hold, clip fractions
-range from $0$ to $96.25\%$ (corrected from a $79\%$ pre-audit figure
-for \texttt{grid\_hazard} --- see \S\ref{sec:exp-audit}), and the
-empirical effective discount $\hat{d}_t$ matches $\gamma=0.99$ to
-within $10^{-4}$.
-
-Phase~IV's dense-cost follow-up (\texttt{translation\_4a2} family,
-$\alpha$-headroom sweep) confirmed that the certified $\widetilde\beta_t$
-can be driven away from zero by shrinking the reward scale, but that
-the resulting operator still does not translate to RL outcome
-differences --- a finding whose resolution is given by the Phase~VI
-dual-objective analysis in the main text.
-
-Phase~V's search also exercised \emph{Family~B} (rare catastrophe vs
-safe branch), \emph{Family~D} (early-warning preventive intervention),
-and \emph{Family~E} (regime-shift with concentration contrast). None
-of these promoted any tasks; together they span $1{,}800+$ candidate
-configurations and confirm the side-by-side-vs-sequential-chain
-structural finding reported in \S\ref{sec:exp-families}.
-
-Full per-run artifacts are under \texttt{results/weighted\_lse\_dp/phase\{1,2,3,4\}/}
-and the updated audit report is at \texttt{results/audit/consistency\_report.md}.
-
 \section{Additional Experimental Figures}
 \label{app:exp-figures}
 % =====================================================================
