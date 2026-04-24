@@ -418,6 +418,35 @@ All experiment entry points take `--seed` and `--config`. Raw artifacts: `result
 
 ---
 
+## 15. Family E addendum (2026-04-24) — final bounded pass
+
+User reply `docs/specs/phase_V_source_reply_v6_family_E.md` sets Family E as the final bounded refinement pass before WP3/WP4/WP5.
+
+### 15.1 Required design principle
+Family E must combine regime-shift / warning-revelation structure **with concentration contrast**, not propagation depth. Pure propagation-depth designs dilute value translation (Families B/D max out at `1.3e-3`, below the 5e-3 gate); concentration-contrast designs translate cleanly (Family A max 7.8e-3). Family E keeps the regime-shift narrative of B/D but enforces concentration contrast via the geometry parameter.
+
+### 15.2 Three templates (implement all three as variants in one factory)
+- **E1 warning-revelation fork:** `ignore` vs `react`. Tune adjustment cost for classical tie; geometry = warning depth + catastrophe concentration + timing + p_warn + old-regime smoothness.
+- **E2 opportunity-revelation fork:** `wait` vs `adapt`. Tune immediate cost for classical tie; geometry = opportunity concentration + delay.
+- **E3 regime-switch with stale continuation:** two branches with identical classical value; one smooth-stale, one sharp-new-regime.
+
+### 15.3 Unchanged gates
+Same fixed thresholds as spec §4; positive-family clip gate allows both `binding_clip` and `safe_active_no_distortion` per §14.2.
+
+### 15.4 Branching after Family E
+- **If E promotes ≥ 1 task:** proceed to WP3/WP4/WP5 on best 2–3 A tasks + 1–2 E tasks + best C safety tasks.
+- **If E promotes 0 tasks:** FREEZE the search. No Family F. Final empirical story:
+  - A = constructive positive (concentration contrast).
+  - C = safety/stability.
+  - B/D/E = appendix-only design diagnostics showing propagation-depth variants dilute translation.
+
+Framing stays positive: paper claims a local operator mechanism + demonstrates it in the settings where signed-margin + concentration conditions hold. This is the supersedes the §13.2 conjunctive stopping rule — if E promotes 0, A + C alone is sufficient.
+
+### 15.5 No RL before E resolves
+Do not spend compute on RL until Family E either promotes or is exhausted.
+
+---
+
 ## 14. Final-decision addendum (2026-04-24) — Theory track + family-specific clip gate
 
 User decision docs `docs/specs/phase_V_source_decision_v4_final.md` and `docs/specs/phase_V_source_reply_v5_current.md` supersede the clip-fraction portion of §4 item 6 and §13.1. Everything else in the spec stands.
