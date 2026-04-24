@@ -27,7 +27,35 @@ from typing import Any
 
 import numpy as np
 
-__all__ = ["compute_d_ref", "save_occupancy"]
+__all__ = ["compute_d_ref", "save_occupancy", "absorbing_mask"]
+
+
+def absorbing_mask(P: np.ndarray) -> np.ndarray:
+    """Per-(s, a) mask where ``P[s, a, :].sum() == 0`` (terminal / absorbing).
+
+    At such cells the P-weighted safe effective discount algebraically
+    degenerates to ``(1+gamma)(1 - 0) = 1 + gamma`` even though the
+    operator's target collapses to zero (no future mass to discount), so
+    any cert or diagnostic that averages over these cells inherits a
+    benign but misleading artifact. Downstream consumers should mask
+    these cells out of d_ref-weighted summaries.
+
+    Parameters
+    ----------
+    P : ndarray of shape (S, A, S')
+        Transition tensor. Typically ``mdp.p``.
+
+    Returns
+    -------
+    mask : ndarray of shape (S, A), dtype bool
+        ``True`` where the transition distribution is zero.
+    """
+    P = np.asarray(P, dtype=np.float64)
+    if P.ndim != 3:
+        raise ValueError(
+            f"P must have shape (S, A, S'); got ndim={P.ndim}, shape={P.shape}"
+        )
+    return np.isclose(P.sum(axis=-1), 0.0)
 
 
 def _policy_tensor(

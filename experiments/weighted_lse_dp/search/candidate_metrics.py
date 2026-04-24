@@ -39,6 +39,7 @@ import numpy as np
 
 from ..calibration.calibration_utils import clip_beta as _clip_beta_certutil
 from .family_spec import ContestState
+from .reference_occupancy import absorbing_mask
 
 __all__ = ["evaluate_candidate"]
 
@@ -323,12 +324,29 @@ def _evaluate_core(
     # metric is a probability under d_ref treated as a state-occupancy;
     # following the Phase IV convention we normalize by T (the sum of
     # per-stage masses) so disagreement is reported on [0, 1].
-    disagree_mask = (pi_safe != pi_cl).astype(np.float64)     # (T, S)
-    d_ref_mass_total = float(d_ref.sum())
-    if d_ref_mass_total > 0.0:
-        policy_disagreement = float((d_ref * disagree_mask).sum() / d_ref_mass_total)
+    # At absorbing states reached under pi*_safe the operator has no
+    # future mass to discount, so disagreement there is operationally
+    # meaningless. Mask those cells out (spec §13 addendum + WP0
+    # remediation 2026-04-24).
+    absorb_sa = absorbing_mask(P)                              # (S, A) bool
+    pi_safe_idx = pi_safe                                       # (T, S) int
+    t_idx = np.arange(T)[:, None]
+    s_idx = np.arange(S)[None, :]
+    absorb_under_pi_safe = absorb_sa[s_idx, pi_safe_idx]        # (T, S) bool
+    live_mask = (~absorb_under_pi_safe).astype(np.float64)      # (T, S)
+    disagree_mask = (pi_safe != pi_cl).astype(np.float64)       # (T, S)
+    d_ref_live = d_ref * live_mask
+    d_ref_live_total = float(d_ref_live.sum())
+    if d_ref_live_total > 0.0:
+        policy_disagreement = float(
+            (d_ref_live * disagree_mask).sum() / d_ref_live_total
+        )
     else:
         policy_disagreement = 0.0
+    # Retain the raw d_ref mass for backward-compatible metrics below
+    # (margin_pos, delta_d, clip_fraction already mask absorbing cells
+    # naturally via the P-weighted `weights` tensor).
+    d_ref_mass_total = float(d_ref.sum())
 
     start_state_flip = int(pi_safe[0, s0] != pi_cl[0, s0])
 
