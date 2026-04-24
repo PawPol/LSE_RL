@@ -109,6 +109,9 @@ from experiments.weighted_lse_dp.tasks.family_c_raw_stress import (  # noqa: E40
 from experiments.weighted_lse_dp.tasks.family_d_preventive import (  # noqa: E402
     family_d,
 )
+from experiments.weighted_lse_dp.tasks.family_e_regime_shift import (  # noqa: E402
+    family_e,
+)
 
 __all__ = [
     "ConfigError",
@@ -130,7 +133,7 @@ class ConfigError(ValueError):
 # ---------------------------------------------------------------------------
 
 DEFAULT_CONFIG: dict[str, Any] = {
-    "families": ["A", "B", "C", "D"],
+    "families": ["A", "B", "C", "D", "E"],
     "family_params": {
         "A": {
             "L_range": [4, 8, 12],
@@ -194,6 +197,7 @@ _FAMILY_REGISTRY: dict[str, FamilySpec] = {
     "B": family_b,
     "C": family_c,
     "D": family_d,
+    "E": family_e,
 }
 
 
@@ -468,11 +472,100 @@ def _psi_grid_family_d(params: dict[str, Any]) -> list[dict[str, Any]]:
     return grid
 
 
+def _psi_grid_family_e(params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Family E (regime-shift / concentration contrast): three variants.
+
+    E1_warning_react, E2_opportunity_adapt enumerate over
+    ``(L, gamma, warning_lead, p_{warn|opp}, {C_conc|U_conc},
+    {r_smooth|r_baseline})``. E3_regime_switch enumerates over
+    ``(L, gamma, t_switch, R_rev, r_smooth)``.
+    """
+    grid: list[dict[str, Any]] = []
+    seen: set[tuple] = set()
+
+    def _add(psi: dict[str, Any]) -> None:
+        key = tuple(sorted(psi.items()))
+        if key in seen:
+            return
+        seen.add(key)
+        grid.append(psi)
+
+    for variant in params.get("variants", []):
+        if variant == "E1_warning_react":
+            for L, gamma, warning_lead, p_warn, C_conc, r_smooth in itertools.product(
+                params["L_range"],
+                params["gamma_range"],
+                params["warning_lead_range"],
+                params["p_warn_range"],
+                params["C_conc_range"],
+                params["r_smooth_range"],
+            ):
+                L_i = int(L)
+                wl_i = int(warning_lead)
+                if wl_i < 1 or wl_i > L_i - 1:
+                    continue
+                _add({
+                    "variant": "E1_warning_react",
+                    "L": L_i,
+                    "gamma": float(gamma),
+                    "warning_lead": wl_i,
+                    "p_warn": float(p_warn),
+                    "C_conc": float(C_conc),
+                    "r_smooth": float(r_smooth),
+                })
+        elif variant == "E2_opportunity_adapt":
+            for L, gamma, warning_lead, p_opp, U_conc, r_baseline in itertools.product(
+                params["L_range"],
+                params["gamma_range"],
+                params["warning_lead_range"],
+                params["p_opp_range"],
+                params["U_conc_range"],
+                params["r_baseline_range"],
+            ):
+                L_i = int(L)
+                wl_i = int(warning_lead)
+                if wl_i < 1 or wl_i > L_i - 1:
+                    continue
+                _add({
+                    "variant": "E2_opportunity_adapt",
+                    "L": L_i,
+                    "gamma": float(gamma),
+                    "warning_lead": wl_i,
+                    "p_opp": float(p_opp),
+                    "U_conc": float(U_conc),
+                    "r_baseline": float(r_baseline),
+                })
+        elif variant == "E3_regime_switch":
+            for L, gamma, t_switch, R_rev, r_smooth in itertools.product(
+                params["L_range"],
+                params["gamma_range"],
+                params["t_switch_range"],
+                params["R_rev_range"],
+                params["r_smooth_range"],
+            ):
+                L_i = int(L)
+                ts_i = int(t_switch)
+                if ts_i < 1 or ts_i > L_i - 1:
+                    continue
+                _add({
+                    "variant": "E3_regime_switch",
+                    "L": L_i,
+                    "gamma": float(gamma),
+                    "t_switch": ts_i,
+                    "R_rev": float(R_rev),
+                    "r_smooth": float(r_smooth),
+                })
+        else:
+            raise ConfigError(f"Unknown Family E variant: {variant!r}")
+    return grid
+
+
 _PSI_GRID_BUILDERS = {
     "A": _psi_grid_family_a,
     "B": _psi_grid_family_b,
     "C": _psi_grid_family_c,
     "D": _psi_grid_family_d,
+    "E": _psi_grid_family_e,
 }
 
 

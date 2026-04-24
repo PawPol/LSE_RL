@@ -1,16 +1,16 @@
 {
   "schema_version": "phaseV.search.v1",
-  "created_at": "2026-04-24T03:04:07Z",
+  "created_at": "2026-04-24T04:05:36Z",
   "phase": "phaseV",
   "runner": "run_phase_V_search",
   "exact_argv": [
-    "--config",
-    "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/cfg.yaml",
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/weighted_lse_dp/runners/run_phase_V_search.py",
+    "--output-root",
+    "/tmp/phaseV_with_E",
     "--seed",
     "42",
-    "--output-root",
-    "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out",
-    "--dry-run"
+    "--config",
+    "experiments/weighted_lse_dp/configs/phaseV/search.yaml"
   ],
   "seed_list": [
     42
@@ -18,83 +18,339 @@
   "family_list": [
     "A",
     "B",
-    "C"
+    "C",
+    "D",
+    "E"
   ],
   "family_b_variant": "default",
   "variant_set": "B_default",
   "psi_grid_summary": {
-    "A": 1,
-    "B": 2,
-    "C": 4
+    "A": 27,
+    "B": 36,
+    "C": 18,
+    "D": 144,
+    "E": 540
   },
-  "n_candidates_admitted": 7,
-  "n_candidates_promoted": 2,
+  "n_candidates_admitted": 2333,
+  "n_candidates_promoted": 11,
   "output_paths": {
-    "candidate_grid": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out/candidate_grid.parquet",
-    "candidate_metrics": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out/candidate_metrics.parquet",
-    "near_indifference_catalog": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out/near_indifference_catalog.csv",
-    "shortlist": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out/shortlist.csv",
-    "shortlist_report": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out/shortlist_report.md",
-    "phase_diagram_data": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out/phase_diagram_data.parquet",
-    "shortlist_refinement_manifest": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out/shortlist_refinement_manifest.md"
+    "candidate_grid": "/tmp/phaseV_with_E/candidate_grid.parquet",
+    "candidate_metrics": "/tmp/phaseV_with_E/candidate_metrics.parquet",
+    "near_indifference_catalog": "/tmp/phaseV_with_E/near_indifference_catalog.csv",
+    "shortlist": "/tmp/phaseV_with_E/shortlist.csv",
+    "shortlist_report": "/tmp/phaseV_with_E/shortlist_report.md",
+    "phase_diagram_data": "/tmp/phaseV_with_E/phase_diagram_data.parquet",
+    "shortlist_refinement_manifest": "/tmp/phaseV_with_E/shortlist_refinement_manifest.md"
   },
-  "git_sha": "fa82f1160e137ed2a7a68329fcb7b4b8e0a00d15",
+  "git_sha": "7787e0b4999e3670dcc070b576dcd9076e01f47a",
   "host": "LIQs-Mac-Mini.local",
-  "timestamp": "2026-04-24T03:04:07Z",
-  "dry_run": true,
+  "timestamp": "2026-04-24T04:05:36Z",
+  "dry_run": false,
   "config": {
     "families": [
       "A",
       "B",
-      "C"
+      "C",
+      "D",
+      "E"
     ],
     "family_params": {
       "A": {
         "L_range": [
-          4
+          4,
+          8,
+          12
         ],
         "R_range": [
-          2.0
+          1.0,
+          2.0,
+          5.0
         ],
         "gamma": 0.95,
         "shapes": [
-          "flat"
+          "flat",
+          "one_bump",
+          "ramp"
         ],
         "eps_band_pts": 7,
         "eps_band_frac": 0.2
       },
       "B": {
         "L_range": [
-          4
+          4,
+          8
         ],
         "p_range": [
-          0.1
+          0.05,
+          0.1,
+          0.2
         ],
         "C_range": [
-          2.0
+          2.0,
+          5.0
         ],
         "b": 1.0,
         "variants": [
           "single_event",
-          "warning_state"
+          "warning_state",
+          "multi_event"
         ],
         "gamma": 0.95,
         "eps_band_pts": 7,
         "eps_band_frac": 0.2
       },
+      "B_refinement": {
+        "eps_band_pts": 7,
+        "eps_band_frac": 0.2,
+        "slices": [
+          {
+            "variants": [
+              "single_event",
+              "warning_state",
+              "shallow_early",
+              "multi_event",
+              "matched_concentration"
+            ],
+            "L_range": [
+              4
+            ],
+            "gamma_range": [
+              0.95
+            ],
+            "C_range": [
+              5.0,
+              10.0,
+              20.0
+            ],
+            "p_range": [
+              0.1
+            ],
+            "ratio_range": [
+              0.6
+            ]
+          },
+          {
+            "variants": [
+              "single_event",
+              "multi_event"
+            ],
+            "L_range": [
+              4
+            ],
+            "gamma_range": [
+              0.99,
+              0.9
+            ],
+            "C_range": [
+              10.0
+            ],
+            "p_range": [
+              0.1
+            ],
+            "ratio_range": [
+              0.6
+            ]
+          },
+          {
+            "variants": [
+              "single_event",
+              "multi_event"
+            ],
+            "L_range": [
+              4
+            ],
+            "gamma_range": [
+              0.95
+            ],
+            "C_range": [
+              10.0
+            ],
+            "p_range": [
+              0.02,
+              0.3
+            ],
+            "ratio_range": [
+              0.6
+            ]
+          },
+          {
+            "variants": [
+              "single_event",
+              "multi_event"
+            ],
+            "L_range": [
+              4
+            ],
+            "gamma_range": [
+              0.95
+            ],
+            "C_range": [
+              10.0
+            ],
+            "p_range": [
+              0.1
+            ],
+            "ratio_range": [
+              0.3,
+              1.0
+            ]
+          },
+          {
+            "variants": [
+              "single_event",
+              "multi_event"
+            ],
+            "L_range": [
+              8
+            ],
+            "gamma_range": [
+              0.95
+            ],
+            "C_range": [
+              10.0
+            ],
+            "p_range": [
+              0.1
+            ],
+            "ratio_range": [
+              0.6
+            ]
+          },
+          {
+            "variants": [
+              "warning_state"
+            ],
+            "L_range": [
+              4
+            ],
+            "gamma_range": [
+              0.95
+            ],
+            "C_range": [
+              10.0
+            ],
+            "p_range": [
+              0.1
+            ],
+            "ratio_range": [
+              0.6
+            ],
+            "warning_depth_range": [
+              1,
+              3
+            ]
+          }
+        ]
+      },
       "C": {
         "L_tail_range": [
-          4
+          4,
+          6,
+          8
         ],
         "R_penalty_range": [
           1.0,
           2.0
         ],
         "beta_raw_multiplier_range": [
+          1.5,
           2.5,
           4.0
         ],
         "gamma": 0.95
+      },
+      "D": {
+        "L_range": [
+          6,
+          10
+        ],
+        "C_range": [
+          5.0,
+          10.0,
+          20.0
+        ],
+        "gamma_range": [
+          0.95,
+          0.99
+        ],
+        "p_warn_range": [
+          0.1,
+          0.3,
+          0.5
+        ],
+        "warning_lead_range": [
+          2,
+          3
+        ],
+        "variants": [
+          "single_warning",
+          "shallow_early_warning"
+        ],
+        "p_cat_given_warn": 1.0,
+        "r_shallow_frac_of_C": 0.1,
+        "eps_band_pts": 7,
+        "eps_band_frac": 0.2
+      },
+      "E": {
+        "L_range": [
+          6,
+          10
+        ],
+        "gamma_range": [
+          0.95,
+          0.99
+        ],
+        "warning_lead_range": [
+          2,
+          3
+        ],
+        "p_warn_range": [
+          0.1,
+          0.3,
+          0.5
+        ],
+        "C_conc_range": [
+          5.0,
+          10.0,
+          20.0
+        ],
+        "r_smooth_range": [
+          0.1,
+          0.3,
+          0.5
+        ],
+        "p_opp_range": [
+          0.3,
+          0.5,
+          0.7
+        ],
+        "U_conc_range": [
+          5.0,
+          10.0,
+          20.0
+        ],
+        "r_baseline_range": [
+          0.1,
+          0.3,
+          0.5
+        ],
+        "t_switch_range": [
+          1,
+          2,
+          3
+        ],
+        "R_rev_range": [
+          5.0,
+          10.0,
+          20.0
+        ],
+        "variants": [
+          "E1_warning_react",
+          "E2_opportunity_adapt",
+          "E3_regime_switch"
+        ],
+        "eps_band_pts": 7,
+        "eps_band_frac": 0.2
       }
     },
     "max_candidates": 5000,
@@ -123,5 +379,5 @@
     },
     "seed": 42
   },
-  "elapsed_sec": 0.12828516960144043
+  "elapsed_sec": 40.93619990348816
 }
