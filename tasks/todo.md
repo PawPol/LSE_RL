@@ -2512,6 +2512,32 @@ Spec: `docs/specs/phase_V_mechanism_experiments.md` (commit `2cd283fb` on `main`
 - [ ] [plotter-analyst] [plot] Build `figures/main/fig_rl_translation.pdf` — paired-difference RL outcome comparison on shortlisted tasks with 95% bootstrap CIs (spec §7 WP6 main figure 5).
 - [ ] [plotter-analyst] [plot] Build companion `figures/main/fig_rl_mechanism_diagnostics.pdf` — realized `d_t` distribution, signed-margin occupancy, clip-fraction, `d_t < γ` fraction trajectories during learning (spec §7 WP6 main figure 5 companion).
 
+#### WP5 open questions (opened during Stage-1 pilot implementation 2026-04-23)
+
+- [ ] [experiment-runner] [open-question] Family-A Stage-1 lead task A_003 has
+  `policy_disagreement=0.125` but the disagreement does NOT sit at the start
+  state (s=0, t=0): both classical and safe argmax pick action 1 (stream) at
+  the contest state, so the eval-time greedy rollout produces identical
+  `start_action` traces and identical `mean_eval_return` for classical_q vs
+  safe_nonlinear, even though the safe Q-table differs on deeper stages.
+  The dispatch-requested "start_action differs on ≥ 10% of last-20 eval
+  points" check therefore did NOT hold on A_003 under the Stage-1 pilot
+  setup (n_episodes=100, eval_every=5). **Stage-2 implication**: the
+  "safe beats classical" signal at s0 eval return will be weak for
+  positive-family tasks whose tie sits off the start state; either (a)
+  pick WP5 lead tasks whose tie IS at s0 (re-screen shortlist.csv on this
+  criterion), or (b) report AUC-over-trajectory comparisons that include
+  the mid-chain occupancy (`mean_eval_return` averaged over multiple
+  initial states, not just `s0`).  Decision needed before Stage-2.
+- [ ] [experiment-runner] [open-question] The `d_t` column in
+  `pilot_runs.parquet` for non-safe arms is hard-coded to `gamma` per the
+  dispatch ("Non-safe arms: d_t_mean = γ, d_t_p90 = γ, clip_fraction = 0").
+  This is semantically correct (classical operators have effective
+  discount = γ by definition) but downstream diagnostics / figures need
+  to avoid treating `(arm='classical_q', d_t_mean=γ)` as a "realized"
+  measurement — the plotter-analyst handoff should document this column
+  as "nominal d_t for classical arms; realized d_t only for safe arms".
+
 ### WP6 — paper restructure (main vs appendix) — depends on WP3 + WP4 + WP5 complete
 
 - [ ] [plotter-analyst] [plot] Produce the compact main-text summary table (shortlist metrics, baselines, main outcomes) written to `results/summaries/main_table.csv` and rendered into the paper as the single main table per spec §7 WP6 ("5 figures + 1 table").

@@ -1,8 +1,7 @@
 {
-  "schema_version": "phaseV.planning.v1",
   "created_at": "2026-04-24T04:20:35Z",
-  "phase": "phaseV",
-  "runner": "run_phase_V_planning",
+  "dry_run": true,
+  "elapsed_sec": 0.12987089157104492,
   "exact_argv": [
     "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/weighted_lse_dp/runners/run_phase_V_planning.py",
     "--shortlist",
@@ -15,30 +14,30 @@
     "3",
     "--dry-run"
   ],
-  "seed_list": [
-    42
-  ],
   "families": [
     "A"
   ],
-  "shortlist_path": "/tmp/phaseV_with_E/shortlist.csv",
+  "git_sha": "edea68464e058be3a5c309841a0c23e32cbaa39a",
+  "host": "LIQs-Mac-Mini.local",
+  "k_max": 3,
+  "lead_task_id": null,
+  "n_tasks": 5,
   "output_paths": {
     "limited_backup_metrics": "/tmp/phaseV_wp3_dryrun/limited_backup_metrics.parquet",
     "limited_backup_scalars": "/tmp/phaseV_wp3_dryrun/limited_backup_scalars.parquet"
   },
-  "k_max": 3,
-  "n_tasks": 5,
-  "lead_task_id": null,
-  "git_sha": "edea68464e058be3a5c309841a0c23e32cbaa39a",
-  "host": "LIQs-Mac-Mini.local",
+  "phase": "phaseV",
+  "runner": "run_phase_V_planning",
+  "schema_version": "phaseV.planning.v1",
+  "seed_list": [
+    42
+  ],
+  "shortlist_path": "/tmp/phaseV_with_E/shortlist.csv",
   "timestamp": "2026-04-24T04:20:35Z",
-  "dry_run": true,
-  "elapsed_sec": 0.12987089157104492,
   "wp4_runs": {
-    "schema_version": "phaseV.wp4.v1",
     "created_at": "2026-04-24T04:38:12Z",
-    "phase": "phaseV",
-    "runner": "run_phase_V_stability",
+    "dry_run": false,
+    "elapsed_sec": 0.23493099212646484,
     "exact_argv": [
       "--shortlist",
       "/Users/liq/Documents/Claude/Projects/LSE_RL/results/search/shortlist.csv",
@@ -49,80 +48,294 @@
       "--seed",
       "42"
     ],
+    "git_sha": "f12bf0278bec823f606c07d61e9535944e9c2f31",
+    "host": "LIQs-Mac-Mini.local",
+    "lead_task_id": "family_C_00_L4_Rp1_mult4",
+    "n_tasks": 6,
+    "output_paths": {
+      "figure": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-36/test_smoke_cli0/fig_safe_vs_raw_stability.pdf",
+      "safe_vs_raw_stability_parquet": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-36/test_smoke_cli0/wp4_cli/safe_vs_raw_stability.parquet"
+    },
+    "per_task_summary": [
+      {
+        "classical_status": "stable_linear",
+        "psi_json": "{\"L_tail\": 4, \"R_penalty\": 1.0, \"beta_raw_multiplier\": 4.0, \"gamma\": 0.95}",
+        "raw_local_deriv_p90": 0.9609516717797524,
+        "raw_status": "expansive_bounded",
+        "raw_v_max_abs": 9.179782383382646,
+        "safe_status": "stable_nonlinear",
+        "task_id": "family_C_00_L4_Rp1_mult4"
+      },
+      {
+        "classical_status": "stable_linear",
+        "psi_json": "{\"L_tail\": 4, \"R_penalty\": 2.0, \"beta_raw_multiplier\": 4.0, \"gamma\": 0.95}",
+        "raw_local_deriv_p90": 0.9609516717797524,
+        "raw_status": "expansive_bounded",
+        "raw_v_max_abs": 18.359564766765292,
+        "safe_status": "stable_nonlinear",
+        "task_id": "family_C_01_L4_Rp2_mult4"
+      },
+      {
+        "classical_status": "stable_linear",
+        "psi_json": "{\"L_tail\": 6, \"R_penalty\": 1.0, \"beta_raw_multiplier\": 4.0, \"gamma\": 0.95}",
+        "raw_local_deriv_p90": 0.9609516717797524,
+        "raw_status": "expansive_bounded",
+        "raw_v_max_abs": 9.179782383382646,
+        "safe_status": "stable_nonlinear",
+        "task_id": "family_C_02_L6_Rp1_mult4"
+      },
+      {
+        "classical_status": "stable_linear",
+        "psi_json": "{\"L_tail\": 6, \"R_penalty\": 2.0, \"beta_raw_multiplier\": 4.0, \"gamma\": 0.95}",
+        "raw_local_deriv_p90": 0.9609516717797524,
+        "raw_status": "expansive_bounded",
+        "raw_v_max_abs": 18.359564766765292,
+        "safe_status": "stable_nonlinear",
+        "task_id": "family_C_03_L6_Rp2_mult4"
+      },
+      {
+        "classical_status": "stable_linear",
+        "psi_json": "{\"L_tail\": 8, \"R_penalty\": 1.0, \"beta_raw_multiplier\": 4.0, \"gamma\": 0.95}",
+        "raw_local_deriv_p90": 0.9609516717797524,
+        "raw_status": "expansive_bounded",
+        "raw_v_max_abs": 9.179782383382646,
+        "safe_status": "stable_nonlinear",
+        "task_id": "family_C_04_L8_Rp1_mult4"
+      },
+      {
+        "classical_status": "stable_linear",
+        "psi_json": "{\"L_tail\": 8, \"R_penalty\": 2.0, \"beta_raw_multiplier\": 4.0, \"gamma\": 0.95}",
+        "raw_local_deriv_p90": 0.9609516717797524,
+        "raw_status": "expansive_bounded",
+        "raw_v_max_abs": 18.359564766765292,
+        "safe_status": "stable_nonlinear",
+        "task_id": "family_C_05_L8_Rp2_mult4"
+      }
+    ],
+    "phase": "phaseV",
+    "pilot_cfg": {
+      "eps_greedy": 0.1,
+      "n_episodes": 30
+    },
+    "runner": "run_phase_V_stability",
+    "schema_version": "phaseV.wp4.v1",
     "seed_list": [
       42
     ],
     "shortlist_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/search/shortlist.csv",
-    "pilot_cfg": {
-      "n_episodes": 30,
-      "eps_greedy": 0.1
+    "timestamp": "2026-04-24T04:38:12Z"
+  },
+  "wp5_pilot_runs": {
+    "arms": [
+      "classical_q",
+      "safe_zero",
+      "safe_nonlinear",
+      "tuned_fixed_gamma",
+      "td_lambda"
+    ],
+    "created_at": "2026-04-24T05:07:44.276711+00:00",
+    "exact_argv": [
+      "pytest"
+    ],
+    "gamma_eff_per_task": {
+      "A_000": 0.85,
+      "A_003": 0.85
+    },
+    "git_sha": "29653cb98048bb0cce967a0c08984c30a8b6e81c",
+    "host": "LIQs-Mac-Mini.local",
+    "lambda_per_task": {
+      "A_000": 0.3,
+      "A_003": 0.3
     },
     "output_paths": {
-      "safe_vs_raw_stability_parquet": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-36/test_smoke_cli0/wp4_cli/safe_vs_raw_stability.parquet",
-      "figure": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-36/test_smoke_cli0/fig_safe_vs_raw_stability.pdf"
+      "paired_differences": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-40/test_smoke_end_to_end0/rl/paired_differences.parquet",
+      "pilot_runs": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-40/test_smoke_end_to_end0/rl/pilot_runs.parquet",
+      "pilot_runs_scalars": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-40/test_smoke_end_to_end0/rl/pilot_runs_scalars.parquet"
     },
-    "n_tasks": 6,
-    "lead_task_id": "family_C_00_L4_Rp1_mult4",
-    "git_sha": "f12bf0278bec823f606c07d61e9535944e9c2f31",
-    "host": "LIQs-Mac-Mini.local",
-    "timestamp": "2026-04-24T04:38:12Z",
-    "dry_run": false,
-    "elapsed_sec": 0.23493099212646484,
-    "per_task_summary": [
-      {
-        "task_id": "family_C_00_L4_Rp1_mult4",
-        "psi_json": "{\"L_tail\": 4, \"R_penalty\": 1.0, \"beta_raw_multiplier\": 4.0, \"gamma\": 0.95}",
-        "classical_status": "stable_linear",
-        "safe_status": "stable_nonlinear",
-        "raw_status": "expansive_bounded",
-        "raw_local_deriv_p90": 0.9609516717797524,
-        "raw_v_max_abs": 9.179782383382646
+    "runtime_sec": 10.840694904327393,
+    "schedule_per_task": {
+      "A_000_seed_123": {
+        "alpha_t": [
+          0.14280500000000002,
+          0.14280500000000002,
+          0.1470021763318791,
+          0.2
+        ],
+        "beta_cap_t": [
+          0.0011095918118046804,
+          0.001521104458385974,
+          0.002556683703453211,
+          0.010260817860398385
+        ],
+        "beta_raw_t": [
+          0.0,
+          0.0,
+          0.0019667523198981735,
+          0.0036096572875976562
+        ],
+        "beta_used_t": [
+          0.0,
+          0.0,
+          0.0019667523198981735,
+          0.0036096572875976562
+        ],
+        "kappa_t": [
+          0.9571402499999999,
+          0.9571402499999999,
+          0.9573501088165939,
+          0.96
+        ],
+        "path": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-40/test_smoke_end_to_end0/rl/schedules/A_000/seed_123_nonlinear.json"
       },
-      {
-        "task_id": "family_C_01_L4_Rp2_mult4",
-        "psi_json": "{\"L_tail\": 4, \"R_penalty\": 2.0, \"beta_raw_multiplier\": 4.0, \"gamma\": 0.95}",
-        "classical_status": "stable_linear",
-        "safe_status": "stable_nonlinear",
-        "raw_status": "expansive_bounded",
-        "raw_local_deriv_p90": 0.9609516717797524,
-        "raw_v_max_abs": 18.359564766765292
+      "A_000_seed_42": {
+        "alpha_t": [
+          0.14280500000000002,
+          0.14280500000000002,
+          0.14623198012453004,
+          0.2
+        ],
+        "beta_cap_t": [
+          0.0011096038897256068,
+          0.0015211281726820482,
+          0.0025432904095132242,
+          0.010260817860398385
+        ],
+        "beta_raw_t": [
+          0.0,
+          0.0,
+          0.001956449106906637,
+          0.0036096572875976562
+        ],
+        "beta_used_t": [
+          0.0,
+          0.0,
+          0.001956449106906637,
+          0.0036096572875976562
+        ],
+        "kappa_t": [
+          0.9571402499999999,
+          0.9571402499999999,
+          0.9573115990062264,
+          0.96
+        ],
+        "path": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-40/test_smoke_end_to_end0/rl/schedules/A_000/seed_42_nonlinear.json"
       },
-      {
-        "task_id": "family_C_02_L6_Rp1_mult4",
-        "psi_json": "{\"L_tail\": 6, \"R_penalty\": 1.0, \"beta_raw_multiplier\": 4.0, \"gamma\": 0.95}",
-        "classical_status": "stable_linear",
-        "safe_status": "stable_nonlinear",
-        "raw_status": "expansive_bounded",
-        "raw_local_deriv_p90": 0.9609516717797524,
-        "raw_v_max_abs": 9.179782383382646
+      "A_003_seed_123": {
+        "alpha_t": [
+          0.14280500000000002,
+          0.14280500000000002,
+          0.14280500000000002,
+          0.14280500000000002,
+          0.14280500000000002,
+          0.3,
+          0.3,
+          0.3
+        ],
+        "beta_cap_t": [
+          0.0005613361794755248,
+          0.0006340895836082455,
+          0.0007334002135489242,
+          0.0008768874979237835,
+          0.0011021816902753929,
+          0.0031851559532723797,
+          0.005216907551601295,
+          0.01538987727722382
+        ],
+        "beta_raw_t": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.002719468237247798,
+          0.0044502026771117715,
+          0.01538987727722382
+        ],
+        "beta_used_t": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.002719468237247798,
+          0.0044502026771117715,
+          0.01538987727722382
+        ],
+        "kappa_t": [
+          0.9571402499999999,
+          0.9571402499999999,
+          0.9571402499999999,
+          0.9571402499999999,
+          0.9571402499999999,
+          0.965,
+          0.965,
+          0.965
+        ],
+        "path": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-40/test_smoke_end_to_end0/rl/schedules/A_003/seed_123_nonlinear.json"
       },
-      {
-        "task_id": "family_C_03_L6_Rp2_mult4",
-        "psi_json": "{\"L_tail\": 6, \"R_penalty\": 2.0, \"beta_raw_multiplier\": 4.0, \"gamma\": 0.95}",
-        "classical_status": "stable_linear",
-        "safe_status": "stable_nonlinear",
-        "raw_status": "expansive_bounded",
-        "raw_local_deriv_p90": 0.9609516717797524,
-        "raw_v_max_abs": 18.359564766765292
-      },
-      {
-        "task_id": "family_C_04_L8_Rp1_mult4",
-        "psi_json": "{\"L_tail\": 8, \"R_penalty\": 1.0, \"beta_raw_multiplier\": 4.0, \"gamma\": 0.95}",
-        "classical_status": "stable_linear",
-        "safe_status": "stable_nonlinear",
-        "raw_status": "expansive_bounded",
-        "raw_local_deriv_p90": 0.9609516717797524,
-        "raw_v_max_abs": 9.179782383382646
-      },
-      {
-        "task_id": "family_C_05_L8_Rp2_mult4",
-        "psi_json": "{\"L_tail\": 8, \"R_penalty\": 2.0, \"beta_raw_multiplier\": 4.0, \"gamma\": 0.95}",
-        "classical_status": "stable_linear",
-        "safe_status": "stable_nonlinear",
-        "raw_status": "expansive_bounded",
-        "raw_local_deriv_p90": 0.9609516717797524,
-        "raw_v_max_abs": 18.359564766765292
+      "A_003_seed_42": {
+        "alpha_t": [
+          0.14280500000000002,
+          0.14280500000000002,
+          0.14280500000000002,
+          0.14280500000000002,
+          0.14280500000000002,
+          0.3,
+          0.3,
+          0.3
+        ],
+        "beta_cap_t": [
+          0.0005613361794755248,
+          0.0006340895836082455,
+          0.0007334002135489242,
+          0.0008768874979237835,
+          0.0011021816902753929,
+          0.0031851559532723797,
+          0.005216907551601295,
+          0.01538987727722382
+        ],
+        "beta_raw_t": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.002745857201122721,
+          0.004493612796947904,
+          0.01538987727722382
+        ],
+        "beta_used_t": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.002745857201122721,
+          0.004493612796947904,
+          0.01538987727722382
+        ],
+        "kappa_t": [
+          0.9571402499999999,
+          0.9571402499999999,
+          0.9571402499999999,
+          0.9571402499999999,
+          0.9571402499999999,
+          0.965,
+          0.965,
+          0.965
+        ],
+        "path": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-40/test_smoke_end_to_end0/rl/schedules/A_003/seed_42_nonlinear.json"
       }
+    },
+    "schema_version": "phaseV.rl_pilot.v1",
+    "seeds": [
+      42,
+      123
+    ],
+    "shortlist_path": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/search/shortlist.csv",
+    "tasks": [
+      "A_003",
+      "A_000"
     ]
   }
 }
