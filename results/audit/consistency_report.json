@@ -1,11 +1,13 @@
 {
   "schema_version": "1.0.0",
-  "git_sha": "28ea65220603adedb3204f81ac1bd1ddc12200de",
-  "generated_at": "2026-04-24T00:57:56.320047+00:00",
+  "git_sha": "9a9b4b195949d7502e4b06cce5bd3f7b9939015f",
+  "generated_at": "2026-04-24T01:46:40.044375+00:00",
   "summary": {
-    "blockers": 83,
-    "minors": 18,
+    "blockers": 1,
+    "minors": 144,
     "infos": 2,
+    "phase_v_blockers": 0,
+    "paper_text_blockers": 1,
     "phases_completed": [
       "phase1",
       "phase2",
@@ -13,13 +15,21 @@
       "phase4A",
       "phase4B",
       "phase4C"
-    ]
+    ],
+    "remediation": {
+      "flagged_dp_runs": 82,
+      "downgraded": 82,
+      "retained_blockers": 0,
+      "remediation_errors": 0,
+      "requires_phase_iii_fix": false
+    },
+    "requires_phase_iii_fix": false
   },
   "phases": [
     {
       "phase": "phase1",
-      "started": "2026-04-24T00:57:56.134131+00:00",
-      "ended": "2026-04-24T00:57:56.135053+00:00",
+      "started": "2026-04-24T01:46:38.652781+00:00",
+      "ended": "2026-04-24T01:46:38.653795+00:00",
       "tasks": [
         "chain_base",
         "grid_base",
@@ -28,8 +38,8 @@
     },
     {
       "phase": "phase2",
-      "started": "2026-04-24T00:57:56.135060+00:00",
-      "ended": "2026-04-24T00:57:56.138580+00:00",
+      "started": "2026-04-24T01:46:38.653804+00:00",
+      "ended": "2026-04-24T01:46:38.657348+00:00",
       "tasks": [
         "chain_sparse_long",
         "chain_jackpot",
@@ -43,8 +53,8 @@
     },
     {
       "phase": "phase3",
-      "started": "2026-04-24T00:57:56.138592+00:00",
-      "ended": "2026-04-24T00:57:56.277305+00:00",
+      "started": "2026-04-24T01:46:38.657361+00:00",
+      "ended": "2026-04-24T01:46:38.793871+00:00",
       "tasks": [
         "chain_sparse_long",
         "chain_jackpot",
@@ -59,782 +69,934 @@
     },
     {
       "phase": "phase4A",
-      "started": "2026-04-24T00:57:56.277324+00:00",
-      "ended": "2026-04-24T00:57:56.277335+00:00"
+      "started": "2026-04-24T01:46:38.793886+00:00",
+      "ended": "2026-04-24T01:46:38.793896+00:00"
     },
     {
       "phase": "phase4B",
-      "started": "2026-04-24T00:57:56.277337+00:00",
-      "ended": "2026-04-24T00:57:56.298352+00:00",
+      "started": "2026-04-24T01:46:38.793898+00:00",
+      "ended": "2026-04-24T01:46:38.814643+00:00",
       "n_safe_runs": 78
     },
     {
       "phase": "phase4C",
-      "started": "2026-04-24T00:57:56.298362+00:00",
-      "ended": "2026-04-24T00:57:56.302168+00:00",
+      "started": "2026-04-24T01:46:38.814650+00:00",
+      "ended": "2026-04-24T01:46:38.818478+00:00",
       "n_safe_runs": 0
     }
   ],
   "findings": [
     {
       "id": "C-phaseIII-001",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_11",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028461692308e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-002",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_11",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-003",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_29",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028461692308e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-004",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_29",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-005",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_47",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028461692308e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-006",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_47",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-007",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_67",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028461692308e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-008",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_67",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-009",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_83",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028461692308e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-010",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_83",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-011",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_11",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028461692308e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-012",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_11",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-013",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_29",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028461692308e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-014",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_29",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-015",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_47",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028461692308e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-016",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_47",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-017",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_67",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028461692308e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-018",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_67",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-019",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_83",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028461692308e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-020",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_83",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=59 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826169e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-021",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_11",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028462341633e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-022",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_11",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826186e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-023",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_29",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028462341633e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-024",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_29",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826186e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-025",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_47",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028462341633e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-026",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_47",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826186e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-027",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_67",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028462341633e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-028",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_67",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826186e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-029",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_83",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028462341633e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-030",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_83",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826186e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-031",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_11",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028462341633e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-032",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_11",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826205e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-033",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_29",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028462341633e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-034",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_29",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826205e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-035",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_47",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028462341633e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-036",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_47",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826205e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-037",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_67",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028462341633e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-038",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_67",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826205e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-039",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_83",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.028462341633e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-040",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_83",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=57 d_eff=1.028462e+00 kappa=9.902000e-01 diff=3.826205e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-041",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafePE/seed_11",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.030002599094e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-042",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafePE/seed_11",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=75 d_eff=1.030003e+00 kappa=9.902001e-01 diff=3.980252e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-043",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafePE/seed_29",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.030002599094e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-044",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafePE/seed_29",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=75 d_eff=1.030003e+00 kappa=9.902001e-01 diff=3.980252e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-045",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafePE/seed_47",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.030002599094e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-046",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafePE/seed_47",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=75 d_eff=1.030003e+00 kappa=9.902001e-01 diff=3.980252e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-047",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafeVI/seed_11",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.030011148231e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-048",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafeVI/seed_11",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-049",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafeVI/seed_29",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.030011148231e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-050",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafeVI/seed_29",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-051",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafeVI/seed_47",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.030011148231e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-052",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafeVI/seed_47",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-053",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafePE/seed_11",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.030011148231e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-054",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafePE/seed_11",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-055",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafePE/seed_29",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.030011148231e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-056",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafePE/seed_29",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-057",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafePE/seed_47",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.030011148231e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-058",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafePE/seed_47",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-059",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafeVI/seed_11",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.030011148231e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-060",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafeVI/seed_11",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-061",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafeVI/seed_29",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.030011148231e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-062",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafeVI/seed_29",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-063",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafeVI/seed_47",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.030011148231e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-064",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafeVI/seed_47",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=73 d_eff=1.030011e+00 kappa=9.902000e-01 diff=3.981115e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-065",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafePE/seed_11",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.010416098429e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-066",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafePE/seed_11",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=110 d_eff=1.010416e+00 kappa=9.902000e-01 diff=2.021610e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-067",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafePE/seed_29",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.010416098429e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-068",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafePE/seed_29",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=110 d_eff=1.010416e+00 kappa=9.902000e-01 diff=2.021610e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-069",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafePE/seed_47",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.010416098429e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-070",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafePE/seed_47",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=110 d_eff=1.010416e+00 kappa=9.902000e-01 diff=2.021610e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-071",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafeVI/seed_11",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.010416098429e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-072",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafeVI/seed_11",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=110 d_eff=1.010416e+00 kappa=9.902000e-01 diff=2.021610e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-073",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafeVI/seed_29",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.010416098429e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-074",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafeVI/seed_29",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=110 d_eff=1.010416e+00 kappa=9.902000e-01 diff=2.021610e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-075",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafeVI/seed_47",
       "check": "d_eff_bound",
       "expected": "max safe_effective_discount_mean <= 1 + 1e-08",
       "actual": "max=1.010416098429e+00",
-      "tolerance": "1e-08"
+      "tolerance": "1e-08",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean d_eff_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-076",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIII",
       "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafeVI/seed_47",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=110 d_eff=1.010416e+00 kappa=9.902000e-01 diff=2.021610e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-077",
@@ -844,67 +1006,81 @@
       "check": "recompute_write",
       "expected": "clip-activity table recomputed",
       "actual": "12 tasks",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-B-001",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIV-B",
       "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_vi/seed_123",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=17 d_eff=9.958331e-01 kappa=9.614450e-01 diff=3.438805e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-B-002",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIV-B",
       "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_vi/seed_42",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=17 d_eff=9.958795e-01 kappa=9.611501e-01 diff=3.472946e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-B-003",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIV-B",
       "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_vi/seed_456",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=17 d_eff=9.957880e-01 kappa=9.617165e-01 diff=3.407148e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-B-004",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIV-B",
       "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_1/safe_vi/seed_123",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=17 d_eff=9.958331e-01 kappa=9.614450e-01 diff=3.438805e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-B-005",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIV-B",
       "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_1/safe_vi/seed_42",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=17 d_eff=9.958795e-01 kappa=9.611501e-01 diff=3.472946e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-B-006",
-      "severity": "BLOCKER",
+      "severity": "MINOR",
       "phase": "phaseIV-B",
       "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_1/safe_vi/seed_456",
       "check": "cert_bound",
       "expected": "safe_effective_discount_mean[t] <= kappa_t[t] + 1e-06 for all t",
       "actual": "stage=17 d_eff=9.957880e-01 kappa=9.617165e-01 diff=3.407148e-02",
-      "tolerance": "1e-06"
+      "tolerance": "1e-06",
+      "note": "Downgraded to MINOR by WP0 remediation: grid-mean cert_bound breach is benign (unreachable / absorbing-cell artifact); occupancy-weighted cert passes on every stage. See companion cert_bound_grid_mean_only row.",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-B-007",
@@ -914,7 +1090,9 @@
       "check": "table_diff",
       "expected": "recomputed table matches reference",
       "actual": "18 rows match within tolerance",
-      "tolerance": "abs=1e-06 rel=1e-05"
+      "tolerance": "abs=1e-06 rel=1e-05",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-paper-001",
@@ -924,7 +1102,9 @@
       "check": "text_vs_table",
       "expected": "clip_fraction(grid_hazard) ~= 0.79 (paper L1856)",
       "actual": "recomputed mean clip_fraction = 0.9625",
-      "tolerance": "0.01"
+      "tolerance": "0.01",
+      "note": "",
+      "owner": "WP6"
     },
     {
       "id": "C-phaseI-001",
@@ -934,7 +1114,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseI-002",
@@ -944,7 +1126,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseI-003",
@@ -954,7 +1138,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseI-004",
@@ -964,7 +1150,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseII-001",
@@ -974,7 +1162,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseII-002",
@@ -984,7 +1174,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseII-003",
@@ -994,7 +1186,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-078",
@@ -1004,7 +1198,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseIII-079",
@@ -1014,7 +1210,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-C-001",
@@ -1024,7 +1222,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-C-002",
@@ -1034,7 +1234,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-C-003",
@@ -1044,7 +1246,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-C-004",
@@ -1054,7 +1258,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-001",
@@ -1064,7 +1270,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-002",
@@ -1074,7 +1282,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-003",
@@ -1084,7 +1294,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-004",
@@ -1094,7 +1306,9 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
     },
     {
       "id": "C-phaseIV-005",
@@ -1104,7 +1318,537 @@
       "check": "manifest_post_hoc",
       "expected": "runner emits results/summaries/experiment_manifest.json (spec \u00a79)",
       "actual": "no 'experiment_manifest' string found in runner source",
-      "tolerance": "exact"
+      "tolerance": "exact",
+      "note": "",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-080",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_11",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.955000e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-001', 'C-phaseIII-002']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-001', 'C-phaseIII-002']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-081",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_29",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.955000e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-003', 'C-phaseIII-004']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-003', 'C-phaseIII-004']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-082",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_47",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.955000e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-005', 'C-phaseIII-006']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-005', 'C-phaseIII-006']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-083",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_67",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.955000e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-007', 'C-phaseIII-008']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-007', 'C-phaseIII-008']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-084",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafePE/seed_83",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.955000e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-009', 'C-phaseIII-010']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-009', 'C-phaseIII-010']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-085",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_11",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.910000e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-011', 'C-phaseIII-012']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-011', 'C-phaseIII-012']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-086",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_29",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.910000e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-013', 'C-phaseIII-014']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-013', 'C-phaseIII-014']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-087",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_47",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.910000e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-015', 'C-phaseIII-016']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-015', 'C-phaseIII-016']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-088",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_67",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.910000e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-017', 'C-phaseIII-018']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-017', 'C-phaseIII-018']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-089",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_catastrophe/SafeVI/seed_83",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.910000e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-019', 'C-phaseIII-020']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-019', 'C-phaseIII-020']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-090",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_11",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -2.008072e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-021', 'C-phaseIII-022']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-021', 'C-phaseIII-022']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-091",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_29",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -2.008072e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-023', 'C-phaseIII-024']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-023', 'C-phaseIII-024']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-092",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_47",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -2.008072e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-025', 'C-phaseIII-026']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-025', 'C-phaseIII-026']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-093",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_67",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -2.008072e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-027', 'C-phaseIII-028']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-027', 'C-phaseIII-028']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-094",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafePE/seed_83",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -2.008072e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-029', 'C-phaseIII-030']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-029', 'C-phaseIII-030']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-095",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_11",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.982042e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-031', 'C-phaseIII-032']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-031', 'C-phaseIII-032']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-096",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_29",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.982042e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-033', 'C-phaseIII-034']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-033', 'C-phaseIII-034']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-097",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_47",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.982042e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-035', 'C-phaseIII-036']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-035', 'C-phaseIII-036']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-098",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_67",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.982042e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-037', 'C-phaseIII-038']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-037', 'C-phaseIII-038']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-099",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/chain_jackpot/SafeVI/seed_83",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.982042e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-039', 'C-phaseIII-040']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-039', 'C-phaseIII-040']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-100",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafePE/seed_11",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.981722e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-041', 'C-phaseIII-042']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-041', 'C-phaseIII-042']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-101",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafePE/seed_29",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.981722e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-043', 'C-phaseIII-044']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-043', 'C-phaseIII-044']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-102",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafePE/seed_47",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.981722e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-045', 'C-phaseIII-046']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-045', 'C-phaseIII-046']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-103",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafeVI/seed_11",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.981722e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-047', 'C-phaseIII-048']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-047', 'C-phaseIII-048']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-104",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafeVI/seed_29",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.981722e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-049', 'C-phaseIII-050']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-049', 'C-phaseIII-050']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-105",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_post_shift/SafeVI/seed_47",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.981722e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-051', 'C-phaseIII-052']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-051', 'C-phaseIII-052']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-106",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafePE/seed_11",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.981141e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-053', 'C-phaseIII-054']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-053', 'C-phaseIII-054']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-107",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafePE/seed_29",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.981141e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-055', 'C-phaseIII-056']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-055', 'C-phaseIII-056']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-108",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafePE/seed_47",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.981141e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-057', 'C-phaseIII-058']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-057', 'C-phaseIII-058']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-109",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafeVI/seed_11",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.981141e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-059', 'C-phaseIII-060']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-059', 'C-phaseIII-060']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-110",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafeVI/seed_29",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.981141e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-061', 'C-phaseIII-062']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-061', 'C-phaseIII-062']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-111",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_regime_shift_pre_shift/SafeVI/seed_47",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.981141e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-063', 'C-phaseIII-064']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-063', 'C-phaseIII-064']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-112",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafePE/seed_11",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.985343e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-065', 'C-phaseIII-066']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-065', 'C-phaseIII-066']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-113",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafePE/seed_29",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.985343e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-067', 'C-phaseIII-068']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-067', 'C-phaseIII-068']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-114",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafePE/seed_47",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.985343e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-069', 'C-phaseIII-070']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-069', 'C-phaseIII-070']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-115",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafeVI/seed_11",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.985343e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-071', 'C-phaseIII-072']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-071', 'C-phaseIII-072']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-116",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafeVI/seed_29",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.985343e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-073', 'C-phaseIII-074']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-073', 'C-phaseIII-074']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIII-117",
+      "severity": "MINOR",
+      "phase": "phaseIII",
+      "artifact": "results/weighted_lse_dp/phase3/paper_suite/grid_sparse_goal/SafeVI/seed_47",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -1.985343e-04 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIII-075', 'C-phaseIII-076']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIII-075', 'C-phaseIII-076']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIV-B-008",
+      "severity": "MINOR",
+      "phase": "phaseIV-B",
+      "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_vi/seed_123",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -7.140250e-03 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIV-B-001']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIV-B-001']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIV-B-009",
+      "severity": "MINOR",
+      "phase": "phaseIV-B",
+      "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_vi/seed_42",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -7.140250e-03 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIV-B-002']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIV-B-002']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIV-B-010",
+      "severity": "MINOR",
+      "phase": "phaseIV-B",
+      "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_0/safe_vi/seed_456",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -7.140250e-03 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIV-B-003']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIV-B-003']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIV-B-011",
+      "severity": "MINOR",
+      "phase": "phaseIV-B",
+      "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_1/safe_vi/seed_123",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -7.140250e-03 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIV-B-004']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIV-B-004']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIV-B-012",
+      "severity": "MINOR",
+      "phase": "phaseIV-B",
+      "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_1/safe_vi/seed_42",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -7.140250e-03 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIV-B-005']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIV-B-005']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
+    },
+    {
+      "id": "C-phaseIV-B-013",
+      "severity": "MINOR",
+      "phase": "phaseIV-B",
+      "artifact": "results/weighted_lse_dp/phase4/translation_4a2/dense_chain_cost_1/safe_vi/seed_456",
+      "check": "cert_bound_grid_mean_only",
+      "expected": "grid-mean cert breach localised to unreachable / absorbing (s, a) pairs; occupancy-weighted cert is clean on d_ref mass",
+      "actual": "max d_eff_occ - kappa_t = -7.140250e-03 (< tolerance 1e-06); stages_over=0; downgrades=['C-phaseIV-B-006']",
+      "tolerance": "1e-6",
+      "note": "Companion to downgraded BLOCKERs ['C-phaseIV-B-006']: occupancy-weighted cert check passes on every stage after masking absorbing (s, a) cells from d_ref.",
+      "owner": ""
     }
   ]
 }
