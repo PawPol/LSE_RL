@@ -13,9 +13,13 @@ families: ["A", "B", "C", "D", "E"]
 
 family_params:
   A:
-    # L, R pairs drive horizon and jackpot magnitude; gamma is fixed.
-    L_range: [4, 8, 12]
-    R_range: [1.0, 2.0, 5.0]
+    # Phase VI-B (2026-04-24): expanded R and L to find tasks with
+    # larger |value_gap_norm| that may survive RL noise.
+    # Phase VI-E (2026-04-24): added p_transit_range to break the
+    # classical tie via stochastic transitions.
+    L_range: [4, 8, 12, 16]
+    R_range: [1.0, 2.0, 5.0, 10.0, 50.0, 100.0]
+    p_transit_range: [1.0, 0.95, 0.85, 0.70]
     gamma: 0.95
     # Shape basis for the c_k = c_tie + h_k perturbation. "flat" recovers
     # the constant-c baseline; the other three are the first-tier shape

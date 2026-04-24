@@ -206,11 +206,19 @@ _FAMILY_REGISTRY: dict[str, FamilySpec] = {
 # ---------------------------------------------------------------------------
 
 def _psi_grid_family_a(params: dict[str, Any]) -> list[dict[str, Any]]:
-    """Family A: cartesian product of (L, R, shape), gamma fixed."""
+    """Family A: cartesian product of (L, R, shape), gamma fixed.
+
+    Phase VI-E (2026-04-24): optional stochastic transitions via
+    ``params["p_transit_range"]``. When provided, each (L, R, shape) is
+    emitted once for each p_transit. p_transit < 1.0 breaks the
+    classical tie so RL evaluation can distinguish safe vs classical
+    policies.
+    """
     grid: list[dict[str, Any]] = []
     gamma = float(params["gamma"])
-    for L, R, shape in itertools.product(
-        params["L_range"], params["R_range"], params["shapes"]
+    p_transit_range = list(params.get("p_transit_range", [1.0]))
+    for L, R, shape, p_transit in itertools.product(
+        params["L_range"], params["R_range"], params["shapes"], p_transit_range
     ):
         psi: dict[str, Any] = {
             "L": int(L),
@@ -218,14 +226,16 @@ def _psi_grid_family_a(params: dict[str, Any]) -> list[dict[str, Any]]:
             "gamma": gamma,
             "shape": str(shape),
         }
-        # Default shape-basis parameters (must match shape_basis() expected
-        # knobs in _family_helpers).
         if shape == "one_bump":
             psi["bump_center"] = int(L) // 2
             psi["bump_width"] = 1.0
             psi["bump_strength"] = 0.5
         elif shape == "ramp":
             psi["ramp_amplitude"] = 0.5
+        # Stochastic variant
+        if float(p_transit) < 1.0:
+            psi["stochastic"] = True
+            psi["p_transit"] = float(p_transit)
         grid.append(psi)
     return grid
 
