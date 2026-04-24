@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 """Phase IV-A: activation search over candidate task families.
 
+.. deprecated:: Phase V (2026-04-24)
+    This runner is retained for **archival reproducibility only**. The
+    Phase V mechanism-first search -- which scores candidates by policy
+    disagreement and exact value gaps rather than activation proxies --
+    lives in :mod:`experiments.weighted_lse_dp.runners.run_phase_V_search`
+    (spec ``docs/specs/phase_V_mechanism_experiments.md`` section 7 WP1c).
+    Do NOT use this module to build new shortlists; the Phase V paper
+    (spec section 0) rejects activation surrogates as promotion criteria.
+
 Uses only classical + certification diagnostics to identify tasks where the
 safe operator produces measurable activation (effective-discount shift,
 responsibility weight usage, clipping frequency) relative to classical
@@ -17,6 +26,16 @@ Usage
 """
 
 from __future__ import annotations
+
+import warnings
+
+warnings.warn(
+    "run_phase4_activation_search is deprecated as of Phase V (2026-04-24); "
+    "use experiments.weighted_lse_dp.runners.run_phase_V_search instead. "
+    "See docs/specs/phase_V_mechanism_experiments.md section 7 WP1c.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 import argparse
 import csv
