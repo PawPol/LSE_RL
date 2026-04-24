@@ -120,9 +120,12 @@ family_params:
   C:
     # Family C has no classical-tie sweep (see family_c_raw_stress.py
     # metadata.classical_tie_sweep_supported = False); we sweep only psi.
-    L_tail_range: [4, 6, 8]
-    R_penalty_range: [1.0, 2.0]
-    beta_raw_multiplier_range: [1.5, 2.5, 4.0]
+    # Phase VI-A (2026-04-24): expanded beta_raw_multiplier and L_tail
+    # to push raw operator past d_max > 1 for a genuine divergence
+    # story (original max=4.0 gave only 4e-5 cert margin).
+    L_tail_range: [4, 6, 8, 12, 16]
+    R_penalty_range: [1.0, 2.0, 4.0]
+    beta_raw_multiplier_range: [1.5, 2.5, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0]
     gamma: 0.95
   # Spec §14.4 Family D — early-warning preventive intervention.
   # Positive family (same promotion gate as A). Tie parameter = preventive
