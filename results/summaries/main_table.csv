@@ -1,0 +1,4 @@
+family,interpretation,n_tasks,promotion_mode,max_abs_value_gap_norm,max_policy_disagreement,start_state_flip_rate,raw_deriv_max,clip_fraction_max,gap_cl_eval_mean,gap_safe_eval_mean
+A (det.),"Jackpot vs smooth stream, deterministic",5,safe_active_no_distortion,0.0078205786269256,0.25,1.0,0.954411691589039,0.0,,
+"A (stoch., VI-E)","Jackpot vs smooth stream, p_transit<1",6,safe_active_no_distortion,0.0061875148980466,0.25,1.0,0.9524953766353004,0.0,2.9605947323337506e-16,0.15603056365416676
+"C (safety, VI-A)","Raw-stress: safe preserves cert, raw breaches it",84,binding_clip,,,,1.284838425799642,1.0,,
