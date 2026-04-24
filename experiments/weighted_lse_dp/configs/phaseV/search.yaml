@@ -9,7 +9,7 @@
 # section 4 the response to an empty shortlist is family refinement, not
 # threshold drift.
 
-families: ["A", "B", "C", "D"]
+families: ["A", "B", "C", "D", "E"]
 
 family_params:
   A:
@@ -138,6 +138,33 @@ family_params:
     variants: ["single_warning", "shallow_early_warning"]
     p_cat_given_warn: 1.0
     r_shallow_frac_of_C: 0.1   # r_shallow = 0.1 * C for the shallow variant
+    eps_band_pts: 7
+    eps_band_frac: 0.2
+  # Spec §15 Family E — regime-shift / warning-revelation with concentration
+  # contrast.  Final bounded pass before WP3/WP4/WP5; combines the
+  # regime-shift narrative of B/D with the single-step concentrated
+  # reward/cost that Family A uses to translate cleanly.
+  #
+  # Three variants enumerated as a union (Cartesian product restricted to
+  # the relevant knobs per variant).  Rough per-variant budget ≤ 100 ψ;
+  # total ≤ 300 ψ × 7 ε = 2100 admitted max.  Under 60% of the 5k cap.
+  E:
+    L_range: [6, 10]
+    gamma_range: [0.95, 0.99]
+    # E1 warning_react params
+    warning_lead_range: [2, 3]
+    p_warn_range: [0.1, 0.3, 0.5]
+    C_conc_range: [5.0, 10.0, 20.0]
+    r_smooth_range: [0.1, 0.3, 0.5]
+    # E2 opportunity_adapt params (reuses warning_lead, gamma)
+    p_opp_range: [0.3, 0.5, 0.7]
+    U_conc_range: [5.0, 10.0, 20.0]
+    r_baseline_range: [0.1, 0.3, 0.5]
+    # E3 regime_switch params
+    t_switch_range: [1, 2, 3]
+    R_rev_range: [5.0, 10.0, 20.0]
+    # Which variants to enumerate
+    variants: ["E1_warning_react", "E2_opportunity_adapt", "E3_regime_switch"]
     eps_band_pts: 7
     eps_band_frac: 0.2
 
