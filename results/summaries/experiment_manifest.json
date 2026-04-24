@@ -1,15 +1,15 @@
 {
   "schema_version": "phaseV.search.v1",
-  "created_at": "2026-04-24T02:22:56Z",
+  "created_at": "2026-04-24T03:04:07Z",
   "phase": "phaseV",
   "runner": "run_phase_V_search",
   "exact_argv": [
     "--config",
-    "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-19/test_cli_dry_run0/cfg.yaml",
+    "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/cfg.yaml",
     "--seed",
     "42",
     "--output-root",
-    "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-19/test_cli_dry_run0/out",
+    "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out",
     "--dry-run"
   ],
   "seed_list": [
@@ -20,6 +20,8 @@
     "B",
     "C"
   ],
+  "family_b_variant": "default",
+  "variant_set": "B_default",
   "psi_grid_summary": {
     "A": 1,
     "B": 2,
@@ -28,17 +30,17 @@
   "n_candidates_admitted": 7,
   "n_candidates_promoted": 2,
   "output_paths": {
-    "candidate_grid": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-19/test_cli_dry_run0/out/candidate_grid.parquet",
-    "candidate_metrics": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-19/test_cli_dry_run0/out/candidate_metrics.parquet",
-    "near_indifference_catalog": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-19/test_cli_dry_run0/out/near_indifference_catalog.csv",
-    "shortlist": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-19/test_cli_dry_run0/out/shortlist.csv",
-    "shortlist_report": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-19/test_cli_dry_run0/out/shortlist_report.md",
-    "phase_diagram_data": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-19/test_cli_dry_run0/out/phase_diagram_data.parquet",
-    "shortlist_refinement_manifest": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-19/test_cli_dry_run0/out/shortlist_refinement_manifest.md"
+    "candidate_grid": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out/candidate_grid.parquet",
+    "candidate_metrics": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out/candidate_metrics.parquet",
+    "near_indifference_catalog": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out/near_indifference_catalog.csv",
+    "shortlist": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out/shortlist.csv",
+    "shortlist_report": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out/shortlist_report.md",
+    "phase_diagram_data": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out/phase_diagram_data.parquet",
+    "shortlist_refinement_manifest": "/private/var/folders/ys/s07ygf452xn7cwpvytv_wkq00000gp/T/pytest-of-liq/pytest-22/test_cli_dry_run0/out/shortlist_refinement_manifest.md"
   },
-  "git_sha": "0f98d0474ce2a038dec4bd6a21da9fe504f0b1c9",
+  "git_sha": "fa82f1160e137ed2a7a68329fcb7b4b8e0a00d15",
   "host": "LIQs-Mac-Mini.local",
-  "timestamp": "2026-04-24T02:22:56Z",
+  "timestamp": "2026-04-24T03:04:07Z",
   "dry_run": true,
   "config": {
     "families": [
@@ -121,5 +123,5 @@
     },
     "seed": 42
   },
-  "elapsed_sec": 0.12197399139404297
+  "elapsed_sec": 0.12828516960144043
 }

@@ -262,6 +262,149 @@ def _psi_grid_family_b(params: dict[str, Any]) -> list[dict[str, Any]]:
     return grid
 
 
+def _psi_grid_family_b_refinement(params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Family B bounded refinement grid (spec §14.3, 2026-04-23 pass).
+
+    Grid is expressed as a list of **slices**; each slice is an independent
+    cartesian product of its axes, and the union of all slices (deduplicated
+    on insertion order of the emitted psi dicts) is returned.  This keeps
+    the refinement "targeted and bounded" per §14.3 — sparse coverage of
+    (C, gamma, p, ratio, L, warning_depth) rather than a full 6D cartesian.
+
+    Each slice dict supports the keys:
+        variants         : list[str]        -- subset of VARIANT_NAMES.
+        L_range          : list[int]        -- horizon.
+        gamma_range      : list[float]      -- discount.
+        C_range          : list[float]      -- catastrophe magnitude.
+        p_range          : list[float]      -- catastrophe probability.
+        ratio_range      : list[float]      -- b / (p * C); b = ratio * p * C.
+        warning_depth_range : list[int]     -- only consumed by warning_state.
+                                                If omitted, uses max(1, L//2).
+
+    Variant-specific ψ keys (``b_shallow``, ``k_shallow``, ``b_stream``,
+    ``event_*``) are filled the same way as in :func:`_psi_grid_family_b`
+    so downstream factories and the tie solver see an identical contract.
+    """
+    slices = params.get("slices", [])
+    if not isinstance(slices, list) or not slices:
+        raise ConfigError(
+            "family_params.B_refinement.slices must be a non-empty list; "
+            f"got {type(slices).__name__}: {slices!r}"
+        )
+
+    grid: list[dict[str, Any]] = []
+    seen_keys: set[str] = set()
+
+    for slc_idx, slc in enumerate(slices):
+        if not isinstance(slc, dict):
+            raise ConfigError(
+                f"B_refinement.slices[{slc_idx}] must be a dict; "
+                f"got {type(slc).__name__}"
+            )
+        variants = list(slc["variants"])
+        L_range = [int(x) for x in slc["L_range"]]
+        gamma_range = [float(x) for x in slc["gamma_range"]]
+        C_range = [float(x) for x in slc["C_range"]]
+        p_range = [float(x) for x in slc["p_range"]]
+        ratio_range = [float(x) for x in slc["ratio_range"]]
+        warn_range = slc.get("warning_depth_range", None)
+        if warn_range is not None:
+            warn_range = [int(x) for x in warn_range]
+
+        for L, gamma_v, C, p, ratio, variant in itertools.product(
+            L_range, gamma_range, C_range, p_range, ratio_range, variants
+        ):
+            # b is derived from the asymmetry ratio so the classical tie
+            # b_safe = b - p gamma^{L-1} C lives on a controlled scale.
+            b = float(ratio) * float(p) * float(C)
+
+            # Expand warning_state across warning_depth_range (if provided).
+            if variant == "warning_state" and warn_range is not None:
+                for wd in warn_range:
+                    if not (1 <= wd <= L - 1):
+                        # Skip out-of-range warning depths rather than raise;
+                        # lets a single slice span L=4 and L=8 cleanly.
+                        continue
+                    psi = _build_b_psi(
+                        variant=variant, L=int(L), gamma=float(gamma_v),
+                        b=float(b), p=float(p), C=float(C),
+                        warning_depth=int(wd),
+                    )
+                    _append_unique(grid, seen_keys, psi)
+            else:
+                psi = _build_b_psi(
+                    variant=variant, L=int(L), gamma=float(gamma_v),
+                    b=float(b), p=float(p), C=float(C),
+                    warning_depth=None,
+                )
+                if psi is None:
+                    continue
+                _append_unique(grid, seen_keys, psi)
+
+    return grid
+
+
+def _build_b_psi(
+    *,
+    variant: str,
+    L: int,
+    gamma: float,
+    b: float,
+    p: float,
+    C: float,
+    warning_depth: int | None,
+) -> dict[str, Any] | None:
+    """Shared ψ builder for Family B variants.
+
+    Returns None if the combination is invalid for the variant (e.g.
+    ``multi_event`` with ``L < 3``).  Mirrors the variant-specific defaults
+    from :func:`_psi_grid_family_b` so the default and refinement grids
+    emit structurally identical ψ dicts for shared (L, p, C, b, gamma).
+    """
+    psi: dict[str, Any] = {
+        "variant": str(variant),
+        "L": int(L),
+        "gamma": float(gamma),
+        "b": float(b),
+        "p": float(p),
+        "C": float(C),
+    }
+    if variant == "warning_state":
+        wd = int(warning_depth) if warning_depth is not None else max(1, int(L) // 2)
+        psi["warning_depth"] = int(wd)
+    elif variant == "multi_event":
+        if L < 3:
+            return None
+        psi["event_probs"] = [float(p), float(p) * 0.5]
+        psi["event_depths"] = [2, max(3, int(L) - 1)]
+        psi["event_mags"] = [float(C), float(C) * 0.5]
+    elif variant == "shallow_early":
+        psi["b_shallow"] = 0.2 * float(b)
+        psi["k_shallow"] = max(1, int(L) // 3)
+    elif variant == "matched_concentration":
+        psi["b_stream"] = 0.1 * float(b)
+    elif variant == "single_event":
+        pass
+    else:
+        raise ConfigError(f"unknown Family B variant in refinement grid: {variant!r}")
+    return psi
+
+
+def _append_unique(
+    grid: list[dict[str, Any]],
+    seen_keys: set[str],
+    psi: dict[str, Any] | None,
+) -> None:
+    """Append ``psi`` to grid if it wasn't emitted earlier in this pass."""
+    if psi is None:
+        return
+    key = json.dumps(psi, default=str, sort_keys=True)
+    if key in seen_keys:
+        return
+    seen_keys.add(key)
+    grid.append(psi)
+
+
 def _psi_grid_family_c(params: dict[str, Any]) -> list[dict[str, Any]]:
     """Family C: cartesian product of (L_tail, R_penalty, beta_raw_mult)."""
     grid: list[dict[str, Any]] = []
@@ -778,17 +921,34 @@ def run_search(
     max_candidates_override: int | None = None,
     dry_run: bool = False,
     exact_argv: list[str] | None = None,
+    family_b_variant: str = "default",
 ) -> dict[str, Any]:
-    """Execute the full WP1c search pipeline.  Returns a summary dict."""
+    """Execute the full WP1c search pipeline.  Returns a summary dict.
+
+    ``family_b_variant`` selects which Family B psi-grid config block to
+    consume (``"default"`` -> ``family_params.B``; ``"refinement"`` ->
+    ``family_params.B_refinement``).  Spec §14.3 bounded refinement.
+    """
     t_start = time.time()
     output_root = Path(output_root)
     output_root.mkdir(parents=True, exist_ok=True)
+
+    if family_b_variant not in ("default", "refinement"):
+        raise ConfigError(
+            f"family_b_variant must be 'default' or 'refinement'; "
+            f"got {family_b_variant!r}"
+        )
 
     families = list(families_override or cfg["families"])
     max_cap = int(max_candidates_override or cfg["max_candidates"])
     per_family_warn = float(cfg.get("per_family_warn_frac", 0.60))
     soft_band = float(cfg["prefilter_soft_band"])
     strict_band = float(cfg["strict_band"])
+
+    # Resolve the Family B variant-set label (threaded into the manifest).
+    variant_set_label = (
+        "B_refinement" if family_b_variant == "refinement" else "B_default"
+    )
 
     # ------ 1. psi grids ------
     total_psi = 0
@@ -797,8 +957,19 @@ def run_search(
     for fam_label in families:
         if fam_label not in _FAMILY_REGISTRY:
             raise ConfigError(f"unknown family label: {fam_label!r}")
-        params = cfg["family_params"][fam_label]
-        grid = _PSI_GRID_BUILDERS[fam_label](params)
+        # Family B: pick default vs refinement config block + grid builder.
+        if fam_label == "B" and family_b_variant == "refinement":
+            if "B_refinement" not in cfg["family_params"]:
+                raise ConfigError(
+                    "family_b_variant='refinement' but cfg.family_params lacks "
+                    "a 'B_refinement' block. Add one under "
+                    "experiments/weighted_lse_dp/configs/phaseV/search.yaml."
+                )
+            params = cfg["family_params"]["B_refinement"]
+            grid = _psi_grid_family_b_refinement(params)
+        else:
+            params = cfg["family_params"][fam_label]
+            grid = _PSI_GRID_BUILDERS[fam_label](params)
         grids[fam_label] = grid
         grids_summary[fam_label] = len(grid)
         total_psi += len(grid)
@@ -810,7 +981,10 @@ def run_search(
     per_family_counts: dict[str, int] = {}
     for fam_label in families:
         family = _FAMILY_REGISTRY[fam_label]
-        eps_cfg = cfg["family_params"][fam_label]
+        if fam_label == "B" and family_b_variant == "refinement":
+            eps_cfg = cfg["family_params"]["B_refinement"]
+        else:
+            eps_cfg = cfg["family_params"][fam_label]
         fam_admitted = _enumerate_admitted(
             fam_label,
             family,
@@ -988,6 +1162,8 @@ def run_search(
         "exact_argv": list(exact_argv) if exact_argv is not None else list(sys.argv),
         "seed_list": [int(seed)],
         "family_list": list(families),
+        "family_b_variant": str(family_b_variant),
+        "variant_set": variant_set_label,
         "psi_grid_summary": grids_summary,
         "n_candidates_admitted": int(len(admitted)),
         "n_candidates_promoted": int(len(shortlist_df)),
@@ -1336,6 +1512,12 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help="Subset of families to search (e.g. --families A B).")
     p.add_argument("--max-candidates", type=int, default=None,
                    help="Override max_candidates cap (spec section 13.3).")
+    p.add_argument("--family-b-variant", choices=["default", "refinement"],
+                   default="default",
+                   help="Which Family B psi-grid block to consume: "
+                        "'default' -> family_params.B (initial pass); "
+                        "'refinement' -> family_params.B_refinement "
+                        "(spec §14.3 bounded refinement pass).")
     p.add_argument("--dry-run", action="store_true",
                    help="Execute the pipeline but skip writing the "
                         "experiment_manifest.json to results/summaries/.")
@@ -1362,6 +1544,7 @@ def main(argv: list[str] | None = None) -> int:
         max_candidates_override=args.max_candidates,
         dry_run=bool(args.dry_run),
         exact_argv=(sys.argv if argv is None else list(argv)),
+        family_b_variant=str(args.family_b_variant),
     )
 
     logger.info(
