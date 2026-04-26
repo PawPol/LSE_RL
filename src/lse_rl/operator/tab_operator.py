@@ -120,7 +120,11 @@ def rho_batch(
     v_arr = np.asarray(v, dtype=np.float64)
     one_plus_gamma = 1.0 + g_
     if _is_classical(b):
-        return np.full_like(r_arr, 1.0 / one_plus_gamma)
+        # Match the broadcast shape that g_batch returns rather than r's
+        # raw shape; otherwise callers that pass e.g. (S,A,1) and (1,1,S')
+        # see shape-mismatched diagnostics vs. the (S,A,S') target.
+        out_shape = np.broadcast_shapes(r_arr.shape, v_arr.shape)
+        return np.full(out_shape, 1.0 / one_plus_gamma, dtype=np.float64)
     log_inv_gamma = -np.log(g_)
     arg = b * (r_arr - v_arr) + log_inv_gamma
     return _sigmoid(arg)
@@ -135,7 +139,10 @@ def effective_discount_batch(
     b = float(beta)
     g_ = float(gamma)
     r_arr = np.asarray(r, dtype=np.float64)
+    v_arr = np.asarray(v, dtype=np.float64)
     one_plus_gamma = 1.0 + g_
     if _is_classical(b):
-        return np.full_like(r_arr, g_)
-    return one_plus_gamma * (1.0 - rho_batch(b, g_, r_arr, np.asarray(v, dtype=np.float64)))
+        # Broadcast-aware fill: see rho_batch above for rationale.
+        out_shape = np.broadcast_shapes(r_arr.shape, v_arr.shape)
+        return np.full(out_shape, g_, dtype=np.float64)
+    return one_plus_gamma * (1.0 - rho_batch(b, g_, r_arr, v_arr))

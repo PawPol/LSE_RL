@@ -76,7 +76,8 @@ def test_factory_round_trip(method_id, env_canonical_sign):
 
 
 # ---------------------------------------------------------------------------
-# 2. Beta is constant within an episode (50 reads, all equal).
+# 2. Beta is constant within an episode (50 reads, all equal). Strict-current-
+#    only contract: only the current episode's index is valid.
 # ---------------------------------------------------------------------------
 def test_beta_constant_within_episode():
     sched = AdaptiveBetaSchedule(
@@ -87,13 +88,19 @@ def test_beta_constant_within_episode():
     _drive_episode(sched, 0, rewards=[1.0, 0.5, -0.2], v_next=[0.0, 0.1, 0.05])
     _drive_episode(sched, 1, rewards=[0.3, 0.3, 0.3], v_next=[0.0, 0.0, 0.0])
 
-    reads: List[float] = [sched.beta_for_episode(7) for _ in range(50)]
+    # current_episode is now 2; 50 reads at the current index must all match.
+    reads: List[float] = [sched.beta_for_episode(2) for _ in range(50)]
     assert len(reads) == 50
     first = reads[0]
     assert all(r == first for r in reads), (
         "beta_for_episode must be constant within an episode; "
         f"observed {len(set(reads))} distinct values: {set(reads)}"
     )
+    # Asking for any other index (stale or future) must raise.
+    with pytest.raises(ValueError):
+        sched.beta_for_episode(7)
+    with pytest.raises(ValueError):
+        sched.beta_for_episode(0)
 
 
 # ---------------------------------------------------------------------------
@@ -191,15 +198,21 @@ def test_divergence_flag_sticky():
 
 
 # ---------------------------------------------------------------------------
-# 7. ZeroBetaSchedule is exactly zero everywhere.
+# 7. ZeroBetaSchedule is exactly zero at the current episode for all advances.
 # ---------------------------------------------------------------------------
 def test_zero_schedule_returns_zero():
     sched = ZeroBetaSchedule()
-    for e in (0, 1, 7, 999):
-        assert sched.beta_for_episode(e) == 0.0
-    # Drive an update with a huge advantage; must remain zero.
-    _drive_episode(sched, 0, rewards=[100.0] * 5, v_next=[0.0] * 5)
-    assert sched.beta_for_episode(1) == 0.0
+    # At the start, only the current episode index (0) is valid.
+    assert sched.beta_for_episode(0) == 0.0
+    # Drive several updates; current_episode advances and beta stays 0.
+    for e in range(5):
+        _drive_episode(sched, e, rewards=[100.0] * 5, v_next=[0.0] * 5)
+        assert sched.beta_for_episode(e + 1) == 0.0
+    # A future or stale index still raises even though the value would be 0.
+    with pytest.raises(ValueError):
+        sched.beta_for_episode(999)
+    with pytest.raises(ValueError):
+        sched.beta_for_episode(0)
 
 
 # ---------------------------------------------------------------------------
@@ -340,3 +353,80 @@ def test_fixed_schedules_constant_pre_update():
     _drive_episode(neg, 0, rewards=[10.0], v_next=[0.0])
     assert pos.beta_for_episode(1) == +1.5
     assert neg.beta_for_episode(1) == -1.5
+
+
+# ---------------------------------------------------------------------------
+# 14. BLOCKER-2: beta_for_episode raises on a stale (past) episode index.
+# ---------------------------------------------------------------------------
+def test_beta_for_episode_raises_on_stale_index():
+    sched = AdaptiveBetaSchedule(no_clip=False)
+    # current_episode == 0 pre-update; 0 is fine.
+    assert sched.beta_for_episode(0) == 0.0
+    _drive_episode(sched, 0, rewards=[1.0, 1.0], v_next=[0.0, 0.0])
+    # current_episode is now 1; index 0 is stale and must raise.
+    with pytest.raises(ValueError, match="stale"):
+        sched.beta_for_episode(0)
+
+
+# ---------------------------------------------------------------------------
+# 15. BLOCKER-2: beta_for_episode raises on a future episode index.
+# ---------------------------------------------------------------------------
+def test_beta_for_episode_raises_on_future_index():
+    sched = AdaptiveBetaSchedule(no_clip=False)
+    # No update yet -> current_episode == 0; 99 is future and must raise.
+    with pytest.raises(ValueError, match="future"):
+        sched.beta_for_episode(99)
+    # Same after a single update.
+    _drive_episode(sched, 0, rewards=[1.0], v_next=[0.0])
+    with pytest.raises(ValueError, match="future"):
+        sched.beta_for_episode(99)
+
+
+# ---------------------------------------------------------------------------
+# 16. MAJOR-3: build_schedule rejects unknown / typo hyperparameter keys.
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    "method_id,env_canonical_sign,bad_hparams",
+    [
+        # 'beta_caps' (s) typo across multiple methods.
+        (METHOD_ADAPTIVE_BETA, None, {"beta_caps": 2.0}),
+        (METHOD_ADAPTIVE_BETA_NO_CLIP, None, {"beta_caps": 2.0}),
+        (METHOD_ADAPTIVE_SIGN_ONLY, None, {"beta_caps": 2.0}),
+        (METHOD_ADAPTIVE_MAGNITUDE_ONLY, "+", {"beta_caps": 2.0}),
+        # 'lamda_smooth' typo.
+        (METHOD_ADAPTIVE_BETA, None, {"lamda_smooth": 0.5}),
+        (METHOD_ADAPTIVE_SIGN_ONLY, None, {"lamda_smooth": 0.5}),
+        # 'beta_max' is illegal for sign-only / fixed schedules.
+        (METHOD_ADAPTIVE_SIGN_ONLY, None, {"beta_max": 1.0}),
+        (METHOD_FIXED_POSITIVE, None, {"beta_max": 1.0}),
+        (METHOD_FIXED_NEGATIVE, None, {"beta_max": 1.0}),
+        # vanilla accepts no hparams; any key is rejected.
+        (METHOD_VANILLA, None, {"beta0": 1.0}),
+        # 'k' isn't part of wrong_sign / fixed schedules.
+        (METHOD_WRONG_SIGN, "+", {"k": 5.0}),
+        (METHOD_FIXED_POSITIVE, None, {"k": 5.0}),
+    ],
+)
+def test_build_schedule_rejects_unknown_keys(method_id, env_canonical_sign, bad_hparams):
+    with pytest.raises(ValueError, match="Unknown hyperparameter keys"):
+        build_schedule(method_id, env_canonical_sign, hyperparams=bad_hparams)
+
+
+# ---------------------------------------------------------------------------
+# 17. MAJOR-3 negative control: known keys still pass through build_schedule
+#     (regression guard in case the allow-list was over-tightened).
+# ---------------------------------------------------------------------------
+def test_build_schedule_accepts_known_keys():
+    sched = build_schedule(
+        METHOD_ADAPTIVE_BETA,
+        env_canonical_sign=None,
+        hyperparams={
+            "beta_max": 2.0,
+            "beta_cap": 2.0,
+            "k": 5.0,
+            "initial_beta": 0.0,
+            "beta_tol": 1e-8,
+            "lambda_smooth": 1.0,
+        },
+    )
+    assert sched.name == METHOD_ADAPTIVE_BETA

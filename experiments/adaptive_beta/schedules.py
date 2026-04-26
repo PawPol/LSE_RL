@@ -21,7 +21,7 @@ agent and runner; they never import the concrete classes directly.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Literal, Optional, Protocol
+from typing import Any, Dict, FrozenSet, Literal, Optional, Protocol
 
 import numpy as np
 
@@ -61,7 +61,13 @@ _DEFAULT_HPARAMS: Dict[str, float] = {
 
 
 def _resolved_hparams(overrides: Optional[Dict[str, Any]]) -> Dict[str, float]:
-    """Return defaults overlaid with ``overrides`` (None or {} ok)."""
+    """Return defaults overlaid with ``overrides`` (None or {} ok).
+
+    Unknown keys are silently ignored here; the strict per-class allow-list
+    is enforced in :func:`build_schedule` so concrete classes constructed
+    directly remain easy to use in tests, while config-driven construction
+    catches typos loudly.
+    """
     h = dict(_DEFAULT_HPARAMS)
     if overrides:
         for k, v in overrides.items():
@@ -70,6 +76,40 @@ def _resolved_hparams(overrides: Optional[Dict[str, Any]]) -> Dict[str, float]:
                 continue
             h[k] = float(v)
     return h
+
+
+# Per-class allow-lists for strict typo detection in :func:`build_schedule`.
+# Spec §4.2 / §5: each concrete schedule consumes only the listed keys.
+_ALLOWED_KEYS: Dict[str, FrozenSet[str]] = {
+    "ZeroBetaSchedule": frozenset(),
+    "FixedBetaSchedule": frozenset({"beta0"}),
+    "WrongSignSchedule": frozenset({"beta0"}),
+    "AdaptiveBetaSchedule": frozenset(
+        {"beta_max", "beta_cap", "k", "initial_beta", "beta_tol", "lambda_smooth"}
+    ),
+    "AdaptiveSignOnlySchedule": frozenset({"beta0", "beta_cap", "lambda_smooth"}),
+    "AdaptiveMagnitudeOnlySchedule": frozenset(
+        {"beta_max", "beta_cap", "k", "initial_beta", "beta_tol", "lambda_smooth"}
+    ),
+}
+
+
+def _check_allowed_keys(class_name: str, hyperparams: Optional[Dict[str, Any]]) -> None:
+    """Raise ValueError on any key not whitelisted for ``class_name``.
+
+    Empty / None overrides are always accepted. Used by :func:`build_schedule`
+    so config typos like ``beta_caps`` (s) or ``lamda_smooth`` fail loudly
+    instead of silently defaulting.
+    """
+    if not hyperparams:
+        return
+    allowed = _ALLOWED_KEYS[class_name]
+    unknown = set(hyperparams) - allowed
+    if unknown:
+        raise ValueError(
+            f"Unknown hyperparameter keys for {class_name}: {sorted(unknown)}; "
+            f"expected one of {sorted(allowed)}"
+        )
 
 
 def _canonical_sign_to_value(s: Optional[str]) -> int:
@@ -106,13 +146,14 @@ class BetaSchedule(Protocol):
 class _ScheduleState:
     """Mutable bookkeeping shared by every concrete schedule."""
 
-    last_update_episode: int = -1  # episode index of the most recent update
+    last_update_episode: int = -1   # episode index of the most recent update
     last_A_e: float = 0.0           # raw advantage from the most recent episode
     smoothed_A: float = 0.0         # exponential-moving-average of A_e
-    last_beta_raw: float = 0.0      # pre-clip beta for the *next* episode
-    last_beta_used: float = 0.0     # post-clip beta for the *next* episode
+    last_beta_raw: float = 0.0      # pre-clip beta for the *current* episode
+    last_beta_used: float = 0.0     # post-clip beta for the *current* episode
     divergence_event: bool = False  # sticky flag (spec §13.5)
     next_expected_episode: int = 0  # asserted on update_after_episode
+    current_episode: int = 0        # the episode `last_beta_used` is for
 
 
 def _compute_A_e(rewards: np.ndarray, v_next: np.ndarray) -> float:
@@ -150,11 +191,30 @@ class _BaseSchedule:
     # Public protocol surface
     # ------------------------------------------------------------------
     def beta_for_episode(self, episode_index: int) -> float:
+        """Return the cached beta_used for the *current* episode.
+
+        Strict-current-only contract (design (a), spec §2 rule 5):
+        - The agent calls ``beta_for_episode(e)`` exactly when entering
+          episode ``e``. The cached beta is always for the episode whose
+          number equals ``self._state.current_episode``.
+        - Any call with a stale (``< current_episode``) or future
+          (``> current_episode``) index raises ``ValueError``. This makes
+          delayed-logging off-by-one bugs and accidental future-leakage in
+          the agent loop loud rather than silent.
+        - After ``update_after_episode(e, ...)`` the schedule advances
+          ``current_episode`` to ``e + 1``; the next valid call is
+          ``beta_for_episode(e + 1)``.
+        """
         if episode_index < 0:
             raise ValueError(f"episode_index must be >= 0, got {episode_index}")
-        # At episode 0 we return the initial value; otherwise the most
-        # recently scheduled beta_used. By contract this is constant within
-        # an episode -- no recomputation, no per-step state.
+        current = self._state.current_episode
+        if episode_index != current:
+            kind = "stale" if episode_index < current else "future"
+            raise ValueError(
+                f"beta_for_episode received {kind} episode_index="
+                f"{episode_index}; current_episode={current}. The schedule "
+                f"only caches beta for the current episode (spec §2 rule 5)."
+            )
         return float(self._state.last_beta_used)
 
     def update_after_episode(
@@ -196,6 +256,10 @@ class _BaseSchedule:
         beta_raw, beta_used = self._compute_next_beta(self._state.smoothed_A)
         self._state.last_beta_raw = float(beta_raw)
         self._state.last_beta_used = float(beta_used)
+        # The cached beta is now intended for the next episode. Advance the
+        # current_episode pointer so beta_for_episode(e+1) is the only valid
+        # call until the next update.
+        self._state.current_episode = episode_index + 1
 
     def diagnostics(self) -> Dict[str, Any]:
         return {
@@ -363,20 +427,28 @@ def build_schedule(
     schedule classes are not imported elsewhere.
     """
     if method_id == METHOD_VANILLA:
+        _check_allowed_keys("ZeroBetaSchedule", hyperparams)
         return ZeroBetaSchedule(hyperparams)
     if method_id == METHOD_FIXED_POSITIVE:
+        _check_allowed_keys("FixedBetaSchedule", hyperparams)
         return FixedBetaSchedule(+1, hyperparams)
     if method_id == METHOD_FIXED_NEGATIVE:
+        _check_allowed_keys("FixedBetaSchedule", hyperparams)
         return FixedBetaSchedule(-1, hyperparams)
     if method_id == METHOD_WRONG_SIGN:
+        _check_allowed_keys("WrongSignSchedule", hyperparams)
         return WrongSignSchedule(env_canonical_sign, hyperparams)
     if method_id == METHOD_ADAPTIVE_BETA:
+        _check_allowed_keys("AdaptiveBetaSchedule", hyperparams)
         return AdaptiveBetaSchedule(no_clip=False, hyperparams=hyperparams)
     if method_id == METHOD_ADAPTIVE_BETA_NO_CLIP:
+        _check_allowed_keys("AdaptiveBetaSchedule", hyperparams)
         return AdaptiveBetaSchedule(no_clip=True, hyperparams=hyperparams)
     if method_id == METHOD_ADAPTIVE_SIGN_ONLY:
+        _check_allowed_keys("AdaptiveSignOnlySchedule", hyperparams)
         return AdaptiveSignOnlySchedule(hyperparams)
     if method_id == METHOD_ADAPTIVE_MAGNITUDE_ONLY:
+        _check_allowed_keys("AdaptiveMagnitudeOnlySchedule", hyperparams)
         return AdaptiveMagnitudeOnlySchedule(env_canonical_sign, hyperparams)
     raise ValueError(
         f"unknown schedule method_id={method_id!r}; valid IDs: {ALL_METHOD_IDS}"
