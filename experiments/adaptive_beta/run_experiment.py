@@ -2,7 +2,8 @@
 
 CLI entrypoint that turns a YAML config into a fan-out matrix of
 ``(env, method, seed)`` runs. Each run produces a self-contained directory
-under ``results/adaptive_beta/raw/<stage>/<env>/<method>/<seed>/`` with:
+under ``<raw-root>/<stage>/<env>/<method>/<seed>/`` (default raw-root is
+``results/adaptive_beta/raw/``; override via ``--out`` or ``--raw-root``) with:
 
 - ``run.json`` — manifest: git SHA, argv, seed, resolved config slice,
   start/end timestamps, status.
@@ -20,6 +21,22 @@ Usage::
     python experiments/adaptive_beta/run_experiment.py \
         --config experiments/adaptive_beta/configs/dev.yaml \
         --seed 0
+
+Test-only CLI overrides (M3.4)
+------------------------------
+For the test suite (and ad-hoc runs), three additive flags reduce the
+fan-out matrix without editing the YAML:
+
+- ``--only-env <name>`` keeps just the named env block, dropping the rest.
+- ``--only-method <id>`` keeps just the named method, dropping the rest.
+- ``--episodes <int>`` overrides ``n_episodes`` from the YAML.
+- ``--out <path>`` is a synonym for ``--raw-root`` (matches the test runner
+  vocabulary; both flags resolve to the same destination).
+
+These flags do not change the algorithm or schedule logic — they only
+narrow the dispatch matrix and the per-run episode budget. They exist so
+the reproducibility / smoke tests can drive the real runner end-to-end
+in seconds rather than minutes.
 """
 
 from __future__ import annotations
@@ -125,6 +142,20 @@ def _build_env(env_name: str, env_kwargs: Dict[str, Any], seed: int):
         from experiments.adaptive_beta.envs.delayed_chain import DelayedChain
         return DelayedChain(seed=seed, **env_kwargs)
     raise ValueError(f"unknown env_name={env_name!r}")
+
+
+def _relative_or_absolute(p: Path) -> str:
+    """Return ``p`` relative to ``_REPO_ROOT`` if possible, else absolute.
+
+    The default raw-root lives inside the repo, so the manifest record
+    stays repo-relative. Tests (and ad-hoc invocations) routinely pass
+    ``--out`` to a tmp dir outside the repo; in that case we fall back
+    to the absolute path rather than crashing in ``Path.relative_to``.
+    """
+    try:
+        return str(p.relative_to(_REPO_ROOT))
+    except ValueError:
+        return str(p.resolve())
 
 
 def _git_sha() -> str:
@@ -268,7 +299,7 @@ def run_one(
         "status": "running",
         "started_at": started_at,
         "completed_at": None,
-        "raw_dir": str(raw_dir.relative_to(_REPO_ROOT)),
+        "raw_dir": _relative_or_absolute(raw_dir),
         "n_episodes": int(n_episodes),
         "failure_reason": None,
     }
@@ -557,12 +588,83 @@ def _parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     )
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--seed", required=True, type=int)
+    # ``--raw-root`` is the canonical name; ``--out`` is a synonym used by
+    # the M3.4 test suite. argparse stores them on the same attribute so
+    # only one of the two needs to be supplied.
     parser.add_argument(
         "--raw-root",
+        "--out",
+        dest="raw_root",
         type=Path,
         default=_REPO_ROOT / "results" / "adaptive_beta" / "raw",
+        help=(
+            "Output root for run directories. Synonym: --out. Default: "
+            "results/adaptive_beta/raw."
+        ),
+    )
+    parser.add_argument(
+        "--only-env",
+        type=str,
+        default=None,
+        help=(
+            "If set, drop every env block whose ``name`` differs. Test-only "
+            "narrowing flag; does not change algorithm logic."
+        ),
+    )
+    parser.add_argument(
+        "--only-method",
+        type=str,
+        default=None,
+        help=(
+            "If set, drop every method id from the YAML's ``methods`` list "
+            "except this one. Test-only narrowing flag."
+        ),
+    )
+    parser.add_argument(
+        "--episodes",
+        type=int,
+        default=None,
+        help=(
+            "If set, override the YAML's ``n_episodes``. Test-only knob to "
+            "shorten runs; the algorithm itself is unchanged."
+        ),
     )
     return parser.parse_args(argv)
+
+
+def _apply_cli_overrides(
+    config: Dict[str, Any], args: argparse.Namespace
+) -> Dict[str, Any]:
+    """Apply ``--only-env``, ``--only-method``, ``--episodes`` to config.
+
+    Returns a *new* dict; the input is not mutated. Validates that the
+    requested env/method names exist in the YAML so a typo fails loudly
+    with the available choices listed.
+    """
+    out: Dict[str, Any] = dict(config)
+    if args.only_method is not None:
+        methods = list(out.get("methods", []))
+        if args.only_method not in methods:
+            raise ValueError(
+                f"--only-method={args.only_method!r} not in config methods "
+                f"{methods}"
+            )
+        out["methods"] = [args.only_method]
+    if args.only_env is not None:
+        envs = list(out.get("envs", []))
+        names = [str(e.get("name")) for e in envs]
+        if args.only_env not in names:
+            raise ValueError(
+                f"--only-env={args.only_env!r} not in config envs {names}"
+            )
+        out["envs"] = [e for e in envs if str(e.get("name")) == args.only_env]
+    if args.episodes is not None:
+        if int(args.episodes) <= 0:
+            raise ValueError(
+                f"--episodes must be > 0, got {args.episodes}"
+            )
+        out["n_episodes"] = int(args.episodes)
+    return out
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -571,6 +673,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         config = yaml.safe_load(f)
     if not isinstance(config, dict):
         raise ValueError(f"config {args.config} must be a YAML mapping")
+    config = _apply_cli_overrides(config, args)
     records = dispatch_from_config(
         config=config, seed_id=int(args.seed), raw_root=args.raw_root
     )
