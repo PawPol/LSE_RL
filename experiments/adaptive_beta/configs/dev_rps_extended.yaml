@@ -1,0 +1,49 @@
+# Extended Stage-A tie-breaker on RPS only (Phase VII, 2026-04-26).
+#
+# Rationale: standard Stage A (3 seeds × 1k eps) showed strong mechanism
+# evidence on RPS (alignment_rate=0.81, mean_d_eff=0.47 vs γ=0.95) but
+# the AUC criterion failed within noise (paired SE 6× the effect).  This
+# config extends RPS to 10 seeds × 5000 episodes — ~3 min wall-clock —
+# to definitively confirm or reject the signal at a sample size where
+# the early β=0 ramp-up cost no longer dominates AUC.
+stage: dev_rps_extended
+n_episodes: 5000
+gamma: 0.95
+learning_rate: 0.1
+stratify_every: 10
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 5000
+schedule:
+  beta_max: 2.0
+  beta_cap: 2.0
+  k: 5.0
+  initial_beta: 0.0
+  beta_tol: 1.0e-08
+  lambda_smooth: 1.0
+  beta0: 1.0
+methods:
+- vanilla
+- fixed_positive
+- fixed_negative
+- adaptive_beta
+- adaptive_beta_no_clip
+envs:
+- name: rps
+  kwargs:
+    horizon: 20
+    switch_period_episodes: 100
+    visible_phase: false
+seed_ids:
+- 0
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+- 7
+- 8
+- 9
+raw_root: results/adaptive_beta/raw/dev_rps_extended
