@@ -394,3 +394,58 @@ citing rho*(r,v) = sigma(beta*(r-v) + log(1/gamma)) from the paper.
 **Prevention rule**: Before designing Phase IV-A task configurations, check whether the certification recursion produces finite A_t values. A rule of thumb: kappa^T < 10^6 for tractable activation. With kappa = gamma + alpha*(1-gamma), this means: T * log(kappa) < 6*ln(10). For gamma=0.95 and alpha=0.20 (kappa=0.96): T < 6*ln(10)/ln(1/0.96) = 13.8*25.6 = 354 — so T=20 is fine? NO! The recursion uses the full expansion `kappa/(1-kappa)` which grows much faster. The correct bound is T * log(kappa/(1-kappa)) < 13.8, giving T < 13.8/ln(24) = 4.3 for kappa=0.96. **Maximum safe horizon at gamma=0.95 is T=4.**
 
 **Source incident**: Phase IV-A gate analysis — `mean_abs_u_pred = 0.00356` vs threshold `0.005` after fixing pilot. Use T≤4 for gamma=0.95, or T≤10 for gamma=0.5.
+
+---
+
+### 2026-04-26 — Phase VII §22.1 mushroom-rl-dev edit
+
+**Pattern**: Phase VII required a centered/scaled weighted-LSE Bellman
+kernel that is shared by both the existing certified DP planner
+(`mushroom_rl.algorithms.value.dp.safe_weighted_common.SafeWeightedCommon`)
+and the new per-episode adaptive-β agent
+(`experiments/adaptive_beta/agents.py`). Duplicating the math would have
+two consequences: (a) two implementations drift, breaking the spec's
+"never substitute the unscaled aggregator" rule (§71); (b) Phase III–VI
+results stop being byte-comparable to Phase VII because the operator is
+no longer one function.
+
+**Files touched** (option (b) per spec §3.4 + §22.1):
+- created `src/lse_rl/operator/__init__.py` (empty package marker)
+- created `src/lse_rl/operator/tab_operator.py` — single source of truth
+  for `g`, `rho`, `effective_discount` (scalar + batch). NumPy-only.
+  Mirrors the existing `_EPS_BETA = 1e-8` classical-collapse threshold.
+- edited `mushroom-rl-dev/mushroom_rl/algorithms/value/dp/safe_weighted_common.py`:
+  added `from lse_rl.operator import tab_operator as _tab`; rewired
+  `compute_rho`, `compute_safe_target`, `compute_rho_batch`,
+  `compute_safe_target_batch`, and the 3-D expectation form in
+  `compute_safe_target_ev_batch` to call the kernel. Public API,
+  constructor signature, and instrumentation values unchanged.
+- created `tests/algorithms/test_phase_VII_operator_kernel_equivalence.py`
+  pinning numerical equivalence over a fixed (β, γ, r, v) grid (1568
+  tuples). This is test 13.1.6 from the Phase VII spec.
+
+**Justification**: a single source of truth for the operator math is the
+only sound way to satisfy the spec's "use the existing operator"
+contract while supporting per-episode adaptive β with a non-certified
+clip. The mushroom-rl-dev edit is isolated to the kernel call sites; no
+class-level state, public API, or schedule semantics changed.
+
+**Prevention rule (rollback discipline, per
+`tasks/phase_VII_confirmation_final.md` §4)**: any future edit to
+`safe_weighted_common.py` that touches the kernel call sites must (a)
+keep the kernel as the single implementation, (b) preserve byte-equivalent
+output of `compute_safe_target` / `compute_rho` /
+`compute_effective_discount` for all (β, γ, r, v) on the existing grid,
+and (c) be guarded by
+`tests/algorithms/test_phase_VII_operator_kernel_equivalence.py`. If
+that test or the four-suite baseline
+(`tests/algorithms/test_safe_weighted_lse_operator.py`,
+`test_safe_single_q.py`, `test_safe_beta0_equivalence.py`,
+`test_safe_clipping_certification.py`) regresses, roll back the
+mushroom-rl-dev change and stop with a memo. Do not repair forward on a
+broken operator.
+
+**Source incident**: Phase VII M1.1 + M1.2, branch
+`phase-VII-overnight-2026-04-26`. Pre-refactor baseline: 345 passed.
+Post-refactor: 345 passed (baseline) + 97 passed (equivalence pin) =
+442 passed in 1.50s. Full `tests/algorithms/`: 788 passed.

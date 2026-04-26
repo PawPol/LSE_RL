@@ -37,11 +37,15 @@ from typing import Any
 import numpy as np
 from scipy.special import expit as _sigmoid  # numerically stable sigmoid
 
+# Single source of truth for the centered/scaled weighted-LSE math kernel.
+# See docs/specs/phase_VII_adaptive_beta.md §3.4 + §22.1.
+from lse_rl.operator import tab_operator as _tab
+
 # Threshold below which |beta| is treated as zero (classical collapse).
 # The logaddexp formula has O(beta * |r - gamma*v|) cancellation error as
 # beta→0; using the classical formula for |beta| < _EPS_BETA bounds that
 # error at O(1e-8 * value_range), negligible for any realistic problem.
-_EPS_BETA: float = 1e-8
+_EPS_BETA: float = _tab._EPS_BETA
 
 __all__ = [
     "BetaSchedule",
@@ -433,10 +437,7 @@ class SafeWeightedCommon:
         :meth:`compute_safe_target`.
         """
         beta = self._schedule.beta_used_at(t)
-        if beta == 0.0 or abs(beta) <= _EPS_BETA:
-            return 1.0 / self._one_plus_gamma
-        arg = beta * (float(r) - float(v_next)) + self._log_inv_gamma
-        return float(_sigmoid(arg))
+        return _tab.rho(beta, self._gamma, r, v_next)
 
     def compute_safe_target(self, r: float, v_next: float, t: int) -> float:
         """Safe weighted-LSE one-step target g_t^safe(r, v_next).
@@ -456,28 +457,9 @@ class SafeWeightedCommon:
         self.last_clip_active = abs(self.last_beta_raw) > abs(beta) + 1e-15
         self.last_margin = r_f - v_f
 
-        if beta == 0.0 or abs(beta) <= _EPS_BETA:
-            # Classical collapse: exact when beta==0; O(beta*|r-gamma*v|)
-            # error (negligible at beta <= 1e-8) avoids catastrophic
-            # cancellation in the logaddexp form at tiny nonzero beta.
-            target = r_f + self._gamma * v_f
-            rho = 1.0 / self._one_plus_gamma
-            eff_d = self._one_plus_gamma * (1.0 - rho)
-        else:
-            # logaddexp formula — numerically stable for all finite args at
-            # |beta| >= _EPS_BETA.  numpy.logaddexp applies the max-subtract
-            # trick internally so neither overflow nor underflow can produce
-            # non-finite results from finite r/v inputs.
-            log_sum = np.logaddexp(
-                beta * r_f, beta * v_f + self._log_gamma
-            )
-            target = (self._one_plus_gamma / beta) * (
-                log_sum - self._log_1_plus_gamma
-            )
-            rho = float(_sigmoid(
-                beta * (r_f - v_f) + self._log_inv_gamma
-            ))
-            eff_d = self._one_plus_gamma * (1.0 - rho)
+        target = _tab.g(beta, self._gamma, r_f, v_f)
+        rho = _tab.rho(beta, self._gamma, r_f, v_f)
+        eff_d = self._one_plus_gamma * (1.0 - rho)
 
         self.last_rho = rho
         self.last_effective_discount = eff_d
@@ -550,12 +532,7 @@ class SafeWeightedCommon:
             rho array, same shape as inputs.
         """
         beta = self._schedule.beta_used_at(t)
-        r_arr = np.asarray(r_bar, dtype=np.float64)
-        v_arr = np.asarray(v_next, dtype=np.float64)
-        if beta == 0.0 or abs(beta) <= _EPS_BETA:
-            return np.full_like(r_arr, 1.0 / self._one_plus_gamma)
-        arg = beta * (r_arr - v_arr) + self._log_inv_gamma
-        return _sigmoid(arg)
+        return _tab.rho_batch(beta, self._gamma, r_bar, v_next)
 
     def compute_safe_target_batch(
         self, r_bar: np.ndarray, v_next: np.ndarray, t: int
@@ -582,21 +559,14 @@ class SafeWeightedCommon:
         self.last_clip_active = abs(self.last_beta_raw) > abs(beta) + 1e-15
         self.last_margin = r_arr - v_arr
 
+        target = _tab.g_batch(beta, self._gamma, r_arr, v_arr)
         if beta == 0.0 or abs(beta) <= _EPS_BETA:
-            # Classical collapse (see compute_safe_target for rationale).
-            target = r_arr + self._gamma * v_arr
+            # Preserve existing instrumentation: classical-collapse fills are
+            # literal (γ, 1/(1+γ)) rather than computed via (1+γ)(1-1/(1+γ)).
             rho = np.full_like(r_arr, 1.0 / self._one_plus_gamma)
             eff_d = np.full_like(r_arr, self._gamma)
         else:
-            # logaddexp formula — stable for all finite args at |beta| >= _EPS_BETA.
-            log_sum = np.logaddexp(
-                beta * r_arr, beta * v_arr + self._log_gamma
-            )
-            target = (self._one_plus_gamma / beta) * (
-                log_sum - self._log_1_plus_gamma
-            )
-            arg = beta * (r_arr - v_arr) + self._log_inv_gamma
-            rho = _sigmoid(arg)
+            rho = _tab.rho_batch(beta, self._gamma, r_arr, v_arr)
             eff_d = self._one_plus_gamma * (1.0 - rho)
 
         self.last_rho = rho
@@ -662,25 +632,15 @@ class SafeWeightedCommon:
             eff_d = np.full_like(r_arr, self._gamma)
             self.last_margin = r_arr - E_v_next
         else:
-            # Broadcast r[s,a] and V'[s'] to (S, A, S') then apply g.
             r_3d = r_arr[:, :, np.newaxis]           # (S, A, 1)
             v_3d = v_arr[np.newaxis, np.newaxis, :]  # (1, 1, S')
-            # g_3d[s, a, s'] = g_t^safe(r_bar[s,a], V_next[s'])
-            log_sum = np.logaddexp(
-                beta * r_3d, beta * v_3d + self._log_gamma
-            )  # (S, A, S')
-            g_3d = (self._one_plus_gamma / beta) * (
-                log_sum - self._log_1_plus_gamma
-            )  # (S, A, S')
-            # Q[s,a] = E_{s'}[g(...)] = sum_{s'} P[s,a,s'] * g_3d[s,a,s']
-            target = np.einsum("ijk,ijk->ij", p_arr, g_3d)  # (S, A)
+            g_3d = _tab.g_batch(beta, self._gamma, r_3d, v_3d)  # (S, A, S')
+            target = np.einsum("ijk,ijk->ij", p_arr, g_3d)      # (S, A)
 
             # Diagnostics: P-weighted average of per-transition rho and d.
-            arg_3d = beta * (r_3d - v_3d) + self._log_inv_gamma
-            rho_3d = _sigmoid(arg_3d)                          # (S, A, S')
-            rho = np.einsum("ijk,ijk->ij", p_arr, rho_3d)     # (S, A)
+            rho_3d = _tab.rho_batch(beta, self._gamma, r_3d, v_3d)  # (S, A, S')
+            rho = np.einsum("ijk,ijk->ij", p_arr, rho_3d)          # (S, A)
             eff_d = self._one_plus_gamma * (1.0 - rho)
-            # Margin proxy: r[s,a] - E[V'|s,a]
             self.last_margin = r_arr - np.einsum("ijk,k->ij", p_arr, v_arr)
 
         self.last_rho = rho
