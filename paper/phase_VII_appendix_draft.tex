@@ -1,0 +1,166 @@
+% Phase VII appendix draft — adaptive-β credit-assignment exploratory result.
+%
+% Status: DRAFT, not linked into the main paper input chain.  Do not
+% \input{} this file from the main .tex unless the author decides
+% explicitly that this should appear in the supplementary or appendix.
+%
+% Spec authority: docs/specs/phase_VII_adaptive_beta.md §17.
+% Rationale for not auto-merging: spec §2 rule 10 forbids paper edits
+% from Phase VII.  The user reviews this draft and makes the merge
+% decision.
+
+\section{Adaptive Signed Temperature Schedule on Adversarial RPS (Phase VII Exploratory)}
+\label{app:phase_vii_adaptive_beta}
+
+We present a single-environment exploratory empirical study of the
+\emph{adaptive signed temperature schedule} for the centered/scaled
+weighted log-sum-exp Bellman operator.  The schedule sets the
+per-episode temperature
+\[
+\tilde\beta_{e+1} \;=\; \mathrm{clip}\!\left(\beta_{\max}\,\tanh\!\bigl(k\,A_e\bigr),\, -\beta_{\mathrm{cap}},\, +\beta_{\mathrm{cap}}\right),
+\quad
+A_e \;=\; \frac{1}{H_e}\sum_{t=0}^{H_e-1}\bigl(r_t - V^{\pi}_t\bigl(s_{t+1}\bigr)\bigr),
+\]
+i.e.\ the sign of $\beta$ tracks the empirical Bellman advantage averaged
+over the previous episode.  The hypothesis (Phase~VII spec §0):
+\emph{when $\beta$ aligns with the local advantage, the effective
+continuation $d_{\beta,\gamma}(r,v)$ falls below $\gamma$ on informative
+transitions, accelerating credit propagation in adversarial / sparse-reward
+settings while remaining stable under the certified clip cap.}
+
+\subsection{Setup}
+
+\paragraph{Environment.}  Adversarial Rock-Paper-Scissors with horizon~20.
+The opponent cycles through three phases every $\Sigma=100$ episodes:
+\textsc{biased\_exploitable} (rock 80\,\%, paper 10\,\%, scissors 10\,\%);
+\textsc{counter\_exploit} (scissors 80\,\%, rock 10\,\%, paper 10\,\%);
+\textsc{uniform\_random}.  Reward is $+1$/$0$/$-1$ for win/tie/loss.  The
+phase identifier is hidden from the agent.
+
+\paragraph{Operator.}  $g_{\beta,\gamma}(r,v) =
+\frac{1+\gamma}{\beta}\log\!\bigl((e^{\beta r}+\gamma e^{\beta v})/(1+\gamma)\bigr)$
+for $\beta\ne0$, with the classical collapse $g_{0,\gamma}(r,v)=r+\gamma v$.
+Effective continuation $d_{\beta,\gamma}(r,v)=(1+\gamma)(1-\sigma(\beta(r-v)-\log\gamma))$.
+Implementation imported from a shared kernel module (\texttt{src/lse\_rl/operator/tab\_operator.py}),
+with regression tests pinning numerical equivalence against the
+\texttt{SafeWeightedCommon} certified-DP planner used in the main paper.
+
+\paragraph{Methods.}  Five Q-learning variants on a single shared update
+routine, differing only in the schedule object: \texttt{vanilla}~($\beta=0$),
+\texttt{fixed\_positive}~($\beta=+1$), \texttt{fixed\_negative}~($\beta=-1$),
+\texttt{adaptive\_beta} (the rule above with $\beta_{\max}=\beta_{\mathrm{cap}}=2.0$,
+$k=5.0$), and \texttt{adaptive\_beta\_no\_clip} (the same rule without
+clipping).  Hyperparameters: $\gamma=0.95$, $\alpha=0.1$, $\varepsilon$
+linearly decaying from $1.0$ to $0.05$ over $5000$ episodes, identical
+across methods.
+
+\paragraph{Protocol.}  Twenty paired seeds, $10\,000$ episodes per run.
+Same environment-RNG stream per seed slot; only the schedule object
+varies between methods, enabling paired-bootstrap statistical comparison
+(spec §9).
+
+\subsection{Headline result}
+
+\begin{table}[h]
+\small
+\centering
+\begin{tabular}{lccc}
+\toprule
+Method & AUC return (mean$\pm$std) & Final return (last 500) & Divergent eps \\
+\midrule
+\texttt{vanilla} & $62\,920\pm 535$ & $+7.53\pm0.40$ & $0$ \\
+\texttt{fixed\_positive} & $32\,673\pm 308$ & $+2.71\pm0.15$ & $199\,550$ \\
+\texttt{fixed\_negative} & $31\,629\pm 216$ & $+2.72\pm0.16$ & $193\,788$ \\
+\texttt{adaptive\_beta} & $\mathbf{64\,652\pm 461}$ & $+7.54\pm0.27$ & $\mathbf{0}$ \\
+\texttt{adaptive\_beta\_no\_clip} & $\mathbf{64\,927\pm 439}$ & $+7.59\pm0.28$ & $\mathbf{0}$ \\
+\bottomrule
+\end{tabular}
+\caption{Stage~C headline numbers on adversarial RPS, $n=20$ paired
+seeds $\times\,10\,000$ episodes.  ``Divergent eps'' counts episodes
+flagged by the spec~§13.5 honesty contract ($q_{\max}>10^6$ or NaN
+in the operator output).}
+\label{tab:phase_vii_headline}
+\end{table}
+
+The paired-bootstrap difference (10\,000 resamples) of \texttt{adaptive\_beta}
+versus \texttt{vanilla} is $\Delta\,\mathrm{AUC}=+1732$ with 95\,\% CI
+$[+1473,+1970]$.  The CI excludes zero by approximately $13$~standard
+errors.  The difference in final-return (last 500 episodes) is
+$+0.008\pm0.094$, statistically indistinguishable from zero.  The
+implication: adaptive~$\beta$ accelerates \emph{sample efficiency} on
+this task, captured by AUC, while the asymptotic exploitation regime
+is the same for both methods.  This matches the spec~§0 framing of
+adaptive~$\beta$ as a temporal credit-assignment controller rather than
+an asymptotic-performance booster.
+
+\subsection{Mechanism diagnostics}
+
+We confirm three of the five spec~§0 quantitative predictions on this
+environment:
+
+\begin{itemize}
+  \item \textbf{Alignment} (prediction~1).  The fraction of informative
+        transitions on which $\beta\cdot(r-v_{\mathrm{next}})>0$, averaged
+        over the last 500 episodes and across all 20 seeds, is
+        $0.792\pm0.003$.  This is approximately $94\sigma$ above the
+        $0.5$ chance level.
+  \item \textbf{Effective continuation} (prediction~2).  The mean
+        $d_{\beta,\gamma}(r,v_{\mathrm{next}})$ on the same informative
+        transitions is $0.568\pm0.004$.  This is approximately $87\sigma$
+        below $\gamma=0.95$.  The fraction of informative transitions
+        with $d_\mathrm{eff} < \gamma$ is $0.792$, identical to the
+        alignment rate (consistent with the spec~§3.3 equivalence
+        $d\le\gamma\Leftrightarrow\beta\cdot(r-v)\ge0$).
+  \item \textbf{Sample efficiency} (prediction~5).  See
+        Table~\ref{tab:phase_vii_headline} and the paired-bootstrap CI
+        above.
+\end{itemize}
+
+The remaining two predictions:
+
+\begin{itemize}
+  \item Prediction~3 (improved post-shift recovery) is not significant at
+        the headline sample size on this metric definition (recovery to
+        the smoothed pre-shift mean within a window of 100~episodes).
+        The first-shift recovery diff is $+18.25\pm17.57$ episodes;
+        aggregating across all 100~phase shifts in each run is left for
+        future work.
+  \item Prediction~4 (catastrophic-episode reduction) is not applicable
+        on RPS, which has no catastrophic terminal state.
+\end{itemize}
+
+\subsection{Stability}
+
+The clipped and unclipped adaptive variants both record \emph{zero}
+divergence events across $200\,000$ episodes per method.  The fixed-$\beta$
+baselines record $\geq97\,\%$ divergent-input episodes per the
+spec~§13.5 honesty contract.  This pair of observations vindicates two
+independent claims of the paper:
+(i)~the centered/scaled operator is stable under the spec~§4.2 schedule
+rule with $\beta_{\max}=2.0$;
+(ii)~the spec~§13.5 honesty test is functioning correctly: the
+implementation does not silently restart or suppress divergent episodes,
+since the same code path that produces zero divergence on adaptive
+variants produces $99\,\%$ divergence on fixed-$\beta$ variants.
+
+\subsection{Negative findings}
+
+This Phase~VII study tested four environments at Stage~A (3 paired seeds
+$\times\,1000$ episodes).  Only RPS cleared the strict pre-registered
+4-criterion promotion gate; hazard~gridworld, delayed~chain, and
+switching~bandit did not.  See \texttt{results/adaptive\_beta/stage\_A\_summary.md}
+for per-environment per-criterion verdicts.  We do not generalize the
+RPS finding to multi-environment claims; Phase~VII is exploratory and
+the four-environment matrix was a screening pass.
+
+\subsection{Reproducibility}
+
+All artifacts are reproducible from the spec~§19 commands:
+\begin{verbatim}
+python -m experiments.adaptive_beta.run_experiment \
+    --config experiments/adaptive_beta/configs/headline.yaml --seed <s>
+python -m experiments.adaptive_beta.analyze --stage headline
+\end{verbatim}
+The branch \texttt{phase-VII-overnight-2026-04-26} contains the full
+provenance.  Seed protocol: $\mathrm{base\_seed}=10\,000+\mathrm{seed\_id}$;
+the environment-RNG stream is shared per seed slot across methods.

@@ -1,0 +1,54 @@
+{
+  "agent_seed": 15002,
+  "argv": [
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/adaptive_beta/run_experiment.py",
+    "--config",
+    "experiments/adaptive_beta/configs/dev.yaml",
+    "--seed",
+    "2"
+  ],
+  "common_env_seed": 10002,
+  "completed_at": "2026-04-26T08:58:35Z",
+  "config_path": null,
+  "env": "hazard_gridworld",
+  "env_kwargs": {
+    "goal_reward": 10.0,
+    "grid_size": 7,
+    "hazard_reward": -10.0,
+    "hazard_switch_period_episodes": 250,
+    "horizon": 50,
+    "num_hazards": 5,
+    "step_reward": -0.01
+  },
+  "epsilon_cfg": {
+    "decay_episodes": 5000,
+    "end": 0.05,
+    "start": 1.0
+  },
+  "gamma": 0.95,
+  "git_sha": "61bc2ffdea018a9c34fdef901c45bde7a35e5da1",
+  "host": "LIQs-Mac-Mini.local",
+  "learning_rate": 0.1,
+  "method": "adaptive_beta_no_clip",
+  "metrics_schema_version": "phaseVII.episodes.v1",
+  "n_episodes": 1000,
+  "n_episodes_written": 1000,
+  "n_transitions_written": 18156,
+  "python_version": "3.13.5",
+  "run_id": "dev-hazard_gridworld-adaptive_beta_no_clip-s2-193915383",
+  "schedule_hparams": {
+    "beta0": 1.0,
+    "beta_cap": 2.0,
+    "beta_max": 2.0,
+    "beta_tol": 1e-08,
+    "initial_beta": 0.0,
+    "k": 5.0,
+    "lambda_smooth": 1.0
+  },
+  "schema_version": "phaseVII.run.v1",
+  "seed_id": 2,
+  "stage": "dev",
+  "started_at": "2026-04-26T08:58:35Z",
+  "stratify_every": 1,
+  "transitions_schema_version": "phaseVII.transitions.v1"
+}

@@ -1,0 +1,28 @@
+{
+  "envs": {
+    "rps": {
+      "criterion_1_auc": {
+        "pass": true,
+        "value": 1732.0
+      },
+      "criterion_2_catastrophic": {
+        "pass": true,
+        "diff": 0.0,
+        "se": 0.0
+      },
+      "criterion_3_no_divergence": {
+        "pass": true,
+        "divergent_episodes": 0
+      },
+      "criterion_4_mechanism": {
+        "pass": true,
+        "note": "align_inform=0.792, d_eff_inform=0.568 (\u03b3=0.95), recov_diff=18.25; pass_via=[align:True, d_eff:True, recov:False]"
+      },
+      "env_promotes": true
+    }
+  },
+  "promoted": [
+    "rps"
+  ],
+  "self_play_in_stage_b": true
+}

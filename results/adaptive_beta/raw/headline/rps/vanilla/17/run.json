@@ -1,0 +1,50 @@
+{
+  "agent_seed": 11017,
+  "argv": [
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/adaptive_beta/run_experiment.py",
+    "--config",
+    "experiments/adaptive_beta/configs/headline.yaml",
+    "--seed",
+    "17"
+  ],
+  "common_env_seed": 10017,
+  "completed_at": "2026-04-26T09:33:25Z",
+  "config_path": null,
+  "env": "rps",
+  "env_kwargs": {
+    "horizon": 20,
+    "switch_period_episodes": 100,
+    "visible_phase": false
+  },
+  "epsilon_cfg": {
+    "decay_episodes": 5000,
+    "end": 0.05,
+    "start": 1.0
+  },
+  "gamma": 0.95,
+  "git_sha": "f9d7e6bdf40299a48e8c54e86e8d949666fe78a1",
+  "host": "LIQs-Mac-Mini.local",
+  "learning_rate": 0.1,
+  "method": "vanilla",
+  "metrics_schema_version": "phaseVII.episodes.v1",
+  "n_episodes": 10000,
+  "n_episodes_written": 10000,
+  "n_transitions_written": 20000,
+  "python_version": "3.13.5",
+  "run_id": "headline-rps-vanilla-s17-196001774",
+  "schedule_hparams": {
+    "beta0": 1.0,
+    "beta_cap": 2.0,
+    "beta_max": 2.0,
+    "beta_tol": 1e-08,
+    "initial_beta": 0.0,
+    "k": 5.0,
+    "lambda_smooth": 1.0
+  },
+  "schema_version": "phaseVII.run.v1",
+  "seed_id": 17,
+  "stage": "headline",
+  "started_at": "2026-04-26T09:33:21Z",
+  "stratify_every": 10,
+  "transitions_schema_version": "phaseVII.transitions.v1"
+}
