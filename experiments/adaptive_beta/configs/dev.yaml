@@ -1,0 +1,62 @@
+# Phase VII Stage A — development pass.
+#
+# 4 envs x 5 methods x 3 seeds (dispatched one seed at a time by the runner)
+# = 60 total runs across the seed sweep. This file describes ONE seed slice;
+# the orchestrator launches it with --seed in {0, 1, 2}.
+#
+# Spec: docs/specs/phase_VII_adaptive_beta.md §8.1.
+
+stage: dev
+n_episodes: 1000
+gamma: 0.95
+learning_rate: 0.1
+stratify_every: 1   # Stage A keeps every transition (spec §7.4).
+
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 5000
+
+schedule:
+  beta_max: 2.0
+  beta_cap: 2.0
+  k: 5.0
+  initial_beta: 0.0
+  beta_tol: 1.0e-8
+  lambda_smooth: 1.0
+  beta0: 1.0
+
+methods:
+  - vanilla
+  - fixed_positive
+  - fixed_negative
+  - adaptive_beta
+  - adaptive_beta_no_clip
+
+envs:
+  - name: rps
+    kwargs:
+      horizon: 20
+      switch_period_episodes: 100
+      visible_phase: false
+  - name: switching_bandit
+    kwargs:
+      n_arms: 5
+      p_best: 0.8
+      p_other: 0.2
+      switch_period_episodes: 250
+  - name: hazard_gridworld
+    kwargs:
+      grid_size: 7
+      horizon: 50
+      num_hazards: 5
+      goal_reward: 10.0
+      hazard_reward: -10.0
+      step_reward: -0.01
+      hazard_switch_period_episodes: 250
+  - name: delayed_chain
+    kwargs:
+      chain_length: 20
+      horizon: 25
+      terminal_reward: 50.0
+      step_reward: 0.0

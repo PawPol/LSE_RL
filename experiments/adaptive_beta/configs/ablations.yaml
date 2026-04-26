@@ -1,0 +1,64 @@
+# Phase VII Stage B — ablation pass.
+#
+# Runs the β-variant ablations and the sensitivity grid (β_max × β_cap × k)
+# on the 1-2 strongest environments only (spec §11). The orchestrator picks
+# the env list after Stage A sign-off.
+#
+# Spec: docs/specs/phase_VII_adaptive_beta.md §11.
+
+stage: ablations
+n_episodes: 10000
+gamma: 0.95
+learning_rate: 0.1
+stratify_every: 10
+
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 5000
+
+# Schedule defaults; the orchestrator may override beta_max / beta_cap / k
+# per sensitivity-grid cell when launching one slice at a time.
+schedule:
+  beta_max: 2.0
+  beta_cap: 2.0
+  k: 5.0
+  initial_beta: 0.0
+  beta_tol: 1.0e-8
+  lambda_smooth: 1.0
+  beta0: 1.0
+
+methods:
+  - adaptive_beta
+  - adaptive_beta_no_clip
+  - adaptive_sign_only
+  - adaptive_magnitude_only
+  - fixed_positive
+  - fixed_negative
+  - vanilla
+
+# Sensitivity grid declared here for documentation; the orchestrator pulls
+# it apart and dispatches one cell at a time so each run records its own
+# resolved schedule hparams in run.json.
+sensitivity_grid:
+  beta_max_grid: [0.5, 1.0, 2.0]
+  k_grid: [1.0, 5.0, 10.0]
+  beta_cap_grid: [0.5, 1.0, 2.0]
+
+envs:
+  # Placeholder: orchestrator overwrites with the Stage-A-promoted envs.
+  - name: hazard_gridworld
+    kwargs:
+      grid_size: 7
+      horizon: 50
+      num_hazards: 5
+      goal_reward: 10.0
+      hazard_reward: -10.0
+      step_reward: -0.01
+      hazard_switch_period_episodes: 250
+  - name: delayed_chain
+    kwargs:
+      chain_length: 20
+      horizon: 25
+      terminal_reward: 50.0
+      step_reward: 0.0
