@@ -2936,6 +2936,13 @@ On $\Ksafe$, the safe Bellman optimality operator is a contraction with modulus 
 The asynchronous update scheme updates one coordinate at a time but touches every coordinate infinitely often.
 Therefore the fair-schedule asynchronous contraction theorem of Bertsekas and Tsitsiklis applies directly, yielding almost-sure convergence to the unique fixed point $Q_\safe^*$.
 
+% Phase VII appendix (exploratory adaptive-β credit-assignment result on
+% adversarial RPS). Linked at user request 2026-04-26 after the
+% phase-VII-overnight-2026-04-26 run produced a paired-bootstrap-
+% significant AUC improvement (CI [+1473, +1970]) on a single env with
+% mechanism evidence (alignment 0.79, d_eff 0.57 vs γ=0.95).
+\input{phase_VII_appendix_draft}
+
 \bibliographystyle{plainnat}
 \bibliography{neurips_selective_temporal_credit_assignment_litreview}
 
