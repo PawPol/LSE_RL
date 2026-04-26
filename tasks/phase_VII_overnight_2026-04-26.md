@@ -108,13 +108,15 @@ If no env clears Stage-B bar → skip Stage C, write Stage B summary, finalize r
 
 | ID | Severity | File | Owner | Status |
 |----|----------|------|-------|--------|
-| FINAL-BLOCKER-1 | HIGH | `experiments/adaptive_beta/agents.py:269-278` (off-by-one β) | algo-implementer | PENDING |
-| FINAL-HIGH-2 | HIGH | `experiments/adaptive_beta/analyze.py` (paired-bootstrap CI not persisted) | plotter-analyst | PENDING |
-| FINAL-MAJOR-3 | MED  | `experiments/adaptive_beta/run_experiment.py:187-197` (regret) | experiment-runner | PENDING |
-| FINAL-MAJOR-4 | MED  | `experiments/adaptive_beta/analyze.py:816-823` (silent fail-skip) | plotter-analyst | PENDING |
-| FINAL-MAJOR-5 | MED  | `experiments/adaptive_beta/run_experiment.py:243-247` (manifest concurrency, test pollution) | experiment-runner | PENDING |
-| FINAL-§16.5 | LOW  | parquet column aliases | experiment-runner | PENDING |
-| FINAL-confound | INFO | exploration-stream parity control run on rps Stage C | orchestrator | PENDING |
+| FINAL-BLOCKER-1 | HIGH | `experiments/adaptive_beta/agents.py:269-278` (off-by-one β) | algo-implementer | DONE @ a8656cc2 |
+| FINAL-HIGH-2 | HIGH | `experiments/adaptive_beta/analyze.py` (paired-bootstrap CI not persisted) | plotter-analyst | DONE @ a8656cc2 — CI [+1473.39, +1970.20] matches cited |
+| FINAL-MAJOR-3 | MED  | `experiments/adaptive_beta/run_experiment.py:187-197` (regret) | experiment-runner | DONE @ a8656cc2 |
+| FINAL-MAJOR-4 | MED  | `experiments/adaptive_beta/analyze.py:816-823` (silent fail-skip) | plotter-analyst | DONE @ a8656cc2 |
+| FINAL-MAJOR-5 | MED  | `experiments/adaptive_beta/run_experiment.py:243-247` (manifest concurrency, test pollution) | experiment-runner | DONE @ a8656cc2 — 297→270 cleaned |
+| FINAL-§16.5 | LOW  | parquet column aliases | experiment-runner | DONE @ a8656cc2 |
+| FINAL-confound | INFO | exploration-stream parity control run on rps Stage C | orchestrator | IN-PROGRESS |
+
+**Final triage gate verdict:** PASS on all 6 substantive findings + bookkeeping FAILs. 970 tests green. Manifest = canonical 270 entries. Stage C bootstrap CI reproducible from `analyze.py`. Memo numbers unchanged. Now running parity-control to address the adversarial confound.
 
 ---
 
@@ -126,4 +128,34 @@ If no env clears Stage-B bar → skip Stage C, write Stage B summary, finalize r
 
 ## Final status
 
-(to be written at end-of-run)
+**Phase VII overnight autonomous run: COMPLETE.** 2026-04-26.
+
+**Final state:**
+- Branch: `phase-VII-overnight-2026-04-26` @ `9440ec30`.
+- Test suite: 970 passed (was 345 baseline on main; +625 = +97 op equivalence + +39 schedule + +52 env + +15 agent + +1 off-by-one regression + +24 same-code-path + +1 reproducibility + +1 smoke + ...).
+- Manifest: 270 entries (60 dev + 50 dev_rps_extended + 60 main + 100 headline), all `status=completed`.
+- Paper PDF: 41 pages (was 39); Phase VII appendix integrated at user request.
+
+**Headline scientific result (Stage C, rps, n=20 × 10k eps):**
+- Δ AUC paired-bootstrap CI **[+1473, +1970]** vs vanilla (reproducible from `analyze.py` with `np.random.default_rng(42)`).
+- Mechanism: alignment_rate **0.792 ± 0.003** (~94σ); mean_d_eff **0.568 ± 0.004** vs γ=0.95 (~87σ).
+- Stability: **0 / 200 000** divergence events for both adaptive variants.
+- 3 of 5 spec §0 predictions confirmed on rps.
+- 1 environment of 4 cleared the strict gate; verdict: PARTIAL SUPPORT.
+
+**Codex gate verdicts:** M1 gate triage passed (4 BLOCKERs/MAJORs fixed); final gate triage passed (5 substantive findings + 2 bookkeeping FAILs all resolved).
+
+**Verifier final audit:** PASS post-triage. All spec §16 acceptance criteria satisfied.
+
+**User decisions queued for morning review:**
+- Optional: re-run other 3 envs at extended-Stage-A scale for selection-bias symmetry.
+- Optional: implement self-play rps + Stage B run.
+- Optional: multi-shift recovery aggregation re-analysis.
+- Optional: sensitivity-grid + difficulty-knob ablations.
+- Decision: was the integrated 41-page paper appendix the right merge, or revert?
+
+**Open follow-up:** exploration-stream parity control (FINAL-confound) — implementation interrupted by user paper-PDF request; can dispatch in a follow-up session.
+
+**Wall-clock total:** ~6 hours of subagent work + ~10 min of compute. Within authorized 8–10h budget.
+
+**Total commits:** 17 since `main`.
