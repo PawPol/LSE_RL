@@ -450,3 +450,82 @@ def test_alignment_rate_diagnostic_sanity_on_delayed_chain():
     assert max(rates) > 0.0, (
         f"alignment_rate is identically zero across all 30 episodes: {rates}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Test 9 — end_episode logs the CURRENT episode's β, not the next one
+# ---------------------------------------------------------------------------
+def test_end_episode_logs_current_episode_beta_not_next():
+    """FINAL-BLOCKER-1: ``beta_raw`` / ``beta_deployed`` in
+    ``end_episode(e)`` must refer to episode ``e``, not the schedule's
+    just-advanced episode ``e+1``.
+
+    Codex /review job ``review-mofl3eyj-qyacyj`` (P1 finding). The bug:
+    ``end_episode`` previously called ``schedule.update_after_episode``
+    BEFORE reading ``schedule.diagnostics()``. ``update_after_episode``
+    overwrites ``last_beta_raw`` / ``last_beta_used`` with the β intended
+    for episode ``e+1``. Reading diagnostics afterwards therefore returns
+    the next episode's β, off-by-one against the row's own
+    ``beta_used`` (which is the cached ``self._current_beta`` for
+    episode ``e``).
+
+    Fix contract: in every row,
+    ``beta_used == beta_deployed`` and the agent's cached β at the
+    start of episode ``e`` equals the schedule's diagnostics
+    ``beta_used`` BEFORE the post-episode update for that same e.
+    """
+    # AdaptiveBetaSchedule on DelayedChain (canonical +) with hyperparams
+    # that produce a non-trivial A_e per episode and so β changes between
+    # episodes. ε=0 ensures the greedy agent reaches the terminal under
+    # the same lowest-action-int tie-break used elsewhere, so A_e is
+    # strictly non-zero from episode 0 onward.
+    sched = build_schedule(
+        METHOD_ADAPTIVE_BETA,
+        env_canonical_sign="+",
+        hyperparams={"beta_max": 2.0, "beta_cap": 2.0, "k": 5.0},
+    )
+    env = DelayedChain(seed=0)
+    agent = AdaptiveBetaQAgent(
+        n_states=20,
+        n_actions=2,
+        gamma=0.95,
+        learning_rate=0.5,
+        epsilon_schedule=lambda e: 0.0,
+        beta_schedule=sched,
+        rng=np.random.default_rng(0),
+    )
+
+    end_episode_diags = []
+    for e in range(3):
+        s, _info = env.reset()
+        s_int = int(np.asarray(s).flat[0])
+        agent.begin_episode(e)
+        done = False
+        while not done:
+            a = agent.select_action(s_int, e)
+            ns, r, ab, _info = env.step(a)
+            ns_int = int(np.asarray(ns).flat[0])
+            agent.step(s_int, a, float(r), ns_int, bool(ab), e)
+            s_int = ns_int
+            done = bool(ab)
+        diag = agent.end_episode(e)
+        end_episode_diags.append(diag)
+
+    # Strong contract: every row's beta_used == beta_deployed because
+    # both should refer to the SAME episode the row describes.
+    for e, diag in enumerate(end_episode_diags):
+        assert diag["beta_used"] == diag["beta_deployed"], (
+            f"episode {e}: beta_used={diag['beta_used']!r} != "
+            f"beta_deployed={diag['beta_deployed']!r}; the row reports "
+            f"the next episode's β. FINAL-BLOCKER-1 not fixed."
+        )
+
+    # Additionally, β must actually change across the 3 episodes —
+    # otherwise beta_used == beta_deployed could pass trivially for a
+    # constant schedule even with the off-by-one bug present.
+    betas_used = [d["beta_used"] for d in end_episode_diags]
+    assert len(set(betas_used)) > 1, (
+        f"β did not change across episodes ({betas_used}); the test "
+        f"would pass trivially without exercising the off-by-one bug. "
+        f"Strengthen the schedule hyperparams."
+    )

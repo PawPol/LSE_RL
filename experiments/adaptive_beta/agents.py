@@ -227,6 +227,14 @@ class AdaptiveBetaQAgent:
         if nan_count > 0 or q_abs_max > self._divergence_threshold:
             self._ep_divergence_event = True
 
+        # Snapshot diagnostics for THIS episode BEFORE the schedule
+        # advances. ``update_after_episode(e)`` overwrites
+        # ``last_beta_raw`` / ``last_beta_used`` with values intended for
+        # episode e+1; reading diagnostics afterwards yields an
+        # off-by-one (Codex /review job ``review-mofl3eyj-qyacyj`` P1
+        # finding, FINAL-BLOCKER-1).
+        sched_diag = self._beta_schedule.diagnostics()
+
         # Push to the schedule so it can compute β_{e+1}.
         self._beta_schedule.update_after_episode(
             self._current_episode,
@@ -266,14 +274,13 @@ class AdaptiveBetaQAgent:
             bellman_residual = 0.0
             td_target_abs_max = 0.0
 
-        sched_diag = self._beta_schedule.diagnostics()
-
         return {
             "episode_index": int(self._current_episode),
             "beta_used": float(self._current_beta),
-            # beta_raw / beta_deployed: post-update values intended for
-            # the next episode (the schedule already advanced). Logging
-            # both lets the runner record either current or next.
+            # beta_raw / beta_deployed: the CURRENT episode's β, snapshot
+            # from the schedule before ``update_after_episode`` advanced
+            # it (FINAL-BLOCKER-1 fix). Both refer to episode ``e``, so
+            # ``beta_used == beta_deployed`` holds row by row.
             "beta_raw": float(sched_diag["beta_raw"]),
             "beta_deployed": float(sched_diag["beta_used"]),
             "alignment_rate": alignment_rate,

@@ -59,6 +59,8 @@ NON_VANILLA = [m for m in METHODS_ORDER if m != "vanilla"]
 SMOOTH_WINDOW = 100
 LAST_N = 500
 GAMMA_DEFAULT = 0.95
+BOOTSTRAP_RESAMPLES = 10_000
+BOOTSTRAP_SEED = 42  # FINAL-HIGH-2: pinned seed for reproducible CI
 
 METHOD_COLORS = {
     "vanilla": "0.4",
@@ -200,6 +202,10 @@ def _per_run_summary_row(run: RunRecord) -> dict[str, Any]:
         "final_return": final_return,
         "mean_alignment_rate_last_500": mean_align_last,
         "mean_d_eff_last_500": mean_d_eff_last,
+        # FINAL-§16.5: spec-required short aliases (do not rename originals
+        # for backward compat).
+        "align_rate": mean_align_last,
+        "mean_d_eff": mean_d_eff_last,
         "recovery_time_first_shift": recovery,
         "max_drawdown": drawdown,
         "catastrophic_count": catastrophic,
@@ -269,9 +275,37 @@ def _mechanism_for_run(run: RunRecord, gamma: float) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+def _paired_bootstrap_ci(
+    diffs: np.ndarray,
+    n_resamples: int = BOOTSTRAP_RESAMPLES,
+    seed: int = BOOTSTRAP_SEED,
+) -> tuple[float, float]:
+    """Paired-bootstrap percentile 95% CI for the mean of `diffs`.
+
+    Resamples WITH replacement from the n=len(diffs) paired-diff vector,
+    recomputes the mean of each resample, and returns the (2.5, 97.5)
+    percentiles. NaN-safe: uses only finite entries.
+
+    Returns (nan, nan) if fewer than 2 finite entries are available.
+    """
+    clean = diffs[~np.isnan(diffs)]
+    if clean.size < 2:
+        return (float("nan"), float("nan"))
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, clean.size, size=(n_resamples, clean.size))
+    boot_means = clean[idx].mean(axis=1)
+    lo = float(np.percentile(boot_means, 2.5))
+    hi = float(np.percentile(boot_means, 97.5))
+    return (lo, hi)
+
+
 def _paired_diffs(per_run: pd.DataFrame) -> pd.DataFrame:
     """Compute paired-seed (method - vanilla) differences for each
-    (env, non-vanilla method)."""
+    (env, non-vanilla method).
+
+    Each metric gets a paired-bootstrap percentile 95% CI (10 000 resamples,
+    seeded with BOOTSTRAP_SEED for reproducibility per FINAL-HIGH-2).
+    """
     rows: list[dict[str, Any]] = []
     metric_cols = [
         ("auc_diff", "auc_return"),
@@ -301,9 +335,12 @@ def _paired_diffs(per_run: pd.DataFrame) -> pd.DataFrame:
                 else:
                     mean = float(clean.mean())
                     se = float(clean.std(ddof=1) / np.sqrt(clean.size)) if clean.size > 1 else 0.0
+                ci_lo, ci_hi = _paired_bootstrap_ci(diffs)
                 row[diff_col] = mean
                 row[f"{diff_col}_se"] = se
                 row[f"{diff_col}_n_finite"] = int(clean.size)
+                row[f"{diff_col}_ci_lo"] = ci_lo
+                row[f"{diff_col}_ci_hi"] = ci_hi
                 # Paired array stored as serialized list for downstream.
                 row[f"{diff_col}_values"] = diffs.tolist()
             rows.append(row)
@@ -786,6 +823,15 @@ def main() -> None:
         "--branch-sha",
         default="phase-VII-overnight-2026-04-26 @ 0f19d19d",
     )
+    parser.add_argument(
+        "--include-failed",
+        action="store_true",
+        help=(
+            "Bypass the fail-closed survivorship check (FINAL-MAJOR-4). Use "
+            "ONLY when explicitly characterizing what survived; the resulting "
+            "parquets will silently exclude failed runs."
+        ),
+    )
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parents[2]
@@ -810,11 +856,29 @@ def main() -> None:
     if not stage_records:
         raise SystemExit(f"No runs in manifest for stage={args.stage}")
 
+    # FINAL-MAJOR-4: fail-closed on non-completed runs. Survivorship bias is
+    # silent and dangerous; require an explicit opt-in (--include-failed) to
+    # bypass.
+    failed = [r for r in stage_records if r.get("status") != "completed"]
+    if failed and not args.include_failed:
+        examples = [
+            (r.get("env"), r.get("method"), r.get("seed_id"), r.get("status"))
+            for r in failed[:3]
+        ]
+        msg = (
+            f"{len(failed)} run(s) in stage={args.stage} have status != "
+            f"'completed'. Examples: {examples}. Refusing to silently exclude. "
+            "Either re-run them, mark them as expected failures in the config, "
+            "or pass --include-failed to acknowledge survivorship."
+        )
+        raise RuntimeError(msg)
+
     # Load every run.
     runs: list[RunRecord] = []
     failed_loads: list[str] = []
     for record in stage_records:
         if record.get("status") != "completed":
+            # Only reachable when --include-failed is set (see check above).
             continue
         run = _load_run(record, raw_root)
         if run is None:

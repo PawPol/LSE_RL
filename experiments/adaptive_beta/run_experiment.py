@@ -16,6 +16,21 @@ A *list-shaped*, append-only Phase VII manifest is maintained at
 the user). Every completed/failed run appends one record. The Phase V
 single-dict manifest (``experiment_manifest.json``) is left untouched.
 
+.. warning::
+   The manifest writer is read-modify-write and is **not** concurrent-safe.
+   Concurrent dispatcher processes can race and lose records. Serialize
+   dispatches (e.g. one runner process at a time) until a proper lock
+   strategy is added. See FINAL-MAJOR-5 (2026-04-26 triage).
+
+Test scoping
+------------
+When ``--out`` / ``--raw-root`` points outside the canonical
+``results/adaptive_beta/raw/`` tree (e.g. a pytest ``tmp_path``), the
+manifest is written next to the run artifacts at
+``<raw-root>/phase_VII_manifest.json`` rather than to the global file.
+This stops test runs from polluting the production manifest while still
+giving the test suite a real artifact to inspect.
+
 Usage::
 
     python experiments/adaptive_beta/run_experiment.py \
@@ -112,10 +127,33 @@ def _filter_hparams_for_method(
 # ---------------------------------------------------------------------------
 # Manifest path locked by the user (see prompt 2026-04-26).
 # ---------------------------------------------------------------------------
+# The "global" production manifest. Used only when ``raw_root`` resolves to
+# the canonical in-repo raw tree; tests pointed at a tmpdir get a scoped
+# manifest under that tmpdir instead (see _resolve_manifest_path).
 MANIFEST_PATH = (
     _REPO_ROOT / "results" / "summaries" / "phase_VII_manifest.json"
 )
+CANONICAL_RAW_ROOT = (
+    _REPO_ROOT / "results" / "adaptive_beta" / "raw"
+).resolve()
 MANIFEST_SCHEMA_VERSION = "phaseVII.runs.v1"
+
+
+def _resolve_manifest_path(raw_root: Path) -> Path:
+    """Pick the manifest file to write based on ``raw_root``.
+
+    - Canonical raw root (``results/adaptive_beta/raw/``) -> the global
+      production manifest at ``results/summaries/phase_VII_manifest.json``.
+    - Anything else (e.g. a pytest ``tmp_path``) -> a manifest scoped to
+      ``<raw_root>/phase_VII_manifest.json`` so test runs don't pollute
+      the production file (FINAL-MAJOR-5 fix, 2026-04-26).
+    """
+    try:
+        if raw_root.resolve() == CANONICAL_RAW_ROOT:
+            return MANIFEST_PATH
+    except OSError:  # pragma: no cover — resolve on a non-existent path
+        pass
+    return raw_root / "phase_VII_manifest.json"
 
 # ---------------------------------------------------------------------------
 # Env factories (kept as a small dispatch table to avoid importing every env
@@ -184,17 +222,44 @@ def _resolve_seed_assignment(base_seed: int, method_index: int) -> Tuple[int, in
     return base, base + (1000 * (method_index + 1))
 
 
-def _episode_oracle_optimal_value(env_name: str, env: Any) -> float:
-    """Per-episode oracle return used for paired regret reporting.
+def _episode_oracle_optimal_return(env_name: str, env: Any) -> float:
+    """Per-episode oracle *episodic* return for regret reporting.
 
-    Lightweight closed-form values where available; otherwise 0.0 (the
-    paired-difference logic in analysis still works because all methods
-    see the same constant offset).
+    Returns the closed-form optimal episodic return when an oracle policy
+    exists with a known scalar value. For envs where the optimal return
+    is non-trivial to compute online (no in-process planner; phase-
+    dependent expected return; etc.), returns ``np.nan`` so downstream
+    aggregations stay NaN-aware rather than silently treating zero as
+    the optimum.
+
+    Per-env contract (FINAL-MAJOR-3 fix, 2026-04-26):
+
+    - ``switching_bandit``: optimal expected episodic return = ``p_best``
+      (H=1 Bernoulli; one pull, one reward).
+    - ``delayed_chain``: deterministic env, optimal episodic return =
+      ``terminal_reward`` (oracle walks straight to the terminal state
+      and collects exactly the terminal reward once; step rewards are 0
+      by default).
+    - ``rps``: regret is **NaN** — optimal return is phase-dependent and
+      computing it requires playing the oracle in parallel, which the
+      runner does not do.
+    - ``hazard_gridworld``: regret is **NaN** — optimal return depends
+      on the optimal policy from start; no in-process planner is wired
+      up.
+
+    Callers should treat the returned value as ``regret = optimal -
+    episode_return`` directly (no per-step multiplication); a NaN
+    return propagates to NaN regret, which numpy aggregations such as
+    ``np.sum`` correctly carry through.
     """
     if env_name == "switching_bandit":
         # H=1 Bernoulli; oracle expected reward == p_best.
         return float(getattr(env, "_p_best", 0.8))
-    return 0.0
+    if env_name == "delayed_chain":
+        # Deterministic; oracle reaches the terminal state once.
+        return float(getattr(env, "_terminal_reward", 50.0))
+    # rps, hazard_gridworld: undefined without a planner.
+    return float("nan")
 
 
 # ---------------------------------------------------------------------------
@@ -202,7 +267,7 @@ def _episode_oracle_optimal_value(env_name: str, env: Any) -> float:
 # ---------------------------------------------------------------------------
 
 
-def _load_manifest() -> List[Dict[str, Any]]:
+def _load_manifest(manifest_path: Path = MANIFEST_PATH) -> List[Dict[str, Any]]:
     """Load the phase-VII manifest as a list. Empty / missing -> [].
 
     Tolerates a file containing only ``[]`` (the locked default for a
@@ -210,41 +275,51 @@ def _load_manifest() -> List[Dict[str, Any]]:
     shaped manifest — that file lives at a different path and is left
     untouched.
     """
-    if not MANIFEST_PATH.exists():
+    if not manifest_path.exists():
         return []
     try:
-        with open(MANIFEST_PATH, "r", encoding="utf-8") as f:
+        with open(manifest_path, "r", encoding="utf-8") as f:
             data = json.load(f)
     except json.JSONDecodeError:
         # Corrupt — preserve original by renaming and start fresh.
-        backup = MANIFEST_PATH.with_suffix(
+        backup = manifest_path.with_suffix(
             f".corrupt.{int(time.time())}.json"
         )
-        MANIFEST_PATH.rename(backup)
+        manifest_path.rename(backup)
         return []
     if not isinstance(data, list):
         raise ValueError(
-            f"phase_VII_manifest.json must be a JSON list (option 1, "
-            f"locked 2026-04-26). Found {type(data).__name__} at "
-            f"{MANIFEST_PATH}."
+            f"phase_VII manifest at {manifest_path} must be a JSON list "
+            f"(option 1, locked 2026-04-26). Found {type(data).__name__}."
         )
     return data
 
 
-def _atomic_write_manifest(records: List[Dict[str, Any]]) -> None:
-    MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
-    tmp = MANIFEST_PATH.with_suffix(".json.tmp")
+def _atomic_write_manifest(
+    records: List[Dict[str, Any]],
+    manifest_path: Path = MANIFEST_PATH,
+) -> None:
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = manifest_path.with_suffix(".json.tmp")
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=2, sort_keys=True)
         f.write("\n")
-    os.replace(tmp, MANIFEST_PATH)
+    os.replace(tmp, manifest_path)
 
 
-def _append_manifest_record(record: Dict[str, Any]) -> None:
-    """Read-modify-write append (atomic). Tolerant of concurrent dispatch."""
-    records = _load_manifest()
+def _append_manifest_record(
+    record: Dict[str, Any],
+    manifest_path: Path = MANIFEST_PATH,
+) -> None:
+    """Read-modify-write append (atomic).
+
+    NOT concurrent-safe; see module docstring. Tests pass a tmpdir-scoped
+    ``manifest_path`` (FINAL-MAJOR-5 fix) so they don't corrupt the
+    production manifest.
+    """
+    records = _load_manifest(manifest_path)
     records.append(record)
-    _atomic_write_manifest(records)
+    _atomic_write_manifest(records, manifest_path)
 
 
 # ---------------------------------------------------------------------------
@@ -281,6 +356,7 @@ def run_one(
         raw_root / stage / env_name / method / str(seed_id)
     )
     raw_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = _resolve_manifest_path(raw_root)
 
     started_at = _utc_now()
     common_env_seed, agent_seed = _resolve_seed_assignment(
@@ -346,7 +422,7 @@ def run_one(
             ep_return = 0.0
             ep_catastrophe = False
             ep_success = False
-            ep_oracle_value = _episode_oracle_optimal_value(env_name, env)
+            ep_oracle_return = _episode_oracle_optimal_return(env_name, env)
             shift_event = bool(info.get("is_shift_step", False))
 
             while True:
@@ -388,8 +464,11 @@ def run_one(
 
             ep_diag = agent.end_episode(ep)
             # Oracle regret per episode (paired across methods because the
-            # env stream is identical at fixed seed_id).
-            regret = float(ep_oracle_value * t - ep_return)
+            # env stream is identical at fixed seed_id). For envs without
+            # a closed-form oracle return, ``ep_oracle_return`` is NaN
+            # and regret propagates as NaN so analyze.py aggregations
+            # don't conflate "undefined" with zero (FINAL-MAJOR-3 fix).
+            regret = float(ep_oracle_return - ep_return)
             ep_logger.record(
                 episode=ep,
                 phase=info.get("phase", ""),
@@ -480,7 +559,7 @@ def run_one(
             f.write(traceback.format_exc())
         return record
     finally:
-        _append_manifest_record(record)
+        _append_manifest_record(record, manifest_path)
 
 
 # ---------------------------------------------------------------------------
