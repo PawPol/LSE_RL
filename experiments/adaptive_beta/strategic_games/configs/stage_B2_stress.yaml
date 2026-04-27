@@ -1,0 +1,60 @@
+# DEFERRED — Stage B2-Stress requires fresh user authorization per
+# 2026-04-26 directive. DO NOT RUN.
+#
+# Spec authority: tasks/phase_VII_B_strategic_learning_coding_agent_spec.md §11.3.
+# Branch: phase-VII-B-strategic-2026-04-26.
+#
+# This file documents the stress-knob surface (per §11.3). It is a STUB:
+# the games/adversaries matrices are intentionally empty, and
+# run_strategic will refuse to dispatch when invoked with this config
+# until the user explicitly fills the matrix and re-authorises.
+#
+# Stress knobs (spec §11.3):
+#   - memory `m`,
+#   - inertia `lambda`,
+#   - hypothesis test tolerance `tau`,
+#   - search length,
+#   - adversary temperature,
+#   - payoff noise,
+#   - action tremble probability.
+
+stage: B2_stress
+episodes: 10000
+seeds: []          # empty until authorised
+
+games: {}          # DEFERRED — empty until authorised
+adversaries: {}    # DEFERRED — empty until authorised
+
+methods:
+  - vanilla
+  - fixed_positive
+  - fixed_negative
+  - adaptive_beta
+  - adaptive_sign_only
+
+# Hyperparameter knob defaults, exposed for stress-sweep convenience.
+beta_max: 2.0
+beta_cap: 2.0
+k: 5.0
+beta0: 1.0
+gamma: 0.95
+learning_rate: 0.1
+
+epsilon_start: 1.0
+epsilon_end: 0.05
+epsilon_decay_episodes: 5000
+
+stratify_every: 10
+
+# Stress-only knobs (consumed by per-game / per-adversary kwargs once
+# the user fills the matrix above).
+stress_knobs:
+  memory_m_grid: [5, 20, 50]
+  inertia_lambda_grid: [0.0, 0.5, 0.9]
+  tolerance_tau_grid: [0.01, 0.05, 0.1]
+  search_len_grid: [25, 50, 100]
+  temperature_grid: [0.05, 0.2, 1.0]
+  payoff_noise_grid: [0.0, 0.05, 0.1]
+  tremble_prob_grid: [0.0, 0.05, 0.1]
+
+output_dir: results/adaptive_beta/strategic/raw/stress

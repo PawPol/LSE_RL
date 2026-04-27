@@ -1,0 +1,60 @@
+# Phase VII-B Stage B2-Main — strategic-learning main pass.
+#
+# Spec authority: tasks/phase_VII_B_strategic_learning_coding_agent_spec.md §11.2.
+# Branch: phase-VII-B-strategic-2026-04-26.
+#
+# Run only on (game, adversary) pairs promoted from Stage B2-Dev per
+# §11.1 promotion criteria. The promoted matrix is filled in by the
+# promotion-gate dispatch (planner item VII-B-37). Until then, the
+# `games` and `adversaries` blocks are placeholders that the promotion
+# gate will overwrite in-place; they are NOT consumed by run_strategic
+# in this state (the runner refuses to dispatch when either block
+# resolves to the placeholder string — see CLI guard).
+#
+# Per user OQ-4 (planner default), ablations
+# (`adaptive_magnitude_only`, `adaptive_beta_no_clip`,
+# `wrong_sign`) are HARD-SKIPPED in the initial Main dispatch. Add them
+# back as a follow-up only if Main leaves wall-clock headroom.
+#
+# Seed protocol identical to Stage B2-Dev (see dev.yaml header).
+
+stage: B2_main
+episodes: 10000
+seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+# PLACEHOLDER TEMPLATE — promotion gate writes a sibling file
+# `stage_B2_main_resolved.yaml` rather than overwriting this one in place.
+# The runner's `_normalise_blocks` rejects this template if dispatched
+# directly. To run Stage B2-Main, the promotion-gate dispatch fills in the
+# resolved config and points the CLI at `stage_B2_main_resolved.yaml`.
+#
+# Hyperparameter blocks for promoted adversaries MUST be copied verbatim
+# from stage_B2_dev.yaml (a bare adversary name list crashes the runner's
+# constructor — see Phase VII-B 2026-04-26 BLOCKER-2 incident).
+
+games: "${promoted_games}"
+adversaries: "${promoted_adversaries}"
+
+methods:
+  - vanilla
+  - fixed_positive
+  - fixed_negative
+  - adaptive_beta            # alias of spec §11.2 `adaptive_beta_clipped`
+  - adaptive_sign_only
+
+# Same hyperparameters as dev.
+beta_max: 2.0
+beta_cap: 2.0
+k: 5.0
+beta0: 1.0
+gamma: 0.95
+learning_rate: 0.1
+
+epsilon_start: 1.0
+epsilon_end: 0.05
+epsilon_decay_episodes: 5000   # full Phase VII-A default at 10k episodes.
+
+# 10k episodes per cell; stratify transitions to keep parquet sizes sane.
+stratify_every: 10
+
+output_dir: results/adaptive_beta/strategic/raw/main

@@ -70,6 +70,10 @@ paper/auto/
 # aggregated tables in results/processed/ via git-lfs or manual curation.
 results/raw/**
 !results/raw/.gitkeep
+# Phase VII-B strategic raw artifacts are ~1 GB; regeneratable in ~15 min
+# from configs at experiments/adaptive_beta/strategic_games/configs/.
+results/adaptive_beta/strategic/raw/**
+!results/adaptive_beta/strategic/raw/.gitkeep
 # Keep processed tables; exclude ephemeral scratch files.
 results/processed/**/*.tmp
 results/processed/**/*.part

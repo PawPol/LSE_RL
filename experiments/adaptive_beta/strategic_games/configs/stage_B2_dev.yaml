@@ -1,0 +1,78 @@
+# Phase VII-B Stage B2-Dev — strategic-learning fast validation pass.
+#
+# Spec authority: tasks/phase_VII_B_strategic_learning_coding_agent_spec.md §11.1.
+# Branch: phase-VII-B-strategic-2026-04-26.
+#
+# Matrix size: 4 games x 3 adversaries x 5 methods x 3 seeds = 180 cells.
+#
+# Spec §11.1 names the method `adaptive_beta_clipped`; Phase VII-A's
+# schedule registry uses `adaptive_beta` for the clipped variant. The two
+# IDs are treated as aliases; we use `adaptive_beta` here so build_schedule
+# recognises the method without an extra alias map.
+#
+# Hyperparameters mirror Phase VII-A Stage A defaults (see
+# experiments/adaptive_beta/configs/dev.yaml) except that ε decay is
+# scheduled over the 1k-episode budget rather than the 5k Phase VII-A
+# default, so ε actually decays inside the dev horizon.
+#
+# Seeds: 3 paired seeds. Per spec §8.4 (parent VII-A) and §11.1 of VII-B:
+#   base_seed = 10000 + seed_id
+#   common_env_seed = base_seed
+#   agent_seed = base_seed + (stable_hash(method) % 1000)
+# Pairing across methods at fixed seed_id is preserved because
+# common_env_seed depends only on seed_id.
+
+stage: B2_dev
+episodes: 1000
+seeds: [0, 1, 2]
+
+games:
+  matching_pennies:
+    horizon: 1
+    mechanism_degenerate: true
+  strategic_rps:
+    horizon: 20
+  shapley:
+    horizon: 20
+  rules_of_road:
+    horizon: 20
+    tremble_prob: 0.05
+
+adversaries:
+  finite_memory_best_response:
+    memory_m: 20
+    inertia_lambda: 0.5
+    temperature: 0.2
+  finite_memory_regret_matching:
+    memory_m: 20
+  hypothesis_testing:
+    test_window_s: 100
+    tolerance_tau: 0.05
+    search_len: 50
+    temperature: 0.2
+
+methods:
+  - vanilla
+  - fixed_positive
+  - fixed_negative
+  - adaptive_beta            # alias of spec §11.1 `adaptive_beta_clipped`
+  - adaptive_sign_only
+
+# Adaptive-beta schedule hyperparameters (parent VII-A §4.2).
+beta_max: 2.0
+beta_cap: 2.0
+k: 5.0
+beta0: 1.0   # for fixed_positive / fixed_negative
+gamma: 0.95
+learning_rate: 0.1
+
+# Linear epsilon-greedy decay (flat keys per Phase VII-B prompt schema).
+epsilon_start: 1.0
+epsilon_end: 0.05
+epsilon_decay_episodes: 500
+
+# Stage A keeps every transition; B2-Dev follows suit at 1k episodes
+# (still small enough that full transition logging fits in memory).
+stratify_every: 1
+
+output_dir: results/adaptive_beta/strategic/raw/dev
