@@ -1,0 +1,11 @@
+game,adversary,method,mean_alignment_rate,mean_d_eff,mean_opponent_entropy,mean_policy_TV,support_shift_count,model_rejection_count,search_phase_episode_count,mean_external_regret
+shapley,finite_memory_regret_matching,adaptive_beta,0.8901,0.3747,0.9233,0.3992,9704,,,
+shapley,finite_memory_regret_matching,adaptive_sign_only,0.9052,0.4679,0.9243,0.3980,9698,,,
+shapley,finite_memory_regret_matching,fixed_negative,0.9056,0.4694,0.9244,0.3977,9691,,,
+shapley,finite_memory_regret_matching,fixed_positive,0.0539,1.7685,0.7564,0.4181,9084,,,
+shapley,finite_memory_regret_matching,vanilla,0.0000,0.9500,0.9243,0.3978,9692,,,
+shapley,hypothesis_testing,adaptive_beta,0.8620,0.4799,0.8593,0.2398,7843,1995.5000,6899.2000,
+shapley,hypothesis_testing,adaptive_sign_only,0.8949,0.5490,0.8573,0.2398,7830,1996.8000,6951.0000,
+shapley,hypothesis_testing,fixed_negative,0.8955,0.5502,0.8562,0.2403,7822,1996.4000,6880.4000,
+shapley,hypothesis_testing,fixed_positive,0.0528,1.7493,0.8582,0.2393,7844,1993.7000,7003.1000,
+shapley,hypothesis_testing,vanilla,0.0000,0.9500,0.8565,0.2403,7824,1995.1000,6928.1000,
