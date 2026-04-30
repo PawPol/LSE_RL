@@ -8,61 +8,53 @@
   "overnight_engaged_utc": "2026-04-30T22:34:42Z",
   "kickoff_git_head": "5d887df9d7b987c21bf37218816c347149e75854",
   "current_branch": "phase-VIII-tab-six-games-2026-04-30",
-  "current_git_head": "af33d7ea891273f92b50ea902f77e81d2a0cdf78",
-  "current_milestone": "M3",
+  "current_git_head": "39e8ffb479865bfa13e08862016a42406a9793ac",
+  "current_milestone": "M4",
   "current_tier": 1,
   "milestone_status": {
-    "M0": "complete",
-    "M1": "complete",
-    "M2": "complete",
-    "M3": "pending",
-    "M4": "pending",
-    "M5": "pending",
-    "M6": "pending",
-    "M7": "pending",
-    "M8": "pending",
-    "M9": "pending",
-    "M10": "pending",
-    "M11": "pending",
+    "M0": "complete", "M1": "complete", "M2": "complete", "M3": "complete",
+    "M4": "pending", "M5": "pending", "M6": "pending", "M7": "pending",
+    "M8": "pending", "M9": "pending", "M10": "pending", "M11": "pending",
     "M12": "pending"
   },
   "in_flight_dispatches": [],
-  "completed_dispatches_count": 11,
+  "completed_dispatches_count": 17,
   "completed_dispatches_summary": {
     "M0": ["addendum-commit"],
     "M1": ["W1.A-codex","W1.B-opus","W1.C-opus","W2.A-codex","W2.B-codex","W2.C-codex","W3.A-codex"],
-    "M2": ["M2.W1.A-opus","M2.W1.B-opus","M2.W2.A-codex","M2.W2.B-codex"]
+    "M2": ["M2.W1.A-opus","M2.W1.B-opus","M2.W2.A-codex","M2.W2.B-codex"],
+    "M3": ["M3.W1.A-opus","M3.W1.B-opus","M3.W1.C-opus","M3.W2.A-codex","M3.W2.B-codex","M3.W2.C-codex"]
   },
   "test_count_evolution": {
     "baseline_post_filterrepo": 506,
     "after_M1": 564,
-    "after_M2_strategic_games_only": 219,
-    "after_M2_total_phase_VIII_estimated": 612
+    "after_M2": 612,
+    "after_M3": 645,
+    "tests_adaptive_beta_total": 309
   },
   "failure_log": [],
   "halts": [],
-  "gates_acked": ["G0", "G1", "M1-close", "G2", "M2-close"],
+  "gates_acked": ["G0", "G1", "M1-close", "G2", "M2-close", "G3", "M3-close"],
   "gates_pending": [],
   "overnight_mode": {
     "engaged": true,
-    "auto_proceed_gates": ["G1","G2","G3","G4a","G4b","G5","G6a","G6b","G6c","G7a","G7b","G7c","G8","G9a","G9b","G9c","G10a","G10b","G10c","G11","G12a","G12b","G12c"],
     "auto_fix_major": true,
     "auto_fix_minor": true,
     "bug_hunt_active": true,
     "no_tex_edits": true
   },
   "budgets": {
-    "wall_clock_elapsed_seconds": 3700,
+    "wall_clock_elapsed_seconds": 4900,
     "wall_clock_cap_seconds": 129600,
-    "dispatch_count": 11,
+    "dispatch_count": 17,
     "dispatch_cap": 300,
     "token_spend_by_role": {
-      "opus-4-7": 319428,
-      "codex-gpt-5.5-xhigh": 442681
+      "opus-4-7": 579171,
+      "codex-gpt-5.5-xhigh": 632000
     }
   },
   "next_action": {
     "type": "dispatch",
-    "details": "M3 wave 1: env-builder × 3 (Opus 4.7) parallel — inertia.py, convention_switching.py, sign_switching_regime.py per spec §M3 + §5.7. Then M3 wave 2: test-author × 3 (codex gpt-5.5 xhigh) parallel — test_inertia_adversary.py, test_convention_switching_adversary.py, test_sign_switching_regime_adversary.py."
+    "details": "M4 wave 1: 4 schedules (Oracle, HandAdaptive, ContractionUCB, ReturnUCB) + 3 external baselines + factory dispatch update. M4 wave 2: 9 test files. M4 close: MANDATORY Codex review gate (G4b) per harness §9."
   }
 }

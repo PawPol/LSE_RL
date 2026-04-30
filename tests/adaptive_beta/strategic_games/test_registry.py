@@ -8,8 +8,8 @@ Invariants guarded
 - Unknown name lookup raises ``KeyError`` (silent fallback is forbidden).
 - Double-register without ``overwrite=True`` raises ``KeyError``.
 - ``GAME_REGISTRY`` lists exactly the 7 expected games after package import.
-- ``ADVERSARY_REGISTRY`` lists every expected adversary name (10 keys
-  covering 9 distinct classes + ``stationary_mixed`` alias).
+- ``ADVERSARY_REGISTRY`` lists every expected adversary name (13 keys
+  covering 12 distinct classes + ``stationary_mixed`` alias).
 """
 
 from __future__ import annotations
@@ -95,6 +95,10 @@ EXPECTED_ADVERSARIES = frozenset(
         "finite_memory_regret_matching",
         "hypothesis_testing",
         "realized_payoff_regret",
+        # Phase VIII M3 spec §5.7 additions.
+        "inertia",
+        "convention_switching",
+        "sign_switching_regime",
     }
 )
 
