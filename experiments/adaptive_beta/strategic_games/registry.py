@@ -63,6 +63,9 @@ from experiments.adaptive_beta.strategic_games.adversaries.inertia import (
 from experiments.adaptive_beta.strategic_games.adversaries.convention_switching import (
     ConventionSwitchingOpponent,
 )
+from experiments.adaptive_beta.strategic_games.adversaries.sign_switching_regime import (
+    SignSwitchingRegimeOpponent,
+)
 
 
 # Factory signature: ``factory(**kwargs) -> StrategicAdversary``  (or env).
@@ -86,6 +89,7 @@ ADVERSARY_REGISTRY: Dict[str, AdversaryFactory] = {
     "realized_payoff_regret":           RealizedPayoffRegret,  # OPTIONAL §7.9
     "inertia":                          InertiaOpponent,                 # Phase VIII M3 §5.7
     "convention_switching":             ConventionSwitchingOpponent,     # Phase VIII M3 §5.7
+    "sign_switching_regime":            SignSwitchingRegimeOpponent,     # Phase VIII M3 §5.7 / §10.5
 }
 
 
