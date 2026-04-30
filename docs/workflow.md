@@ -70,8 +70,8 @@ not contain secrets):
 
 # Strongest available Codex model for code review.
 # Update this value in a single PR when OpenAI releases a stronger one.
-model = "gpt-5.4"
-model_reasoning_effort = "high"
+model = "gpt-5.5"
+model_reasoning_effort = "xhigh"
 
 # Scope: operator math, safety machinery, calibration pipeline, and the
 # full test suite are the reviewer's primary targets.
@@ -143,7 +143,7 @@ results/
 
 - All Claude subagents: `claude-opus-4-6`, set in each subagent file's
   frontmatter.
-- Codex: `model = "gpt-5.4"` with `model_reasoning_effort = "high"`,
+- Codex: `model = "gpt-5.5"` with `model_reasoning_effort = "xhigh"`,
   pinned in `.codex/config.toml`.
 - Upgrade policy: when Anthropic or OpenAI ships a stronger model,
   update the pins in a single-file PR and run `/lse:verify --full` +
