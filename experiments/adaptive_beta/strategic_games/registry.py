@@ -57,6 +57,9 @@ from experiments.adaptive_beta.strategic_games.adversaries.hypothesis_testing im
 from experiments.adaptive_beta.strategic_games.adversaries.realized_payoff_regret import (
     RealizedPayoffRegret,
 )
+from experiments.adaptive_beta.strategic_games.adversaries.inertia import (
+    InertiaOpponent,
+)
 
 
 # Factory signature: ``factory(**kwargs) -> StrategicAdversary``  (or env).
@@ -78,6 +81,7 @@ ADVERSARY_REGISTRY: Dict[str, AdversaryFactory] = {
     "finite_memory_regret_matching":    FiniteMemoryRegretMatching,
     "hypothesis_testing":               HypothesisTestingAdversary,
     "realized_payoff_regret":           RealizedPayoffRegret,  # OPTIONAL §7.9
+    "inertia":                          InertiaOpponent,        # M3 §5.7
 }
 
 
