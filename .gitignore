@@ -74,6 +74,14 @@ results/raw/**
 # from configs at experiments/adaptive_beta/strategic_games/configs/.
 results/adaptive_beta/strategic/raw/**
 !results/adaptive_beta/strategic/raw/.gitkeep
+# Phase III/V/VI/VII run artifacts: per-transition .npz files are ~50 MB
+# each and dominated repo size (16 GB historical → expunged 2026-04-30
+# via git filter-repo). Regeneratable from configs and seed manifests.
+# Applied to ALL of results/ so phase-N subdirectories cannot leak the
+# pattern through (e.g., results/weighted_lse_dp/phase3/.../transitions.npz).
+results/**/*.npz
+results/**/*.parquet
+!results/**/.gitkeep
 # Keep processed tables; exclude ephemeral scratch files.
 results/processed/**/*.tmp
 results/processed/**/*.part
