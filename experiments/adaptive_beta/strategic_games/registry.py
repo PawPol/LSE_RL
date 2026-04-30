@@ -165,3 +165,16 @@ def make_game(name: str, **kwargs: Any) -> Any:
         )
     factory = GAME_REGISTRY[name]
     return factory(**kwargs)
+
+
+# ---------------------------------------------------------------------------
+# Phase VIII M2 — auto-register Soda / Uncertain Game (spec §5.5).
+#
+# The Phase VII games self-register via ``games/__init__.py`` import, but the
+# Phase VIII Soda module lives outside that package's import chain (per the
+# M2 dispatch boundary: only ``registry.py`` may be edited to wire it in).
+# Importing the module triggers its bottom-of-file ``register_game(...)``
+# call, populating ``GAME_REGISTRY["soda_uncertain"]``.
+from experiments.adaptive_beta.strategic_games.games import (  # noqa: E402,F401
+    soda_uncertain,
+)
