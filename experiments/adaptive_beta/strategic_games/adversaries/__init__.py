@@ -56,6 +56,9 @@ from experiments.adaptive_beta.strategic_games.adversaries.hypothesis_testing im
 from experiments.adaptive_beta.strategic_games.adversaries.realized_payoff_regret import (
     RealizedPayoffRegret,
 )
+from experiments.adaptive_beta.strategic_games.adversaries.inertia import (
+    InertiaOpponent,
+)
 
 __all__ = [
     "ADVERSARY_INFO_KEYS",
@@ -69,4 +72,5 @@ __all__ = [
     "FiniteMemoryRegretMatching",
     "HypothesisTestingAdversary",
     "RealizedPayoffRegret",
+    "InertiaOpponent",
 ]
