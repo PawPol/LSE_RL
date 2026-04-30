@@ -2906,3 +2906,152 @@ MAJOR (fix before merge but does not invalidate verdict), MINOR
 
 - [ ] [NIT] [memo] `paper_update/no_update_recommendation.md` is bare (29 lines). Spec §17 calls for a memo, not a table dump. Add 1-2 paragraphs of prose explaining (i) the mechanism evidence is supportive (align ≈ 0.86, d_eff ≈ 0.48 < γ = 0.95) but the performance is statistically tied with `fixed_negative` — i.e., the *adaptive* layer adds no value beyond a one-line constant choice on this game family — and (ii) the §17 promotion thresholds were not met because `≥ 2 strategic settings` is not satisfied with only Shapley × {FMRM, HypTest}. → plotter-analyst
 
+## Phase VIII — Six-Game Safe TAB Experiment Suite (branch: phase-VIII-tab-six-games-2026-04-30)
+
+**Spec:** `docs/specs/phase_VIII_tab_six_games.md` (v1, 2026-04-30).
+**Inputs:** `tasks/six_game_safe_TAB_harness_instructions.md` (v2) + user
+decisions of 2026-04-30 (phase number = VIII, Stage B2 rerun, M2 = Soda +
+Potential, UCB hyperparameters approved with two refinements, six
+architectural-conflict resolutions).
+**Status legend:** [V] verify (existing implementation), [N] new
+implementation, [X] experiment run, [A] analysis, [audit] verifier/Codex
+gate.
+
+### M0 — Planning
+
+- [x] [spec-read] Read AGENTS.md, CLAUDE.md, six_game_safe_TAB_harness_instructions.md (v2), docs/specs/phase_VII_adaptive_beta.md, results/adaptive_beta/strategic/{final_recommendation,stage_B2_main_summary}.md, tasks/lessons.md (32+ entries).
+- [x] [spec-read] Verify v2 §1.4 inventory by reading tab_operator.py, agents.py, schedules.py, registry.py, matrix_game.py, history.py, common/{io,manifests,schemas}.py, safe_weighted_common.py.
+- [x] [spec-read] Confirm potential-game absence; M2 implements both Soda + Potential.
+- [x] [infra] Materialize docs/specs/phase_VIII_tab_six_games.md (this commit).
+- [x] [infra] Materialize tasks/todo.md Phase VIII block (this commit).
+- [ ] [infra] Move tasks/phase_VII_C_sign_switching_coding_agent_spec.md to tasks/archive/phase_VII_C_sign_switching_superseded.md in the M0 commit; reference in spec §23 changelog.
+- [ ] [infra] Open separate task: update CLAUDE.md §7 stub claim (out-of-scope for M0 commit; address in a separate session before M1 verifier closes).
+- [ ] [infra] Cut branch `phase-VIII-tab-six-games-2026-04-30` from `phase-VII-B-strategic-2026-04-26` and commit M0 deliverables.
+
+### M1 — Infrastructure verification + delta
+
+- [ ] [V][test] Run tests/adaptive_beta/strategic_games/ under `.venv/bin/python` (lessons.md #1). Confirm 171/171 baseline green.
+- [ ] [V][operator] Run tests/algorithms/test_safe_weighted_lse_operator.py, test_safe_beta0_equivalence.py, test_safe_clipping_certification.py, tests/adaptive_beta/strategic_games/test_operator_shared_kernel.py.
+- [ ] [V][infra] Verify MatrixGameEnv, GameHistory, registry, RunWriter, make_run_dir, write_run_json, write_metrics_json, save_npz_with_schema behave as documented in spec §1.4.
+- [ ] [N][logging] Implement experiments/adaptive_beta/tab_six_games/manifests.py (Phase8RunRoster: rows, statuses, write_atomic, reconcile_with_disk, summarize). → experiment-runner.
+- [ ] [N][logging] Implement experiments/adaptive_beta/tab_six_games/metrics.py (delta metrics from spec §7.2). → experiment-runner.
+- [ ] [N][test] tests/adaptive_beta/tab_six_games/test_phase8_run_roster.py (atomic write, status enum, reconcile with disk, append-only, no duplicate cell_id). → test-author.
+- [ ] [N][test] tests/adaptive_beta/tab_six_games/test_phase_VIII_metrics.py (delta-metric definitions; finite under 1000-episode smoke on all 6 games × all 4 new schedules). → test-author.
+- [ ] [N][test] tests/adaptive_beta/tab_six_games/test_phase_VIII_result_root.py (lessons.md #11; assert make_run_dir is called with explicit base=Path("results/adaptive_beta/tab_six_games")). → test-author.
+- [ ] [N][test] Reproducibility test inheriting Phase VII §13.4 contract: dev.yaml run twice yields byte-identical metrics.npz. → test-author.
+- [ ] [audit] Verifier gate for M1 (tests + roster smoke + result-root regression). Deliverable: results/adaptive_beta/tab_six_games/infrastructure_verification.md.
+
+### M2 — Soda + Potential games
+
+- [ ] [N][env] experiments/adaptive_beta/strategic_games/games/soda_uncertain.py (5 subcases: SO-Coordination, SO-AntiCoordination, SO-ZeroSum, SO-BiasedPreference, SO-TypeSwitch; hidden ξ in info["regime"]). → env-builder.
+- [ ] [N][env] experiments/adaptive_beta/strategic_games/games/potential.py (4 subcases: PG-CoordinationPotential, PG-Congestion, PG-BetterReplyInertia, PG-SwitchingPayoff; canonical sign "+"; document potential function Φ explicitly). → env-builder.
+- [ ] [N][env] Register Soda and Potential in GAME_REGISTRY via register_game(...) at module-import time. → env-builder.
+- [ ] [N][test] tests/adaptive_beta/strategic_games/test_soda_uncertain.py (payoff per type; hidden-type sampling determinism under seed; state-encoder shape; horizon termination; info["regime"] schema). → test-author.
+- [ ] [N][test] tests/adaptive_beta/strategic_games/test_potential.py (payoff correctness; potential function Φ pinned; one-step BR strictly increases Φ from any non-equilibrium state). → test-author.
+- [ ] [audit] Verifier gate for M2. Deliverable: results/adaptive_beta/tab_six_games/game_implementation_report.md.
+
+### M3 — Delta adversaries
+
+- [ ] [N][env] experiments/adaptive_beta/strategic_games/adversaries/inertia.py (sticky-action; inertia_lambda; finite-memory window; honors StrategicAdversary info-key contract). → env-builder.
+- [ ] [N][env] experiments/adaptive_beta/strategic_games/adversaries/convention_switching.py (stochastic OR periodic switch; info["regime"] ∈ {"left", "right"} for RR-ConventionSwitch). → env-builder.
+- [ ] [N][env] experiments/adaptive_beta/strategic_games/adversaries/sign_switching_regime.py (G_+ ↔ G_- composite controller; info["regime"] ∈ {"plus", "minus"}; exogenous dwell D ∈ {100, 250, 500, 1000} + endogenous trigger on rolling win/loss/predictability). → env-builder.
+- [ ] [N][env] Register all three in ADVERSARY_REGISTRY. → env-builder.
+- [ ] [N][test] tests/adaptive_beta/strategic_games/test_inertia_adversary.py (probability normalization; finite-memory; determinism). → test-author.
+- [ ] [N][test] tests/adaptive_beta/strategic_games/test_convention_switching_adversary.py (switch determinism; info["regime"] exposed). → test-author.
+- [ ] [N][test] tests/adaptive_beta/strategic_games/test_sign_switching_regime_adversary.py (exogenous dwell correctness; endogenous-trigger correctness; regime determinism). → test-author.
+- [ ] [audit] Verifier gate for M3. Deliverable: results/adaptive_beta/tab_six_games/opponent_baseline_report.md.
+
+### M4 — Delta β schedules + external baselines
+
+- [ ] [N][scheduler] OracleBetaSchedule in schedules.py — reads info["regime"] only; raises KeyError on missing regime; lookup table per-env. → algo-implementer.
+- [ ] [N][scheduler] HandAdaptiveBetaSchedule — pre-registered episode rule (β_{e+1} = sign(Ā_e) · β₀ · min(1, |Ā_e|/Ā_scale); β₀=1.0, Ā_scale=0.1, λ_smooth=1.0); no per-task tuning. → algo-implementer.
+- [ ] [N][scheduler] ContractionUCBBetaSchedule — 7-arm grid {-2, -1, -0.5, 0, +0.5, +1, +2}; reward M_e(β) = log(R_{e-1}+ε) − log(R_e+ε); ε=1e-8 with np.log (NOT log1p, lessons.md #27); per-arm Welford standardisation; c=1.0 standardised; round-robin warm-start episodes 0..6, UCB selection from 7; residual_smoothing_window=1 default (configurable). → algo-implementer + operator-theorist (numerical-stability review).
+- [ ] [N][scheduler] ReturnUCBBetaSchedule — same 7-arm grid; reward = episode return; per-arm Welford standardisation; c=√2 against the standardised reward (NOT raw return). → algo-implementer.
+- [ ] [N][scheduler] Register METHOD_ORACLE_BETA, METHOD_HAND_ADAPTIVE_BETA, METHOD_CONTRACTION_UCB_BETA, METHOD_RETURN_UCB_BETA in ALL_METHOD_IDS; extend build_schedule(...) factory. → algo-implementer.
+- [ ] [N][algo] experiments/adaptive_beta/baselines.py: RestartQLearningAgent (full Q reset on rolling-return drop / NaN / divergence trigger), SlidingWindowQLearningAgent (sliding-window Q estimates), TunedEpsilonGreedyQLearningAgent (vanilla Q with ε schedule selected by Stage A dev sweep). → algo-implementer.
+- [ ] [V][operator] Confirm no edits to src/lse_rl/operator/tab_operator.py or mushroom-rl-dev/.../safe_weighted_common.py. If any are made, log in tasks/lessons.md with justification and trigger ad-hoc Codex review (spec §11.2 operator focus).
+- [ ] [N][test] test_oracle_beta_schedule.py (uses regime, errors when regime absent; oracle is the only schedule that reads info["regime"]). → test-author.
+- [ ] [N][test] test_hand_adaptive_schedule.py (deterministic under seed; rule documented; pre-registered hyperparameters fixed). → test-author.
+- [ ] [N][test] test_contraction_ucb_schedule.py (UCB arm accounting; reward sign; finite contraction reward). → test-author.
+- [ ] [N][test] test_contraction_ucb_arm_accounting.py — total pulls = total episodes; each arm pulled at least once during warm-start (episodes 0..6); arm-value updates match Welford recursion bit-identically. → test-author.
+- [ ] [N][test] test_return_ucb_schedule.py (UCB accounting; return magnitude). → test-author.
+- [ ] [N][test] test_return_ucb_standardisation.py — per-arm standardised reward stream has empirical mean ≈ 0 and std ≈ 1 after 1000 stationary episodes (tolerance ≤ 0.1). → test-author.
+- [ ] [N][test] test_contraction_reward_finite.py — M_e(β) finite for all 7 arms across 1000 episodes on each of the 6 games (regression for lessons.md #27). → test-author.
+- [ ] [N][test] test_baselines.py (restart trigger; sliding-window discipline; ε-schedule shape). → test-author.
+- [ ] [N][test] test_beta0_collapse_preserved.py — every new schedule, when emitting β=0, produces classical Bellman target bit-identically (regression of AdaptiveBetaQAgent's assertion). → test-author.
+- [ ] [N][test] test_clipping_bounds.py — β never exits configured [-β_cap, +β_cap] for clipped variants. → test-author.
+- [ ] [audit] Verifier gate for M4. Codex/adversarial review REQUIRED iff operator or stable infrastructure was modified (spec §11.2 operator focus). Deliverable: results/adaptive_beta/tab_six_games/agent_operator_verification.md.
+
+### M5 — Phase VIII metrics + analysis scaffold
+
+- [ ] [V][analysis] Verify Phase VII metric pipeline emits §7.1 fields correctly under a smoke run; list any field the existing pipeline does not produce as a gap to fill. → experiment-runner.
+- [ ] [N][analysis] tab_six_games/analysis/aggregate.py — long-CSV aggregator keyed on (phase, stage, game, subcase, method, seed, episode); union of §7.1 + §7.2 fields. → experiment-runner.
+- [ ] [N][plot] tab_six_games/analysis/beta_sweep_plots.py: β vs AUC, β vs contraction reward. → plotter-analyst.
+- [ ] [N][plot] tab_six_games/analysis/learning_curves.py. → plotter-analyst.
+- [ ] [N][plot] tab_six_games/analysis/contraction_plots.py: arm-probability traces, log-residual reduction. → plotter-analyst.
+- [ ] [N][plot] tab_six_games/analysis/sign_switching_plots.py: switch-aligned return, switch-aligned β. → plotter-analyst.
+- [ ] [N][plot] tab_six_games/analysis/safety_catastrophe.py: catastrophic_episodes, beta_clip_frequency, worst_window_return_percentile. → plotter-analyst.
+- [ ] [N][test] Schema parity tests; figure smoke tests (all production-mode paths exercised, NOT just --demo, lessons.md #16). → test-author.
+- [ ] [audit] Verifier gate for M5 (schema parity + delta-metric finiteness). Deliverable: results/adaptive_beta/tab_six_games/metric_logging_verification.md.
+
+### M6 — Stage 1 β-grid sweep
+
+- [ ] [X][ablation] Stage A dev β sweep — 3 seeds × 1k episodes × 7 β arms × 6 games × promoted subcases. Throughput projection feeds main-pass wall-clock estimate. → experiment-runner.
+- [ ] [audit] Stage A → Stage 1 main user sign-off (M3.5 gate). → planner.
+- [ ] [X][ablation] Stage 1 main β sweep — 10 seeds × 10k episodes × 7 β arms × 6 games × promoted subcases. → experiment-runner.
+- [ ] [A][analysis] beta_sweep_table.csv (Game × Subcase × β × {AUC, Final Return, Recovery, Mean d_eff, Align Rate, Bellman Residual}; H=1 mechanism cells = "n/a"). → plotter-analyst.
+- [ ] [N][plot] beta_vs_auc.pdf, beta_vs_contraction.pdf. → plotter-analyst.
+- [ ] [audit] Verifier gate for M6 (all (game, subcase, β, seed) cells in roster; β=0 = classical baseline within tolerance; bellman_residual finite; nan_count=0). Deliverable: stage1_beta_sweep.md.
+- [ ] [audit] Codex review IF Stage 1 results enter main paper (spec §11.2 fixed-β focus).
+
+### M7 — Stage 2 fixed TAB vs vanilla and external baselines
+
+- [ ] [X][ablation] Stage 2 — vanilla + best_fixed_positive_TAB + best_fixed_negative_TAB + best_fixed_beta_grid + 3 external baselines × 6 games × M6-promoted subcases × 10–20 seeds × 10k episodes. best_fixed_* selection from M6 dev-seed slice; main-seed slice held out (lessons.md #19, #20). → experiment-runner.
+- [ ] [A][analysis] main_fixed_tab_results.csv. → plotter-analyst.
+- [ ] [N][plot] main_learning_curves.pdf. → plotter-analyst.
+- [ ] [audit] Verifier gate for M7 (paired-seed comparison; baseline completeness; no silent drops; honesty rule on baseline wins). Deliverable: stage2_fixed_tab_vs_baselines.md.
+
+### M8 — Stage 3 sign-specialization analysis
+
+- [ ] [A][analysis] Identify G_+ and G_- candidates (paired-seed AUC). → plotter-analyst.
+- [ ] [A][analysis] sign_specialization_table.csv (Game × Subcase × {G_+ flag, G_- flag, AUC margin, paired CI}). → plotter-analyst.
+- [ ] [A][analysis] Cross-reference Phase VII results/adaptive_beta/strategic/final_recommendation.md as READ-ONLY narrative reference; mark agreement / refinement / disagreement explicitly. NO paired-seed comparison across phases. → plotter-analyst.
+- [ ] [audit] Stage 3 gate: stop adaptive sign-switching work if no credible G_+ AND G_-. If gate fails, write results/adaptive_beta/tab_six_games/no_G_plus_found.md and skip M9–M10. Deliverable: stage3_sign_specialization.md.
+
+### M9 — Stage 4 sign-switching composite
+
+- [ ] [N][env] experiments/adaptive_beta/tab_six_games/composites/sign_switching.py (G_+ ↔ G_- composite environment wrapper using sign_switching_regime adversary). → env-builder.
+- [ ] [N][env] experiments/adaptive_beta/tab_six_games/composites/composite_registry.py. → env-builder.
+- [ ] [N][test] test_sign_switching_composite.py (regime determinism; hidden ξ exposed only to oracle; payoff correctness within each regime; switch-event accounting). → test-author.
+- [ ] [X][ablation] Oracle validation run (oracle β must beat both fixed signs on AUC and recovery; one redesign attempt allowed; if still failing, write oracle_composite_failed.md and stop M9). → experiment-runner.
+- [ ] [X][ablation] Adaptive β comparison: vanilla, fixed_positive_TAB, fixed_negative_TAB, best_fixed_beta_grid, hand_adaptive_beta, contraction_UCB_beta, oracle_beta × composite × {exogenous dwell D ∈ {100, 250, 500, 1000}, endogenous trigger} × 10–20 seeds × 10k episodes. → experiment-runner.
+- [ ] [N][plot] switch_aligned_return.pdf, switch_aligned_beta.pdf, beta_sign_accuracy.pdf. → plotter-analyst.
+- [ ] [audit] Verifier gate for M9 (oracle dominance; paired seeds; switch-event accounting; regime exposed only to oracle). Deliverable: stage4_sign_switching.md.
+- [ ] [audit] Codex / adversarial review REQUIRED if adaptive β claims proposed (spec §11.2 sign-switching focus).
+
+### M10 — Stage 5 contraction-adaptive β
+
+- [ ] [N][scheduler] Finalize contraction_UCB_beta + return_UCB_beta + contraction_UCB_beta_with_return_safeguard variant. → algo-implementer.
+- [ ] [X][ablation] Stage 5 — contraction_UCB_beta, return_UCB_beta, contraction_UCB_beta_with_return_safeguard × {stationary G_-, stationary G_+, sign-switching composite, RR-ConventionSwitch} × 10 seeds × 10k episodes. → experiment-runner.
+- [ ] [A][analysis] contraction_adaptive_results.csv. → plotter-analyst.
+- [ ] [N][plot] contraction_ucb_arm_probs.pdf, contraction_ucb_learning_curves.pdf. → plotter-analyst.
+- [ ] [audit] Verifier gate for M10 (UCB accounting; arm counts; contraction-reward correctness; seed pairing). Revisit residual_smoothing_window default if arm counts collapse to a single arm prematurely or oscillate. Deliverable: stage5_contraction_adaptive_beta.md.
+- [ ] [audit] Codex / adversarial review REQUIRED if claiming adaptive β beats fixed signs.
+
+### M11 — Optional advanced (appendix, only if user-authorized)
+
+- [ ] [N][scheduler] HedgeBetaSchedule / DiscountedHedgeBetaSchedule. → algo-implementer.
+- [ ] [N][scheduler] GradientBetaSchedule / BilevelBetaSchedule. → algo-implementer + operator-theorist.
+- [ ] [A][analysis] appendix_advanced_adaptive_beta.md.
+- [ ] [audit] Appendix-only review unless results are unexpectedly very strong.
+
+### M12 — Final recommendation
+
+- [ ] [A][analysis] Build main-paper candidate tables (main_table_fixed_tab.csv, main_table_baselines.csv, main_table_adaptive.csv). → plotter-analyst.
+- [ ] [N][plot] Build main-paper candidate figures (main_beta_grid_operator_diagnostic.pdf, main_learning_curves.pdf, main_sign_switching_beta.pdf, main_safety_catastrophe.pdf). → plotter-analyst.
+- [ ] [infra] results/adaptive_beta/tab_six_games/final_recommendation.md (explicit cross-reference to Phase VII final_recommendation.md with agreement / refinement / disagreement statement). → planner.
+- [ ] [infra] paper_update/{main_patch,appendix_patch,no_update}.md (only one is the primary recommendation). → planner.
+- [ ] [audit] Final verifier (full repo test sweep; roster completeness across M1–M11). → verifier.
+- [ ] [audit] Final Codex / adversarial review (spec §11.2 final-close focus string). → review-triage.
+- [ ] [audit] review-triage close (BLOCKER == ∅). → review-triage.
+
