@@ -3055,3 +3055,395 @@ gate.
 - [ ] [audit] Final Codex / adversarial review (spec §11.2 final-close focus string). → review-triage.
 - [ ] [audit] review-triage close (BLOCKER == ∅). → review-triage.
 
+---
+
+## Phase VIII M1 — Dispatch Plan (2026-04-30)
+
+**Status:** plan-only. NO subagent dispatched yet. Awaiting user check-in
+before any Agent tool call.
+
+**Branch:** `phase-VIII-tab-six-games-2026-04-30` (HEAD `5d887df9`).
+
+**Source-of-truth refs:**
+- Spec: `docs/specs/phase_VIII_tab_six_games.md` §M1 (lines under
+  "M1 — Infrastructure verification + delta" in §14 and §13/§19/§20).
+- Existing M1 todo items above this section (the M1 block under
+  "## Phase VIII — Six-Game Safe TAB Experiment Suite").
+- AGENTS.md §3 invariants (one task per subagent; parallelize via
+  worktree isolation; verifier gate before done) and §4 dispatch table
+  (tag → subagent).
+- AGENTS.md §6 worktree discipline (branch naming
+  `phase-<P>/<role>/<short-slug>`; merge to working branch; verifier
+  on the merged branch, not the worktree).
+
+### Goal (M1 deliverables, per spec)
+
+1. **Verify Phase VII infrastructure is intact post-filter-repo** and
+   behaves per spec §1.4 (operator kernel, MatrixGameEnv, GameHistory,
+   registry, RunWriter, IO helpers). Run existing tests under
+   `.venv/bin/python` (lessons.md #1).
+2. **Implement Phase VIII deltas:**
+   - `experiments/adaptive_beta/tab_six_games/manifests.py` →
+     `Phase8RunRoster` per spec §8.2 (rows, statuses, `write_atomic`,
+     `reconcile_with_disk`, `summarize`).
+   - `experiments/adaptive_beta/tab_six_games/metrics.py` → delta metrics
+     per spec §7.2 (`contraction_reward`, `empirical_contraction_ratio`,
+     `log_residual_reduction`, `ucb_arm_count`, `ucb_arm_value`,
+     `beta_clip_count`/`frequency`, `recovery_time_after_shift`,
+     `beta_sign_correct`, `beta_lag_to_oracle`, `regret_vs_oracle`,
+     `catastrophic_episodes`, `worst_window_return_percentile`,
+     `trap_entries`, `constraint_violations`, `overflow_count`).
+3. **Write tests** (under `tests/adaptive_beta/tab_six_games/`):
+   - `test_phase8_run_roster.py` — atomic write, status enum,
+     reconcile-with-disk, append-only, no duplicate `cell_id`.
+   - `test_phase_VIII_metrics.py` — delta-metric definitions; finite
+     under 1000-episode smoke (mocking the agent, since Phase VIII
+     runners do not exist yet; rely on synthetic episode traces).
+   - `test_phase_VIII_result_root.py` — lessons.md #11 regression;
+     `Phase8RunRoster` and any Phase VIII runner produces paths under
+     `results/adaptive_beta/tab_six_games/`, never under
+     `results/weighted_lse_dp/`. Mock `RESULT_ROOT` to assert explicit
+     `base=...` argument is passed.
+4. **Verifier M1 gate** — write
+   `results/adaptive_beta/tab_six_games/infrastructure_verification.md`.
+
+### Dependency graph (3 waves)
+
+```
+                    Wave 1 (parallel, ~3 worktrees + 1 read-only)
+        ┌──────────────────┬───────────────────┬───────────────────┐
+        │                  │                   │                   │
+        ▼                  ▼                   ▼                   ▼
+   W1.A verifier      W1.B exp-runner    W1.C exp-runner    (W1.D moved → W2)
+   (existing tests +  (manifests.py:     (metrics.py:
+   spec §1.4 audit;   Phase8RunRoster)   delta metrics §7.2)
+   no worktree)
+        │                  │                   │
+        │                  │                   │
+        └─→ infra_verif ←──┘ ←─────────────────┘
+            (interim
+             notes) merge W1.B & W1.C to phase-VIII branch
+                  │
+                  ▼
+                  Wave 2 (parallel after W1.B and W1.C merged)
+        ┌─────────────────┬─────────────────┬──────────────────┐
+        │                 │                 │                  │
+        ▼                 ▼                 ▼                  │
+   W2.A test-author  W2.B test-author  W2.C test-author        │
+   (test_phase8_     (test_phase_VIII_ (test_phase_VIII_       │
+   run_roster.py;    metrics.py;       result_root.py;         │
+   needs W1.B)       needs W1.C)       needs W1.B)             │
+        │                 │                 │                  │
+        └─────────────────┴────────┬────────┘                  │
+                                   │                            │
+                                   ▼                            │
+                            Wave 3 (sequential)                 │
+                                   │                            │
+                                   ▼                            ▼
+                            W3.A verifier (M1 gate)
+                            (full pytest sweep across the
+                             merged phase-VIII branch + roster
+                             smoke + result-root regression +
+                             write infrastructure_verification.md)
+```
+
+### Per-task brief
+
+#### W1.A — verifier — existing-test sweep + spec §1.4 audit
+
+```
+subagent_type : verifier
+isolation     : none (read-only)
+branch        : current (phase-VIII-tab-six-games-2026-04-30)
+scope         : Read-only verification.
+              : 1. Run pytest under .venv/bin/python on:
+              :    tests/adaptive_beta/strategic_games/  (171 tests baseline per Phase VII memo)
+              :    tests/algorithms/test_safe_weighted_lse_operator.py
+              :    tests/algorithms/test_safe_beta0_equivalence.py
+              :    tests/algorithms/test_safe_clipping_certification.py
+              :    tests/adaptive_beta/strategic_games/test_operator_shared_kernel.py
+              : 2. Confirm spec §1.4 inventory symbols still resolve:
+              :    src.lse_rl.operator.tab_operator.{g,rho,effective_discount,_EPS_BETA,_is_classical}
+              :    experiments.adaptive_beta.agents.AdaptiveBetaQAgent
+              :    experiments.adaptive_beta.schedules.{build_schedule, ALL_METHOD_IDS}
+              :    experiments.adaptive_beta.strategic_games.{matrix_game.MatrixGameEnv,
+              :      history.GameHistory, registry.{GAME_REGISTRY, ADVERSARY_REGISTRY}}
+              :    experiments.weighted_lse_dp.common.{io, manifests, schemas} symbols
+              :    mushroom_rl.algorithms.value.dp.safe_weighted_common.SafeWeightedCommon
+              : 3. Per-test-file PASS/FAIL report (no test count truncation).
+              : 4. Light smoke: import tab_operator and call g(0,0.95,1.0,1.0); assert classical-collapse.
+deliverable   : Structured handoff per AGENTS.md §7. Also leaves an interim
+              : results/adaptive_beta/tab_six_games/infrastructure_verification.md
+              : draft (the verifier may write this single deliverable per spec §M1).
+              : Final verifier gate is W3.A; W1.A is the existence/regression check.
+expected      : All target tests PASS. If any FAIL: STOP M1 and report; do NOT
+              : start Wave 1 implementation tasks until baseline is green.
+deps          : none
+```
+
+#### W1.B — experiment-runner — implement Phase8RunRoster
+
+```
+subagent_type : experiment-runner
+isolation     : worktree
+branch        : phase-VIII/experiment-runner/phase8-run-roster
+scope         : NEW file experiments/adaptive_beta/tab_six_games/manifests.py
+              : implementing class Phase8RunRoster per spec §8.2:
+              :   rows: run_id, config_hash, seed, game, subcase, method,
+              :         status, start_time, end_time, result_path,
+              :         failure_reason, git_commit
+              :   statuses: pending | running | completed | failed | diverged
+              :             | skipped | stopped-by-gate
+              :   methods: write_atomic(path), reconcile_with_disk(raw_root),
+              :            summarize(), append(row), update_status(run_id, ...)
+              : Must NOT duplicate logic from
+              :   experiments/weighted_lse_dp/common/manifests.py.
+              : Reuse git_sha(), resolve_config(), atomic write helpers where
+              : sensible. Do NOT edit common/manifests.py.
+              : Constraint: NO DEPENDENCY on Phase8RunRoster on running tab_six_games
+              : runners (those don't exist yet). The roster is a standalone
+              : container; tests in W2.A drive it via fixtures.
+              : Schema header version: SCHEMA_VERSION = "1.0.0" (mirrors common/io.py).
+deliverable   : src file + module docstring + Phase VII §1.4 / §8.2
+              : cross-reference + structured handoff per AGENTS.md §7.
+expected      : pytest of common/manifests.py (existing) still passes.
+              : Module imports cleanly under .venv/bin/python.
+deps          : W1.A green (so we know baseline is healthy before implementing).
+post-merge    : orchestrator merges worktree branch into
+              : phase-VIII-tab-six-games-2026-04-30 after handoff is reviewed.
+```
+
+#### W1.C — experiment-runner — implement delta metrics module
+
+```
+subagent_type : experiment-runner
+isolation     : worktree
+branch        : phase-VIII/experiment-runner/phase-VIII-metrics
+scope         : NEW file experiments/adaptive_beta/tab_six_games/metrics.py
+              : implementing the §7.2 delta metrics. Each metric is a pure
+              : function over per-episode arrays (np.float64) → float
+              : (or per-arm vector → np.ndarray). Functions:
+              :   contraction_reward(R_e_arr, eps=1e-8) -> np.ndarray
+              :   empirical_contraction_ratio(R_e_arr, eps=1e-8) -> np.ndarray
+              :   log_residual_reduction(R_e_arr, eps=1e-8) -> np.ndarray
+              :   ucb_arm_count(arm_idx_history, n_arms=7) -> np.ndarray
+              :   ucb_arm_value(reward_history, arm_idx_history, n_arms=7) -> np.ndarray
+              :   beta_clip_count(beta_raw_arr, beta_used_arr, atol=1e-8) -> int
+              :   beta_clip_frequency(beta_raw_arr, beta_used_arr, atol=1e-8) -> float
+              :   recovery_time_after_shift(return_smooth_arr, shift_episode, threshold) -> int
+              :   beta_sign_correct(beta_used_arr, oracle_beta_arr) -> np.ndarray (bool)
+              :   beta_lag_to_oracle(beta_used_arr, oracle_beta_arr) -> np.ndarray (int)
+              :   regret_vs_oracle(oracle_return_arr, method_return_arr) -> float
+              :   catastrophic_episodes(return_arr, theta_low) -> int
+              :   worst_window_return_percentile(return_arr, window=100, pct=5) -> float
+              :   trap_entries(state_traj, trap_states) -> int
+              :   constraint_violations(constraint_log) -> int
+              :   overflow_count(q_abs_max_arr, threshold=1e6) -> int
+              : Use np.log (NOT log1p, lessons.md #27); ε = 1e-8 floor.
+              : Module docstring cites spec §7.2.
+              : NO IMPORT FROM tab_operator or schedules — pure metric module.
+deliverable   : src file + structured handoff per AGENTS.md §7.
+expected      : Module imports cleanly under .venv/bin/python.
+              : All metric functions handle empty arrays gracefully (return 0
+              : or empty array, not raise).
+deps          : W1.A green.
+post-merge    : merge to phase-VIII branch.
+```
+
+#### W2.A — test-author — Phase8RunRoster tests
+
+```
+subagent_type : test-author
+isolation     : worktree
+branch        : phase-VIII/test-author/test-phase8-run-roster
+scope         : NEW file tests/adaptive_beta/tab_six_games/test_phase8_run_roster.py
+              : (and conftest.py / fixtures dir if needed).
+              : Test cases:
+              :   1. test_atomic_write — write to a tmp_path; SIGTERM mid-write
+              :      simulation OR partial-write fixture; assert no half-written
+              :      file is left behind.
+              :   2. test_status_enum — every recorded row has a valid status;
+              :      attempting to set an invalid status raises.
+              :   3. test_append_only_no_duplicate_cell_id — appending two rows
+              :      with the same (game, subcase, method, seed_id) raises
+              :      ValueError; lessons.md #20 (manifest pollution regression).
+              :   4. test_reconcile_with_disk — fixture: 3 run dirs under
+              :      results/adaptive_beta/tab_six_games/raw/...; assert roster
+              :      reconcile detects all 3 and matches statuses.
+              :   5. test_summarize — counts by status are correct.
+              :   6. test_atomic_write_durability — write to file; corrupt the
+              :      file; assert the prior atomic-write file is still loadable.
+              :   7. test_round_trip — write, read back, assert row equality
+              :      (modulo timestamps).
+              : Test fixtures use tmp_path, NOT real result paths.
+deliverable   : test file(s) + structured handoff.
+expected      : `pytest tests/adaptive_beta/tab_six_games/test_phase8_run_roster.py`
+              : passes 100%.
+deps          : W1.B merged to phase-VIII branch.
+post-merge    : merge to phase-VIII branch.
+```
+
+#### W2.B — test-author — Phase VIII metrics tests
+
+```
+subagent_type : test-author
+isolation     : worktree
+branch        : phase-VIII/test-author/test-phase-VIII-metrics
+scope         : NEW file tests/adaptive_beta/tab_six_games/test_phase_VIII_metrics.py.
+              : Test cases per metric (one or two per function):
+              :   contraction_reward: M_e for r_e=1, r_{e+1}=0.1 ≈ +1.0 (sign).
+              :   contraction_reward at r_e = r_{e+1} ≈ 0.
+              :   contraction_reward finite for r_e=0, r_{e+1}=0 (ε floor).
+              :   ucb_arm_count: pulled-arm sequence → counts vector match.
+              :   ucb_arm_value: Welford-style running mean exact.
+              :   beta_clip_*: detects clip events at |β_raw| > β_cap.
+              :   recovery_time_after_shift: synthetic monotone return →
+              :     correct first-crossing index.
+              :   beta_sign_correct, beta_lag_to_oracle: synthetic vs oracle.
+              :   regret_vs_oracle: oracle dominance → positive regret.
+              :   catastrophic_episodes: count below θ_low.
+              :   worst_window_return_percentile: rolling-window p5 correct.
+              :   overflow_count: q_abs_max > threshold counted.
+              : Empty-array handling: every metric returns 0 / empty without raise.
+              : Smoke test: 1000-episode synthetic trace; no NaN, no Inf,
+              : metrics finite for all 7 arms.
+deliverable   : test file + structured handoff.
+expected      : `pytest tests/adaptive_beta/tab_six_games/test_phase_VIII_metrics.py`
+              : passes 100%.
+deps          : W1.C merged to phase-VIII branch.
+post-merge    : merge to phase-VIII branch.
+```
+
+#### W2.C — test-author — result-root regression test
+
+```
+subagent_type : test-author
+isolation     : worktree
+branch        : phase-VIII/test-author/test-phase-VIII-result-root
+scope         : NEW file tests/adaptive_beta/tab_six_games/test_phase_VIII_result_root.py.
+              : Test cases (lessons.md #11):
+              :   1. test_phase8_run_roster_default_base — instantiating
+              :      Phase8RunRoster with no explicit base produces paths
+              :      under results/adaptive_beta/tab_six_games/, NOT under
+              :      results/weighted_lse_dp/. (Use monkeypatch to mutate
+              :      common.io.RESULT_ROOT and assert no leak.)
+              :   2. test_make_run_dir_explicit_base_required — calling
+              :      make_run_dir with base=Path("results/adaptive_beta/tab_six_games")
+              :      yields the expected nested path
+              :      results/adaptive_beta/tab_six_games/<phase>/<suite>/<task>/<algo>/seed_<seed>/.
+              :   3. test_make_run_dir_default_base_warns_or_errors — calling
+              :      make_run_dir without explicit base (using common.io
+              :      module-level default) is REJECTED by Phase VIII contract;
+              :      either monkey-patch RESULT_ROOT to a sentinel value
+              :      and assert the produced path uses the sentinel root,
+              :      OR (preferred) require the test target to fail loudly.
+              :   4. (Forward-looking) test_phase_VIII_runner_uses_explicit_base
+              :      — placeholder test; skip with pytest.mark.skip until M5
+              :      runners exist; will be enabled in M6.
+              : Test fixtures use tmp_path; NO writes outside tmp.
+deliverable   : test file + structured handoff.
+expected      : `pytest tests/adaptive_beta/tab_six_games/test_phase_VIII_result_root.py`
+              : passes 100%.
+deps          : W1.B merged to phase-VIII branch (needs Phase8RunRoster import).
+post-merge    : merge to phase-VIII branch.
+```
+
+#### W3.A — verifier — M1 gate
+
+```
+subagent_type : verifier
+isolation     : none (read-only)
+branch        : phase-VIII-tab-six-games-2026-04-30 (post all Wave 2 merges)
+scope         : 1. Full pytest sweep:
+              :    pytest tests/adaptive_beta/strategic_games/
+              :    pytest tests/adaptive_beta/tab_six_games/
+              :    pytest tests/algorithms/   (regression sentinels)
+              :    All under .venv/bin/python.
+              : 2. Roster smoke: instantiate Phase8RunRoster, append synthetic
+              :    rows, write_atomic, reconcile, assert all PASS.
+              : 3. Result-root regression: call test_phase_VIII_result_root.py
+              :    explicitly; assert no path under results/weighted_lse_dp/.
+              : 4. Reproducibility (inherited from Phase VII): run
+              :    tests/adaptive_beta/strategic_games/test_reproducibility.py;
+              :    PASS.
+              : 5. Write FINAL
+              :    results/adaptive_beta/tab_six_games/infrastructure_verification.md
+              :    with: per-test-file PASS/FAIL, roster smoke result,
+              :    result-root regression result, total test count, wall-clock.
+              : 6. Produce PASS/FAIL verdict for M1 close.
+deliverable   : infrastructure_verification.md + verdict.
+expected      : All checks PASS. M1 closes only on PASS.
+deps          : W2.A, W2.B, W2.C all merged to phase-VIII branch.
+on-fail       : STOP. Report failure mode. Do NOT proceed to M2.
+```
+
+### Merge order
+
+1. (None — Wave 1 cancels nothing on the working branch yet.)
+2. After W1.B handoff approved → merge `phase-VIII/experiment-runner/phase8-run-roster` → `phase-VIII-tab-six-games-2026-04-30`.
+3. After W1.C handoff approved → merge `phase-VIII/experiment-runner/phase-VIII-metrics`.
+4. (No conflict expected; the two worktrees touch different files.)
+5. Wave 2 dispatched after both W1.B and W1.C have merged.
+6. After W2.A / W2.B / W2.C handoffs approved → merge each.
+7. W3.A runs on the post-merge `phase-VIII-tab-six-games-2026-04-30` HEAD.
+8. After W3.A PASS → push to origin
+   (`git push origin phase-VIII-tab-six-games-2026-04-30`).
+9. M1 todo items above this section flipped to `[x]`.
+
+### Stop condition for this dispatch
+
+- After W3.A PASS verdict and origin push.
+- Do NOT auto-proceed to M2.
+- Cleanup: `/tmp/LSE_RL.pre-filterrepo-2026-04-30.bundle` (16 GB) can be
+  removed once W3.A is green and origin push succeeds.
+
+### Risk register / open notes
+
+1. **W1.A baseline failure.** If existing strategic_games tests fail
+   post-filter-repo (e.g., a path the test depended on is now ignored),
+   the entire M1 dispatch halts. The most likely failure mode: a test
+   that reads a `transitions.npz` fixture committed to the repo —
+   filter-repo just expunged all .npz files. If a test suite has such a
+   fixture, test-author will need a separate task to regenerate it
+   non-binarily (e.g., synthesize fixture in conftest.py or load from a
+   small JSON). Flag and STOP if discovered.
+2. **`Phase8RunRoster.write_atomic` semantics.** The roster file format
+   is intentionally NOT pinned in the spec (spec §8.2 lists fields and
+   statuses but not whether it's JSON, JSONL, parquet, etc.). The
+   experiment-runner subagent picks the format with rationale in the
+   handoff. Default recommendation: JSONL (append-friendly, atomic via
+   write-temp-and-rename) — matches the existing
+   `experiments/weighted_lse_dp/common/manifests.py` precedent for
+   per-run JSON.
+3. **Forward-looking tests.** `test_phase_VIII_result_root.py` test 4
+   is intentionally skipped (no Phase VIII runner exists yet at M1).
+   M6 will enable it.
+4. **Worktree merge conflicts.** None expected; Wave 1 worktrees touch
+   disjoint files. If a conflict arises, orchestrator STOP and report
+   before manual resolution.
+
+### Subagent dispatch sequence (when authorized)
+
+```
+1. Send W1.A as a single Agent call (verifier, no worktree).
+2. WAIT for W1.A PASS verdict before any Wave 1 implementation.
+3. Send W1.B and W1.C as a SINGLE message with TWO Agent calls in
+   parallel (both isolation: worktree).
+4. WAIT for both handoffs; review; merge both worktrees to
+   phase-VIII branch.
+5. Send W2.A, W2.B, W2.C as a SINGLE message with THREE Agent
+   calls in parallel (all isolation: worktree).
+6. WAIT for all three handoffs; review; merge.
+7. Send W3.A (verifier, no worktree, read-only on merged branch).
+8. WAIT for PASS verdict.
+9. Push to origin.
+10. Mark M1 items [x]; STOP.
+```
+
+### Authorization required before any subagent runs
+
+User must explicitly approve this dispatch plan before W1.A is sent.
+The plan stops here.
+
+---
+
