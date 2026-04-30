@@ -67,7 +67,7 @@ negative adaptive result is an acceptable phase outcome.
    story.
 3. Phase VI added a stochastic Family A variant (VI-A through VI-D) and a
    risk-sensitive policy-evaluation finding (VI-G); the paper §Experiments
-   was subsequently pruned at commit `ccec6965`.
+   was subsequently pruned at commit `40d02f2d` (was `ccec6965` pre-filter-repo).
 4. Phase VII-A introduced per-episode adaptive β with the
    centered/scaled paper operator on five tabular envs (`rps`,
    `switching_bandit`, `hazard_gridworld`, `delayed_chain`, plus a Stage-B
