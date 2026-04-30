@@ -1,6 +1,5 @@
 {
   "schema_version": "1.1.0",
-  "schema_changelog": "1.1.0 added addendum_path/addendum_sha256 for overnight overlay (2026-04-30T22:34:42Z)",
   "config_path": "tasks/phase_VIII_autonomous_harness.md",
   "config_sha256": "762ecee04b53a353908b3550440a82c22aab131cd78f1a19abee159938c2ecd9",
   "addendum_path": "tasks/phase_VIII_overnight_addendum.md",
@@ -9,13 +8,13 @@
   "overnight_engaged_utc": "2026-04-30T22:34:42Z",
   "kickoff_git_head": "5d887df9d7b987c21bf37218816c347149e75854",
   "current_branch": "phase-VIII-tab-six-games-2026-04-30",
-  "current_git_head": "4d0d7762dcb0a2faa206b43de52bd695eebd2c1a",
-  "current_milestone": "M2",
+  "current_git_head": "af33d7ea891273f92b50ea902f77e81d2a0cdf78",
+  "current_milestone": "M3",
   "current_tier": 1,
   "milestone_status": {
     "M0": "complete",
     "M1": "complete",
-    "M2": "pending",
+    "M2": "complete",
     "M3": "pending",
     "M4": "pending",
     "M5": "pending",
@@ -28,18 +27,21 @@
     "M12": "pending"
   },
   "in_flight_dispatches": [],
-  "completed_dispatches": [
-    {"task_id": "W1.A", "role": "verifier", "model": "codex-gpt-5.5-xhigh", "started_utc": "2026-04-30T22:20:44Z", "ended_utc": "2026-04-30T22:23:54Z", "duration_seconds": 90, "status": "succeeded", "output_path": "results/adaptive_beta/tab_six_games/W1.A_handoff.md", "retry_count": 0, "verdict": "PASS", "tests_passed": 506, "tokens_used": 62207},
-    {"task_id": "W1.B", "role": "experiment-runner", "model": "opus-4-7", "worktree": "worktree-agent-a3409751df1695d0b", "started_utc": "2026-04-30T22:36:00Z", "ended_utc": "2026-04-30T22:42:00Z", "status": "succeeded", "output_path": "results/adaptive_beta/tab_six_games/W1.B_handoff.md", "merged_at_head": "8db9d277", "tokens_used": 68406},
-    {"task_id": "W1.C", "role": "experiment-runner", "model": "opus-4-7", "worktree": "worktree-agent-a77e6024a850a455b", "started_utc": "2026-04-30T22:36:00Z", "ended_utc": "2026-04-30T22:41:30Z", "status": "succeeded", "output_path": "results/adaptive_beta/tab_six_games/W1.C_handoff.md", "merged_at_head": "236f4bb8", "tokens_used": 57897},
-    {"task_id": "W2.A", "role": "test-author", "model": "codex-gpt-5.5-xhigh", "started_utc": "2026-04-30T22:47:00Z", "ended_utc": "2026-04-30T22:50:00Z", "status": "succeeded", "output_path": "results/adaptive_beta/tab_six_games/W2.A_handoff.md", "tests_passed": 10, "tokens_used": 61498},
-    {"task_id": "W2.B", "role": "test-author", "model": "codex-gpt-5.5-xhigh", "started_utc": "2026-04-30T22:47:00Z", "ended_utc": "2026-04-30T22:50:30Z", "status": "succeeded", "output_path": "results/adaptive_beta/tab_six_games/W2.B_handoff.md", "tests_passed": 43, "tokens_used": 56420},
-    {"task_id": "W2.C", "role": "test-author", "model": "codex-gpt-5.5-xhigh", "started_utc": "2026-04-30T22:47:00Z", "ended_utc": "2026-04-30T22:49:00Z", "status": "succeeded", "output_path": "results/adaptive_beta/tab_six_games/W2.C_handoff.md", "tests_passed": 4, "tests_skipped": 1, "tokens_used": 35627},
-    {"task_id": "W3.A", "role": "verifier", "model": "codex-gpt-5.5-xhigh", "started_utc": "2026-04-30T22:51:00Z", "ended_utc": "2026-04-30T22:55:53Z", "duration_seconds": 270, "status": "succeeded", "output_path": "results/adaptive_beta/tab_six_games/infrastructure_verification.md", "retry_count": 0, "verdict": "PASS", "total_tests": 564, "tests_passed": 563, "tests_failed": 0, "tests_skipped": 1, "test_wall_clock_seconds": 8.33, "tokens_used": 66513}
-  ],
+  "completed_dispatches_count": 11,
+  "completed_dispatches_summary": {
+    "M0": ["addendum-commit"],
+    "M1": ["W1.A-codex","W1.B-opus","W1.C-opus","W2.A-codex","W2.B-codex","W2.C-codex","W3.A-codex"],
+    "M2": ["M2.W1.A-opus","M2.W1.B-opus","M2.W2.A-codex","M2.W2.B-codex"]
+  },
+  "test_count_evolution": {
+    "baseline_post_filterrepo": 506,
+    "after_M1": 564,
+    "after_M2_strategic_games_only": 219,
+    "after_M2_total_phase_VIII_estimated": 612
+  },
   "failure_log": [],
   "halts": [],
-  "gates_acked": ["G0", "G1", "M1-close"],
+  "gates_acked": ["G0", "G1", "M1-close", "G2", "M2-close"],
   "gates_pending": [],
   "overnight_mode": {
     "engaged": true,
@@ -50,21 +52,17 @@
     "no_tex_edits": true
   },
   "budgets": {
-    "wall_clock_elapsed_seconds": 2400,
+    "wall_clock_elapsed_seconds": 3700,
     "wall_clock_cap_seconds": 129600,
-    "dispatch_count": 7,
+    "dispatch_count": 11,
     "dispatch_cap": 300,
     "token_spend_by_role": {
-      "opus-4-7": 126303,
-      "codex-gpt-5.5-xhigh": 282265
-    },
-    "token_caps_by_role": {
-      "opus-4-7": null,
-      "codex-gpt-5.5-xhigh": null
+      "opus-4-7": 319428,
+      "codex-gpt-5.5-xhigh": 442681
     }
   },
   "next_action": {
     "type": "dispatch",
-    "details": "M2 wave 1: env-builder × 2 (Opus 4.7) in parallel — soda_uncertain.py and potential.py games per spec §5.5/§5.6. Then M2 wave 2: test-author × 2 (codex gpt-5.5 xhigh) — test_soda_uncertain.py + test_potential.py. Then M2 verifier gate."
+    "details": "M3 wave 1: env-builder × 3 (Opus 4.7) parallel — inertia.py, convention_switching.py, sign_switching_regime.py per spec §M3 + §5.7. Then M3 wave 2: test-author × 3 (codex gpt-5.5 xhigh) parallel — test_inertia_adversary.py, test_convention_switching_adversary.py, test_sign_switching_regime_adversary.py."
   }
 }

@@ -7,7 +7,7 @@ Invariants guarded
 ------------------
 - Unknown name lookup raises ``KeyError`` (silent fallback is forbidden).
 - Double-register without ``overwrite=True`` raises ``KeyError``.
-- ``GAME_REGISTRY`` lists exactly the 5 expected games after package import.
+- ``GAME_REGISTRY`` lists exactly the 7 expected games after package import.
 - ``ADVERSARY_REGISTRY`` lists every expected adversary name (10 keys
   covering 9 distinct classes + ``stationary_mixed`` alias).
 """
@@ -39,12 +39,16 @@ EXPECTED_GAMES = frozenset(
         "rules_of_road",
         "asymmetric_coordination",
         "strategic_rps",
+        # Phase VIII M2 spec §5.5 / §5.6 additions.
+        "soda_uncertain",
+        "potential",
     }
 )
 
 
-def test_game_registry_lists_exact_five_games() -> None:
-    """`spec §4 / §6` — exactly the five Phase VII-B games must register at import."""
+def test_game_registry_lists_exact_seven_games() -> None:
+    """`spec §4 / §6` — Phase VII plus Phase VIII M2 games register at import."""
+    assert len(GAME_REGISTRY) == 7
     assert set(GAME_REGISTRY.keys()) == EXPECTED_GAMES, (
         f"unexpected game registry keys: "
         f"missing={EXPECTED_GAMES - set(GAME_REGISTRY)}, "
