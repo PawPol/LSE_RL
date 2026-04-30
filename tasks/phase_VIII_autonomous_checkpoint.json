@@ -1,16 +1,20 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
+  "schema_changelog": "1.1.0 added addendum_path/addendum_sha256 for overnight overlay (2026-04-30T22:34:42Z)",
   "config_path": "tasks/phase_VIII_autonomous_harness.md",
   "config_sha256": "762ecee04b53a353908b3550440a82c22aab131cd78f1a19abee159938c2ecd9",
+  "addendum_path": "tasks/phase_VIII_overnight_addendum.md",
+  "addendum_sha256": "281f94bb6f711884cbe96cfb8a9ce1657c9cdcc85f22fcd472f08acc7a4d688c",
   "kickoff_timestamp_utc": "2026-04-30T22:16:38Z",
+  "overnight_engaged_utc": "2026-04-30T22:34:42Z",
   "kickoff_git_head": "5d887df9d7b987c21bf37218816c347149e75854",
   "current_branch": "phase-VIII-tab-six-games-2026-04-30",
-  "current_git_head": "5d887df9d7b987c21bf37218816c347149e75854",
+  "current_git_head": "3f775136bc3a8f5c2b24a19afb7dc5b62a192cf9",
   "current_milestone": "M1",
   "current_tier": 1,
   "milestone_status": {
     "M0": "complete",
-    "M1": "pending",
+    "M1": "in_progress",
     "M2": "pending",
     "M3": "pending",
     "M4": "pending",
@@ -24,19 +28,49 @@
     "M12": "pending"
   },
   "in_flight_dispatches": [],
-  "completed_dispatches": [],
+  "completed_dispatches": [
+    {
+      "task_id": "W1.A",
+      "role": "verifier",
+      "model": "codex-gpt-5.5-xhigh",
+      "worktree": null,
+      "started_utc": "2026-04-30T22:20:44Z",
+      "ended_utc": "2026-04-30T22:23:54Z",
+      "duration_seconds": 90,
+      "status": "succeeded",
+      "output_path": "results/adaptive_beta/tab_six_games/W1.A_handoff.md",
+      "retry_count": 0,
+      "verdict": "PASS",
+      "operator_alarm": "NO",
+      "tests_passed": 506,
+      "tests_failed": 0,
+      "tests_skipped": 0,
+      "test_wall_clock_seconds": 15.46,
+      "import_audit": "PASS",
+      "smoke": "PASS",
+      "tokens_used": 62207
+    }
+  ],
   "failure_log": [],
   "halts": [],
-  "gates_acked": [],
-  "gates_pending": ["G0"],
+  "gates_acked": ["G0", "G1"],
+  "gates_pending": [],
+  "overnight_mode": {
+    "engaged": true,
+    "auto_proceed_gates": ["G1","G2","G3","G4a","G4b","G5","G6a","G6b","G6c","G7a","G7b","G7c","G8","G9a","G9b","G9c","G10a","G10b","G10c","G11","G12a","G12b","G12c"],
+    "auto_fix_major": true,
+    "auto_fix_minor": true,
+    "bug_hunt_active": true,
+    "no_tex_edits": true
+  },
   "budgets": {
-    "wall_clock_elapsed_seconds": 0,
-    "wall_clock_cap_seconds": 259200,
-    "dispatch_count": 0,
-    "dispatch_cap": 50,
+    "wall_clock_elapsed_seconds": 1084,
+    "wall_clock_cap_seconds": 129600,
+    "dispatch_count": 1,
+    "dispatch_cap": 300,
     "token_spend_by_role": {
       "opus-4-7": 0,
-      "codex-gpt-5.5-xhigh": 0
+      "codex-gpt-5.5-xhigh": 62207
     },
     "token_caps_by_role": {
       "opus-4-7": null,
@@ -44,7 +78,7 @@
     }
   },
   "next_action": {
-    "type": "phone_home",
-    "details": "G0 phone-home: codex pin landed (gpt-5.5 + xhigh, probe OK), harness §13 + .codex/config.toml + docs/workflow.md updated; checkpoint and log initialized; awaiting user 'go' to proceed to step 1 (commit harness + state files)."
+    "type": "dispatch",
+    "details": "Wave 1 implementation: W1.B (Phase8RunRoster) + W1.C (delta metrics) in parallel via Opus 4.7 experiment-runner subagents under worktree isolation. After both merge to phase-VIII branch, dispatch Wave 2 (W2.A test-roster, W2.B test-metrics, W2.C test-result-root) in parallel. After all merge, dispatch W3.A verifier (Codex gpt-5.5 xhigh) M1 gate."
   }
 }
