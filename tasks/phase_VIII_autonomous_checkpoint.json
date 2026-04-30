@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0.0",
+  "config_path": "tasks/phase_VIII_autonomous_harness.md",
+  "config_sha256": "762ecee04b53a353908b3550440a82c22aab131cd78f1a19abee159938c2ecd9",
+  "kickoff_timestamp_utc": "2026-04-30T22:16:38Z",
+  "kickoff_git_head": "5d887df9d7b987c21bf37218816c347149e75854",
+  "current_branch": "phase-VIII-tab-six-games-2026-04-30",
+  "current_git_head": "5d887df9d7b987c21bf37218816c347149e75854",
+  "current_milestone": "M1",
+  "current_tier": 1,
+  "milestone_status": {
+    "M0": "complete",
+    "M1": "pending",
+    "M2": "pending",
+    "M3": "pending",
+    "M4": "pending",
+    "M5": "pending",
+    "M6": "pending",
+    "M7": "pending",
+    "M8": "pending",
+    "M9": "pending",
+    "M10": "pending",
+    "M11": "pending",
+    "M12": "pending"
+  },
+  "in_flight_dispatches": [],
+  "completed_dispatches": [],
+  "failure_log": [],
+  "halts": [],
+  "gates_acked": [],
+  "gates_pending": ["G0"],
+  "budgets": {
+    "wall_clock_elapsed_seconds": 0,
+    "wall_clock_cap_seconds": 259200,
+    "dispatch_count": 0,
+    "dispatch_cap": 50,
+    "token_spend_by_role": {
+      "opus-4-7": 0,
+      "codex-gpt-5.5-xhigh": 0
+    },
+    "token_caps_by_role": {
+      "opus-4-7": null,
+      "codex-gpt-5.5-xhigh": null
+    }
+  },
+  "next_action": {
+    "type": "phone_home",
+    "details": "G0 phone-home: codex pin landed (gpt-5.5 + xhigh, probe OK), harness §13 + .codex/config.toml + docs/workflow.md updated; checkpoint and log initialized; awaiting user 'go' to proceed to step 1 (commit harness + state files)."
+  }
+}
