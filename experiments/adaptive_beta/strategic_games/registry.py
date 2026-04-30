@@ -168,13 +168,18 @@ def make_game(name: str, **kwargs: Any) -> Any:
 
 
 # ---------------------------------------------------------------------------
-# Phase VIII M2 — auto-register Soda / Uncertain Game (spec §5.5).
+# Phase VIII M2 — auto-register Soda / Uncertain Game (spec §5.5) and
+# Potential / Weakly-Acyclic Game (spec §5.6).
 #
-# The Phase VII games self-register via ``games/__init__.py`` import, but the
-# Phase VIII Soda module lives outside that package's import chain (per the
-# M2 dispatch boundary: only ``registry.py`` may be edited to wire it in).
-# Importing the module triggers its bottom-of-file ``register_game(...)``
-# call, populating ``GAME_REGISTRY["soda_uncertain"]``.
+# The Phase VII games self-register via ``games/__init__.py`` import, but
+# the Phase VIII modules live outside that package's import chain (per the
+# M2 dispatch boundary: only ``registry.py`` may be edited to wire them in).
+# Importing each module triggers its bottom-of-file ``register_game(...)``
+# call, populating ``GAME_REGISTRY``. Placed at module bottom so
+# ``register_game`` is fully defined when these imports execute.
 from experiments.adaptive_beta.strategic_games.games import (  # noqa: E402,F401
     soda_uncertain,
+)
+from experiments.adaptive_beta.strategic_games.games import (  # noqa: E402,F401
+    potential as _potential_game,
 )
