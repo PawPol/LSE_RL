@@ -165,3 +165,9 @@ def make_game(name: str, **kwargs: Any) -> Any:
         )
     factory = GAME_REGISTRY[name]
     return factory(**kwargs)
+
+
+# Phase VIII M2 (potential / weakly-acyclic game) — import-side-effect
+# registration. Placed at module bottom so ``register_game`` is fully
+# defined when ``potential.py`` calls it. See spec §5.6.
+from experiments.adaptive_beta.strategic_games.games import potential as _potential_game  # noqa: E402, F401
