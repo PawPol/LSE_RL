@@ -449,3 +449,85 @@ broken operator.
 `phase-VII-overnight-2026-04-26`. Pre-refactor baseline: 345 passed.
 Post-refactor: 345 passed (baseline) + 97 passed (equivalence pin) =
 442 passed in 1.50s. Full `tests/algorithms/`: 788 passed.
+
+---
+
+### 2026-05-01 — Statistical-significance guards degenerate on fully-deterministic testbeds
+
+**Pattern**: Statistical-significance guards (Cohen's d, t-test
+p-values, paired bootstrap CIs) are designed for testbeds with
+seed-induced noise and degenerate on fully-deterministic testbeds.
+Concretely: `Discrete(1)` action space + `ε = 0` ε-greedy +
+deterministic transitions + deterministic opponent
+(`PassiveOpponent(n_actions=1)`) → bit-identical per-seed outputs →
+intra-method σ = 0. Cohen's d then collapses to inter-method-gap
+ratios — which were never the intended invariant. Specifically, with
+`pooled_std = std(concat([am, az, ap]))` over three methods, d on a
+small inter-method gap mechanically becomes
+`(gap_small) / (c · spread_dominated_by_largest_gap)`, which can
+**never** reach the conventional 0.3 threshold whenever the smaller
+gap is < 30% of the larger gap, no matter how clean the signal is.
+
+**Prevention rule**: For deterministic testbeds, use deterministic
+guards: a relative-gap floor `gap_small ≥ k · gap_large` (k=0.10
+typical) plus an absolute floor `gap_small ≥ minimum-meaningful-
+magnitude`. Reserve Cohen's d / paired bootstrap for ablations where
+the testbed has genuine seed-induced variance (ε-greedy with ε > 0,
+multi-action policies, stochastic transitions, stochastic opponents).
+At test-design time, write down whether the testbed is deterministic;
+if yes, do NOT reach for a noise-aware guard.
+
+In Phase VIII concretely:
+- DC-Short10 / DC-Medium20 / DC-Long50 (advance-only, Discrete(1))
+  are deterministic — use the gap-based guard (v5b).
+- DC-Branching20 has Discrete(2) actions and value-based action
+  choice → genuine seed-induced variance → Cohen's d ≥ 0.3 remains
+  appropriate.
+- M7 main-pass ablations and M9/M10 composite runs all use ε-greedy
+  exploration with ε > 0 across multiple actions → genuine variance
+  → Cohen's d is appropriate.
+
+**Source incident**: HALT 4 at commit `99a98340`, delayed_chain
+DC-Long50 v5 smoke. Empirical: 17 orders of magnitude separation in
+final residual between β=-1 (3.45e-11) and β=+1 (2.69e+06), strict
+mean-ordering, but `d(minus,zero) = 0.2825 < 0.3` (threshold) because
+intra-method σ = 0. Resolved by v5b: replace d-block with
+`gap_small ≥ 100` absolute + `gap_small ≥ 0.10 · gap_large` relative
+guards.
+
+---
+
+### 2026-05-01 — Orchestrator self-correction: scope "Do NOT auto-patch beyond vN" to design, not test instrumentation
+
+**Pattern**: When a patch directive includes "Do NOT auto-patch beyond
+vN" or similar halt-boundary language, that boundary should apply to
+the underlying *design* (operator semantics, predictions, metric
+definitions), not to *test instrumentation* (significance guards,
+threshold values, fixture setup). A guard mismatch with the testbed
+is a MINOR finding under the auto-fix-MINOR rule
+(addendum §13 `auto_fix_minor: true`) that the orchestrator could
+have resolved without phoning home, had the v5 directive not
+over-broadened the halt boundary to the test guard as well as the
+metric.
+
+**Prevention rule**: Future patch directives that pre-authorize halt
+behaviour SHOULD distinguish:
+- "DESIGN corrections (metric definition, prediction sign, alignment-
+  condition derivation, operator semantics) require human review" —
+  hard halt boundary; do not auto-patch.
+- "TEST-INSTRUMENTATION tweaks (Cohen's d threshold, gap floors,
+  bootstrap iterations, seed counts) MAY be auto-resolved under
+  addendum §13" — soft boundary; auto-fix-MINOR applies.
+
+When writing a new patch directive that touches both a design-level
+claim and the test that verifies it, explicitly tag the test guard
+parameters as "instrumentation; auto-fixable under MINOR rule" or
+"design-coupled; halt on failure".
+
+**Source incident**: HALT 4 (delayed_chain DC-Long50 v5 → v5b). The
+v5 directive said "Do NOT auto-patch beyond v5", but the only thing
+that needed patching beyond v5 was the Cohen's d guard threshold —
+i.e. test instrumentation, not design. The metric (β-specific
+Bellman residual) and prediction (AUC ordering) were both correct
+and unchanged at v5b. Auto-fix-MINOR could have closed this in-loop
+had the directive's scope been narrower.

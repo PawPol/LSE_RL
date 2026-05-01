@@ -52,6 +52,12 @@ __all__ = [
     "trap_entries",
     "constraint_violations",
     "overflow_count",
+    # Phase VIII §5.7 / patch v3 (q-convergence rate against analytical Q*)
+    "q_convergence_rate",
+    "q_star_delayed_chain",
+    # Phase VIII §5.7 / patch v5 (β-specific Bellman residual decay)
+    "bellman_residual_beta",
+    "auc_neg_log_residual",
 ]
 
 
@@ -662,3 +668,199 @@ def overflow_count(
     if arr.size == 0:
         return 0
     return int(np.sum(arr >= threshold))
+
+
+# ---------------------------------------------------------------------------
+# Phase VIII §5.7 / patch v3 (2026-05-01) — Q-convergence rate metrics
+# for advance-only delayed_chain subcases (DC-Short10, DC-Medium20,
+# DC-Long50). These subcases use Discrete(1) action space; AUC is
+# invariant to β so the metric axis is shifted to per-episode log-residual
+# decay against the analytical optimum Q*. T11 trigger now operates on
+# this metric for advance-only subcases (DC-Branching20 retains AUC).
+# ---------------------------------------------------------------------------
+
+
+def q_convergence_rate(
+    q_history: np.ndarray,
+    q_star: np.ndarray,
+    eps: float = 1e-8,
+    norm: str = "linf",
+) -> np.ndarray:
+    """Per-episode Q-convergence rate against an analytical optimum.
+
+    Definition (per spec §5.7 + patch v3):
+
+        rate_e = log(||Q_e - Q*|| + eps) - log(||Q_{e+1} - Q*|| + eps)
+
+    Returns shape ``(E - 1,)`` — one rate value per inter-episode step.
+
+    The cumulative AUC of ``rate_e`` over episodes IS the headline
+    metric for advance-only delayed_chain subcases. Use ``np.trapz`` on
+    the cumulative rate sequence for a single-number summary; or report
+    ``rate_e`` at fixed checkpoints (e.g., e=100, 1000, full horizon)
+    for distributional reporting.
+
+    Parameters
+    ----------
+    q_history
+        Per-episode Q-table snapshots, shape ``(E, S, A)``.
+    q_star
+        Analytical optimum Q-values, shape ``(S, A)``. For advance-only
+        delayed_chain see :func:`q_star_delayed_chain`.
+    eps
+        Floor on the residual to avoid log(0). Default ``1e-8``.
+    norm
+        Either ``"linf"`` (default) or ``"l2"``.
+
+    Notes
+    -----
+    Uses ``np.log`` directly with ``eps`` floor (NOT ``np.log1p``;
+    lessons.md #27 — ``expm1``/``log1p`` underflow on negative tails).
+    """
+    if q_history.ndim != 3:
+        raise ValueError(
+            f"q_history must be (E, S, A), got shape {q_history.shape}"
+        )
+    if q_star.ndim != 2:
+        raise ValueError(
+            f"q_star must be (S, A), got shape {q_star.shape}"
+        )
+    if q_history.shape[1:] != q_star.shape:
+        raise ValueError(
+            f"q_history (S, A) {q_history.shape[1:]} != q_star {q_star.shape}"
+        )
+    diffs = q_history - q_star[None, :, :]
+    if norm == "linf":
+        residuals = np.abs(diffs).reshape(diffs.shape[0], -1).max(axis=1)
+    elif norm == "l2":
+        residuals = np.sqrt(np.sum(diffs ** 2, axis=(1, 2)))
+    else:
+        raise ValueError(f"unknown norm: {norm!r}")
+    log_res = np.log(residuals + eps)
+    rate = log_res[:-1] - log_res[1:]
+    return rate.astype(np.float64)
+
+
+def q_star_delayed_chain(L: int, gamma: float) -> np.ndarray:
+    """Analytical Q* for advance-only delayed_chain of length ``L``.
+
+    Per spec §5.7 (advance-only Discrete(1) chain with reward +1
+    delivered on the L-1 → L transition; state L is terminal):
+
+        Q*(s, advance) = gamma**(L - 1 - s)   for s in [0, L-1]
+        Q*(L, .)       = 0                     (terminal)
+
+    Rationale (v4 off-by-one fix per HALT 2 resolution): reward is
+    delivered on the L-1 → L transition, so
+    Q*(L-1, advance) = R + γ·V*(L) = 1 + γ·0 = 1 = γ^0.
+    The geometric form starts at exponent 0 and reaches γ^(L-1) at
+    s=0 (Q*(0, advance) = γ^(L-1)).
+
+    Returns shape ``(L+1, 1)`` (matching Discrete(1) action space).
+    """
+    if L < 1:
+        raise ValueError(f"L must be >= 1, got {L}")
+    if not (0.0 < gamma < 1.0):
+        raise ValueError(f"gamma must be in (0, 1), got {gamma}")
+    q = np.zeros((L + 1, 1), dtype=np.float64)
+    for s in range(L):
+        q[s, 0] = gamma ** (L - 1 - s)
+    return q
+
+
+# ---------------------------------------------------------------------------
+# Phase VIII §5.7 / patch v5 (2026-05-01) — β-specific Bellman residual
+# decay metric. Replaces q_convergence_rate(Q, Q*_classical) for the
+# delayed_chain advance-only smoke. The classical-Q* residual was biased
+# against β≠0 because each TAB schedule has its OWN fixed point Q*_β
+# (g_{β,γ}(0,v) → (1+γ)·v as β→+∞ ≠ γ·v; → 0 as β→-∞ ≠ γ·v); residuals
+# against Q*_classical saturate at |Q*_β − Q*_0|. The β-specific residual
+# ||T_β Q − Q||_∞ goes to zero at Q*_β regardless. See HALT 3 memo.
+# ---------------------------------------------------------------------------
+
+
+def bellman_residual_beta(
+    Q: np.ndarray,
+    beta: float,
+    gamma: float,
+    env_transition,
+    n_states: int,
+    n_actions: int,
+) -> float:
+    """Compute ``||T_β Q − Q||_∞`` for the β-specific Bellman operator.
+
+    The β-specific Bellman operator at state-action ``(s, a)`` is
+
+        T_β Q(s, a) = E_{(r, s') ~ env_transition(s, a)}[g_{β,γ}(r, max_{a'} Q(s', a'))]
+
+    with the canonical TAB target ``g`` from
+    ``src.lse_rl.operator.tab_operator``. ``β = 0`` collapses to the
+    classical Bellman target ``r + γ·max Q(s', ·)`` exactly (per the
+    operator kernel's classical branch).
+
+    Parameters
+    ----------
+    Q
+        Current Q-table snapshot, shape ``(n_states, n_actions)``.
+    beta, gamma
+        Operator parameters.
+    env_transition
+        Callable ``(s, a) -> Iterable[(prob, r, s')]`` describing the
+        deterministic-or-stochastic transition. For deterministic envs
+        each call yields a single tuple with ``prob == 1.0``.
+    n_states, n_actions
+        Q-table dimensions.
+
+    Returns
+    -------
+    float
+        ``max_{s, a} |T_β Q(s, a) − Q(s, a)|``.
+    """
+    from src.lse_rl.operator.tab_operator import g
+
+    residual = 0.0
+    for s in range(n_states):
+        for a in range(n_actions):
+            target = 0.0
+            for prob, r, s_next in env_transition(s, a):
+                v_next = float(np.max(Q[s_next]))
+                target += float(prob) * g(
+                    beta=float(beta),
+                    gamma=float(gamma),
+                    r=float(r),
+                    v=v_next,
+                )
+            diff = abs(target - float(Q[s, a]))
+            if diff > residual:
+                residual = diff
+    return float(residual)
+
+
+def auc_neg_log_residual(
+    residuals: np.ndarray,
+    eps: float = 1e-8,
+) -> float:
+    """``∫ −log(R_e + ε) de`` via trapezoidal integration.
+
+    Higher AUC = faster contraction (residual was small for more
+    episodes within the budget).
+
+    Note: uses ``np.log`` directly with the ``eps`` floor (NOT
+    ``log1p``; lessons.md #27).
+
+    Parameters
+    ----------
+    residuals
+        Per-episode Bellman residuals, shape ``(E,)``.
+    eps
+        Floor on the residual to avoid ``log(0)``. Default ``1e-8``.
+
+    Returns
+    -------
+    float
+        ``np.trapezoid(-np.log(residuals + eps))``.
+    """
+    arr = np.asarray(residuals, dtype=np.float64).reshape(-1)
+    if arr.size == 0:
+        return 0.0
+    return float(np.trapezoid(-np.log(arr + eps)))

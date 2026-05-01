@@ -247,3 +247,139 @@ def test_empty_array_safety_for_all_metrics(metric_name, metric_call) -> None:
         assert result.size >= 0, metric_name
     else:
         assert result is not None, metric_name
+
+
+# ---------------------------------------------------------------------------
+# Phase VIII §5.7 / patch v3 (2026-05-01) — Q-convergence rate metric tests
+# ---------------------------------------------------------------------------
+
+
+def test_q_convergence_rate_shape() -> None:
+    rng = np.random.default_rng(0)
+    q_hist = rng.normal(size=(100, 11, 1))
+    q_star = metrics.q_star_delayed_chain(L=10, gamma=0.95)
+    rate = metrics.q_convergence_rate(q_hist, q_star)
+    assert rate.shape == (99,)
+    assert rate.dtype == np.float64
+
+
+def test_q_convergence_rate_monotone_under_perfect_decay() -> None:
+    # Residual = exp(-0.05 * t), so log-residual decays linearly at
+    # rate 0.05/step. Stays well above eps=1e-8 across the full
+    # 100-episode horizon (residual at t=99 ≈ 0.0067 >> 1e-8); the
+    # original v3 patch test used exp(-arange) which underflows below
+    # eps after ~18 steps and saturates rate to 0.
+    L, gamma = 10, 0.95
+    q_star = metrics.q_star_delayed_chain(L, gamma)
+    q_hist = q_star[None, :, :] + np.exp(
+        -0.05 * np.arange(100)
+    )[:, None, None]
+    rate = metrics.q_convergence_rate(q_hist, q_star)
+    assert np.all(rate > 0), f"some rates non-positive: {rate[:5]}"
+    # Rate per step ≈ 0.05 (since residual ~ e^{-0.05 t}).
+    assert np.abs(rate.mean() - 0.05) < 0.01
+
+
+def test_q_star_delayed_chain_geometric() -> None:
+    L, gamma = 5, 0.9
+    q_star = metrics.q_star_delayed_chain(L, gamma)
+    # Q*(s=0, advance) = gamma**(L-1) (v4 fix: reward delivered on
+    # L-1 → L transition, so Q*(L-1, advance) = 1 = γ^0).
+    assert np.isclose(q_star[0, 0], gamma ** (L - 1))
+    # Q*(s=L-1, advance) = 1 (one step before the +1 reward).
+    assert np.isclose(q_star[L - 1, 0], 1.0)
+    # Q*(s=L, .) = 0 (terminal).
+    assert np.isclose(q_star[L, 0], 0.0)
+
+
+def test_q_convergence_rate_eps_floor_safety() -> None:
+    # Q exactly equal to Q* should not produce -inf or NaN.
+    L, gamma = 10, 0.95
+    q_star = metrics.q_star_delayed_chain(L, gamma)
+    q_hist = np.broadcast_to(
+        q_star[None, :, :], (10, L + 1, 1)
+    ).copy()
+    rate = metrics.q_convergence_rate(q_hist, q_star)
+    assert np.all(np.isfinite(rate))
+    assert not np.any(np.isnan(rate))
+
+
+# ---------------------------------------------------------------------------
+# Phase VIII §5.7 / patch v5 (2026-05-01) — β-specific Bellman residual tests
+# ---------------------------------------------------------------------------
+
+
+def _make_chain_transition(L: int):
+    """Return the deterministic delayed_chain transition function.
+
+    advance-only chain: state s ∈ [0, L]; action 0 → s+1 with reward 0,
+    except the last advance (s == L-1, a=0) yields reward +1 and absorbs
+    at s' = L. State L is terminal (any action returns reward 0 and
+    keeps state at L).
+    """
+    def env_transition(s, a):
+        if s >= L:
+            return [(1.0, 0.0, L)]
+        r = 1.0 if (s + 1) == L else 0.0
+        return [(1.0, r, s + 1)]
+    return env_transition
+
+
+def test_bellman_residual_beta_zero_at_fixed_point() -> None:
+    """At Q*_classical the β=0 residual is 0 exactly."""
+    L, gamma = 10, 0.95
+    Q_star = metrics.q_star_delayed_chain(L=L, gamma=gamma)
+    # Pad with terminal Q[L,0] = 0 to match (L+1, 1) shape used by env_transition.
+    env_t = _make_chain_transition(L)
+    residual = metrics.bellman_residual_beta(
+        Q=Q_star, beta=0.0, gamma=gamma,
+        env_transition=env_t, n_states=L + 1, n_actions=1,
+    )
+    # Q* satisfies the classical Bellman equation; residual should be 0
+    # to floating-point precision.
+    assert residual < 1e-10, f"expected residual ≈ 0, got {residual}"
+
+
+def test_bellman_residual_beta_classical_collapse() -> None:
+    """β=0 residual matches classical |T*Q − Q|."""
+    L, gamma = 5, 0.9
+    Q = np.full((L + 1, 1), 5.0, dtype=np.float64)
+    env_t = _make_chain_transition(L)
+    residual_beta_zero = metrics.bellman_residual_beta(
+        Q=Q, beta=0.0, gamma=gamma,
+        env_transition=env_t, n_states=L + 1, n_actions=1,
+    )
+    # Classical Bellman residual ||T* Q − Q||_∞ for constant Q=5:
+    # at non-terminal s != L-1: target = 0 + 0.9*5 = 4.5; |4.5 − 5| = 0.5
+    # at s = L-1: target = 1 + 0.9*5 = 5.5; |5.5 − 5| = 0.5
+    # at s = L (terminal): target = 0 + 0.9*5 = 4.5; |4.5 − 5| = 0.5
+    # max = 0.5
+    assert np.isclose(residual_beta_zero, 0.5)
+
+
+def test_auc_neg_log_residual_monotone() -> None:
+    """A converging residual sequence has higher AUC than a non-converging one."""
+    R_converging = np.array([1.0, 0.5, 0.25, 0.125, 0.0625], dtype=np.float64)
+    R_flat = np.array([1.0, 1.0, 1.0, 1.0, 1.0], dtype=np.float64)
+    auc_conv = metrics.auc_neg_log_residual(R_converging)
+    auc_flat = metrics.auc_neg_log_residual(R_flat)
+    assert auc_conv > auc_flat, (
+        f"converging AUC ({auc_conv}) should exceed flat AUC ({auc_flat})"
+    )
+
+
+def test_bellman_residual_beta_handles_divergent_Q() -> None:
+    """Passing extremely large Q values should not produce NaN."""
+    L, gamma = 5, 0.95
+    # Bound at 1e6 (matches the smoke-test cap) — the operator's output
+    # should be finite at this magnitude.
+    Q = np.full((L + 1, 1), 1.0e6, dtype=np.float64)
+    env_t = _make_chain_transition(L)
+    for beta in [-1.0, 0.0, 1.0]:
+        residual = metrics.bellman_residual_beta(
+            Q=Q, beta=beta, gamma=gamma,
+            env_transition=env_t, n_states=L + 1, n_actions=1,
+        )
+        assert np.isfinite(residual), (
+            f"residual non-finite for β={beta}: {residual}"
+        )
