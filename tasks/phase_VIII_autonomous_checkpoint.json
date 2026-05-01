@@ -74,6 +74,18 @@
       "resolution": "v3 patch tasks/phase_VIII_spec_patches_2026-05-01_v3_T11_resolution.md applied option (a); metric switched to q_convergence_rate; metric scaffolding sound but PREDICTION SIGN STILL WRONG → second halt below"
     },
     {
+      "halt_utc": "2026-05-01T11:31:32Z",
+      "milestone": "M2 reopen close (v3+v4 fold-in pending)",
+      "trigger_class": "T11 (spec §5.7 v4) — metric design flaw; β=0 dominates on classical-Q* convergence axis",
+      "severity": "paper-critical / BLOCKER per addendum §6 + v4 directive",
+      "reason": "v4 sign-flip + q_star off-by-one fix + terminal-state slice ALL applied correctly; metric scaffolding sound (47 PASS). Smoke test STILL fails because the prediction is on the wrong axis: classical Q* is the fixed point of T_{β=0} only, not T_{β≠0}. Empirical: AUC(rate(0))=21.03 (full convergence to classical Q*, residual hits eps floor) > AUC(rate(-1))=3.58 (overshoots, lands at β-specific fixed point ~0.55) > AUC(rate(+1))=-27.87 (diverges to ~1e13). β=0 dominates because only β=0 has classical Q* as its fixed point. v3 + v4 sign flips were both wrong because the underlying metric design assumes a β-monotonic ordering that doesn't hold (TAB operator fixed point shifts with β).",
+      "memo_path": "results/adaptive_beta/tab_six_games/halts/delayed_chain_metric_design_flaw_2026-05-01T11-31-32Z.md",
+      "head_at_halt": "10d586959b95fb5816d6676a01efa138c872a867",
+      "working_tree_dirty": true,
+      "remediation_options": ["(δ) switch metric to Bellman-residual decay; rewrite smoke", "(ε) drop the absolute prediction; keep cell as informational diagnostic", "(ζ) drop delayed_chain entirely from M6"],
+      "orchestrator_recommendation": "(δ) — most paper-aligned; would need new helper + smoke rewrite + empirical verification"
+    },
+    {
       "halt_utc": "2026-05-01T11:14:49Z",
       "milestone": "M2 reopen close (v3 fold-in pending)",
       "trigger_class": "T11 (spec §5.7 v3) — P-Contract sign inverted",
@@ -120,6 +132,6 @@
   },
   "next_action": {
     "type": "halt",
-    "details": "SECOND HALT at M2 reopen close after v3 patch fold-in. v3 metric scaffolding (q_convergence_rate + q_star_delayed_chain) implemented and 4/4 metric tests PASS. But v3-rewritten smoke test fires T11 with substantively different cause: P-Contract prediction sign is BACKWARDS. Empirically -β converges fastest, +β diverges. Theoretical math (alignment condition β·(r-v)≥0 with r=0<v requires β≤0; TAB target asymptotic (1+γ)v not γv) confirms the patch's reasoning was inverted. Halt memo at results/adaptive_beta/tab_six_games/halts/delayed_chain_P_Contract_sign_inverted_2026-05-01T11-14-49Z.md enumerates 3 remediation options (α/β/γ); orchestrator recommends (α) flip P-Contract sign. Working tree DIRTY with v3 fold-in pending; checkpoint NOT bumped to schema 1.3.0 yet (waiting for sign-fix decision before atomic v3+sign-fix commit). Per v3 §1 step 5: do NOT auto-fix beyond v3 amendment."
+    "details": "THIRD HALT at M2 reopen close after v4 sign flip + q_star off-by-one + terminal-state slice all applied. v4 metric scaffolding sound; alignment-condition derivation correct; off-by-one fixed; terminal slice exposed deeper issue. Empirical: β=0 fully converges to classical Q* (AUC=21.03); β=-1 overshoots toward β-specific fixed point ~0 and lands at ~0.55 (AUC=3.58); β=+1 diverges to ~1e13 (AUC=-27.87). Neither v3 (+/0/-) nor v4 (-/0/+) ordering matches; β=0 dominates because only β=0 has classical Q* as its fixed point. Metric design flaw: q_convergence_rate(q_history, q_star_classical) implicitly assumes all β share classical Q* as fixed point, but TAB fixed point shifts with β. Per v4 directive: 'Do NOT auto-fix beyond v4'. Halt memo at results/adaptive_beta/tab_six_games/halts/delayed_chain_metric_design_flaw_2026-05-01T11-31-32Z.md enumerates 3 remediation options (δ/ε/ζ); orchestrator recommends (δ) Bellman-residual decay (use existing contraction_reward helper from spec §M5). Working tree retains v4 corrections pending researcher decision."
   }
 }
