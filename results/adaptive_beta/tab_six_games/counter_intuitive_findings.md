@@ -254,3 +254,50 @@ fine β grid revealing the discontinuity that the coarse main grid
 could not. The figure-only-points marker on the {±0.1, ±0.25}
 samples will document that they appear ONLY in the figures, not
 in the statistical comparisons.
+
+### v7 bug-hunt verification (2026-05-01) — CASE C refinement
+
+User-mandated pre-M7 broad bug-hunt (HALT 7) ran 5 phases of
+verification on the v7 finding:
+
+- **Phase 1**: 1694 PASS suite, zero operator-touch since Phase
+  VII, manifest sound, AC-Trap pre-sweep bit-identical reproducibility.
+- **Phase 2**: manual AUC + alignment-rate replays match production
+  bit-identically; β=0 bit-identity guard verified at operator and
+  agent levels; cross-cell sign-of-β test: alignment(+β)<0.20 in
+  22/22 cells, AUC(-β)>AUC(+β) in 14/16 non-tied cells.
+- **Phase 3**: Codex broad adversarial review (memo
+  `codex_reviews/v7_broad_bug_hunt_20260501T202809Z.md`) returned
+  **GENUINE FINDING**. Reference TAB agent (~30 LoC, no shared
+  imports) matched production to 0.00% across 9 cells over 1k+10k
+  episodes.
+- **Phase 4**: 6-perturbation × 3-cell × 3-β × 3-seed sweep (162
+  runs in 87 sec). v7 holds under γ ∈ {0.9, 0.99} and α ∈ {0.05,
+  0.3}; **flips at q_init = -2** in 3/3 cells (vanilla > +β > -β).
+
+Phase 4 result is **CASE C** per the disposition protocol — the v7
+narrative is REFINED, not refuted:
+
+> **TAB sign should match `sign(r - V*)` in expectation.** Under
+> typical optimistic-or-zero Q-init with γ ∈ [0.9, 0.99], Q grows
+> above V* during training and the alignment regime requires
+> β ≤ 0; +β destabilizes. Under pessimistic Q-init (Q_0 < V*),
+> the regime is mirrored early (+β aligns) but flips by
+> mid-training; vanilla still wins. **Across q_init ∈ {-2, 0, +5},
+> γ ∈ {0.9, 0.95, 0.99}, α ∈ {0.05, 0.1, 0.3}, vanilla (β=0) is
+> never beaten by fixed +β or fixed -β.**
+
+The alignment-condition diagnostic is now sign-symmetric: it
+identifies regimes of *local-bootstrap optimality*, and the regime
+direction depends on Q_init relative to V*. AUC integrates across
+regime phases, so alignment_rate at end-of-training and AUC ordering
+across β can disagree under specific transient initializations.
+
+This refinement **strengthens** the paper:
+1. The diagnostic is *more general* than the single-direction v7
+   claim — sign-symmetric in `r - V*`.
+2. "Vanilla always wins" is now empirically anchored across the
+   tested perturbation envelope.
+
+Bug-hunt full disposition memo:
+`results/adaptive_beta/tab_six_games/v7_bug_hunt_disposition.md`

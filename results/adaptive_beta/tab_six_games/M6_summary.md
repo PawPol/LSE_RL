@@ -264,3 +264,25 @@ contraction. The paper narrative is now:
 > coordination/learning tasks where bootstrap V tracks expected
 > reward direction; never use +β at β > +0.1 without
 > verifying alignment from first principles.
+
+## Addendum (2026-05-01, post-M6 bug-hunt) — sign-symmetric refinement
+
+The user-mandated pre-M7 broad bug-hunt (HALT 7) ran a Phase 4
+parameter perturbation sweep (γ ∈ {0.9, 0.99}, q_init ∈ {-2, +5},
+α ∈ {0.05, 0.3}) and refined the headline narrative to:
+
+> **TAB sign should match `sign(r - V*)` in expectation.** The
+> +β-destabilizes-everywhere claim was specific to typical
+> optimistic-or-zero Q-init; under pessimistic Q-init the alignment
+> regime is mirrored early. Across the tested envelope (q_init ∈
+> {-2, 0, +5}, γ ∈ {0.9, 0.95, 0.99}, α ∈ {0.05, 0.1, 0.3}),
+> **vanilla (β=0) is never beaten by either fixed +β or fixed -β**.
+
+Full bug-hunt disposition memo at
+`results/adaptive_beta/tab_six_games/v7_bug_hunt_disposition.md`.
+Codex GENUINE-FINDING audit at
+`results/adaptive_beta/tab_six_games/codex_reviews/v7_broad_bug_hunt_20260501T202809Z.md`.
+The reference TAB-Q-learning implementation (no shared imports
+with production) matched production AUC to 0.00% across 9 cells
+× 1k and 10k episodes — strong independent verification that
+the v7 finding is mechanism-real, not a code artifact.

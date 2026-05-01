@@ -1,0 +1,49 @@
+# v7 perturbation: learning_rate=0.3; baseline otherwise.
+phase: VIII
+episodes: 1000
+seeds:
+- 0
+- 1
+- 2
+methods:
+- vanilla
+- fixed_beta_-1
+- fixed_beta_+1
+gamma: 0.95
+learning_rate: 0.3
+q_init: 0.0
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 100
+subcases:
+- id: AC-FictitiousPlay
+  game: asymmetric_coordination
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_fictitious_play
+  adversary_kwargs:
+    memory_m: 20
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: SH-FiniteMemoryRegret
+  game: shapley
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_regret_matching
+  adversary_kwargs:
+    memory_m: 20
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: RR-StationaryConvention
+  game: rules_of_road
+  game_kwargs:
+    horizon: 20
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.7
+    - 0.3
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+stage: v7_pert_alpha_0.3
