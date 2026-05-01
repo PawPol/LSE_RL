@@ -6,36 +6,61 @@
   "addendum_sha256": "281f94bb6f711884cbe96cfb8a9ce1657c9cdcc85f22fcd472f08acc7a4d688c",
   "kickoff_timestamp_utc": "2026-04-30T22:16:38Z",
   "overnight_engaged_utc": "2026-04-30T22:34:42Z",
+  "session_pause_utc": "2026-04-30T20:08:00Z",
+  "session_pause_reason": "orchestrator context budget; M4 G4b Codex review pending",
   "kickoff_git_head": "5d887df9d7b987c21bf37218816c347149e75854",
   "current_branch": "phase-VIII-tab-six-games-2026-04-30",
-  "current_git_head": "39e8ffb479865bfa13e08862016a42406a9793ac",
+  "current_git_head": "b4dd828af6ee0b99ed67aa15a0b9daae5c7236ad",
   "current_milestone": "M4",
   "current_tier": 1,
   "milestone_status": {
     "M0": "complete", "M1": "complete", "M2": "complete", "M3": "complete",
-    "M4": "pending", "M5": "pending", "M6": "pending", "M7": "pending",
-    "M8": "pending", "M9": "pending", "M10": "pending", "M11": "pending",
-    "M12": "pending"
+    "M4": "wave_2_pass_review_pending", "M5": "pending", "M6": "pending",
+    "M7": "pending", "M8": "pending", "M9": "pending", "M10": "pending",
+    "M11": "pending", "M12": "pending"
   },
   "in_flight_dispatches": [],
-  "completed_dispatches_count": 17,
+  "completed_dispatches_count": 22,
   "completed_dispatches_summary": {
     "M0": ["addendum-commit"],
-    "M1": ["W1.A-codex","W1.B-opus","W1.C-opus","W2.A-codex","W2.B-codex","W2.C-codex","W3.A-codex"],
-    "M2": ["M2.W1.A-opus","M2.W1.B-opus","M2.W2.A-codex","M2.W2.B-codex"],
-    "M3": ["M3.W1.A-opus","M3.W1.B-opus","M3.W1.C-opus","M3.W2.A-codex","M3.W2.B-codex","M3.W2.C-codex"]
+    "M1": ["W1.A","W1.B","W1.C","W2.A","W2.B","W2.C","W3.A"],
+    "M2": ["M2.W1.A","M2.W1.B","M2.W2.A","M2.W2.B"],
+    "M3": ["M3.W1.A","M3.W1.B","M3.W1.C","M3.W2.A","M3.W2.B","M3.W2.C"],
+    "M4_wave_1": ["M4.W1.A","M4.W1.B"],
+    "M4_wave_2": ["M4.W2.A","M4.W2.B-failed-then-autofixed","M4.W2.C","M4.W2.D"]
   },
   "test_count_evolution": {
     "baseline_post_filterrepo": 506,
     "after_M1": 564,
     "after_M2": 612,
     "after_M3": 645,
-    "tests_adaptive_beta_total": 309
+    "after_M4_wave_1": 777,
+    "after_M4_wave_2_and_autofix": 864
   },
+  "auto_fixes_applied": [
+    {
+      "milestone": "M4",
+      "wave": "W2.B",
+      "attempt": 1,
+      "outcome": "succeeded",
+      "diff_summary": "_BaseUCBBetaSchedule._compute_next_beta: separated pull-count increment from _record_arm_reward; pulls track deployments not reward attributions; spec §6.5 invariant restored",
+      "tests_fixed": [
+        "test_contraction_ucb_arm_accounting::test_total_pulls_equals_total_episodes",
+        "test_contraction_ucb_arm_accounting::test_each_arm_pulled_at_least_once_in_warm_start"
+      ]
+    }
+  ],
   "failure_log": [],
   "halts": [],
   "gates_acked": ["G0", "G1", "M1-close", "G2", "M2-close", "G3", "M3-close"],
-  "gates_pending": [],
+  "gates_pending": ["G4b"],
+  "next_session_resumption_plan": {
+    "step_1": "Run G4b — M4 Codex review (mandatory per harness §9). Dispatch script and adversarial focus in session_progress_2026-04-30.md.",
+    "step_2": "If G4b PASS: commit M4_summary.md, mark M4 complete, push, proceed to M5.",
+    "step_3": "If G4b BLOCKER: halt per addendum §6. MAJOR: auto-fix loop (max 3 attempts).",
+    "step_4": "M5 → M6 → ... → M12 per addendum §2 auto-proceed table.",
+    "step_5": "End-of-run synthesis per addendum §7 before terminating."
+  },
   "overnight_mode": {
     "engaged": true,
     "auto_fix_major": true,
@@ -44,17 +69,17 @@
     "no_tex_edits": true
   },
   "budgets": {
-    "wall_clock_elapsed_seconds": 4900,
+    "wall_clock_elapsed_seconds": 6850,
     "wall_clock_cap_seconds": 129600,
-    "dispatch_count": 17,
+    "dispatch_count": 22,
     "dispatch_cap": 300,
     "token_spend_by_role": {
-      "opus-4-7": 579171,
-      "codex-gpt-5.5-xhigh": 632000
+      "opus-4-7": 750000,
+      "codex-gpt-5.5-xhigh": 850000
     }
   },
   "next_action": {
-    "type": "dispatch",
-    "details": "M4 wave 1: 4 schedules (Oracle, HandAdaptive, ContractionUCB, ReturnUCB) + 3 external baselines + factory dispatch update. M4 wave 2: 9 test files. M4 close: MANDATORY Codex review gate (G4b) per harness §9."
+    "type": "phone_home_session_pause",
+    "details": "Orchestrator session 1 paused. M0-M3 complete; M4 wave 1+2+autofix complete; G4b pending. Next session resumes per next_session_resumption_plan."
   }
 }
