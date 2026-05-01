@@ -1,0 +1,54 @@
+# total_runs: 63  (1 cell × 21 methods × 3 seeds)
+#
+# Phase VIII v10 smoke (V10.1): AC-Trap at the new 21-arm β grid,
+# canonical γ=0.95, 1k episodes × 3 seeds.  Resolves the bifurcation
+# shape statistically at fine resolution before running the dev pass.
+
+stage: v10_smoke_AC_Trap
+phase: VIII
+
+episodes: 1000
+seeds: [0, 1, 2]
+
+methods:
+  - vanilla
+  - fixed_beta_-2.0
+  - fixed_beta_-1.7
+  - fixed_beta_-1.35
+  - fixed_beta_-1.0
+  - fixed_beta_-0.75
+  - fixed_beta_-0.5
+  - fixed_beta_-0.35
+  - fixed_beta_-0.2
+  - fixed_beta_-0.1
+  - fixed_beta_-0.05
+  - fixed_beta_+0.05
+  - fixed_beta_+0.1
+  - fixed_beta_+0.2
+  - fixed_beta_+0.35
+  - fixed_beta_+0.5
+  - fixed_beta_+0.75
+  - fixed_beta_+1.0
+  - fixed_beta_+1.35
+  - fixed_beta_+1.7
+  - fixed_beta_+2.0
+
+gamma: 0.95
+learning_rate: 0.1
+q_init: 0.0
+
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 500
+
+subcases:
+  - id: AC-Trap
+    game: asymmetric_coordination
+    game_kwargs:
+      horizon: 20
+    adversary: finite_memory_regret_matching
+    adversary_kwargs:
+      memory_m: 20
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
