@@ -757,10 +757,16 @@ class _BaseUCBBetaSchedule(_BaseSchedule):
         Standardisation uses the arm's *own* Welford stats (after the
         new sample is incorporated). This is the canonical pattern: if
         std == 0 (single sample), the standardised value is 0.
+
+        Note: ``_pull_counts`` is bumped separately in ``_compute_next_beta``
+        so deployments without a reward (e.g., the first contraction step
+        where ``M_e`` is None) still register as pulls. This matches the
+        spec §6.5 invariant: each warm-start episode 0..6 pulls each arm
+        exactly once, regardless of whether the reward formula is defined
+        on that step.
         """
         w = self._welford[arm_idx]
         w.update(raw_reward)
-        self._pull_counts[arm_idx] += 1
         std_reward = w.standardise(raw_reward)
         # Maintain a running mean of *standardised* rewards per arm. This
         # is what UCB1 scores against (μ̂_j_std in spec §6.5). We compute
@@ -771,6 +777,13 @@ class _BaseUCBBetaSchedule(_BaseSchedule):
         self._n_std_samples[arm_idx] = n
 
     def _compute_next_beta(self, smoothed_A: float) -> tuple[float, float]:
+        # Step 0: register the deployment of ``_current_arm_idx`` as a
+        # pull, regardless of whether the reward formula was defined this
+        # episode (lessons.md fix from M4 W2.B test_contraction_ucb_arm_
+        # accounting failure: pulls track deployments, not reward
+        # attributions).
+        self._pull_counts[self._current_arm_idx] += 1
+
         # Step 1: attribute the just-finished episode's reward to the arm
         # we deployed (``_current_arm_idx``). Subclasses produce the raw
         # reward; ``None`` signals "skip" (e.g., first contraction step
