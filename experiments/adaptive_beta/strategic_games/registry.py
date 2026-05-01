@@ -195,3 +195,44 @@ from experiments.adaptive_beta.strategic_games.games import (  # noqa: E402,F401
 from experiments.adaptive_beta.strategic_games.games import (  # noqa: E402,F401
     potential as _potential_game,
 )
+
+
+# ---------------------------------------------------------------------------
+# Phase VIII M2 reopen — RR-Sparse subcase (patch §1, 2026-05-01).
+#
+# Registered as a separate factory key ``"rules_of_road_sparse"`` that
+# delegates to the dense RoR ``build`` with ``sparse_terminal=True`` and
+# the patch §1.2 default horizon ``H = 20`` (longer than dense subcases
+# to stress credit assignment over multiple steps). The dense
+# ``"rules_of_road"`` registration is unchanged.
+from experiments.adaptive_beta.strategic_games.games import (  # noqa: E402
+    rules_of_road as _rules_of_road,
+)
+
+
+def _build_rules_of_road_sparse(
+    adversary: StrategicAdversary,
+    horizon: int = 20,
+    **kwargs: Any,
+) -> Any:
+    """Factory wrapper for ``rules_of_road`` with ``sparse_terminal=True``.
+
+    Per patch §1.2: defaults to ``H = 20`` (longer than the dense RoR
+    subcases). Passing ``sparse_terminal`` explicitly is rejected so
+    the registry key is the single source of truth for the sparse vs
+    dense distinction.
+    """
+    if "sparse_terminal" in kwargs:
+        raise TypeError(
+            "rules_of_road_sparse factory does not accept the "
+            "'sparse_terminal' kwarg (it is implied by the registry key)"
+        )
+    return _rules_of_road.build(
+        adversary=adversary,
+        horizon=horizon,
+        sparse_terminal=True,
+        **kwargs,
+    )
+
+
+register_game("rules_of_road_sparse", _build_rules_of_road_sparse)

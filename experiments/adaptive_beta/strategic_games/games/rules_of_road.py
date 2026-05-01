@@ -1,7 +1,7 @@
 """Rules-of-the-road coordination game (spec §6.3).
 
 A 2x2 pure-coordination game with two strict Nash equilibria
-((Left, Left) and (Right, Right)). The factory exposes two variant
+((Left, Left) and (Right, Right)). The factory exposes three variant
 knobs documented in the spec:
 
 - ``tremble_prob`` — probability that the adversary's chosen action is
@@ -13,6 +13,14 @@ knobs documented in the spec:
   in BOTH players' payoff matrices. ``payoff_bias > 0`` makes
   Right-Right the unique payoff-dominant equilibrium. Spec §6.3 grid:
   ``{0.0, 0.5}``.
+
+- ``sparse_terminal`` — when ``True``, per-step rewards are zeroed and
+  only the terminal step pays out (``+c`` if last action was
+  coordinated, ``-m`` if miscoordinated). Default ``False`` preserves
+  the dense per-step shaping. Activated by the ``rules_of_road_sparse``
+  registry key (patch §1, 2026-05-01) — exposes TAB's optimistic
+  backward-propagation advantage on sparse-reward problems by removing
+  the dense per-step shaping that masks it.
 
 Action encoding
 ---------------
@@ -46,7 +54,7 @@ Phase VII-B observability convention (spec §5.2 / §7).
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 
@@ -181,6 +189,41 @@ class _TrembleAdversary(StrategicAdversary):
             hook()
 
 
+class _SparseTerminalRoREnv(MatrixGameEnv):
+    """RoR variant with terminal-only reward (patch §1, 2026-05-01).
+
+    Identical to ``MatrixGameEnv`` except: every non-terminal ``step``
+    returns ``reward = 0.0`` regardless of the underlying payoff matrix
+    realisation, while the terminal step returns the payoff-matrix value
+    unchanged (``+c`` if coordinated, ``-m`` if miscoordinated, where
+    ``c`` and ``m`` are encoded into the payoff matrix at construction
+    time by the ``build`` factory).
+
+    Notes
+    -----
+    - The opponent action, history bookkeeping, and adversary
+      ``observe`` calls all proceed normally — only the *agent reward*
+      visible to the learner is masked. The payoff matrix used by the
+      env is the dense matrix with ``+c`` on the coordinated diagonal
+      and ``-m`` off-diagonal, so ``info["opponent_reward"]`` and any
+      adversary internals that consume opponent rewards continue to see
+      a coherent (non-sparse) signal.
+    - This deliberately mirrors the patch §1.4 spec language ("per-step
+      payoffs are zeroed and only the final-step payoff fires"). The
+      adversary still observes the underlying realised reward via its
+      own ``observe`` hook (unchanged from dense RR), so adversary
+      dynamics that depend on payoff feedback are not silently broken.
+    """
+
+    def step(
+        self, action: np.ndarray
+    ) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
+        s, r, absorbing, info = super().step(action)
+        if not absorbing:
+            r = 0.0
+        return s, r, absorbing, info
+
+
 def build(
     adversary: StrategicAdversary,
     horizon: int = 20,
@@ -188,6 +231,9 @@ def build(
     state_encoder: Optional[StateEncoder] = None,
     tremble_prob: float = 0.0,
     payoff_bias: float = 0.0,
+    sparse_terminal: bool = False,
+    c: float = 1.0,
+    m: float = 0.5,
     **kwargs: Any,
 ) -> MatrixGameEnv:
     """Construct a rules-of-the-road ``MatrixGameEnv``.
@@ -210,6 +256,20 @@ def build(
     payoff_bias
         Additional payoff added to the (Right, Right) cell in BOTH
         players' matrices. Spec grid: ``{0.0, 0.5}``.
+    sparse_terminal
+        Patch §1 (2026-05-01) — when ``True``, per-step rewards are
+        zeroed and only the terminal step pays out (``+c`` if
+        coordinated, ``-m`` if miscoordinated). The returned env is a
+        ``_SparseTerminalRoREnv`` subclass that masks non-terminal
+        rewards. Default ``False`` preserves the dense per-step
+        shaping (existing behavior).
+    c
+        Coordinated terminal payoff used only when ``sparse_terminal``
+        is ``True``. Default ``1.0`` per patch §1.2 paper config.
+    m
+        Miscoordinated terminal *penalty magnitude* used only when
+        ``sparse_terminal`` is ``True``: the off-diagonal payoff is
+        ``-m``. Default ``0.5`` per patch §1.2 paper config.
     **kwargs
         Forwarded to ``MatrixGameEnv``. Supported: ``gamma``,
         ``metadata`` (merged on top of the game-supplied metadata).
@@ -225,11 +285,30 @@ def build(
         raise ValueError(
             f"tremble_prob must lie in [0, 1], got {tremble_prob}"
         )
+    if sparse_terminal and (c <= 0.0 or m < 0.0):
+        raise ValueError(
+            f"sparse_terminal requires c > 0 and m >= 0, got c={c}, m={m}"
+        )
 
-    # Apply the payoff bias (right-right cell) on a fresh copy so the
-    # module-level constants stay unchanged.
-    pa = payoff_agent.copy()
-    po = payoff_opponent.copy()
+    # Build the payoff matrices.
+    if sparse_terminal:
+        # Coordinated diagonal pays +c; miscoordinated off-diagonal pays
+        # -m. Dense per-step rewards are masked by the
+        # ``_SparseTerminalRoREnv.step`` override; the matrix entries
+        # only realise on the terminal step.
+        pa = np.array(
+            [
+                [+float(c), -float(m)],
+                [-float(m), +float(c)],
+            ],
+            dtype=np.float64,
+        )
+        po = pa.copy()
+    else:
+        # Apply the payoff bias (right-right cell) on a fresh copy so
+        # the module-level constants stay unchanged.
+        pa = payoff_agent.copy()
+        po = payoff_opponent.copy()
     if payoff_bias != 0.0:
         pa[1, 1] += float(payoff_bias)
         po[1, 1] += float(payoff_bias)
@@ -259,6 +338,9 @@ def build(
         "is_zero_sum": False,
         "tremble_prob": float(tremble_prob),
         "payoff_bias": float(payoff_bias),
+        "sparse_terminal": bool(sparse_terminal),
+        "c": float(c) if sparse_terminal else None,
+        "m": float(m) if sparse_terminal else None,
     }
     user_meta = kwargs.pop("metadata", None)
     if user_meta:
@@ -270,7 +352,8 @@ def build(
             f"build(rules_of_road) got unexpected kwargs: {sorted(kwargs)}"
         )
 
-    return MatrixGameEnv(
+    env_cls = _SparseTerminalRoREnv if sparse_terminal else MatrixGameEnv
+    return env_cls(
         payoff_agent=pa,
         payoff_opponent=po,
         adversary=wrapped,
