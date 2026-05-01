@@ -7,19 +7,20 @@
   "kickoff_timestamp_utc": "2026-04-30T22:16:38Z",
   "overnight_engaged_utc": "2026-04-30T22:34:42Z",
   "session_2_resume_utc": "2026-05-01T01:07:31Z",
+  "session_2_pause_utc": "2026-05-01T01:36:00Z",
   "kickoff_git_head": "5d887df9d7b987c21bf37218816c347149e75854",
   "current_branch": "phase-VIII-tab-six-games-2026-04-30",
-  "current_git_head": "6d19d75fce3914089ce0103d23c129c3b85c5446",
-  "current_milestone": "M5",
-  "current_tier": 1,
+  "current_git_head": "5a9c5b5c1957057c2e72aa6630a040a0eaacb865",
+  "current_milestone": "M6",
+  "current_tier": 2,
   "milestone_status": {
     "M0": "complete", "M1": "complete", "M2": "complete", "M3": "complete",
-    "M4": "complete", "M5": "pending", "M6": "pending",
+    "M4": "complete", "M5": "complete", "M6": "pending",
     "M7": "pending", "M8": "pending", "M9": "pending", "M10": "pending",
     "M11": "pending", "M12": "pending"
   },
   "in_flight_dispatches": [],
-  "completed_dispatches_count": 23,
+  "completed_dispatches_count": 27,
   "completed_dispatches_summary": {
     "M0": ["addendum-commit"],
     "M1": ["W1.A","W1.B","W1.C","W2.A","W2.B","W2.C","W3.A"],
@@ -27,15 +28,13 @@
     "M3": ["M3.W1.A","M3.W1.B","M3.W1.C","M3.W2.A","M3.W2.B","M3.W2.C"],
     "M4_wave_1": ["M4.W1.A","M4.W1.A-redispatch","M4.W1.B"],
     "M4_wave_2": ["M4.W2.A","M4.W2.B-failed-then-autofixed","M4.W2.C","M4.W2.D"],
-    "M4_close": ["G4b-PASS"]
+    "M4_close": ["G4b-PASS"],
+    "M5": ["M5.W1.A","M5.W1.B","M5.W2"]
   },
   "auto_fixes_applied": [
     {
-      "milestone": "M4",
-      "wave": "W2.B",
-      "attempt": 1,
-      "outcome": "succeeded",
-      "diff_summary": "_BaseUCBBetaSchedule._compute_next_beta: separated pull-count increment from _record_arm_reward; pulls track deployments not reward attributions",
+      "milestone": "M4", "wave": "W2.B", "attempt": 1, "outcome": "succeeded",
+      "diff_summary": "_BaseUCBBetaSchedule._compute_next_beta: separated pull-count increment from _record_arm_reward",
       "g4b_confirmed_correct": true
     }
   ],
@@ -44,15 +43,12 @@
     "after_M1": 564,
     "after_M2": 612,
     "after_M3": 645,
-    "after_M4_wave_1": 777,
-    "after_M4_wave_2_and_autofix": 864,
-    "g4b_full_repo_sweep_at_b4dd828a": 1612
+    "after_M4": 864,
+    "after_M5": 894
   },
   "codex_reviews": [
     {
-      "gate": "G4b",
-      "milestone": "M4",
-      "verdict": "PASS",
+      "gate": "G4b", "milestone": "M4", "verdict": "PASS",
       "n_blockers": 0, "n_majors": 0, "n_minors": 0, "n_nits": 0,
       "memo_path": "results/adaptive_beta/tab_six_games/codex_reviews/M4_close_review_2026-05-01T01-09-13Z.md",
       "codex_tokens": 161946
@@ -60,8 +56,20 @@
   ],
   "failure_log": [],
   "halts": [],
-  "gates_acked": ["G0", "G1", "M1-close", "G2", "M2-close", "G3", "M3-close", "G4b", "M4-close"],
+  "gates_acked": ["G0", "G1", "M1-close", "G2", "M2-close", "G3", "M3-close", "G4b", "M4-close", "M5-close"],
   "gates_pending": [],
+  "next_session_resumption_plan": {
+    "step_1": "addendum §10 protocol: verify config_sha256 + addendum_sha256, verify HEAD, log RESUME event",
+    "step_2": "M6 wave 1: experiment-runner builds runner script + 2 configs (dev.yaml, stage1_beta_sweep.yaml)",
+    "step_3": "M6 wave 2: Stage A dev pass — 378 runs (~5-15 min wall-clock)",
+    "step_4": "M6 wave 3: auto-promote check (P1-P6 per addendum §4.1)",
+    "step_5": "M6 wave 4: Stage 1 main pass — 1,260 runs (~2-4 h wall-clock)",
+    "step_6": "M6 wave 5: bug-hunt T1-T10 detector + focused Codex reviews if triggers fire",
+    "step_7": "M6 wave 6: optional Codex review G6c if results flagged for main paper",
+    "step_8": "M6 wave 7: aggregate + plots + tables → M6_summary.md → push",
+    "step_9": "Continue M7 → M8 → M9 → M10 → M11 → M12 per addendum",
+    "step_10": "End-of-run synthesis per addendum §7"
+  },
   "overnight_mode": {
     "engaged": true,
     "auto_fix_major": true,
@@ -70,17 +78,17 @@
     "no_tex_edits": true
   },
   "budgets": {
-    "wall_clock_elapsed_seconds": 10860,
+    "wall_clock_elapsed_seconds": 12480,
     "wall_clock_cap_seconds": 129600,
-    "dispatch_count": 23,
+    "dispatch_count": 27,
     "dispatch_cap": 300,
     "token_spend_by_role": {
-      "opus-4-7": 750000,
-      "codex-gpt-5.5-xhigh": 1012000
+      "opus-4-7": 903000,
+      "codex-gpt-5.5-xhigh": 1269000
     }
   },
   "next_action": {
-    "type": "dispatch",
-    "details": "M5 — metrics + analysis scaffold. Verify Phase VII metric pipeline emits §7.1 fields. Build aggregate.py + 5 plotting scripts. Tier 1 autonomous; light verifier gate at close (no Codex)."
+    "type": "phone_home_session_pause",
+    "details": "Session 2 paused at M5 close. M6 (compute-heavy, est. 2-4h) deferred to next session. M0-M5 complete; gates_acked through M5-close; gates_pending empty."
   }
 }
