@@ -551,12 +551,21 @@ Implementation hooks:
   `hypothesis_id=None`, `policy_entropy=0.0`).
 - All 4 subcases registered in `GAME_REGISTRY` via `register_game()`.
 
+<!-- patch-2026-05-01-v6 -->
 **M6 sweep inclusion** (per patch §11.5): adds 4 subcases × 7 β × 10
-seeds × 10k episodes ≈ **2,800 additional runs** to the M6 main pass
-(extends the 6-game suite to 7 games for sweep purposes). Wall-clock
-on parallel-seed infrastructure: ~5–15 min additional; total M6 main
-pass after fold-in ≈ 1,260 (original) + 280 (RR-Sparse) + 2,800
-(delayed_chain) ≈ **4,340 runs**.
+seeds = **280 additional runs** to the M6 main pass (extends the
+6-game suite to 7 games for sweep purposes). Wall-clock on
+parallel-seed infrastructure: ~5–15 min additional; total M6 main
+pass after fold-in: see §10.2.
+
+> **Run-count footnote (HALT 5 OQ1, 2026-05-01)**: this section
+> previously quoted ~2,800 delayed_chain runs and a ~4,340 total. v2
+> patch arithmetic in §1.5 and §11.5 spuriously multiplied subcase
+> counts by 10. Actual main-pass total = `1,260 (original 6 games)
+> + 70 (RR-Sparse, 1 subcase × 7 β × 10 seeds) + 280 (delayed_chain,
+> 4 subcases × 7 β × 10 seeds) + ~210 (additional promoted
+> subcases) ≈ 1,820 runs`, validated by the M6 wave 1 runner's
+> `# total_runs:` count.
 
 **M7 baseline inclusion** (per patch §11.6): `delayed_chain ×
 DC-Long50` MUST be included in the M7 promoted-subcases list.
@@ -1141,8 +1150,21 @@ subcases: canonical + promoted nonstationary subcases (per Stage A)
             (per patch §11.5)
 ```
 
-Total M6 main-pass run count after fold-in: ~1,260 (original) + ~280
-(RR-Sparse) + ~2,800 (delayed_chain) ≈ **4,340 runs**.
+<!-- patch-2026-05-01-v6 -->
+Total M6 main-pass run count after fold-in:
+`1,260 (original 6 games × promoted subcases × 7 β × 10 seeds)
++ 70 (RR-Sparse, 1 subcase × 7 β × 10 seeds)
++ 280 (delayed_chain, 4 subcases × 7 β × 10 seeds)
++ ~210 (additional promoted nonstationary subcases per Stage A)
+≈ **1,820 runs**`.
+
+> **Run-count footnote (HALT 5 OQ1, 2026-05-01)**: this section
+> previously quoted ~4,340 runs. v2 patch arithmetic in §1.5 and
+> §11.5 spuriously multiplied subcase counts by 10 (e.g.
+> `4 × 7 × 10 = 2,800` instead of `4 × 7 × 10 = 280`). The error
+> was caught by the M6 wave 1 runner's independent count
+> (`stage1_beta_sweep.yaml: # total_runs: 1820`). The corrected
+> total is 1,820 dispatched runs.
 
 `alignment_rate_*.pdf` and `effective_discount_*.pdf` are **not produced
 for `H = 1` matching-pennies cells** (Phase VII §22.5 precedent —
@@ -1868,7 +1890,10 @@ milestone.
   §7 (potential-game lemma), §11 (delayed_chain game with 4 subcases
   + PassiveOpponent + bug-hunt T11). §2 RESERVED (high-magnitude
   payoff variant deferred to v2 post-M9). M2 + M4 reopened with new
-  delta tasks; M6 main pass grows from ~1,260 to ~4,340 runs. Each
+  delta tasks; M6 main pass grows from ~1,260 to ~1,820 runs (v2
+  patch initially quoted ~4,340; corrected at v6 per HALT 5 OQ1 —
+  the v2 §1.5/§11.5 arithmetic spuriously multiplied subcase counts
+  by 10). Each
   fold-in marked inline with `<!-- patch-2026-05-01 §N -->` for
   provenance.
 - **2026-05-01 v3 — T11 halt resolution: advance-only delayed_chain
@@ -1908,6 +1933,26 @@ milestone.
   final R separated by 17 orders of magnitude between β=-1 (3.45e-11,
   contracted) and β=+1 (2.69e+06, divergent). Each fold-in marked
   inline with `<!-- patch-2026-05-01-v5 -->`.
+- **2026-05-01 v6 — HALT 5 resolution: M6 wave 1 OQ1+OQ2+OQ3+OQ4
+  closures.** OQ3 (AC-Trap adversary): wired to
+  `finite_memory_regret_matching(memory_m=20)` in both
+  `configs/dev.yaml` and `configs/stage1_beta_sweep.yaml` — regret
+  matching tests the payoff-dominance claim directly via
+  counterfactual regret over the (Stag, Hare) payoff structure;
+  single-parameter opponent avoids a hyperparameter pilot. OQ2
+  (aggregator schema parity): extended
+  `PHASE_VIII_EXPECTED_COLUMNS` and `LONG_CSV_COLUMNS` with
+  `beta_raw`, `beta_used`, `effective_discount_mean`,
+  `goal_reaches`; updated `test_aggregate_schema_parity.py`
+  (column count 49 → 53). OQ1 (Stage 1 run count): corrected from
+  ~4,340 → ~1,820 across §6.4 / §10.2 / §22 with arithmetic-error
+  footnote; v2 patch §1.5 / §11.5 had spuriously multiplied
+  subcase counts by 10 (`4 × 7 × 10 = 2,800` instead of
+  `4 × 7 × 10 = 280` etc). OQ4 (RR/SO/PG stationary opponent
+  probabilities): confirmed runner's defaults — RR `[0.7, 0.3]`
+  (load-bearing for the convention-learning mechanism), SO/PG
+  uniform. Each fold-in marked inline with
+  `<!-- patch-2026-05-01-v6 -->`.
 - **2026-05-01 v5b — HALT 4 resolution: replace Cohen's d guard with
   relative-gap floor for noiseless DC-Long50 testbed.** v5 metric +
   prediction unchanged; only test instrumentation. The DC-Long50

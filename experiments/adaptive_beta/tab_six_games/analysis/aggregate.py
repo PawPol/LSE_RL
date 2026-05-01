@@ -132,6 +132,19 @@ LONG_CSV_COLUMNS: Tuple[str, ...] = (
     # Diagnostics.
     "nan_count",
     "diverged",
+    # Per HALT 5 OQ2 (2026-05-01): runner emits these per-episode but
+    # they were missing from the schema-parity guard, producing soft
+    # `schema_drift` warnings on every run. `beta_raw` / `beta_used`
+    # are the schedule's pre-clip / post-clip outputs; the existing
+    # `mean_d_eff` is retained, and `effective_discount_mean` is the
+    # runner's verbose alias kept for downstream-figure ergonomics
+    # (rename to `mean_d_eff` is deferred to a separate cleanup pass).
+    # `goal_reaches` is a delayed_chain-only diagnostic counting
+    # episodes that reached the goal terminal.
+    "beta_raw",
+    "beta_used",
+    "effective_discount_mean",
+    "goal_reaches",
 )
 
 #: Columns sourced from ``run.json`` (replicated across every per-episode

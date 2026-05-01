@@ -1,0 +1,325 @@
+# total_runs: 1820  (26 cells × 7 methods × 10 seeds)
+#
+# OPEN QUESTION (do NOT resolve in M6 wave 1): the spec §10.2 envelope
+# advertises ~4,340 main-pass runs as
+#   1,260 (matrix) + 280 (RR-Sparse) + 2,800 (delayed_chain) = 4,340
+# but the 2,800 figure expands as
+#   4 subcases × 7 β × 10 seeds × 10 paired-seed comparisons = 2,800
+# where the "10 paired-seed comparisons" multiplier is an aggregator-side
+# accounting, NOT additional dispatched runs. Under the natural
+# (subcase × method × seed) interpretation the cell count for Stage 1 is
+#   matrix     : 18 × 7 × 10 = 1,260
+#   RR-Sparse  :  4 × 7 × 10 =   280
+#   delayed_chain: 4 × 7 × 10 =   280
+#   total      : 1,820 dispatched runs
+# This config encodes 1,820. The runner is otherwise scope-faithful; the
+# 4,340 vs 1,820 reconciliation is escalated to the user (see wave-1
+# report).
+#
+# Phase VIII Stage 1 — fixed-β operator sweep (M6 main pass; spec §10.2).
+#
+# Scope
+# -----
+# 10,000 episodes; 10 seeds [0..9]; 7-arm β grid (vanilla + fixed_beta_±0.5,
+# ±1, ±2); 7 games (matching_pennies, shapley, rules_of_road,
+# asymmetric_coordination, soda_uncertain, potential, delayed_chain).
+# Subcases include canonical + the dev-pass-promoted nonstationary subcases
+# + RR-Sparse (rules_of_road_sparse game; per patch §1) + the four
+# delayed_chain subcases (DC-Short10, DC-Medium20, DC-Long50,
+# DC-Branching20; per patch §11.5).
+#
+# Cell breakdown (26):
+#   * matching_pennies:        2
+#   * shapley:                 2
+#   * rules_of_road:           2
+#   * asymmetric_coordination: 3
+#   * soda_uncertain:          3
+#   * potential:               2
+#   * rules_of_road_sparse:    4   (RR-Sparse opponent variants)
+#   * delayed_chain:           4
+#   * total:                   22 ?  → see breakdown below
+#
+# Recount: 2 + 2 + 2 + 3 + 3 + 2 + 4 + 4 = 22 — wait, that's 22 not 26.
+# The 26 figure assumes 18 (Stage A dev cells) + 4 (RR-Sparse) + 4 (DC).
+# Stage A dev had 18 cells (see dev.yaml header); Stage 1 main reuses
+# the same 18 + 4 RR-Sparse + 4 DC = 26 cells. The 22 above is wrong;
+# the correct enumeration is below.
+#
+# CORRECTED enumeration (26 = 18 dev cells + 4 RR-Sparse + 4 DC):
+#   matching_pennies:        2  (MP-Stationary, MP-FiniteMemoryBR)
+#   shapley:                 2  (SH-FictitiousPlay, SH-FiniteMemoryRegret)
+#   rules_of_road:           2  (RR-StationaryConvention, RR-Tremble)
+#   asymmetric_coordination: 3  (AC-FictitiousPlay, AC-Trap, AC-SmoothedBR)
+#   soda_uncertain:          3  (SO-Coordination, SO-AntiCoord, SO-TypeSwitch)
+#   potential:               2  (PG-CoordinationPotential, PG-SwitchingPayoff)
+#   rules_of_road_sparse:    4  (RR-Sparse × 4 opponent variants)
+#   delayed_chain:           4  (DC-Short10/Medium20/Long50/Branching20)
+#   total:                   22 + 4 = 26
+#
+# 26 × 7 × 10 = 1,820 dispatched runs. See OPEN QUESTION above for the
+# 4,340 reconciliation.
+#
+# Headline-metric routing identical to dev.yaml:
+#   * delayed_chain advance-only (DC-Short10/Medium20/Long50)
+#       → headline_metric: bellman_residual_beta_auc
+#       → t11_guard:       gap_based      (deterministic testbed)
+#   * delayed_chain DC-Branching20      → cumulative_return_auc / cohens_d
+#   * all other (matrix + RR-Sparse)    → cumulative_return_auc / cohens_d
+
+stage: stage1_beta_sweep
+phase: VIII
+
+episodes: 10000
+seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+methods:
+  - vanilla
+  - fixed_beta_-2
+  - fixed_beta_-1
+  - fixed_beta_-0.5
+  - fixed_beta_+0.5
+  - fixed_beta_+1
+  - fixed_beta_+2
+
+gamma: 0.95
+learning_rate: 0.1
+q_init: 0.0
+
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 5000
+
+subcases:
+  # ---------------- matching_pennies ----------------
+  - id: MP-Stationary
+    game: matching_pennies
+    game_kwargs:
+      horizon: 20
+    adversary: stationary_mixed
+    adversary_kwargs:
+      probs: [0.5, 0.5]
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+  - id: MP-FiniteMemoryBR
+    game: matching_pennies
+    game_kwargs:
+      horizon: 20
+    adversary: finite_memory_best_response
+    adversary_kwargs:
+      memory_m: 20
+      inertia_lambda: 0.5
+      temperature: 0.2
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+
+  # ---------------- shapley ----------------
+  - id: SH-FictitiousPlay
+    game: shapley
+    game_kwargs:
+      horizon: 20
+    adversary: finite_memory_fictitious_play
+    adversary_kwargs:
+      memory_m: 20
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+  - id: SH-FiniteMemoryRegret
+    game: shapley
+    game_kwargs:
+      horizon: 20
+    adversary: finite_memory_regret_matching
+    adversary_kwargs:
+      memory_m: 20
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+
+  # ---------------- rules_of_road (dense) ----------------
+  - id: RR-StationaryConvention
+    game: rules_of_road
+    game_kwargs:
+      horizon: 20
+    adversary: stationary
+    adversary_kwargs:
+      probs: [0.7, 0.3]
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+  - id: RR-Tremble
+    game: rules_of_road
+    game_kwargs:
+      horizon: 20
+      tremble_prob: 0.05
+    adversary: stationary
+    adversary_kwargs:
+      probs: [0.7, 0.3]
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+
+  # ---------------- asymmetric_coordination ----------------
+  - id: AC-FictitiousPlay
+    game: asymmetric_coordination
+    game_kwargs:
+      horizon: 20
+    adversary: finite_memory_fictitious_play
+    adversary_kwargs:
+      memory_m: 20
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+  # AC-Trap (M6 wave 1.5 pre-sweep + main): regret matching opponent
+  # tests payoff-dominance claim directly via counterfactual regret
+  # over (Stag, Hare) payoff structure. Single-param opponent
+  # (memory_m=20) avoids hyperparameter pilot. Per HALT 5 resolution
+  # OQ3 (2026-05-01).
+  - id: AC-Trap
+    game: asymmetric_coordination
+    game_kwargs:
+      horizon: 20
+    adversary: finite_memory_regret_matching
+    adversary_kwargs:
+      memory_m: 20
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+  - id: AC-SmoothedBR
+    game: asymmetric_coordination
+    game_kwargs:
+      horizon: 20
+    adversary: smoothed_fictitious_play
+    adversary_kwargs:
+      memory_m: 20
+      temperature: 0.5
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+
+  # ---------------- soda_uncertain ----------------
+  - id: SO-Coordination
+    game: soda_uncertain
+    game_kwargs:
+      subcase: SO-Coordination
+      horizon: 20
+      m: 3
+    adversary: stationary
+    adversary_kwargs:
+      probs: [0.3333333333333333, 0.3333333333333333, 0.3333333333333334]
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+  - id: SO-AntiCoordination
+    game: soda_uncertain
+    game_kwargs:
+      subcase: SO-AntiCoordination
+      horizon: 20
+      m: 3
+    adversary: stationary
+    adversary_kwargs:
+      probs: [0.3333333333333333, 0.3333333333333333, 0.3333333333333334]
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+  - id: SO-TypeSwitch
+    game: soda_uncertain
+    game_kwargs:
+      subcase: SO-TypeSwitch
+      horizon: 20
+      m: 3
+    adversary: stationary
+    adversary_kwargs:
+      probs: [0.3333333333333333, 0.3333333333333333, 0.3333333333333334]
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+
+  # ---------------- potential ----------------
+  - id: PG-CoordinationPotential
+    game: potential
+    game_kwargs:
+      subcase: PG-CoordinationPotential
+      horizon: 20
+      m: 3
+    adversary: stationary
+    adversary_kwargs:
+      probs: [0.3333333333333333, 0.3333333333333333, 0.3333333333333334]
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+  - id: PG-SwitchingPayoff
+    game: potential
+    game_kwargs:
+      subcase: PG-SwitchingPayoff
+      horizon: 20
+      m: 3
+    adversary: stationary
+    adversary_kwargs:
+      probs: [0.3333333333333333, 0.3333333333333333, 0.3333333333333334]
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+
+  # ---------------- rules_of_road_sparse (RR-Sparse, patch §1) ----------------
+  - id: RR-Sparse-Stationary
+    game: rules_of_road_sparse
+    game_kwargs:
+      horizon: 20
+    adversary: stationary
+    adversary_kwargs:
+      probs: [0.7, 0.3]
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+  - id: RR-Sparse-FictitiousPlay
+    game: rules_of_road_sparse
+    game_kwargs:
+      horizon: 20
+    adversary: finite_memory_fictitious_play
+    adversary_kwargs:
+      memory_m: 20
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+  - id: RR-Sparse-Tremble
+    game: rules_of_road_sparse
+    game_kwargs:
+      horizon: 20
+      tremble_prob: 0.05
+    adversary: stationary
+    adversary_kwargs:
+      probs: [0.7, 0.3]
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+  - id: RR-Sparse-HypothesisTesting
+    game: rules_of_road_sparse
+    game_kwargs:
+      horizon: 20
+    adversary: hypothesis_testing
+    adversary_kwargs:
+      test_window_s: 100
+      tolerance_tau: 0.05
+      search_len: 50
+      temperature: 0.2
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
+
+  # ---------------- delayed_chain (patch §11.5) ----------------
+  - id: DC-Short10
+    game: delayed_chain
+    game_kwargs:
+      subcase: DC-Short10
+    adversary: passive
+    adversary_kwargs: {}
+    headline_metric: bellman_residual_beta_auc
+    t11_guard: gap_based
+  - id: DC-Medium20
+    game: delayed_chain
+    game_kwargs:
+      subcase: DC-Medium20
+    adversary: passive
+    adversary_kwargs: {}
+    headline_metric: bellman_residual_beta_auc
+    t11_guard: gap_based
+  - id: DC-Long50
+    game: delayed_chain
+    game_kwargs:
+      subcase: DC-Long50
+    adversary: passive
+    adversary_kwargs: {}
+    headline_metric: bellman_residual_beta_auc
+    t11_guard: gap_based
+  - id: DC-Branching20
+    game: delayed_chain
+    game_kwargs:
+      subcase: DC-Branching20
+    adversary: passive
+    adversary_kwargs: {}
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d

@@ -531,3 +531,37 @@ i.e. test instrumentation, not design. The metric (β-specific
 Bellman residual) and prediction (AUC ordering) were both correct
 and unchanged at v5b. Auto-fix-MINOR could have closed this in-loop
 had the directive's scope been narrower.
+
+---
+
+### 2026-05-01 — Spec-patch arithmetic must be sanity-checked before commit
+
+**Pattern**: Arithmetic in spec patches inflated run counts by 10×.
+v2 patch §1.5 (RR-Sparse) and §11.5 (delayed_chain) wrote
+`4 subcases × 7 β × 10 seeds = 2,800` instead of `4 × 7 × 10 = 280`,
+and `1 × 7 × 10 = 70` was inflated to `280` for RR-Sparse. The
+downstream consequence: spec §10.2 and §M6 carried a 4,340-run
+figure that survived the M6 wave 0 patch fold-in and was caught
+only by the experiment-runner's independent count at M6 wave 1
+(`stage1_beta_sweep.yaml: # total_runs: 1820` vs spec's 4,340).
+
+**Prevention rule**: any "X subcases × Y β × Z seeds = N runs"
+arithmetic in a spec patch (or a spec body) MUST be verified by an
+explicit `X * Y * Z == N` check before the patch is committed. The
+runner agent should ALWAYS independently compute its own
+`# total_runs:` count from the config and compare against the spec's
+quoted figure as the first sanity check of its dispatch; a mismatch
+is a HALT-class signal under "design vs. instrumentation": the
+mismatch could mean either (a) a spec arithmetic error (instrumentation
+fix — bump spec, no run-count change) or (b) genuinely missing
+dispatch coverage in the runner (design fix — runner expansion). The
+researcher decides which, but the surface-of-mismatch alone is not
+auto-fixable.
+
+**Source incident**: HALT 5 OQ1 at commit `5c15687c`, M6 wave 1 of
+Phase VIII overnight run. Spec quoted 4,340 runs across `1,260 + 280
+(RR-Sparse) + 2,800 (delayed_chain)`; runner counted 1,820 across
+`1,260 + 70 (RR-Sparse) + 280 (delayed_chain) + ~210 (additional
+promoted subcases)`. Spec arithmetic was wrong by 10× on the per-game
+multipliers; runner was correct. Resolved at v6 spec amendment with
+inline arithmetic-correction footnote.

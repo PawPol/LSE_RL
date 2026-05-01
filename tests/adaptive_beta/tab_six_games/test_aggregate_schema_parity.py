@@ -68,6 +68,13 @@ EXPECTED_LONG_CSV_COLUMNS = [
     "oracle_beta",
     "nan_count",
     "diverged",
+    # HALT 5 OQ2 (2026-05-01): runner-emitted per-episode arrays
+    # added to the schema so the aggregator stops emitting
+    # `schema_drift` warnings for them.
+    "beta_raw",
+    "beta_used",
+    "effective_discount_mean",
+    "goal_reaches",
 ]
 
 METADATA_COLUMNS = {
@@ -143,7 +150,7 @@ def _read_long_csv(path: Path) -> pd.DataFrame:
 
 
 def test_long_csv_columns_count() -> None:
-    assert len(LONG_CSV_COLUMNS) == 49
+    assert len(LONG_CSV_COLUMNS) == 53
 
 
 def test_long_csv_columns_byte_identical() -> None:
