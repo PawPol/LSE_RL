@@ -6,36 +6,28 @@
   "addendum_sha256": "281f94bb6f711884cbe96cfb8a9ce1657c9cdcc85f22fcd472f08acc7a4d688c",
   "kickoff_timestamp_utc": "2026-04-30T22:16:38Z",
   "overnight_engaged_utc": "2026-04-30T22:34:42Z",
-  "session_pause_utc": "2026-04-30T20:08:00Z",
-  "session_pause_reason": "orchestrator context budget; M4 G4b Codex review pending",
+  "session_2_resume_utc": "2026-05-01T01:07:31Z",
   "kickoff_git_head": "5d887df9d7b987c21bf37218816c347149e75854",
   "current_branch": "phase-VIII-tab-six-games-2026-04-30",
-  "current_git_head": "b4dd828af6ee0b99ed67aa15a0b9daae5c7236ad",
-  "current_milestone": "M4",
+  "current_git_head": "6d19d75fce3914089ce0103d23c129c3b85c5446",
+  "current_milestone": "M5",
   "current_tier": 1,
   "milestone_status": {
     "M0": "complete", "M1": "complete", "M2": "complete", "M3": "complete",
-    "M4": "wave_2_pass_review_pending", "M5": "pending", "M6": "pending",
+    "M4": "complete", "M5": "pending", "M6": "pending",
     "M7": "pending", "M8": "pending", "M9": "pending", "M10": "pending",
     "M11": "pending", "M12": "pending"
   },
   "in_flight_dispatches": [],
-  "completed_dispatches_count": 22,
+  "completed_dispatches_count": 23,
   "completed_dispatches_summary": {
     "M0": ["addendum-commit"],
     "M1": ["W1.A","W1.B","W1.C","W2.A","W2.B","W2.C","W3.A"],
     "M2": ["M2.W1.A","M2.W1.B","M2.W2.A","M2.W2.B"],
     "M3": ["M3.W1.A","M3.W1.B","M3.W1.C","M3.W2.A","M3.W2.B","M3.W2.C"],
-    "M4_wave_1": ["M4.W1.A","M4.W1.B"],
-    "M4_wave_2": ["M4.W2.A","M4.W2.B-failed-then-autofixed","M4.W2.C","M4.W2.D"]
-  },
-  "test_count_evolution": {
-    "baseline_post_filterrepo": 506,
-    "after_M1": 564,
-    "after_M2": 612,
-    "after_M3": 645,
-    "after_M4_wave_1": 777,
-    "after_M4_wave_2_and_autofix": 864
+    "M4_wave_1": ["M4.W1.A","M4.W1.A-redispatch","M4.W1.B"],
+    "M4_wave_2": ["M4.W2.A","M4.W2.B-failed-then-autofixed","M4.W2.C","M4.W2.D"],
+    "M4_close": ["G4b-PASS"]
   },
   "auto_fixes_applied": [
     {
@@ -43,24 +35,33 @@
       "wave": "W2.B",
       "attempt": 1,
       "outcome": "succeeded",
-      "diff_summary": "_BaseUCBBetaSchedule._compute_next_beta: separated pull-count increment from _record_arm_reward; pulls track deployments not reward attributions; spec §6.5 invariant restored",
-      "tests_fixed": [
-        "test_contraction_ucb_arm_accounting::test_total_pulls_equals_total_episodes",
-        "test_contraction_ucb_arm_accounting::test_each_arm_pulled_at_least_once_in_warm_start"
-      ]
+      "diff_summary": "_BaseUCBBetaSchedule._compute_next_beta: separated pull-count increment from _record_arm_reward; pulls track deployments not reward attributions",
+      "g4b_confirmed_correct": true
+    }
+  ],
+  "test_count_evolution": {
+    "baseline_post_filterrepo": 506,
+    "after_M1": 564,
+    "after_M2": 612,
+    "after_M3": 645,
+    "after_M4_wave_1": 777,
+    "after_M4_wave_2_and_autofix": 864,
+    "g4b_full_repo_sweep_at_b4dd828a": 1612
+  },
+  "codex_reviews": [
+    {
+      "gate": "G4b",
+      "milestone": "M4",
+      "verdict": "PASS",
+      "n_blockers": 0, "n_majors": 0, "n_minors": 0, "n_nits": 0,
+      "memo_path": "results/adaptive_beta/tab_six_games/codex_reviews/M4_close_review_2026-05-01T01-09-13Z.md",
+      "codex_tokens": 161946
     }
   ],
   "failure_log": [],
   "halts": [],
-  "gates_acked": ["G0", "G1", "M1-close", "G2", "M2-close", "G3", "M3-close"],
-  "gates_pending": ["G4b"],
-  "next_session_resumption_plan": {
-    "step_1": "Run G4b — M4 Codex review (mandatory per harness §9). Dispatch script and adversarial focus in session_progress_2026-04-30.md.",
-    "step_2": "If G4b PASS: commit M4_summary.md, mark M4 complete, push, proceed to M5.",
-    "step_3": "If G4b BLOCKER: halt per addendum §6. MAJOR: auto-fix loop (max 3 attempts).",
-    "step_4": "M5 → M6 → ... → M12 per addendum §2 auto-proceed table.",
-    "step_5": "End-of-run synthesis per addendum §7 before terminating."
-  },
+  "gates_acked": ["G0", "G1", "M1-close", "G2", "M2-close", "G3", "M3-close", "G4b", "M4-close"],
+  "gates_pending": [],
   "overnight_mode": {
     "engaged": true,
     "auto_fix_major": true,
@@ -69,17 +70,17 @@
     "no_tex_edits": true
   },
   "budgets": {
-    "wall_clock_elapsed_seconds": 6850,
+    "wall_clock_elapsed_seconds": 10860,
     "wall_clock_cap_seconds": 129600,
-    "dispatch_count": 22,
+    "dispatch_count": 23,
     "dispatch_cap": 300,
     "token_spend_by_role": {
       "opus-4-7": 750000,
-      "codex-gpt-5.5-xhigh": 850000
+      "codex-gpt-5.5-xhigh": 1012000
     }
   },
   "next_action": {
-    "type": "phone_home_session_pause",
-    "details": "Orchestrator session 1 paused. M0-M3 complete; M4 wave 1+2+autofix complete; G4b pending. Next session resumes per next_session_resumption_plan."
+    "type": "dispatch",
+    "details": "M5 — metrics + analysis scaffold. Verify Phase VII metric pipeline emits §7.1 fields. Build aggregate.py + 5 plotting scripts. Tier 1 autonomous; light verifier gate at close (no Codex)."
   }
 }
