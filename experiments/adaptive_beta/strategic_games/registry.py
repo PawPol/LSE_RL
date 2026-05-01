@@ -66,6 +66,9 @@ from experiments.adaptive_beta.strategic_games.adversaries.convention_switching 
 from experiments.adaptive_beta.strategic_games.adversaries.sign_switching_regime import (
     SignSwitchingRegimeOpponent,
 )
+from experiments.adaptive_beta.strategic_games.adversaries.passive import (
+    PassiveOpponent,
+)
 
 
 # Factory signature: ``factory(**kwargs) -> StrategicAdversary``  (or env).
@@ -90,6 +93,7 @@ ADVERSARY_REGISTRY: Dict[str, AdversaryFactory] = {
     "inertia":                          InertiaOpponent,                 # Phase VIII M3 §5.7
     "convention_switching":             ConventionSwitchingOpponent,     # Phase VIII M3 §5.7
     "sign_switching_regime":            SignSwitchingRegimeOpponent,     # Phase VIII M3 §5.7 / §10.5
+    "passive":                          PassiveOpponent,                 # Phase VIII §5.7 patch §11.4
 }
 
 
@@ -194,4 +198,7 @@ from experiments.adaptive_beta.strategic_games.games import (  # noqa: E402,F401
 )
 from experiments.adaptive_beta.strategic_games.games import (  # noqa: E402,F401
     potential as _potential_game,
+)
+from experiments.adaptive_beta.strategic_games.games import (  # noqa: E402,F401
+    delayed_chain as _delayed_chain_game,        # Phase VIII §5.7 patch §11
 )
