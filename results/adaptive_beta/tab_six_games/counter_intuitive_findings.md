@@ -210,3 +210,47 @@ If wave 4 contradicts these (e.g. a cell where +β suddenly wins at
 main-pass budget despite losing at dev), that's a fresh T1+T3 trigger.
 Otherwise: M6 wave 6 bug-hunt and M6 wave 7 aggregation proceed
 normally with the v7-extended narrative.
+
+### Wave 5 outcome (2026-05-01) — sharp sign-dependent bifurcation at β=0
+
+The figures-only β-grid sub-pass (40 runs × 10k episodes × 5 seeds
+× 2 cells × 4 fine-grain β values) reveals a **sharp sign-dependent
+bifurcation right at β=0** that the main β grid `{±0.5, ±1, ±2}`
+could not visualize because of the gap across 0.
+
+**AC-FictitiousPlay (G_+ slot, AUC at 10k ep)**:
+
+| β       | AUC      | alignment[-200:] | regime |
+| ---:    | ---:     | ---:             | ---    |
+| −0.25   | 522286   | 0.9010           | IN     |
+| −0.10   | 522238   | 0.9010           | IN     |
+| +0.10   | 407831   | 0.0491           | OUT    |
+| +0.25   | 423121   | 0.0488           | OUT    |
+
+**SH-FiniteMemoryRegret (G_-, AUC at 10k ep)**:
+
+| β       | AUC      | alignment[-200:] | regime |
+| ---:    | ---:     | ---:             | ---    |
+| −0.25   | 106497   | 0.9170           | IN     |
+| −0.10   | 106559   | 0.9178           | IN     |
+| +0.10   |  99302   | 0.0633           | OUT    |
+| +0.25   |  86917   | 0.0634           | OUT    |
+
+**Interpretation**: even β=+0.1 (the smallest positive perturbation
+tested) drives alignment[-200:] from ~0.91 down to ~0.05 — an 18×
+collapse — and the AUC penalty is ~22% on AC-FictitiousPlay and ~18%
+on SH-FiniteMemoryRegret. Negative β values remain in the alignment
+regime regardless of magnitude.
+
+This is a cleaner empirical narrative than the wave-2 broad
+underperformance: there is no smooth β-vs-alignment curve through
+β=0; the alignment-condition diagnostic is effectively **binary in
+the sign of β** at typical Q_init=0 / γ=0.95. The β=0 → β > 0
+discontinuity is the paper-relevant signature.
+
+This validates the wave-5 figure design: `beta_vs_auc.pdf` and
+`beta_vs_contraction.pdf` will show a clean step function with the
+fine β grid revealing the discontinuity that the coarse main grid
+could not. The figure-only-points marker on the {±0.1, ±0.25}
+samples will document that they appear ONLY in the figures, not
+in the statistical comparisons.
