@@ -87,6 +87,11 @@ LONG_CSV_COLUMNS: Tuple[str, ...] = (
     "subcase",
     "method",
     "seed",
+    # γ is dispatch metadata: it is constant across episodes for a
+    # given run, but Tier II / Tier III γ-sweeps (spec §6.4 /
+    # §10.2.γ) re-use the same (game, subcase, method, seed) tuple at
+    # multiple γ values, so the aggregator joins on γ explicitly.
+    "gamma",
     "episode",
     # §7.1 reused metrics.
     "return",
@@ -159,6 +164,7 @@ _METADATA_COLUMNS: Tuple[str, ...] = (
     "subcase",
     "method",
     "seed",
+    "gamma",
 )
 
 #: Per-episode integer index column.
@@ -223,6 +229,7 @@ class AggregateRow:
     subcase: str = ""
     method: str = ""
     seed: float = float("nan")
+    gamma: float = float("nan")
     episode: float = float("nan")
     # §7.1 reused metrics.
     return_value: float = float("nan")  # Python keyword -> attribute alias
@@ -369,6 +376,15 @@ def _extract_metadata(
         except (TypeError, ValueError):
             seed_value = float("nan")
 
+    gamma_raw = run_json.get("gamma")
+    if gamma_raw is None:
+        gamma_value: float = float("nan")
+    else:
+        try:
+            gamma_value = float(gamma_raw)
+        except (TypeError, ValueError):
+            gamma_value = float("nan")
+
     return {
         "run_id": run_id,
         "config_hash": config_hash,
@@ -378,6 +394,7 @@ def _extract_metadata(
         "subcase": subcase_value,
         "method": method_value,
         "seed": seed_value,
+        "gamma": gamma_value,
     }
 
 
@@ -409,9 +426,13 @@ def _load_metrics_npz(
             data["return"] = data.pop(alias)
 
     # Identify foreign columns. We compare against the expected union
-    # plus the ``return`` alias acceptance.
+    # plus the ``return`` alias acceptance and the metadata-mirror
+    # ``gamma`` (the runner persists γ in metrics.npz as a 0-dim scalar
+    # so downstream joins can recover it without re-reading run.json;
+    # it is not a per-episode metric and not a schema drift).
     expected_with_alias: set[str] = set(PHASE_VIII_EXPECTED_COLUMNS) | {
-        "return"
+        "return",
+        "gamma",
     }
     foreign_keys = sorted(
         k for k in data.keys() if k not in expected_with_alias
@@ -486,6 +507,7 @@ def _build_rows_for_run(
         row.subcase = str(metadata.get("subcase", ""))
         row.method = str(metadata.get("method", ""))
         row.seed = float(metadata.get("seed", float("nan")))
+        row.gamma = float(metadata.get("gamma", float("nan")))
         row.episode = float(ep)
 
         # Per-episode metric expansion.

@@ -27,6 +27,10 @@ EXPECTED_LONG_CSV_COLUMNS = [
     "subcase",
     "method",
     "seed",
+    # v10 patch (spec §6.4 / §10.2.γ): γ is replicated as dispatch
+    # metadata so Tier II / Tier III γ-sweeps can join on it without
+    # re-parsing run.json.
+    "gamma",
     "episode",
     "return",
     "length",
@@ -86,6 +90,7 @@ METADATA_COLUMNS = {
     "subcase",
     "method",
     "seed",
+    "gamma",
     "episode",
 }
 
@@ -150,7 +155,8 @@ def _read_long_csv(path: Path) -> pd.DataFrame:
 
 
 def test_long_csv_columns_count() -> None:
-    assert len(LONG_CSV_COLUMNS) == 53
+    # v10 patch (2026-05-01): +1 for the new ``gamma`` metadata column.
+    assert len(LONG_CSV_COLUMNS) == 54
 
 
 def test_long_csv_columns_byte_identical() -> None:

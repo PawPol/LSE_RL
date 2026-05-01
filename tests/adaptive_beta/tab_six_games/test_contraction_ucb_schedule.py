@@ -58,22 +58,28 @@ def test_warm_start_round_robin_episodes_0_to_6() -> None:
         _update(schedule, episode_index, bellman_residual=10.0 + episode_index)
 
 
-def test_warm_start_arm_3_is_zero() -> None:
+def test_warm_start_episode_k_returns_arm_k() -> None:
+    """v10: each warm-start episode k returns arm k of the 21-arm grid."""
     schedule = ContractionUCBBetaSchedule()
 
-    for episode_index in range(3):
+    for episode_index in range(len(DEFAULT_BETA_ARM_GRID) - 1):
         _update(schedule, episode_index, bellman_residual=10.0 + episode_index)
 
-    assert schedule.beta_for_episode(3) == 0.0
+    next_idx = len(DEFAULT_BETA_ARM_GRID) - 1
+    assert schedule.beta_for_episode(next_idx) == pytest.approx(
+        DEFAULT_BETA_ARM_GRID[next_idx]
+    )
 
 
-def test_ucb_selection_from_episode_7() -> None:
+def test_ucb_selection_after_warm_start() -> None:
+    """v10: UCB selection takes over after the 21-arm warm-start completes."""
     schedule = ContractionUCBBetaSchedule()
+    n_arms = len(DEFAULT_BETA_ARM_GRID)
 
-    for episode_index, residual in enumerate([9.0, 7.0, 6.0, 4.0, 3.0, 2.0, 1.0]):
-        _update(schedule, episode_index, bellman_residual=residual)
+    for episode_index in range(n_arms):
+        _update(schedule, episode_index, bellman_residual=10.0 - episode_index)
 
-    assert schedule.beta_for_episode(7) in DEFAULT_BETA_ARM_GRID
+    assert schedule.beta_for_episode(n_arms) in DEFAULT_BETA_ARM_GRID
 
 
 def test_reward_uses_np_log_not_log1p() -> None:

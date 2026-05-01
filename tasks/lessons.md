@@ -565,3 +565,40 @@ Phase VIII overnight run. Spec quoted 4,340 runs across `1,260 + 280
 promoted subcases)`. Spec arithmetic was wrong by 10× on the per-game
 multipliers; runner was correct. Resolved at v6 spec amendment with
 inline arithmetic-correction footnote.
+
+---
+
+### 2026-05-01 — Dense-grid + orthogonal-parameter sweep when an empirical finding shows a sharp parameter response
+
+**Pattern**: M6 wave 5 (figures-only β grid) revealed that the β=0
+→ β>0 transition is not smooth — alignment_rate drops 18× across a
+single tick (β = -0.1 → β = +0.1) and AUC penalty is 18-22%. The
+M6 coarse main grid `{-2, -1, -0.5, 0, +0.5, +1, +2}` could not
+resolve the bifurcation shape; we inferred it. Per CLAUDE.md §1
+(technical rigour) and the bug-hunt CASE C disposition, the
+correct follow-up was to (a) resolve the bifurcation statistically
+with a denser β grid AND (b) test whether the response is
+invariant under the second fundamental operator parameter (γ).
+Pre-register hypotheses about the response surface BEFORE running
+the experiment so the data discriminates rather than describes.
+
+**Prevention rule**: any time an empirical finding shows a sharp
+parameter response (effect-size > 5σ across one parameter tick),
+the next dispatch SHOULD include:
+1. A grid that resolves the response (≥ 5 points across the
+   transition region; spacing chosen to test smoothness vs
+   discontinuity).
+2. A perturbation along the orthogonal fundamental parameter (here,
+   γ) that the response surface depends on theoretically. If the
+   response is invariant under perturbation, that's a robustness
+   confirmation; if it shifts, the perturbation parameter becomes
+   a paper-relevant scope condition.
+3. Pre-registered hypotheses for the response shape, written down
+   in the spec BEFORE the run, with disposition rules per
+   confirmed/refuted/partial.
+
+**Source incident**: Phase VIII v10 dispatch (2026-05-01 evening).
+v7 narrative refinement was confirmed by a 6-perturbation × 3-cell
+× 3-β × 3-seed sweep at the bug-hunt CASE C; v10 extends this to a
+4-tier multi-γ sweep over the full β grid and full subcase
+enumeration to publish-quality statistical resolution.

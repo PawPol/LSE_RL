@@ -91,21 +91,26 @@ def _schedule_at_zero_beta(method_id: str):
         )
         return schedule, 1
 
+    # v10: β=0 sits at index 10 in the 21-arm grid; UCB warm-start round-robins
+    # so we drive the schedule through the first 10 arms before β=0 arrives.
+    from experiments.adaptive_beta.schedules import DEFAULT_BETA_ARM_GRID
+    zero_idx = DEFAULT_BETA_ARM_GRID.index(0.0)
+
     if method_id == METHOD_CONTRACTION_UCB_BETA:
         schedule = build_schedule(method_id, env_canonical_sign=None, hyperparams={})
-        for e, residual in enumerate([1.0, 0.5, 0.25]):
+        for e in range(zero_idx):
             schedule.update_after_episode(
                 e,
                 rewards=np.asarray([0.0], dtype=np.float64),
                 v_next=np.asarray([0.0], dtype=np.float64),
                 divergence_event=False,
-                bellman_residual=residual,
+                bellman_residual=1.0 / (1 + e),
             )
-        return schedule, 3
+        return schedule, zero_idx
 
     if method_id == METHOD_RETURN_UCB_BETA:
         schedule = build_schedule(method_id, env_canonical_sign=None, hyperparams={})
-        for e in range(3):
+        for e in range(zero_idx):
             schedule.update_after_episode(
                 e,
                 rewards=np.asarray([0.0], dtype=np.float64),
@@ -113,7 +118,7 @@ def _schedule_at_zero_beta(method_id: str):
                 divergence_event=False,
                 episode_return=0.0,
             )
-        return schedule, 3
+        return schedule, zero_idx
 
     raise AssertionError(f"unhandled method_id in ALL_METHOD_IDS: {method_id}")
 

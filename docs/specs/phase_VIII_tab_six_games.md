@@ -778,12 +778,33 @@ remains deferred to M11.
 
 ### 6.4 β arm grid (UCB schedules and M6 sweep)
 
+<!-- patch-2026-05-01-v10 -->
 ```yaml
-beta_grid: [-2.0, -1.0, -0.5, 0.0, +0.5, +1.0, +2.0]
+# v10 BETA_GRID: 21 arms in [-2, 2]; spacing ~0.05 near 0,
+# ~0.30 near ±2.  Resolves the sharp β=0 sign-bifurcation
+# observed in wave 5 (figures-only sub-pass).
+BETA_GRID_V10:
+  [-2.00, -1.70, -1.35, -1.00, -0.75, -0.50, -0.35, -0.20, -0.10, -0.05,
+    0.00,
+   +0.05, +0.10, +0.20, +0.35, +0.50, +0.75, +1.00, +1.35, +1.70, +2.00]
+
+# v10 GAMMA_GRID: discount-factor sweep used by Tier II/III
+# (canonical Tier I retains γ=0.95).  Lower γ tests whether +β
+# emerges as a winner (alignment-condition theory predicts that
+# smaller γ → smaller V → more accessible r > v regime → +β
+# satisfies β·(r-v) ≥ 0).
+GAMMA_GRID_V10: [0.60, 0.80, 0.90, 0.95]
 ```
 
-Seven arms. Each arm β is inside `[-β_cap, +β_cap]` with `β_cap = 2.0`
-(Phase VII default), so no additional clipping is needed.
+21 β arms; 4 γ values. Each arm β is inside `[-β_cap, +β_cap]` with
+`β_cap = 2.0` (Phase VII default), so no additional clipping is
+needed. Pre-v10 contraction-UCB used 7 arms; v10 expands the UCB
+arm set to 21 with warm-start period of 21 forced pulls (one pull
+per arm before UCB selection).
+
+**Pre-v10 grid (deprecated, retained for diff-against-baseline tag
+`pre-extended-grid` only):** `[-2, -1, -0.5, 0, +0.5, +1, +2]`. All
+v10 dispatches use `BETA_GRID_V10`.
 
 ### 6.5 UCB schedule contracts (2026-04-30 user-approved)
 
@@ -1173,20 +1194,50 @@ produced; throughput projection feeds M6 main-pass wall-clock estimate.
 
 ### 10.2 Stage 1 — fixed-β operator sweep (M6 main pass)
 
-<!-- patch-2026-05-01 §1 §11 -->
+<!-- patch-2026-05-01-v10 SUPERSEDES the pre-v10 main pass (commit
+     2dcb92be); pre-v10 state preserved on origin under tag
+     `pre-extended-grid` for provenance. -->
 ```yaml
+# v10 Tier I — main statistical pass at canonical γ=0.95.
+tier: I
+gamma: 0.95
 episodes: 10000
 seeds: 10
-methods: 7-arm β grid (vanilla + fixed_beta_{±0.5, ±1, ±2})
-games: six core + delayed_chain (per patch §11.5)
-       (matching_pennies, shapley, rules_of_road,
-        asymmetric_coordination, soda_uncertain, potential,
-        delayed_chain)
-subcases: canonical + promoted nonstationary subcases (per Stage A)
-          + RR-Sparse (per patch §1)
-          + DC-Short10, DC-Medium20, DC-Long50, DC-Branching20
-            (per patch §11.5)
+methods: BETA_GRID_V10  # 21 arms, see §6.4
+games:    seven (matching_pennies, shapley, rules_of_road,
+                 asymmetric_coordination, soda_uncertain, potential,
+                 delayed_chain)
+subcases: full v10 enumeration (30 cells, see §10.2.v10).
 ```
+
+#### 10.2.v10 — full v10 promoted-subcase enumeration (30 cells)
+
+<!-- patch-2026-05-01-v10 -->
+| game                     | n | subcases |
+| ---                      |---:| --- |
+| asymmetric_coordination  | 4 | AC-FictitiousPlay, AC-SmoothedBR, AC-Trap, AC-Inertia |
+| matching_pennies         | 4 | MP-Stationary, MP-FiniteMemoryBR, MP-RegretMatching, MP-HypothesisTesting |
+| rules_of_road            | 5 | RR-StationaryConvention, RR-Tremble, RR-ConventionSwitch, RR-HypothesisTesting, RR-Sparse |
+| shapley                  | 4 | SH-FictitiousPlay, SH-SmoothedFP, SH-FiniteMemoryRegret, SH-HypothesisTesting |
+| soda_uncertain           | 5 | SO-Coordination, SO-AntiCoordination, SO-ZeroSum, SO-BiasedPreference, SO-TypeSwitch |
+| potential                | 4 | PG-CoordinationPotential, PG-Congestion, PG-BetterReplyInertia, PG-SwitchingPayoff |
+| delayed_chain            | 4 | DC-Short10, DC-Medium20, DC-Long50, DC-Branching20 |
+| **TOTAL**                | **30** | |
+
+Run counts:
+- **Tier I** (canonical γ=0.95, full β grid, 10 seeds):
+  `30 × 21 × 10 = 6,300 runs` (~6–10 h wall-clock)
+- **Tier II** (γ × β heatmap on 4 headline cells, 5 seeds):
+  `4 × 21 × 4 × 5 = 1,680 runs` (~2 h)
+- **Tier III** (γ × cell coverage at coarse β = {-2, -1, 0, +1, +2}, 5 seeds):
+  `4 × 5 × 30 × 5 = 3,000 runs` (~3 h)
+- **Dev** (Tier I-only at canonical γ, 3 seeds × 1k ep): `30 × 21 × 3 = 1,890 runs` (~15 min)
+- v10 total ≈ **12,870** + ~500 bug-hunt = ~13,400 runs over ~12–16 h.
+
+Pre-v10 main-pass (1,820 runs at 7-arm β × 22 cells × 10 seeds × 10k
+ep) is **superseded** by v10 Tier I; old artifacts on disk under
+`results/adaptive_beta/tab_six_games/raw/VIII/stage1_beta_sweep/`
+remain for tag-based provenance.
 
 <!-- patch-2026-05-01-v6 -->
 Total M6 main-pass run count after fold-in:
@@ -1208,6 +1259,32 @@ Total M6 main-pass run count after fold-in:
 for `H = 1` matching-pennies cells** (Phase VII §22.5 precedent —
 mechanism degenerate at horizon = 1). Those cells contribute to AUC,
 final return, regret, and recovery only.
+
+<!-- patch-2026-05-01-v10 -->
+#### 10.2.γ — γ-sweep design (Tier II / Tier III)
+
+γ is the second fundamental operator parameter; v10 sweeps γ over
+`{0.60, 0.80, 0.90, 0.95}` (Tier II / Tier III) to test whether the
+v7 alignment-condition mechanism predicts a γ-modulated sign flip
+on best-β.
+
+**Hypothesis (alignment-condition theory)**: at low γ, smaller
+discount-sum bounds → smaller V values during training → the
+regime `r > v` is more accessible early in learning → the
+alignment-condition `β·(r-v) ≥ 0` is satisfied for `β > 0` for a
+larger fraction of training steps. At γ=0.60, +β should align
+more reliably than at γ=0.95.
+
+**Tier II** (`stage1_tier2_gamma_beta_headline.yaml`): direct test of
+the γ × β response surface on 4 headline cells (AC-Trap,
+SH-FiniteMemoryRegret, RR-StationaryConvention, DC-Long50). 5 seeds
+× 4 γ × 21 β × 4 cells = 1,680 runs.
+
+**Tier III** (`stage1_tier3_gamma_cell_coverage.yaml`): tests
+γ-specific cell behaviour at coarse β `{-2, -1, 0, +1, +2}` across
+all 30 cells. 5 seeds × 4 γ × 5 β × 30 cells = 3,000 runs. Catches
+"this game class only shows TAB advantage at low γ" findings that
+Tier I cannot detect at canonical γ=0.95.
 
 <!-- patch-2026-05-01 §5 -->
 **M6 wave 1.5 — AC-Trap β-pre-sweep** (per patch §5.2). Inserted
@@ -1408,6 +1485,17 @@ Primary endpoint: `AUC` (per Phase VII convention).
 
 Secondary endpoints: `episodes_to_threshold`, `bellman_residual_contraction`,
 `recovery_time_after_shift`, `catastrophic_episodes`, final-window return.
+
+<!-- patch-2026-05-01-v10 -->
+**Tier convention** (v10 dispatch tiers): Tier I (canonical γ=0.95)
+uses **10 seeds** with paired-bootstrap 95% CI; this is the source
+of statistical claims. Tier II (γ × β headline at 4 cells) and
+Tier III (γ × cell coverage at coarse β) use **5 seeds**;
+Tier II/III results are *characterization* (effect-size estimates,
+heatmaps, qualitative ordering) and may report point estimates with
+indicative CIs but cannot anchor headline statistical claims.
+Statistical claims requiring tight CI (e.g. "fixed +β beats
+vanilla with d > 0.5") must come from Tier I.
 
 ---
 
@@ -1610,6 +1698,53 @@ If wave 2 (Stage A dev) or wave 4 (Stage 1 main) unexpectedly produces
 ablation should have caught any genuine +β-favoring regime); halt
 for review. Until then, AC-Trap's `−β > 0 > +β` ordering is the
 *expected* outcome.
+
+---
+
+<!-- patch-2026-05-01-v10 -->
+### 13.11 v10 pre-registered hypotheses (γ × β sweep)
+
+The v10 dispatch (extended β grid + γ-sweep + full opponent
+enumeration) pre-registers three hypotheses about the γ × β
+response surface. These are **characterization criteria**, NOT
+halt triggers; T11 paper-critical halt remains unchanged.
+
+#### H1 — γ-induced sign flip on best-β
+
+For at least one HEADLINE_CELL ∈ `{AC-Trap, SH-FiniteMemoryRegret,
+RR-StationaryConvention, DC-Long50}`, best-β at γ=0.60 is strictly
+positive (paired-bootstrap 95% CI strictly above 0).
+
+Disposition:
+- **Confirmed** → strong "TAB sign is γ-modulated" finding;
+  promote to abstract; recast M7 best_fixed_positive_TAB as a
+  positive demonstrator at γ=0.60.
+- **Refuted** → γ=0.60 not low enough; document as Phase IX scope
+  condition (γ=0.40 or lower would be decisive).
+- **Partial** → "γ-modulation is cell-specific"; characterize
+  per-cell.
+
+#### H2 — γ-induced bifurcation widening
+
+For cells where −β wins at γ=0.95, `|d(best-β, vanilla)|` at
+γ=0.60 is larger than at γ=0.95 (lower γ widens the adaptivity
+headroom).
+
+Disposition: report effect-size ratio per cell. Confirmed if the
+ratio exceeds 1.0 in at least 50% of -β-winning cells.
+
+#### H3 — γ-stable diagnostic
+
+The alignment condition `β·(r-v) ≥ 0` correctly predicts best-β at
+every (γ, cell) tuple in the v10 sweep.
+
+Disposition: **confirmed** if best-β sign matches diagnostic
+prediction in ≥ 80% of (γ, cell) tuples.
+
+These three hypotheses are scored at wave V10.6 (figures + tables)
+and the disposition recorded in
+`tables/v10_pre_registered_hypothesis_outcomes.csv` and
+`figures/h1_h2_h3_pre_registered_results.pdf`.
 
 ---
 
@@ -2009,6 +2144,26 @@ milestone.
   final R separated by 17 orders of magnitude between β=-1 (3.45e-11,
   contracted) and β=+1 (2.69e+06, divergent). Each fold-in marked
   inline with `<!-- patch-2026-05-01-v5 -->`.
+- **2026-05-01 v10 — extended β grid + γ-sweep + full opponent
+  enumeration.** Three interlocking design decisions: (1) β grid
+  extension 7 → 21 arms in `[-2, 2]` with denser spacing near 0
+  (resolves the sharp β=0 sign-bifurcation observed in M6 wave 5);
+  (2) γ-grid sweep over `{0.60, 0.80, 0.90, 0.95}` (Tier II/III)
+  to test alignment-condition theory's prediction that lower γ
+  makes the +β regime accessible; (3) full enumeration of spec §5
+  subcases 22 → 30 cells (adds AC-Inertia, MP-RegretMatching,
+  MP-HypothesisTesting, RR-ConventionSwitch, RR-HypothesisTesting,
+  SH-SmoothedFP, SH-HypothesisTesting, SO-ZeroSum,
+  SO-BiasedPreference, PG-Congestion, PG-BetterReplyInertia).
+  Tier structure: I (canonical γ=0.95, full β, 10 seeds) + II (γ × β
+  at 4 headline cells, 5 seeds) + III (γ × coarse β at all 30 cells,
+  5 seeds). Pre-registers H1 (γ-induced sign flip), H2 (γ-induced
+  bifurcation widening), H3 (γ-stable diagnostic) as §13.11
+  characterization criteria. **Supersedes** the M6 main pass at
+  commit `2dcb92be`; pre-v10 state preserved on origin under tag
+  `pre-extended-grid` for provenance. UCB warm-start length
+  expanded 7 → 21 episodes; tests updated in lockstep. Each fold-in
+  marked inline with `<!-- patch-2026-05-01-v10 -->`.
 - **2026-05-01 v7 — HALT 6 resolution: AC-Trap repositioned as
   falsifiability cell after 5/5 ablation conditions refuted v2 §5.2
   payoff-dominance prediction.** M6 wave 1.5 baseline (q_init=0,

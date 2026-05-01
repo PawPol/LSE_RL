@@ -54,6 +54,7 @@ def test_factory_construct() -> None:
 
 
 def test_warm_start_round_robin() -> None:
+    """v10: warm-start round-robins through all 21 arms."""
     schedule = ReturnUCBBetaSchedule()
     observed_betas: list[float] = []
 
@@ -66,7 +67,7 @@ def test_warm_start_round_robin() -> None:
         np.asarray(DEFAULT_BETA_ARM_GRID, dtype=np.float64),
         atol=0.0,
     )
-    assert schedule.pull_counts() == (1, 1, 1, 1, 1, 1, 1)
+    assert schedule.pull_counts() == tuple([1] * len(DEFAULT_BETA_ARM_GRID))
 
 
 def test_ucb_constant_is_sqrt2() -> None:
@@ -88,14 +89,16 @@ def test_reward_is_episode_return() -> None:
     assert schedule.pull_counts()[0] == 1
     assert schedule.arm_means()[0] == pytest.approx(42.5)
 
-    for episode_index in range(1, 7):
+    n_arms = len(DEFAULT_BETA_ARM_GRID)
+    for episode_index in range(1, n_arms):
         _drive_return_episode(schedule, episode_index, episode_return=100.0 + episode_index)
 
-    assert schedule.beta_for_episode(7) == pytest.approx(DEFAULT_BETA_ARM_GRID[0])
+    # After warm-start (n_arms episodes), the next episode cycles back to arm 0.
+    assert schedule.beta_for_episode(n_arms) == pytest.approx(DEFAULT_BETA_ARM_GRID[0])
 
     _drive_return_episode(
         schedule,
-        7,
+        n_arms,
         episode_return=-7.5,
         rewards=np.array([1000.0], dtype=np.float64),
         v_next=np.array([-1000.0], dtype=np.float64),
@@ -106,17 +109,25 @@ def test_reward_is_episode_return() -> None:
 
 
 def test_arm_grid_default() -> None:
+    """v10: 21-arm grid in [-2, 2] with denser spacing near 0."""
     schedule = ReturnUCBBetaSchedule()
 
-    assert list(schedule.arm_grid) == [-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0]
+    expected = [
+        -2.00, -1.70, -1.35, -1.00, -0.75, -0.50, -0.35, -0.20, -0.10, -0.05,
+         0.00,
+        +0.05, +0.10, +0.20, +0.35, +0.50, +0.75, +1.00, +1.35, +1.70, +2.00,
+    ]
+    assert list(schedule.arm_grid) == expected
 
 
-def test_ucb_selection_from_episode_7() -> None:
+def test_ucb_selection_after_warm_start() -> None:
+    """v10: warm-start spans 21 episodes; UCB selection from episode 21."""
     schedule = ReturnUCBBetaSchedule()
+    n_arms = 21
 
-    for episode_index in range(7):
+    for episode_index in range(n_arms):
         _drive_return_episode(schedule, episode_index, episode_return=1.0)
 
-    assert schedule.pull_counts() == (1, 1, 1, 1, 1, 1, 1)
+    assert schedule.pull_counts() == tuple([1] * n_arms)
     assert schedule.diagnostics()["current_arm_idx"] == 0
-    assert schedule.beta_for_episode(7) == pytest.approx(DEFAULT_BETA_ARM_GRID[0])
+    assert schedule.beta_for_episode(n_arms) == pytest.approx(DEFAULT_BETA_ARM_GRID[0])

@@ -60,15 +60,20 @@ ALL_METHOD_IDS = (
     METHOD_RETURN_UCB_BETA,
 )
 
-# Default β arm grid for UCB schedules (spec §6.4). Seven arms; each value is
-# inside [-β_cap, +β_cap] with β_cap = 2.0, so no extra clipping.
+# Default β arm grid for UCB schedules (spec §6.4 v10). Twenty-one arms in
+# [-2, 2] with denser spacing near 0 to resolve the β=0 sign-bifurcation
+# observed in M6 wave 5; each value is inside [-β_cap, +β_cap] with
+# β_cap = 2.0, so no extra clipping. Pre-v10 grid (7 arms) preserved on
+# origin tag `pre-extended-grid` for provenance.
 DEFAULT_BETA_ARM_GRID: Tuple[float, ...] = (
-    -2.0, -1.0, -0.5, 0.0, +0.5, +1.0, +2.0,
+    -2.00, -1.70, -1.35, -1.00, -0.75, -0.50, -0.35, -0.20, -0.10, -0.05,
+     0.00,
+    +0.05, +0.10, +0.20, +0.35, +0.50, +0.75, +1.00, +1.35, +1.70, +2.00,
 )
 
 # Round-robin warm-start length: episodes 0..(N_arms - 1) force one pull per
 # arm, UCB selection takes over from episode N_arms onward (spec §6.5).
-_WARM_START_LEN = len(DEFAULT_BETA_ARM_GRID)  # = 7
+_WARM_START_LEN = len(DEFAULT_BETA_ARM_GRID)  # = 21 (v10)
 
 # Default hyperparameters per spec §4.2 + Phase VIII §6.6 (HandAdaptive).
 _DEFAULT_HPARAMS: Dict[str, float] = {
@@ -609,7 +614,7 @@ class HandAdaptiveBetaSchedule(_BaseSchedule):
 
 
 class _BaseUCBBetaSchedule(_BaseSchedule):
-    """Shared scaffolding for the two 7-arm UCB schedules (spec §6.5).
+    """Shared scaffolding for the two 21-arm UCB schedules (spec §6.5 v10).
 
     Subclasses override ``_episode_reward(...)`` to extract the per-episode
     raw reward signal (contraction-log-ratio vs. episode return). All
@@ -801,7 +806,7 @@ class _BaseUCBBetaSchedule(_BaseSchedule):
 
 
 class ContractionUCBBetaSchedule(_BaseUCBBetaSchedule):
-    """7-arm UCB on the per-episode contraction log-ratio (spec §6.5).
+    """21-arm UCB on the per-episode contraction log-ratio (spec §6.5 v10).
 
     Reward (per episode e, attributed to the arm deployed in episode e):
 
@@ -812,7 +817,7 @@ class ContractionUCBBetaSchedule(_BaseUCBBetaSchedule):
     mean/std standardise the reward stream before UCB scoring; UCB
     constant ``c = 1.0`` against the standardised reward.
 
-    Round-robin warm-start over the 7 arms (episodes 0..6), UCB selection
+    Round-robin warm-start over the 21 arms (episodes 0..20), UCB selection
     from episode 7 onward. Ties on lowest arm index.
 
     Residual smoothing: rolling mean of the last
@@ -861,7 +866,7 @@ class ContractionUCBBetaSchedule(_BaseUCBBetaSchedule):
 
 
 class ReturnUCBBetaSchedule(_BaseUCBBetaSchedule):
-    """7-arm UCB on the standardised episode return (spec §6.5).
+    """21-arm UCB on the standardised episode return (spec §6.5 v10).
 
     Reward (per episode e): the agent's total episode return passed via
     ``update_after_episode(... episode_return=...)``. Per-arm Welford
@@ -871,7 +876,7 @@ class ReturnUCBBetaSchedule(_BaseUCBBetaSchedule):
     would mis-weight exploration; standardisation makes c = √2 the
     canonical choice.
 
-    Round-robin warm-start over the 7 arms (episodes 0..6); UCB selection
+    Round-robin warm-start over the 21 arms (episodes 0..20); UCB selection
     from episode 7. Ties on lowest arm index.
     """
 

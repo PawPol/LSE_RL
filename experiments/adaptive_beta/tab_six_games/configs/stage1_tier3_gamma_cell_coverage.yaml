@@ -1,0 +1,359 @@
+# total_runs: 3000  (30 cells × 5 methods × 5 seeds × 4 γ)
+# Phase VIII v10 Tier III — γ × cell coverage at coarse β.
+stage: v10_tier3_gamma_cell_coverage
+phase: VIII
+episodes: 10000
+seeds:
+- 0
+- 1
+- 2
+- 3
+- 4
+methods:
+- vanilla
+- fixed_beta_-2.0
+- fixed_beta_-1.0
+- fixed_beta_+1.0
+- fixed_beta_+2.0
+gamma_grid:
+- 0.6
+- 0.8
+- 0.9
+- 0.95
+learning_rate: 0.1
+q_init: 0.0
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 5000
+subcases:
+- id: AC-FictitiousPlay
+  game: asymmetric_coordination
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_fictitious_play
+  adversary_kwargs:
+    memory_m: 20
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: AC-SmoothedBR
+  game: asymmetric_coordination
+  game_kwargs:
+    horizon: 20
+  adversary: smoothed_fictitious_play
+  adversary_kwargs:
+    memory_m: 20
+    temperature: 0.5
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: AC-Trap
+  game: asymmetric_coordination
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_regret_matching
+  adversary_kwargs:
+    memory_m: 20
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: AC-Inertia
+  game: asymmetric_coordination
+  game_kwargs:
+    horizon: 20
+  adversary: inertia
+  adversary_kwargs:
+    inertia_lambda: 0.9
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: MP-Stationary
+  game: matching_pennies
+  game_kwargs:
+    horizon: 20
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.5
+    - 0.5
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: MP-FiniteMemoryBR
+  game: matching_pennies
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_best_response
+  adversary_kwargs:
+    memory_m: 20
+    inertia_lambda: 0.5
+    temperature: 0.2
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: MP-RegretMatching
+  game: matching_pennies
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_regret_matching
+  adversary_kwargs:
+    memory_m: 20
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: MP-HypothesisTesting
+  game: matching_pennies
+  game_kwargs:
+    horizon: 20
+  adversary: hypothesis_testing
+  adversary_kwargs:
+    test_window_s: 100
+    tolerance_tau: 0.05
+    search_len: 50
+    temperature: 0.2
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: RR-StationaryConvention
+  game: rules_of_road
+  game_kwargs:
+    horizon: 20
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.7
+    - 0.3
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: RR-Tremble
+  game: rules_of_road
+  game_kwargs:
+    horizon: 20
+    tremble_prob: 0.05
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.7
+    - 0.3
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: RR-ConventionSwitch
+  game: rules_of_road
+  game_kwargs:
+    horizon: 20
+  adversary: convention_switching
+  adversary_kwargs: {}
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: RR-HypothesisTesting
+  game: rules_of_road
+  game_kwargs:
+    horizon: 20
+  adversary: hypothesis_testing
+  adversary_kwargs:
+    test_window_s: 100
+    tolerance_tau: 0.05
+    search_len: 50
+    temperature: 0.2
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: RR-Sparse
+  game: rules_of_road_sparse
+  game_kwargs:
+    horizon: 20
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.7
+    - 0.3
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: SH-FictitiousPlay
+  game: shapley
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_fictitious_play
+  adversary_kwargs:
+    memory_m: 20
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: SH-SmoothedFP
+  game: shapley
+  game_kwargs:
+    horizon: 20
+  adversary: smoothed_fictitious_play
+  adversary_kwargs:
+    memory_m: 20
+    temperature: 0.5
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: SH-FiniteMemoryRegret
+  game: shapley
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_regret_matching
+  adversary_kwargs:
+    memory_m: 20
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: SH-HypothesisTesting
+  game: shapley
+  game_kwargs:
+    horizon: 20
+  adversary: hypothesis_testing
+  adversary_kwargs:
+    test_window_s: 100
+    tolerance_tau: 0.05
+    search_len: 50
+    temperature: 0.2
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: SO-Coordination
+  game: soda_uncertain
+  game_kwargs:
+    subcase: SO-Coordination
+    horizon: 20
+    m: 3
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.3333333333333333
+    - 0.3333333333333333
+    - 0.3333333333333333
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: SO-AntiCoordination
+  game: soda_uncertain
+  game_kwargs:
+    subcase: SO-AntiCoordination
+    horizon: 20
+    m: 3
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.3333333333333333
+    - 0.3333333333333333
+    - 0.3333333333333333
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: SO-ZeroSum
+  game: soda_uncertain
+  game_kwargs:
+    subcase: SO-ZeroSum
+    horizon: 20
+    m: 3
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.3333333333333333
+    - 0.3333333333333333
+    - 0.3333333333333333
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: SO-BiasedPreference
+  game: soda_uncertain
+  game_kwargs:
+    subcase: SO-BiasedPreference
+    horizon: 20
+    m: 3
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.3333333333333333
+    - 0.3333333333333333
+    - 0.3333333333333333
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: SO-TypeSwitch
+  game: soda_uncertain
+  game_kwargs:
+    subcase: SO-TypeSwitch
+    horizon: 20
+    m: 3
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.3333333333333333
+    - 0.3333333333333333
+    - 0.3333333333333333
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: PG-CoordinationPotential
+  game: potential
+  game_kwargs:
+    subcase: PG-CoordinationPotential
+    horizon: 20
+    m: 3
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.3333333333333333
+    - 0.3333333333333333
+    - 0.3333333333333333
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: PG-Congestion
+  game: potential
+  game_kwargs:
+    subcase: PG-Congestion
+    horizon: 20
+    m: 3
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.4
+    - 0.3
+    - 0.3
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: PG-BetterReplyInertia
+  game: potential
+  game_kwargs:
+    subcase: PG-BetterReplyInertia
+    horizon: 20
+    m: 3
+  adversary: inertia
+  adversary_kwargs:
+    inertia_lambda: 0.9
+    n_actions: 3
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: PG-SwitchingPayoff
+  game: potential
+  game_kwargs:
+    subcase: PG-SwitchingPayoff
+    horizon: 20
+    m: 3
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.3333333333333333
+    - 0.3333333333333333
+    - 0.3333333333333333
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: DC-Short10
+  game: delayed_chain
+  game_kwargs:
+    subcase: DC-Short10
+  adversary: passive
+  adversary_kwargs: {}
+  headline_metric: bellman_residual_beta_auc
+  t11_guard: gap_based
+- id: DC-Medium20
+  game: delayed_chain
+  game_kwargs:
+    subcase: DC-Medium20
+  adversary: passive
+  adversary_kwargs: {}
+  headline_metric: bellman_residual_beta_auc
+  t11_guard: gap_based
+- id: DC-Long50
+  game: delayed_chain
+  game_kwargs:
+    subcase: DC-Long50
+  adversary: passive
+  adversary_kwargs: {}
+  headline_metric: bellman_residual_beta_auc
+  t11_guard: gap_based
+- id: DC-Branching20
+  game: delayed_chain
+  game_kwargs:
+    subcase: DC-Branching20
+  adversary: passive
+  adversary_kwargs: {}
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d

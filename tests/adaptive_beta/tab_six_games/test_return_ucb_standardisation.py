@@ -34,10 +34,20 @@ def _attach_standardised_reward_capture(
 
 
 def test_stationary_episode_returns_standardise_per_arm_reward_stream() -> None:
+    """v10: 21-arm grid; bump episode budget so all arms cross 50-pull threshold."""
+    from experiments.adaptive_beta.schedules import DEFAULT_BETA_ARM_GRID
+
+    n_arms = len(DEFAULT_BETA_ARM_GRID)
+    # v10: 21 arms ⇒ need enough pulls per arm for sample-mean to clear the
+    # 0.1 hard cap. Empirically, 10×n_arms×50 still dropped one arm's mean
+    # to 0.106 (just over 0.1). 25 × n_arms × 50 = 26250 episodes guarantees
+    # min ≈ 660 pulls ⇒ sample-mean std ≈ 0.039 ≪ 0.1 with safety margin.
+    n_episodes = 25 * n_arms * 50
+
     schedule = ReturnUCBBetaSchedule()
     standardised_rewards = _attach_standardised_reward_capture(schedule)
     rng = np.random.default_rng(38)
-    episode_returns = rng.normal(loc=10.0, scale=2.0, size=1000)
+    episode_returns = rng.normal(loc=10.0, scale=2.0, size=n_episodes)
     zeros = np.zeros(1, dtype=np.float64)
 
     assert schedule.diagnostics()["ucb_c"] == pytest.approx(math.sqrt(2.0))
@@ -53,8 +63,8 @@ def test_stationary_episode_returns_standardise_per_arm_reward_stream() -> None:
     pull_counts = schedule.pull_counts()
     eligible_arms = [arm for arm, count in enumerate(pull_counts) if count >= 50]
 
-    assert eligible_arms == list(range(7)), (
-        "stationary seeded ReturnUCB run should leave all seven arms eligible "
+    assert eligible_arms == list(range(n_arms)), (
+        f"stationary seeded ReturnUCB run should leave all {n_arms} arms eligible "
         f"for per-arm standardisation checks; counts={pull_counts}"
     )
 

@@ -193,6 +193,14 @@ def test_runner_smoke_writes_phase8_artifacts(tmp_path: Path) -> None:
         # The episode-budget round trips.
         assert payload["episodes"] == n_episodes
 
+        # Single-γ (Tier I) backwards-compat: the run dir MUST NOT
+        # contain a ``gamma_<value>/`` segment in its path. The γ-sweep
+        # outer loop is the only path that injects this segment.
+        assert "gamma_" not in run_dir.as_posix(), (
+            f"single-γ Tier I path must not contain a gamma_<value> "
+            f"segment, got {run_dir.as_posix()!r}"
+        )
+
         # ---- (c) metrics.npz opens with all required arrays.
         metrics_path = run_dir / "metrics.npz"
         assert metrics_path.exists(), f"missing metrics.npz under {run_dir}"
@@ -216,3 +224,137 @@ def test_runner_smoke_writes_phase8_artifacts(tmp_path: Path) -> None:
             schema = json.loads(schema_bytes.decode("utf-8"))
             assert schema.get("phase") == "VIII", schema
             assert schema.get("schema_version") == "phaseVIII.metrics.v1", schema
+
+
+def _make_smoke_config_multi_gamma(n_episodes: int = 50) -> Dict[str, Any]:
+    """Minimal v10 multi-γ Stage 1 config: 2 γ × 1 cell × 1 method × 1 seed.
+
+    Same game/subcase/adversary as the single-γ smoke (matching_pennies ×
+    finite_memory_best_response), but adds a ``gamma_grid`` outer loop
+    of two values (0.60, 0.95) chosen to exercise the v10 §6.4 grid
+    edges. The scalar ``gamma`` field is intentionally omitted so the
+    test verifies that ``gamma_grid`` alone is sufficient.
+    """
+    return {
+        "stage": "stage1_beta_sweep",
+        "phase": "VIII",
+        "episodes": int(n_episodes),
+        "seeds": [0],
+        "methods": ["fixed_beta_+1"],
+        "gamma_grid": [0.60, 0.95],
+        "learning_rate": 0.1,
+        "q_init": 0.0,
+        "epsilon": {
+            "start": 1.0,
+            "end": 0.05,
+            "decay_episodes": max(1, n_episodes // 2),
+        },
+        "subcases": [
+            {
+                "id": "MP-FiniteMemoryBR",
+                "game": "matching_pennies",
+                "game_kwargs": {"horizon": 5},
+                "adversary": "finite_memory_best_response",
+                "adversary_kwargs": {
+                    "memory_m": 10,
+                    "inertia_lambda": 0.5,
+                    "temperature": 0.2,
+                },
+                "headline_metric": "cumulative_return_auc",
+                "t11_guard": "cohens_d",
+            }
+        ],
+    }
+
+
+@pytest.mark.smoke
+def test_runner_smoke_multi_gamma(tmp_path: Path) -> None:
+    """v10 Tier II/III smoke: ``gamma_grid`` produces per-γ run dirs.
+
+    Asserts:
+
+    (a) two run dirs are created at ``gamma_0.60/`` and ``gamma_0.95/``
+        (same (game, subcase, method, seed); only γ differs);
+    (b) each ``run.json["gamma"]`` matches its path segment;
+    (c) each ``metrics.npz["gamma"]`` is a 0-dim scalar equal to the
+        ``run.json`` γ;
+    (d) ``Phase8RunRoster`` holds two rows with distinct γ values and
+        distinct cell_ids (γ disambiguates the cell tuple).
+    """
+    n_episodes = 50
+    config = _make_smoke_config_multi_gamma(n_episodes=n_episodes)
+    output_root = tmp_path / "phase8_root"
+
+    roster = dispatch(
+        config=config,
+        seed_override=None,
+        output_root=output_root,
+        config_path=None,
+        fail_fast=True,
+    )
+
+    # ---- (d) roster cardinality and γ-distinct rows.
+    assert isinstance(roster, Phase8RunRoster), type(roster)
+    assert len(roster) == 2, (
+        f"multi-γ smoke must produce 2 roster rows (1 γ_a + 1 γ_b), "
+        f"got {len(roster)}"
+    )
+    gamma_values = sorted(float(row.gamma) for row in roster.rows)
+    assert gamma_values == [0.60, 0.95], gamma_values
+    cell_ids = {row.cell_id for row in roster.rows}
+    assert len(cell_ids) == 2, (
+        f"γ must disambiguate cell_ids; got duplicate set {cell_ids!r}"
+    )
+    statuses = {row.status for row in roster.rows}
+    assert statuses == {"completed"}, statuses
+
+    raw_root = output_root / "raw"
+    seen_gamma_segments: set[str] = set()
+
+    for row in roster.rows:
+        run_dir = Path(row.result_path)
+
+        # ---- (a) run dirs land under ``raw/...gamma_<g>/...``.
+        assert raw_root in run_dir.parents, run_dir
+        # The ``gamma_<value>/`` segment must appear exactly once in the
+        # path (between the subcase dir and the method dir).
+        path_parts = run_dir.parts
+        gamma_segments = [p for p in path_parts if p.startswith("gamma_")]
+        assert len(gamma_segments) == 1, (
+            f"expected exactly one gamma_<value> path segment, got "
+            f"{gamma_segments!r} (path={run_dir.as_posix()})"
+        )
+        seg = gamma_segments[0]
+        assert seg in {"gamma_0.60", "gamma_0.95"}, seg
+        seen_gamma_segments.add(seg)
+
+        # ---- (b) run.json.gamma matches the path segment.
+        run_json_path = run_dir / "run.json"
+        assert run_json_path.exists(), run_json_path
+        with open(run_json_path, "r", encoding="utf-8") as f:
+            payload = json.load(f)
+        run_gamma = float(payload["gamma"])
+        expected_seg = f"gamma_{run_gamma:.2f}"
+        assert seg == expected_seg, (
+            f"path segment {seg!r} does not match run.json gamma "
+            f"{run_gamma} (expected segment {expected_seg!r})"
+        )
+        # Roster row γ also matches the run.json γ.
+        assert float(row.gamma) == run_gamma, (run_gamma, row.gamma)
+
+        # ---- (c) metrics.npz['gamma'] is a 0-dim scalar equal to run.json.
+        metrics_path = run_dir / "metrics.npz"
+        assert metrics_path.exists(), metrics_path
+        with np.load(metrics_path, allow_pickle=False) as data:
+            assert "gamma" in data.files, sorted(data.files)
+            arr = data["gamma"]
+            assert arr.ndim == 0, (
+                f"metrics.npz['gamma'] must be a 0-dim scalar, got "
+                f"shape {arr.shape}"
+            )
+            assert float(arr) == run_gamma, (float(arr), run_gamma)
+
+    # Both γ segments must have been observed (one each).
+    assert seen_gamma_segments == {"gamma_0.60", "gamma_0.95"}, (
+        seen_gamma_segments
+    )

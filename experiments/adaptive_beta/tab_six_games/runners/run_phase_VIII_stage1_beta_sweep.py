@@ -458,6 +458,18 @@ def _load_config(path: Path) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Single-cell runner
 # ---------------------------------------------------------------------------
+def _format_gamma_segment(gamma: float) -> str:
+    """Render a γ value as a path segment ``gamma_<value>``.
+
+    The format is fixed at two decimals, underscored (e.g. ``gamma_0.60``,
+    ``gamma_0.95``). This matches the v10 spec §6.4 grid
+    ``[0.60, 0.80, 0.90, 0.95]`` and avoids Python's default ``repr``
+    rendering of ``0.6`` as ``"0.6"`` (one decimal) which would
+    collide with future grids that include ``0.65``.
+    """
+    return f"gamma_{float(gamma):.2f}"
+
+
 def run_one_cell(
     *,
     config: Mapping[str, Any],
@@ -469,17 +481,36 @@ def run_one_cell(
     roster: Phase8RunRoster,
     config_path: Optional[Path],
     git_commit: str,
+    gamma_override: Optional[float] = None,
+    gamma_in_path: bool = False,
 ) -> Dict[str, Any]:
     """Execute one ``(game, subcase, method, seed)`` cell end-to-end.
 
     Side effects: writes ``run.json`` and ``metrics.npz`` under
     ``<output_root>/raw/<phase>/<suite>/<game>/<subcase>/<method>/
-    seed_<seed>/`` and registers the run in ``roster``.
+    seed_<seed>/`` (or, when ``gamma_in_path`` is True, under
+    ``<output_root>/raw/<phase>/<suite>/<game>/<subcase>/gamma_<g>/<method>/
+    seed_<seed>/``) and registers the run in ``roster``.
+
+    Parameters
+    ----------
+    gamma_override:
+        When provided, overrides ``config["gamma"]`` for this cell. Used
+        by the dispatcher's γ-grid outer loop (Tier II / Tier III). The
+        config dict itself is NOT mutated.
+    gamma_in_path:
+        When True, an extra ``gamma_<value>/`` segment is inserted
+        between the subcase directory and the method directory. Set by
+        the dispatcher when a ``gamma_grid`` is in effect so that the
+        same (game, subcase, method, seed) at multiple γ values do not
+        collide on disk.
 
     Returns the constructed ``run.json`` dict.
     """
     n_episodes = int(config["episodes"])
-    gamma = float(config.get("gamma", 0.95))
+    gamma = float(
+        gamma_override if gamma_override is not None else config.get("gamma", 0.95)
+    )
     learning_rate = float(config.get("learning_rate", 0.1))
     eps_cfg = config.get("epsilon", {}) or {}
     epsilon_start = float(eps_cfg.get("start", 1.0))
@@ -493,16 +524,26 @@ def run_one_cell(
 
     # Resolve the absolute run dir. Path layout (lessons.md #11):
     #
-    #   <output_root>/raw/<phase>/<suite>/<game>/<subcase>/<method>/seed_<seed>/
+    #   Tier I  (single γ, gamma_in_path=False):
+    #     <output_root>/raw/<phase>/<suite>/<game>/<subcase>/<method>/seed_<seed>/
+    #   Tier II/III (γ-grid, gamma_in_path=True):
+    #     <output_root>/raw/<phase>/<suite>/<game>/<subcase>/gamma_<g>/<method>/seed_<seed>/
     #
+    # The γ segment is encoded by prepending ``gamma_<g>/`` to the
+    # ``algorithm`` argument so ``make_run_dir`` builds the canonical
+    # ``<task>/<algorithm>/seed_<seed>`` tail without modification.
     # The "raw" segment differentiates raw artifacts from processed
     # aggregations under the same Phase VIII root.
+    if gamma_in_path:
+        algorithm_segment = f"{_format_gamma_segment(gamma)}/{method}"
+    else:
+        algorithm_segment = method
     run_dir = make_run_dir(
         base=output_root / "raw",
         phase="VIII",
         suite=stage,
         task=subcase.cell_label(),
-        algorithm=method,
+        algorithm=algorithm_segment,
         seed=int(seed),
         exist_ok=True,
     )
@@ -524,6 +565,7 @@ def run_one_cell(
         subcase=subcase.subcase_id,
         method=method,
         git_commit=git_commit,
+        gamma=float(gamma),
     )
     roster.update_status(
         run_id,
@@ -685,6 +727,10 @@ def run_one_cell(
             "divergence_event": ep_divergence_event.astype(np.uint8),
             "goal_reaches": ep_goal_reaches,
             "trap_entries": ep_trap_entries,
+            # γ is constant across episodes for a given run; stored as a
+            # 0-dim scalar so downstream aggregator joins can recover it
+            # without re-reading run.json (v10 spec §6.4 / §10.2.γ).
+            "gamma": np.float64(gamma),
         }
         schema_header = make_npz_schema(
             phase="VIII",
@@ -811,6 +857,29 @@ def dispatch(
         raise ValueError("config must declare a non-empty 'subcases' list")
     subcases: List[SubcaseSpec] = [_parse_subcase(s) for s in raw_subcases]
 
+    # γ resolution (v10 spec §6.4 / §10.2.γ).
+    #
+    # ``gamma_grid`` is the v10 Tier II/III multi-γ sweep: when present
+    # the dispatcher outer-loops over each γ and inserts a
+    # ``gamma_<value>/`` segment into the result tree to avoid path
+    # collisions across γ values. When absent, the dispatcher falls
+    # back to the existing single-γ path (Tier I) and reads the scalar
+    # ``gamma`` field (default 0.95).
+    raw_gamma_grid = config.get("gamma_grid")
+    if raw_gamma_grid is not None:
+        if not isinstance(raw_gamma_grid, (list, tuple)):
+            raise TypeError(
+                f"config 'gamma_grid' must be a list/tuple, got "
+                f"{type(raw_gamma_grid).__name__}"
+            )
+        if len(raw_gamma_grid) == 0:
+            raise ValueError("config 'gamma_grid' must be non-empty")
+        gamma_values: List[float] = [float(g) for g in raw_gamma_grid]
+        gamma_in_path = True
+    else:
+        gamma_values = [float(config.get("gamma", 0.95))]
+        gamma_in_path = False
+
     output_root = Path(output_root)
     roster_dir = output_root / "raw" / "VIII" / stage
     roster_dir.mkdir(parents=True, exist_ok=True)
@@ -819,33 +888,38 @@ def dispatch(
     roster = Phase8RunRoster(base_path=output_root)
     git_commit = _git_sha()
 
-    failures: List[Tuple[SubcaseSpec, str, int, str]] = []
-    for sc in subcases:
-        for method in methods:
-            for seed in seeds:
-                try:
-                    run_one_cell(
-                        config=config,
-                        subcase=sc,
-                        method=str(method),
-                        seed=int(seed),
-                        output_root=output_root,
-                        stage=stage,
-                        roster=roster,
-                        config_path=config_path,
-                        git_commit=git_commit,
-                    )
-                except Exception as exc:  # noqa: BLE001
-                    msg = f"{type(exc).__name__}: {exc}"
-                    failures.append((sc, str(method), int(seed), msg))
-                    if fail_fast:
-                        # Snapshot the roster before propagating so
-                        # post-mortems still have the partial state.
-                        roster.write_atomic(roster_path)
-                        raise
-                # Snapshot incrementally so a crash mid-dispatch leaves
-                # a recoverable manifest on disk.
-                roster.write_atomic(roster_path)
+    failures: List[Tuple[SubcaseSpec, str, int, str, float]] = []
+    for gamma_val in gamma_values:
+        for sc in subcases:
+            for method in methods:
+                for seed in seeds:
+                    try:
+                        run_one_cell(
+                            config=config,
+                            subcase=sc,
+                            method=str(method),
+                            seed=int(seed),
+                            output_root=output_root,
+                            stage=stage,
+                            roster=roster,
+                            config_path=config_path,
+                            git_commit=git_commit,
+                            gamma_override=float(gamma_val),
+                            gamma_in_path=gamma_in_path,
+                        )
+                    except Exception as exc:  # noqa: BLE001
+                        msg = f"{type(exc).__name__}: {exc}"
+                        failures.append(
+                            (sc, str(method), int(seed), msg, float(gamma_val))
+                        )
+                        if fail_fast:
+                            # Snapshot the roster before propagating so
+                            # post-mortems still have the partial state.
+                            roster.write_atomic(roster_path)
+                            raise
+                    # Snapshot incrementally so a crash mid-dispatch leaves
+                    # a recoverable manifest on disk.
+                    roster.write_atomic(roster_path)
 
     if failures:
         # Persist a sibling failure summary for easy triage; never
@@ -858,9 +932,10 @@ def dispatch(
                         "game": sc.game,
                         "method": method,
                         "seed": seed,
+                        "gamma": gamma_failed,
                         "error": err,
                     }
-                    for (sc, method, seed, err) in failures
+                    for (sc, method, seed, err, gamma_failed) in failures
                 ],
                 f,
                 indent=2,

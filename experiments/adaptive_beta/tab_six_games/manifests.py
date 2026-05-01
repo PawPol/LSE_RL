@@ -127,6 +127,13 @@ class RosterRow:
         otherwise.
     git_commit:
         Git SHA of the codebase at the time of dispatch.
+    gamma:
+        Discount factor γ used for this run. Recorded so v10 Tier II /
+        Tier III γ-sweeps (spec §6.4 / §10.2.γ) keep distinct rows for
+        the same (game, subcase, method, seed) at different γ.
+        ``None`` is tolerated for backwards compatibility with rosters
+        written before the v10 patch; new rows from the runner always
+        populate it.
     """
 
     run_id: str
@@ -141,11 +148,15 @@ class RosterRow:
     end_time: Optional[str] = None
     result_path: Optional[str] = None
     failure_reason: Optional[str] = None
+    gamma: Optional[float] = None
 
     #: Field order used when serialising the JSONL header's
     #: ``_columns`` array. Iterating ``fields(self)`` would also
     #: work, but pinning the column order on the class makes the
     #: schema header deterministic across Python versions.
+    #: ``gamma`` was appended in lockstep with the v10 patch (spec §6.4
+    #: / §10.2.γ); the trailing position keeps the column order stable
+    #: for pre-v10 readers.
     COLUMNS: ClassVar[List[str]] = [
         "run_id",
         "config_hash",
@@ -159,17 +170,27 @@ class RosterRow:
         "result_path",
         "failure_reason",
         "git_commit",
+        "gamma",
     ]
 
     @property
     def cell_id(self) -> str:
-        """Uniqueness key: ``"<game>/<subcase>/<method>/<seed>"``.
+        """Uniqueness key for the experimental cell.
+
+        Pre-v10 form: ``"<game>/<subcase>/<method>/<seed>"`` (γ implicit).
+        Post-v10 form when ``gamma`` is populated:
+        ``"<game>/<subcase>/<method>/<seed>/gamma_<value>"`` so that the
+        same (game, subcase, method, seed) at multiple γ values does
+        NOT collide (spec §6.4 / §10.2.γ).
 
         Two rows with the same ``cell_id`` represent the same
         requested experimental cell and must not coexist in a
         roster.
         """
-        return f"{self.game}/{self.subcase}/{self.method}/{self.seed}"
+        base = f"{self.game}/{self.subcase}/{self.method}/{self.seed}"
+        if self.gamma is None:
+            return base
+        return f"{base}/gamma_{float(self.gamma):.2f}"
 
     def to_dict(self) -> Dict[str, Any]:
         """Return a plain JSON-serialisable dict for this row."""
@@ -293,6 +314,7 @@ class Phase8RunRoster:
         result_path: Optional[str] = None,
         failure_reason: Optional[str] = None,
         status: str = "pending",
+        gamma: Optional[float] = None,
     ) -> None:
         """Append a new row to the roster.
 
@@ -301,6 +323,11 @@ class Phase8RunRoster:
         raises ``ValueError`` (lessons.md, manifest pollution / no
         duplicate ``cell_id``); duplicate ``run_id`` likewise.
         Unknown statuses raise ``ValueError``.
+
+        ``gamma`` is optional; when provided it disambiguates rows in a
+        v10 γ-sweep (spec §6.4 / §10.2.γ). Pre-v10 callers continue to
+        pass no ``gamma``, in which case the row's ``cell_id`` matches
+        the pre-v10 four-tuple form.
         """
         if status not in VALID_STATUSES:
             raise ValueError(
@@ -326,6 +353,7 @@ class Phase8RunRoster:
             end_time=end_time,
             result_path=result_path,
             failure_reason=failure_reason,
+            gamma=None if gamma is None else float(gamma),
         )
 
         if row.cell_id in self._by_cell_id:
@@ -502,6 +530,7 @@ class Phase8RunRoster:
                 result_path=row.result_path,
                 failure_reason=row.failure_reason,
                 status=row.status,
+                gamma=row.gamma,
             )
 
         return roster

@@ -1,0 +1,82 @@
+# total_runs: 1680  (4 cells × 21 methods × 5 seeds × 4 γ)
+# Phase VIII v10 Tier II — γ × β headline heatmap (H1/H2 test).
+stage: v10_tier2_gamma_beta_headline
+phase: VIII
+episodes: 10000
+seeds:
+- 0
+- 1
+- 2
+- 3
+- 4
+methods:
+- vanilla
+- fixed_beta_-2.0
+- fixed_beta_-1.7
+- fixed_beta_-1.35
+- fixed_beta_-1.0
+- fixed_beta_-0.75
+- fixed_beta_-0.5
+- fixed_beta_-0.35
+- fixed_beta_-0.2
+- fixed_beta_-0.1
+- fixed_beta_-0.05
+- fixed_beta_+0.05
+- fixed_beta_+0.1
+- fixed_beta_+0.2
+- fixed_beta_+0.35
+- fixed_beta_+0.5
+- fixed_beta_+0.75
+- fixed_beta_+1.0
+- fixed_beta_+1.35
+- fixed_beta_+1.7
+- fixed_beta_+2.0
+gamma_grid:
+- 0.6
+- 0.8
+- 0.9
+- 0.95
+learning_rate: 0.1
+q_init: 0.0
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 5000
+subcases:
+- id: AC-Trap
+  game: asymmetric_coordination
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_regret_matching
+  adversary_kwargs:
+    memory_m: 20
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: RR-StationaryConvention
+  game: rules_of_road
+  game_kwargs:
+    horizon: 20
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.7
+    - 0.3
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: SH-FiniteMemoryRegret
+  game: shapley
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_regret_matching
+  adversary_kwargs:
+    memory_m: 20
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: DC-Long50
+  game: delayed_chain
+  game_kwargs:
+    subcase: DC-Long50
+  adversary: passive
+  adversary_kwargs: {}
+  headline_metric: bellman_residual_beta_auc
+  t11_guard: gap_based

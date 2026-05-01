@@ -34,12 +34,14 @@ def test_total_pulls_equals_total_episodes() -> None:
 
 
 def test_each_arm_pulled_at_least_once_in_warm_start() -> None:
+    """v10: warm-start now spans 21 episodes (one per arm in the 21-arm grid)."""
     schedule = ContractionUCBBetaSchedule()
+    n_arms = 21
 
-    for episode_index in range(7):
+    for episode_index in range(n_arms):
         _update(schedule, episode_index, bellman_residual=1.0 + episode_index)
 
-    assert schedule.pull_counts() == (1, 1, 1, 1, 1, 1, 1)
+    assert schedule.pull_counts() == tuple([1] * n_arms)
 
 
 def test_welford_recursion_bit_identical() -> None:
