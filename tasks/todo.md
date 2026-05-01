@@ -3447,3 +3447,57 @@ The plan stops here.
 
 ---
 
+## Phase VIII Pre-M6 Spec Amendment 2026-05-01 (Reopened Tasks)
+
+Source: `tasks/phase_VIII_spec_patches_2026-05-01.md` (v2). Folded into
+spec via M6 wave 0 commit.
+
+### M2 Reopen
+- [ ] [N][env] env-builder: implement RR-Sparse subcase
+      (sparse_terminal flag in games/rules_of_road.py;
+      register "rules_of_road_sparse" in GAME_REGISTRY;
+      patch §1)
+- [ ] [N][test] test-author: tests/adaptive_beta/strategic_games/test_rules_of_road_sparse.py
+      (per-step reward = 0; terminal in {+c, -m}; horizon = 20)
+- [ ] [N][env] env-builder: implement delayed_chain game
+      (games/delayed_chain.py; 4 subcases DC-Short10/Medium20/Long50/Branching20;
+      register all 4 in GAME_REGISTRY; canonical_sign = "+";
+      patch §11)
+- [ ] [N][env] env-builder: implement PassiveOpponent
+      (adversaries/passive.py; no-op StrategicAdversary;
+      register "passive" in ADVERSARY_REGISTRY; patch §11.4)
+- [ ] [N][test] test-author: tests/adaptive_beta/strategic_games/test_delayed_chain.py
+      (advance-reaches-terminal-at-L; no-intermediate-reward;
+      branching-wrong-terminal-negative; horizon-matches-subcase;
+      canonical-sign-metadata; state-encoder-shape; seed-determinism)
+- [ ] [N][test] test-author: tests/adaptive_beta/strategic_games/test_passive_opponent.py
+      (no-op act; info-contract; seed-invariance)
+- [ ] [N][test] test-author: tests/adaptive_beta/strategic_games/test_delayed_chain_smoke_prediction.py
+      (β ∈ {-1, 0, +1} on DC-Long50, 3 seeds × 1k eps; assert
+      AUC(+1) > AUC(0) > AUC(-1) with d > 0.3 on both gaps;
+      @pytest.mark.smoke; failure → T1/T3 bug-hunt trigger)
+
+### M4 Reopen
+- [ ] [N][algo] algo-implementer: RegretMatchingAgent
+      (experiments/adaptive_beta/baselines.py; wraps
+      adversaries/regret_matching.py in AdaptiveBetaQAgent interface;
+      patch §3)
+- [ ] [N][algo] algo-implementer: SmoothedFictitiousPlayAgent
+      (wraps adversaries/smoothed_fictitious_play.py)
+- [ ] [N][test] test-author: extend test_baselines.py with
+      test_regret_matching_agent_interface_parity,
+      test_regret_matching_agent_strategy_dynamics,
+      test_smoothed_fp_agent_interface_parity,
+      test_smoothed_fp_agent_logit_response_stable,
+      test_strategic_agent_aggregator_handles_missing_fields
+
+### M6 Wave 0 (this dispatch)
+- [x] [infra] planner: spec fold-in per patch §0 (this commit)
+
+### M6 Wave 1.5 (pre-sweep)
+- [ ] [X][ablation] experiment-runner: AC-Trap pre-sweep per patch §5
+      (β ∈ {-1, 0, +1}, 3 seeds × 200 episodes, ~9 runs;
+      output pre_sweep_AC_Trap.md; disposition per patch §5.3)
+
+---
+

@@ -82,9 +82,65 @@ Canonical sign
 ``+`` (encoded as ``"+"``). Potential games admit better-reply dynamics
 and a positive `beta` accelerates convergence to a pure Nash
 equilibrium — ``wrong_sign`` schedules therefore produce the negative-
-beta variant per spec §5.7 disambiguation. The factory sets
+beta variant per spec §5.8 disambiguation. The factory sets
 ``env.env_canonical_sign = "+"`` so downstream schedule selectors read
 the correct sign without peeking into metadata.
+
+Theoretical anchor — positive-beta monotonicity on potential games
+------------------------------------------------------------------
+(Patch 2026-05-01 §7: one-line lemma anchoring the positive-control
+prediction.)
+
+Let ``Phi : A -> R`` be the exact potential of the stage game, so
+
+    u_i(a_i', a_{-i}) - u_i(a_i, a_{-i})
+        = Phi(a_i', a_{-i}) - Phi(a_i, a_{-i})
+
+for all i, a_i, a_i', a_{-i}.
+
+Under the better-reply dynamics induced by a tabular Q-learning agent
+with optimistic initialization ``Q_0(s, a) >= V*(s)`` for all (s, a),
+the TAB target
+
+    T_beta Q(s, a) = (1 + gamma) / beta *
+                       [ log( exp(beta * r) + gamma * exp(beta * V(s')) )
+                         - log(1 + gamma) ]
+
+    (canonical TAB target form per spec §3.1; the bracketed term is
+    the log-sum-exp computed via the shared kernel
+    ``src/lse_rl/operator/tab_operator.py`` — reimplementing it
+    elsewhere is forbidden by spec §2.1)
+
+is monotonically increasing in ``beta`` at fixed ``(r, V(s'), gamma)``
+when ``r >= V(s')``, and decreasing when ``r < V(s')``. On potential
+games with optimistic init, every better-reply move increases ``Phi``
+along the dynamics, so the realized advantage
+``A(s, a) := r - V(s)`` has positive sign in expectation under any
+better-reply policy. Therefore positive ``beta`` tightens the
+contraction toward ``V*`` monotonically (alignment condition
+``d_{beta,gamma} <= gamma`` holds), proving ``+beta`` cannot slow
+convergence relative to ``beta = 0`` on potential games with this
+initialization.
+
+Negative ``beta`` VIOLATES the alignment condition under positive
+expected advantage and is therefore predicted to slow or destabilize
+convergence on potential games. This gives the falsifiable
+sign-prediction (PG-CoordinationPotential, PG-Congestion):
+
+    AUC(+beta) >= AUC(0) >= AUC(-beta)
+
+with strict inequality expected on the upper bound under optimistic
+init.
+
+This is the positive-control prediction tested by Phase VIII M6
+Stage 1 sweep. Failure of this prediction would constitute strong
+evidence of either (a) implementation bug, (b) violation of the
+alignment-condition assumption (e.g., misspecified Q init,
+non-better-reply opponent), or (c) a flaw in the theoretical
+derivation above. Failure of the sign-prediction thus dispatches a
+focused Codex bug-hunt review (addendum §3.1 trigger; smoke test
+``test_potential_lemma_prediction.py`` (M2 reopen) is the in-suite
+guard against (a)–(c)).
 
 `info["regime"]` convention
 ---------------------------

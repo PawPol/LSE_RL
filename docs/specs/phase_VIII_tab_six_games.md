@@ -308,9 +308,22 @@ configurable. Subcases for Phase VIII: `MP-Stationary`, `MP-FiniteMemoryBR`,
 `MP-RegretMatching`, `MP-HypothesisTesting` — all already provided by the
 adversary registry.
 
-Role: adversarial zero-sum benchmark; sanity check; nonstationary opponent
-benchmark. Single-step horizon variants are mechanism-degenerate (Phase VII
-§22.5 precedent) — alignment-rate / `d_eff` panels suppressed for `H = 1`
+<!-- patch-2026-05-01 §6 -->
+Role: **null-cell sanity check**. Matching Pennies has expected
+advantage $\bar A \to 0$ at the $(\tfrac12,\tfrac12)$ mixed Nash, so
+β-induced effects on AUC are second-order on the return axis. A
+near-zero result on MP is the *predicted* outcome and confirms the
+operator's classical-limit fidelity rather than refuting the TAB story.
+Mechanism-level metrics (`alignment_rate`, `frac_d_eff_below_gamma`)
+ARE expected to differentiate across β even when AUC does not, and
+that differentiation IS evidence of the TAB mechanism. `MP-Stationary`
+serves as the bit-identity check against β=0; `MP-FiniteMemoryBR` /
+`MP-RegretMatching` / `MP-HypothesisTesting` test second-order
+β-effects under nonstationary opponents but should NOT be expected to
+produce headline AUC differences. The honesty norm of §13 (negative
+results reported faithfully) covers this case. Single-step horizon
+variants are mechanism-degenerate (Phase VII §22.5 precedent) —
+alignment-rate / `d_eff` panels suppressed for `H = 1`
 matching-pennies cells per §10.1.
 
 ### 5.2 Shapley Cyclic Game — `shapley.py` [DONE]
@@ -329,6 +342,29 @@ Actions = {L, R}; reward +c coordinated, −m miscoordinated; supports
 
 Role: coordination recovery; convention-switch recovery. Canonical sign:
 **+** (coordination favours optimistic propagation).
+
+<!-- patch-2026-05-01 §1 -->
+**`RR-Sparse` [TODO M2 reopen]** — sparse-terminal variant exposing TAB's
+optimistic-propagation advantage on sparse-reward problems. Per-step
+reward is **0**; only the terminal step pays out (`+c` if last action
+was coordinated, `−m` if miscoordinated; `c = 1.0`, `m = 0.5` paper
+default; tuneable in yaml). Horizon `H = 20` (longer than dense
+subcases to stress credit assignment over multiple steps).
+Regime-stationary (no hidden regime). Opponent parameterized — accepts
+any of the existing RR opponent set (`StationaryConvention` default,
+`ConventionSwitch` for stress). State encoding
+`(timestep, last_opponent_action)` — same as other RR subcases.
+Implementation flag: `sparse_terminal: bool = False` constructor
+argument on `RulesOfTheRoadGame`; when `True`, per-step payoffs are
+zeroed and only the final-step payoff fires. Registered as
+`"rules_of_road_sparse"` in `GAME_REGISTRY`.
+
+*Falsifiable claim* (per patch §1.3): under optimistic Q-init,
+`AUC(fixed_+β) > AUC(β=0)` on RR-Sparse with paired-seed bootstrap 95% CI
+strictly positive. Mechanism: terminal `+c` propagates backward via the
+`max`-like aggregation $g_{+\beta,\gamma}(0, c) \to \gamma c$ as
+$\beta \to +\infty$; at finite β the rate of convergence to $\gamma c$
+is faster for `+β` than `β=0` on optimistically initialized Q.
 
 ### 5.4 Asymmetric Coordination — `asymmetric_coordination.py` [DONE]
 
@@ -362,7 +398,154 @@ convergence to a Nash equilibrium).
 Role: positive control; show TAB accelerates convergence where convergence
 is already expected.
 
-### 5.7 Adversaries — current status
+<!-- patch-2026-05-01 §11 -->
+### 5.7 Long-Horizon Delayed-Reward Chain — `delayed_chain.py` [TODO M2 reopen]
+
+**New game added 2026-05-01 (patch §11).** Anchors the paper title
+"Selective Temporal Credit Assignment" in directly testable terms
+within the Phase VIII suite (no out-of-suite cross-citation required).
+Reintroduces the Phase VII-A `delayed_chain` artifact in the unified
+Phase VIII framework; tests TAB's value-propagation behavior on
+horizons where temporal credit actually matters (`H ∈ {10, 20, 50}`).
+
+Game contract:
+
+```text
+Game id:           delayed_chain
+Action set:        subcase-dependent (Discrete(1) or Discrete(2))
+Horizon:           subcase-dependent (10, 20, 50)
+Reward:            0 at all non-terminal transitions
+                   +1 on advance-action arrival at goal terminal
+                   -1 on branch_wrong-action arrival at trap terminal
+                       (DC-Branching subcases only)
+Hidden regime:     none (delayed_chain is regime-stationary)
+Opponent:          PassiveOpponent (no-op; opponent payoff irrelevant
+                   so the env fits the 2-player MatrixGameEnv wrapper
+                   without the opponent affecting payoffs)
+State encoding:    integer state-index ∈ [0, L]; state L is goal
+                   terminal; for branching subcases, additionally
+                   index trap-terminal positions
+Canonical sign:    "+"  (positive-β specialist regime; +β should
+                          tighten temporal credit propagation
+                          backward from terminal +1)
+```
+
+Subcases:
+
+```text
+DC-Short10        L=10, advance-only chain (1 action), +1 at L=10
+                  Tests: short-horizon temporal credit baseline;
+                          differentiation from β=0 should be small
+                          but consistent in sign
+
+DC-Medium20       L=20, advance-only, +1 at L=20
+                  Tests: medium-horizon; differentiation expected
+
+DC-Long50         L=50, advance-only, +1 at L=50
+                  Tests: long-horizon temporal credit (the headline
+                          cell for the paper title); differentiation
+                          should be largest in this cell
+
+DC-Branching20    L=20 with branching: at every state, agent chooses
+                  advance OR branch_wrong; branch_wrong leads to a
+                  5-state trap chain ending in -1 terminal; advance
+                  proceeds toward +1 at goal
+                  Tests: temporal credit + exploration in the
+                          presence of deceptive negative terminals
+```
+
+*Falsifiable predictions* (per patch §11.3) under optimistic Q-init
+$Q_0(s,a) \ge V^*(s)$:
+
+```text
+P-Sign:        AUC(+β) > AUC(0) > AUC(-β) on DC-Short10, DC-Medium20,
+               DC-Long50 (paired-bootstrap 95% CI strictly ordered)
+P-Scaling:     |AUC(+β) - AUC(0)| grows monotonically with chain
+               length: DC-Short10 < DC-Medium20 < DC-Long50
+P-Branch:      On DC-Branching20, AUC(+β) > AUC(0) survives the
+               trap-arm exploration penalty; effect size may shrink
+               vs DC-Medium20 but sign holds
+P-VII-Parity:  AUC(0) on DC-Long50 within paired-bootstrap 95% CI of
+               Phase VII-A `delayed_chain` reference at the matched
+               L=50 setting (cross-validation with the prior phase)
+```
+
+Failure of `P-Sign` on any of the advance-only subcases is a
+**bug-hunt T-class trigger** (T11; see §11.2 / addendum §3.1
+extension below) and dispatches a focused Codex review with HALT
+semantics per addendum §6 BLOCKER (this is the headline
+temporal-credit-assignment cell — sign-flip is paper-critical).
+
+Implementation hooks:
+- `experiments/adaptive_beta/strategic_games/games/delayed_chain.py`
+  with `class DelayedChainGame` inheriting the `BaseGame` interface
+  used by `MatrixGameEnv`; `game_info()` exposes
+  `game="delayed_chain"`, `subcase ∈ {DC-Short10, DC-Medium20,
+  DC-Long50, DC-Branching20}`, `horizon=L`, `canonical_sign="+"`,
+  `regime=None`, `action_labels=["advance"]` or
+  `["advance", "branch_wrong"]`.
+- `experiments/adaptive_beta/strategic_games/adversaries/passive.py`
+  with `class PassiveOpponent(StrategicAdversary)` registered as
+  `"passive"` in `ADVERSARY_REGISTRY` (no-op `act` returning `0`;
+  `reset`/`observe` no-ops; `info()` returns the standard
+  adversary-info contract with `adversary_type="passive"`,
+  `phase="stationary"`, `memory_m=0`, `inertia_lambda=0.0`,
+  `temperature=0.0`, `model_rejected=False`, `search_phase="none"`,
+  `hypothesis_id=None`, `policy_entropy=0.0`).
+- All 4 subcases registered in `GAME_REGISTRY` via `register_game()`.
+
+**M6 sweep inclusion** (per patch §11.5): adds 4 subcases × 7 β × 10
+seeds × 10k episodes ≈ **2,800 additional runs** to the M6 main pass
+(extends the 6-game suite to 7 games for sweep purposes). Wall-clock
+on parallel-seed infrastructure: ~5–15 min additional; total M6 main
+pass after fold-in ≈ 1,260 (original) + 280 (RR-Sparse) + 2,800
+(delayed_chain) ≈ **4,340 runs**.
+
+**M7 baseline inclusion** (per patch §11.6): `delayed_chain ×
+DC-Long50` MUST be included in the M7 promoted-subcases list.
+Strategic-learning agent baselines (`regret_matching_agent`,
+`smoothed_fictitious_play_agent`) have NO value-function — they
+cannot solve `delayed_chain` and SHOULD produce AUC near random-policy
+baseline. This is a **diagnostic feature, not a flaw**: it explicitly
+demonstrates that strategic-learning agents without value bootstrapping
+fail on temporal credit, justifying the TAB approach. Aggregator must
+tolerate "agent cannot solve task" results — report mean ± std and let
+the table builder decide whether to format as "—" or numerical.
+
+**Bug-hunt T11 trigger** (extends addendum §3.1 detector list):
+
+```text
+T11 — sign-prediction failure on delayed_chain (NEW):
+       AUC(+β) ≤ AUC(0) on any advance-only delayed_chain subcase
+       (DC-Short10, DC-Medium20, DC-Long50). Hard theoretical
+       prediction failure; if it fires, dispatch a focused Codex
+       bug-hunt review with the prompt extended to include:
+       "this contradicts the alignment-condition prediction for
+       positive expected advantage on delayed-reward chains.
+       Investigate whether (a) Q-init is not sufficiently optimistic,
+       (b) episode horizon is binding before terminal reward
+       propagates back, (c) ε-greedy schedule prevents convergence,
+       (d) implementation of the chain transition is off-by-one, or
+       (e) the prediction itself is theoretically misguided."
+```
+
+T11 is a sign-flip trigger and fires with high priority — it warrants
+HALT for human review per addendum §6 BLOCKER semantics.
+
+**Phase VII-A cross-reference** (per patch §11.8): if
+`results/adaptive_beta/strategic/raw/.../phase_VII_A_delayed_chain*`
+artifacts survive on disk (filter-repo expunged from git history but
+may persist in the working tree), M6 wave 7 aggregator reads them as
+historical-baseline reference and includes the comparison in
+`M6_summary.md` as **read-only narrative cross-reference only** (same
+caveat as M8 Phase VII Stage B2 cross-reference; unpaired across
+phases). If artifacts do not exist, `M6_summary.md` notes "no Phase
+VII-A reference artifacts available on disk; Phase VIII delayed_chain
+results constitute the in-tree validation of the temporal-credit-
+assignment claim". This is a documentation choice, NOT a halt
+condition.
+
+### 5.8 Adversaries — current status
 
 ```text
 [DONE] (existing)              | [TODO] (M3)
@@ -437,10 +620,42 @@ existing `ALL_METHOD_IDS` convention in `schedules.py`.
 ```
 
 These baselines exist so the paper is not benchmarked only against β = 0.
-Optional appendix baselines (`UCB_style_Q_learning`,
-`regret_matching_agent`, `fictitious_play_agent`,
-`smoothed_fictitious_play_agent`) wrap existing adversary classes as
-agents and are deferred to M11.
+
+<!-- patch-2026-05-01 §3 -->
+**Strategic-learning agent baselines (PROMOTED from M11 to M7,
+mandatory)**: pre-empts the highest-probability reviewer attack ("weak
+baselines"). For a strategic-learning paper, the natural baselines
+include strategic-learning agents themselves — fictitious play and
+regret matching as *agents*, not opponents. Both are already
+implemented as opponent classes in
+`experiments/adaptive_beta/strategic_games/adversaries/`; promoting
+them to agent baselines is a wrapper over existing code.
+
+```text
+[NEW M4 reopen] regret_matching_agent           RegretMatchingAgent
+[NEW M4 reopen] smoothed_fictitious_play_agent  SmoothedFictitiousPlayAgent
+```
+
+Both classes wrap the existing `regret_matching.py` /
+`smoothed_fictitious_play.py` opponents in the agent interface
+(`begin_episode` / `step` / `end_episode` / `select_action`) used by
+`AdaptiveBetaQAgent` so they slot into the Phase VIII runner without
+runner changes. Both:
+
+- Implement the same interface as `AdaptiveBetaQAgent`.
+- Carry a `beta_schedule = ZeroBetaSchedule` that is unused (β not
+  applicable; included so logger does not error on missing field).
+- Emit per-episode metrics: `return`, `length`, `epsilon` (always 0),
+  `bellman_residual` (placeholder = 0; document in metric notes that
+  the field is undefined for non-Q-learning agents and the aggregator
+  must drop it from comparisons), `nan_count`,
+  `divergence_event` (always 0).
+- Do NOT emit operator-mechanism metrics (`alignment_rate`,
+  `mean_d_eff`, etc.) — these are TAB-specific. Aggregator must
+  handle the missing fields gracefully.
+
+The remaining optional appendix baseline `UCB_style_Q_learning`
+remains deferred to M11.
 
 ### 6.4 β arm grid (UCB schedules and M6 sweep)
 
@@ -839,18 +1054,91 @@ produced; throughput projection feeds M6 main-pass wall-clock estimate.
 
 ### 10.2 Stage 1 — fixed-β operator sweep (M6 main pass)
 
+<!-- patch-2026-05-01 §1 §11 -->
 ```yaml
 episodes: 10000
 seeds: 10
 methods: 7-arm β grid (vanilla + fixed_beta_{±0.5, ±1, ±2})
-games: all six
+games: six core + delayed_chain (per patch §11.5)
+       (matching_pennies, shapley, rules_of_road,
+        asymmetric_coordination, soda_uncertain, potential,
+        delayed_chain)
 subcases: canonical + promoted nonstationary subcases (per Stage A)
+          + RR-Sparse (per patch §1)
+          + DC-Short10, DC-Medium20, DC-Long50, DC-Branching20
+            (per patch §11.5)
 ```
+
+Total M6 main-pass run count after fold-in: ~1,260 (original) + ~280
+(RR-Sparse) + ~2,800 (delayed_chain) ≈ **4,340 runs**.
 
 `alignment_rate_*.pdf` and `effective_discount_*.pdf` are **not produced
 for `H = 1` matching-pennies cells** (Phase VII §22.5 precedent —
 mechanism degenerate at horizon = 1). Those cells contribute to AUC,
 final return, regret, and recovery only.
+
+<!-- patch-2026-05-01 §5 -->
+**M6 wave 1.5 — AC-Trap β-pre-sweep** (per patch §5.2). Inserted
+immediately after runner + configs are built, before the Stage A
+dev pass dispatches. The asymmetric coordination `AC-Trap` subcase
+is the single cleanest cell for the "fixed positive TAB selects
+payoff-dominant equilibria where vanilla Q-learning is risk-dominated"
+claim; if it does not produce the expected effect, the strongest
+single-cell result for the paper evaporates and we must know that
+before committing to 2-4h of M6 main-pass compute.
+
+```text
+game:           asymmetric_coordination
+subcase:        AC-Trap
+β:              {-1, 0, +1}  (3-arm probe)
+seeds:          3
+episodes:       200
+total runs:     9
+estimated wall: ~3 min
+expected:       AUC(+1) > AUC(0) > AUC(-1)
+                with effect size at least Cohen's d > 0.5 vs vanilla
+output:         results/adaptive_beta/tab_six_games/pre_sweep_AC_Trap.md
+```
+
+Disposition (per patch §5.3):
+- **Match expected**: log success; proceed normally with M6 wave 2
+  dev pass.
+- **Contradicted**: dispatch a focused Codex bug-hunt review on the
+  pre-sweep results (per addendum §3.1, treat as if T1/T3 fired).
+  Codex verdict drives:
+  - **GENUINE FINDING**: log to `counter_intuitive_findings.md`,
+    flag for paper attention, proceed with M6 normally (the finding
+    becomes a paper result — payoff-dominance claim gets an asterisk).
+  - **BUG**: auto-fix loop per addendum §4.2; re-run pre-sweep after
+    fix.
+  - **Inconclusive**: HALT with `pre_sweep_inconclusive.md` memo.
+
+<!-- patch-2026-05-01 §4 -->
+**M6 wave 5 — figures-only β-grid sub-pass** (per patch §4.2). The
+main β grid `{-2, -1, -0.5, 0, +0.5, +1, +2}` has a 0 → ±0.5 gap;
+β-vs-AUC and β-vs-contraction curve interpolation across that gap
+is visually unfaithful for the headline operator-diagnostic figures.
+Add a SUPPLEMENTARY β grid for figures only:
+
+```text
+β_supplementary:   {-0.25, -0.1, +0.1, +0.25}
+seeds:             5  (lighter than main pass; figures-only)
+episodes:          10,000  (same as main pass for shape comparability)
+games:             ONE G_+ subcase (preferred RR-StationaryConvention if
+                     Stage 1 confirms it as G_+; else AC-FictitiousPlay)
+                   + ONE G_- subcase (preferred SH-FiniteMemoryRegret
+                     per Phase VII Stage B2)
+total runs:        4 β × 5 seeds × 2 subcases = 40 runs
+estimated wall:    < 30 minutes
+```
+
+The supplementary β values are **NOT** included in the main statistical
+sweep. They appear ONLY in the headline figures (`beta_vs_auc.pdf`,
+`beta_vs_contraction.pdf`) with a visual marker indicating
+"figure-only points" so reviewers know they were not part of the
+primary statistical comparison. Aggregator output tags these points
+explicitly; tests verify they are excluded from main statistical
+tables.
 
 **Acceptance for M6 → M7 promotion:**
 - All `(game, subcase, β, seed)` cells present in roster (no silent drops).
@@ -862,15 +1150,18 @@ final return, regret, and recovery only.
 
 ### 10.3 Stage 2 — fixed TAB vs vanilla and external baselines (M7)
 
+<!-- patch-2026-05-01 §3 -->
 ```yaml
 episodes: 10000
 seeds: 10–20 main
 methods: [vanilla, best_fixed_positive_TAB, best_fixed_negative_TAB,
           best_fixed_beta_grid (reporting aggregate),
           restart_Q_learning, sliding_window_Q_learning,
-          tuned_epsilon_greedy_Q_learning]
-games: all six
-subcases: M6-promoted
+          tuned_epsilon_greedy_Q_learning,
+          regret_matching_agent,                # NEW — promoted from M11
+          smoothed_fictitious_play_agent]       # NEW — promoted from M11
+games: all six (+ delayed_chain × DC-Long50 per patch §11.6)
+subcases: M6-promoted (delayed_chain × DC-Long50 mandatory in promoted list)
 ```
 
 `best_fixed_*` selection uses the dev-seed slice; the held-out main-seed
@@ -879,7 +1170,11 @@ test-set leakage).
 
 **Acceptance for M7 → M8 promotion:** paired-seed comparison, baseline
 completeness, no silent drops. Honesty rule: if sliding-window or
-restart wins in some cells, report it.
+restart wins in some cells, report it. Strategic-learning agents
+(`regret_matching_agent`, `smoothed_fictitious_play_agent`) on
+`delayed_chain × DC-Long50` are expected to fail (no value
+bootstrapping); this is a diagnostic feature documenting the
+necessity of the TAB approach.
 
 ### 10.4 Stage 3 — sign-specialization analysis (M8)
 
@@ -959,6 +1254,11 @@ Required paired comparisons (v2 §12):
 2. method vs the best fixed β (per env, declared before the run via
    M6 dev-seed slice; held out for M7+).
 3. method vs `sliding_window_Q_learning` (where relevant; M7+).
+4. <!-- patch-2026-05-01 §3 --> method vs `regret_matching_agent`
+   (M7+; strategic-learning baseline per patch §3.5).
+5. <!-- patch-2026-05-01 §3 --> method vs
+   `smoothed_fictitious_play_agent` (M7+; strategic-learning
+   baseline per patch §3.5).
 
 Use **paired seeds** (same `common_env_seed`) for all significance
 summaries. Do not present unpaired mean ± std for the headline
@@ -984,8 +1284,14 @@ Secondary endpoints: `episodes_to_threshold`, `bellman_residual_contraction`,
 ### 12.1 Required figures
 
 - `beta_vs_auc.pdf` (M6) — per game, β on x-axis, AUC mean ± SE on y.
+  <!-- patch-2026-05-01 §4 --> Includes the M6 wave 5 supplementary β
+  points `{-0.25, -0.1, +0.1, +0.25}` on ONE G_+ + ONE G_- subcase,
+  plotted with a distinct visual marker labeled "figure-only points"
+  to indicate exclusion from the main statistical sweep.
 - `beta_vs_contraction.pdf` (M6) — per game, β on x-axis,
   `bellman_residual_contraction` on y.
+  <!-- patch-2026-05-01 §4 --> Same supplementary β-marker
+  convention as `beta_vs_auc.pdf`.
 - `main_learning_curves.pdf` (M7) — per (game, subcase), method curves.
 - `sign_specialization_heatmap.pdf` (M8) — game × subcase × method.
 - `switch_aligned_return.pdf` (M9) — episodes aligned relative to ξ
@@ -1118,6 +1424,23 @@ already exercises the no-clip honest-failure rule. M1 verifier
 re-runs this; no Phase VIII delta unless new no-clip failure modes
 emerge.
 
+<!-- patch-2026-05-01 §6 -->
+### 13.9 Null-cell expectation (Success/Failure criterion per patch §6.2)
+
+(Patch §6.2 originally targeted "spec §13 Success/Failure criteria";
+the current spec §13 is "Tests" and §15 is "Acceptance criteria".
+Folding the patch text here to preserve the §13.4 numbering intent;
+also referenced from §15 acceptance criteria.)
+
+Matching Pennies subcases are expected to produce null AUC results.
+This is **not a failure mode**. A non-null result on MP — particularly
+a positive AUC differential for fixed +β or fixed −β — would itself
+warrant scrutiny (suspect: seed contamination or evaluation-window
+bias). Mechanism-level metrics (`alignment_rate`,
+`frac_d_eff_below_gamma`) ARE expected to differentiate across β even
+when AUC does not, and that differentiation IS the evidence of TAB
+mechanism on MP cells.
+
 ---
 
 ## 14. Milestones
@@ -1221,6 +1544,10 @@ The phase is complete when **all** of:
 11. Phase VIII memo cross-references Phase VII
     `final_recommendation.md` and explicitly states agreement,
     refinement, or disagreement.
+12. <!-- patch-2026-05-01 §6 --> Null-cell expectation per §13.9 is
+    documented in the final memo: MP cells producing null AUC are
+    reported as the predicted outcome (NOT as evidence against TAB);
+    a non-null MP AUC differential is flagged for scrutiny.
 
 ---
 
@@ -1461,3 +1788,14 @@ milestone.
     catalogued 9). The additional `test_operator_shared_kernel.py`,
     `test_regression_rps.py`, and `conftest.py` are folded into §13
     inventory verbatim.
+
+- **2026-05-01 — Pre-M6 amendment per
+  `tasks/phase_VIII_spec_patches_2026-05-01.md` (v2).** Folds in
+  patch §1 (RR-Sparse), §3 (FP/RM agents to M7), §4 (figures-only
+  β-grid), §5 (AC-Trap pre-sweep), §6 (MP null-cell repositioning),
+  §7 (potential-game lemma), §11 (delayed_chain game with 4 subcases
+  + PassiveOpponent + bug-hunt T11). §2 RESERVED (high-magnitude
+  payoff variant deferred to v2 post-M9). M2 + M4 reopened with new
+  delta tasks; M6 main pass grows from ~1,260 to ~4,340 runs. Each
+  fold-in marked inline with `<!-- patch-2026-05-01 §N -->` for
+  provenance.
