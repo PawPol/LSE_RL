@@ -243,10 +243,22 @@ def _resolve_method_to_schedule(method_id: str) -> Tuple[str, Dict[str, Any]]:
 # ---------------------------------------------------------------------------
 _GAME_MODULE_PREFIX = "experiments.adaptive_beta.strategic_games.games."
 
+# Registry keys that have NO dedicated module file but delegate to a
+# different module's payoff matrices. Per HALT 7 fix (2026-05-01):
+# `rules_of_road_sparse` is registered in registry.py but only exists as
+# a wrapper around `rules_of_road.build(..., sparse_terminal=True)`. The
+# payoff structure is identical to dense RR (sparsity zeroes per-step
+# rewards but the (Stag, Hare) payoff matrix is the same), so opponents
+# requiring payoff_opponent must read it from the dense module.
+_PAYOFF_ALIAS: Dict[str, str] = {
+    "rules_of_road_sparse": "rules_of_road",
+}
+
 
 def _import_game_module(game_name: str) -> ModuleType:
-    """Import the game module by registered name."""
-    return importlib.import_module(_GAME_MODULE_PREFIX + game_name)
+    """Import the game module by registered name (with alias support)."""
+    name = _PAYOFF_ALIAS.get(game_name, game_name)
+    return importlib.import_module(_GAME_MODULE_PREFIX + name)
 
 
 def _resolve_payoff_opponent(
@@ -259,6 +271,12 @@ def _resolve_payoff_opponent(
     level (Phase VII-B convention). Non-matrix games (e.g.
     ``delayed_chain``) do not; in that case we return ``None`` and the
     caller skips ``payoff_opponent`` injection.
+
+    Registry aliases like ``rules_of_road_sparse`` resolve to their
+    underlying module via :data:`_PAYOFF_ALIAS` so opponents requiring
+    ``payoff_opponent`` (e.g. ``finite_memory_fictitious_play``,
+    ``hypothesis_testing``) can be built against the alias's payoff
+    structure.
     """
     try:
         mod = _import_game_module(game_name)

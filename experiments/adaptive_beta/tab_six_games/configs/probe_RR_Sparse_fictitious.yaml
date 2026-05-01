@@ -1,0 +1,28 @@
+stage: probe_RR_Sparse_FP
+phase: VIII
+
+episodes: 100
+seeds: [0]
+
+methods:
+  - vanilla
+
+gamma: 0.95
+learning_rate: 0.1
+q_init: 0.0
+
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 50
+
+subcases:
+  - id: RR-Sparse-FictitiousPlay
+    game: rules_of_road_sparse
+    game_kwargs:
+      horizon: 20
+    adversary: finite_memory_fictitious_play
+    adversary_kwargs:
+      memory_m: 20
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
