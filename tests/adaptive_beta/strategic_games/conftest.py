@@ -15,3 +15,9 @@ def pytest_configure(config):  # type: ignore[no-untyped-def]
         "slow: marks tests that exercise full runner / repro workflows "
         "(deselect with `-m \"not slow\"`).",
     )
+    config.addinivalue_line(
+        "markers",
+        "smoke: marks falsifiable-prediction smoke tests that run a small "
+        "training sweep (deselect with `-m \"not smoke\"` under tight CI "
+        "budget; included in milestone-close sweeps).",
+    )

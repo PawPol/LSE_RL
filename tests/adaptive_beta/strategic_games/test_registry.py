@@ -7,9 +7,11 @@ Invariants guarded
 ------------------
 - Unknown name lookup raises ``KeyError`` (silent fallback is forbidden).
 - Double-register without ``overwrite=True`` raises ``KeyError``.
-- ``GAME_REGISTRY`` lists exactly the 7 expected games after package import.
-- ``ADVERSARY_REGISTRY`` lists every expected adversary name (13 keys
-  covering 12 distinct classes + ``stationary_mixed`` alias).
+- ``GAME_REGISTRY`` lists exactly the 8 expected games after package
+  import (Phase VII 5 + Phase VIII M2 ``soda_uncertain`` + ``potential``
+  + Phase VIII §5.7 patch §11 ``delayed_chain``).
+- ``ADVERSARY_REGISTRY`` lists every expected adversary name (14 keys
+  covering 13 distinct classes + ``stationary_mixed`` alias).
 """
 
 from __future__ import annotations
@@ -42,13 +44,21 @@ EXPECTED_GAMES = frozenset(
         # Phase VIII M2 spec §5.5 / §5.6 additions.
         "soda_uncertain",
         "potential",
+        # Phase VIII §5.7 patch §11 (M2 reopen) — delayed_chain.
+        "delayed_chain",
+        # Phase VIII §5.3 patch §1 (M2 reopen) — RR-Sparse subcase as separate factory.
+        "rules_of_road_sparse",
     }
 )
 
 
-def test_game_registry_lists_exact_seven_games() -> None:
-    """`spec §4 / §6` — Phase VII plus Phase VIII M2 games register at import."""
-    assert len(GAME_REGISTRY) == 7
+def test_game_registry_lists_exact_nine_games() -> None:
+    """`spec §4 / §6` — Phase VII plus Phase VIII M2 games register at import.
+
+    Phase VIII M2-reopen (patch §1 RR-Sparse + patch §11 delayed_chain)
+    grows the expected count to 9.
+    """
+    assert len(GAME_REGISTRY) == 9
     assert set(GAME_REGISTRY.keys()) == EXPECTED_GAMES, (
         f"unexpected game registry keys: "
         f"missing={EXPECTED_GAMES - set(GAME_REGISTRY)}, "
@@ -99,6 +109,8 @@ EXPECTED_ADVERSARIES = frozenset(
         "inertia",
         "convention_switching",
         "sign_switching_regime",
+        # Phase VIII §5.7 patch §11 (M2 reopen).
+        "passive",
     }
 )
 
