@@ -13,13 +13,17 @@
   "overnight_engaged_utc": "2026-04-30T22:34:42Z",
   "session_2_resume_utc": "2026-05-01T01:07:31Z",
   "session_2_pause_utc": "2026-05-01T01:36:00Z",
+  "session_3_resume_utc": "2026-05-01T11:14:49Z",
+  "session_3_v5b_resolution_utc": "2026-05-01T12:35:11Z",
   "kickoff_git_head": "5d887df9d7b987c21bf37218816c347149e75854",
   "current_branch": "phase-VIII-tab-six-games-2026-04-30",
-  "current_git_head": "c08126e0a081c0a5329be99f7f78080b3f582c76",
+  "current_git_head": "ec841b3f988eb0507b57832d1d6a874d8a964ed5",
   "current_milestone": "M6",
   "current_tier": 2,
   "milestone_status": {
-    "M0": "complete", "M1": "complete", "M2": "complete", "M3": "complete",
+    "M0": "complete", "M1": "complete",
+    "M2": "complete-with-amendment-2026-05-01-v5b",
+    "M3": "complete",
     "M4": "complete", "M5": "complete", "M6": "pending",
     "M7": "pending", "M8": "pending", "M9": "pending", "M10": "pending",
     "M11": "pending", "M12": "pending"
@@ -97,6 +101,20 @@
       "uncommitted_files": ["docs/specs/phase_VIII_tab_six_games.md (v3 §5.7 edits)", "experiments/adaptive_beta/tab_six_games/metrics.py (q_convergence_rate + q_star helper)", "tests/adaptive_beta/tab_six_games/test_phase_VIII_metrics.py (4 new tests + decay-rate tweak)", "tests/adaptive_beta/strategic_games/test_delayed_chain_smoke_prediction.py (rewrite per v3 §4)"],
       "remediation_options": ["(α) flip P-Contract sign — orchestrator recommends; trivial; preserves long-horizon evidence", "(β) switch to pessimistic Q-init — paper-alignment weak; pessimistic init unusual", "(γ) drop advance-only subcases entirely — loses P-Scaling test; weakest"],
       "orchestrator_recommendation": "(α) — research-design decision pending user direction"
+    },
+    {
+      "halt_utc": "2026-05-01T12:24:46Z",
+      "milestone": "M2 reopen close (v5 fold-in pending)",
+      "trigger_class": "T11 (spec §5.7 v5) — Cohen's d guard misfires under perfect determinism",
+      "severity": "paper-critical / BLOCKER per addendum §6 + v5 directive ('Do NOT auto-patch beyond v5')",
+      "reason": "v5 metric (β-specific Bellman residual ||T_β Q − Q||_∞) is correct; v5 prediction is empirically vindicated: AUC(-log R_-1)=+8660.54 > AUC(-log R_0)=+4606.85 > AUC(-log R_+1)=-23598.95, with final residuals 17 orders of magnitude apart between β=-1 (3.45e-11, contracted) and β=+1 (2.69e+06, divergent). Mean-ordering assertions both PASS. ONLY the Cohen's d ≥ 0.3 guard fails on the minus-vs-zero gap (d=0.2825 < 0.3) because Discrete(1) + ε=0 + deterministic chain + PassiveOpponent makes the test bed PERFECTLY deterministic — per-seed AUCs are bit-identical, intra-method std=0, and 'pooled std' ends up dominated by the inter-method spread driven by β=+1's divergence. Mechanically d collapses to (gap_small)/(c·spread_dominated_by_gap_large) and can never reach 0.3 unless the smaller gap is ≥30% of the larger gap. This is a guard-test design mismatch with the noise-free testbed, NOT a failure of the v5 metric or prediction.",
+      "memo_path": "results/adaptive_beta/tab_six_games/halts/delayed_chain_v5_d_threshold_misfire_2026-05-01T12-24-46Z.md",
+      "head_at_halt": "99a98340dfe8bfc24f9f97e353b5b15b3a16fa44",
+      "working_tree_dirty": true,
+      "uncommitted_files": ["experiments/adaptive_beta/tab_six_games/metrics.py (v3 + v5 helpers)", "tests/adaptive_beta/tab_six_games/test_phase_VIII_metrics.py (v3 + v5 tests, 51 PASS)", "tests/adaptive_beta/strategic_games/test_delayed_chain_smoke_prediction.py (v5 rewrite)", "docs/specs/phase_VIII_tab_six_games.md (v3+v4 §5.7 edits — v5 not yet applied)"],
+      "remediation_options": ["(η) replace Cohen's d guard with absolute-gap or relative-gap test — orchestrator recommends; preserves v5 metric+prediction; trivial code change; documents deterministic-testbed caveat in spec §5.7", "(θ) drop Cohen's d guard entirely; rely on mean-ordering only", "(ζ) drop delayed_chain entirely from M6 (user-prescribed fallback)"],
+      "orchestrator_recommendation": "(η) — research-design decision pending user direction; v5 science is empirically vindicated (17 orders of magnitude in final R), only the guard is misaligned with the deterministic testbed",
+      "resolution": "User selected option (η). v5b applied at commit ec841b3f: replaced Cohen's d block in test_delayed_chain_smoke_prediction.py with relative-gap floor (gap_small ≥ 0.10·gap_large) plus absolute floor (gap_small ≥ 100). Smoke PASSES. Full suite: 1693 PASS + 2 SKIP + 0 FAIL. Going forward: T11 in M6 wave 6 uses gap-based guard for deterministic cells (DC-Short10/Medium20/Long50); Cohen's d ≥ 0.3 retained for DC-Branching20 + M7+/M9-M10 ablations with ε > 0."
     }
   ],
   "gates_acked": ["G0", "G1", "M1-close", "G2", "M2-close", "G3", "M3-close", "G4b", "M4-close", "M5-close"],
@@ -131,7 +149,7 @@
     }
   },
   "next_action": {
-    "type": "halt",
-    "details": "THIRD HALT at M2 reopen close after v4 sign flip + q_star off-by-one + terminal-state slice all applied. v4 metric scaffolding sound; alignment-condition derivation correct; off-by-one fixed; terminal slice exposed deeper issue. Empirical: β=0 fully converges to classical Q* (AUC=21.03); β=-1 overshoots toward β-specific fixed point ~0 and lands at ~0.55 (AUC=3.58); β=+1 diverges to ~1e13 (AUC=-27.87). Neither v3 (+/0/-) nor v4 (-/0/+) ordering matches; β=0 dominates because only β=0 has classical Q* as its fixed point. Metric design flaw: q_convergence_rate(q_history, q_star_classical) implicitly assumes all β share classical Q* as fixed point, but TAB fixed point shifts with β. Per v4 directive: 'Do NOT auto-fix beyond v4'. Halt memo at results/adaptive_beta/tab_six_games/halts/delayed_chain_metric_design_flaw_2026-05-01T11-31-32Z.md enumerates 3 remediation options (δ/ε/ζ); orchestrator recommends (δ) Bellman-residual decay (use existing contraction_reward helper from spec §M5). Working tree retains v4 corrections pending researcher decision."
+    "type": "resume_M6",
+    "details": "M2 reopen complete-with-amendment-2026-05-01-v5b. HALTs 1-4 all resolved; atomic commit ec841b3f landed v3+v4+v5+v5b on the delayed_chain advance-only smoke. Empirical signal vindicates v5 metric (β-specific Bellman residual): AUC(-log R_-1)=+8660 > AUC(-log R_0)=+4607 > AUC(-log R_+1)=-23599, with final R separated by 17 orders of magnitude. v5b replaces Cohen's d guard with relative-gap floor (gap_small ≥ 0.10·gap_large + gap_small ≥ 100). Full suite: 1693 PASS + 2 SKIP + 0 FAIL. Branch pushed to origin. Resume autonomous run from M4 reopen close → M6 waves → M7 → M12 per addendum and session 3 plan. Determinism-aware guard rule: gap-based for DC-Short10/Medium20/Long50; Cohen's d ≥ 0.3 for DC-Branching20 + M7+/M9-M10 (genuine ε-greedy variance)."
   }
 }
