@@ -1,0 +1,36 @@
+# total_runs: 9  (1 cell × 3 methods × 3 seeds)
+#
+# AC-Trap ablation A2 — longer horizon test (HALT 6 step A.1).
+# 1000 episodes (vs 200 baseline); ε decay extended to 500.
+# All else = pre_sweep_AC_Trap.yaml baseline.
+
+stage: pre_sweep_AC_Trap_A2_long
+phase: VIII
+
+episodes: 1000
+seeds: [0, 1, 2]
+
+methods:
+  - vanilla
+  - fixed_beta_-1
+  - fixed_beta_+1
+
+gamma: 0.95
+learning_rate: 0.1
+q_init: 0.0
+
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 500
+
+subcases:
+  - id: AC-Trap
+    game: asymmetric_coordination
+    game_kwargs:
+      horizon: 20
+    adversary: finite_memory_regret_matching
+    adversary_kwargs:
+      memory_m: 20
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d

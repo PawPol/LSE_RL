@@ -368,11 +368,49 @@ is faster for `+β` than `β=0` on optimistically initialized Q.
 
 ### 5.4 Asymmetric Coordination — `asymmetric_coordination.py` [DONE]
 
-Actions = {A, B} (stag-hunt-style). Canonical sign: **+**. Subcases:
-`AC-FictitiousPlay` [DONE], `AC-SmoothedBR` [DONE], `AC-Inertia` [requires
-M3 `inertia.py`], `AC-Trap` [DONE].
+Actions = {A, B} (stag-hunt-style). Canonical pre-registration sign:
+**+**. Subcases: `AC-FictitiousPlay` [DONE], `AC-SmoothedBR` [DONE],
+`AC-Inertia` [requires M3 `inertia.py`], `AC-Trap` [DONE].
 
-Role: miscoordination traps; pathwise dynamics.
+Role: miscoordination traps; pathwise dynamics; **falsifiability cell**
+for the claim that optimistic TAB selects payoff-dominant equilibria.
+
+<!-- patch-2026-05-01-v7 -->
+**AC-Trap is NOT a positive-control G+ cell after the 2026-05-01
+pre-sweep.** The original claim (v2 patch §5.2: "+β selects
+payoff-dominant equilibria where vanilla Q-learning is risk-dominated"
+on stag-hunt) was empirically refuted by a 5-condition ablation
+(45 runs across q_init ∈ {0, 5}, episodes ∈ {200, 1000}, opponents
+∈ {regret-matching, inertia(0.9), uniform stationary}). In every
+condition, fixed +β failed to beat vanilla and often strongly
+underperformed; the ordering `AUC(−1) ≥ AUC(0) > AUC(+1)` held with
+effect sizes |d(+1, vanilla)| up to 23.4. See
+`results/adaptive_beta/tab_six_games/counter_intuitive_findings.md`
+for the full table and Codex bug-hunt review.
+
+The mechanism diagnosis is that **TAB sign must be judged by
+bootstrap alignment β·(r − v_next), not by the equilibrium payoff
+label**. Once learned Q makes `v_next` exceed the realized reward,
++β drives `d_eff` above γ and can exceed 1, destabilizing Q even in
+a stag-hunt payoff-dominant environment. The asymptotic forms of
+the implemented kernel `g_{β,γ}(r, v) = (1+γ)/β · [logaddexp(βr,
+βv + log γ) − log(1+γ)]` are:
+
+- `β → +∞`: `g → (1+γ) · max(r, v)` — when `v > r`, `d_eff → 1+γ > 1`.
+- `β → −∞`: `g → (1+γ) · min(r, v)` — when `v > r`, `d_eff → 0`.
+
+So +β stabilizes ONLY in the alignment regime where `v ≤ r`; on
+stag-hunt, optimistic Q-init or value-function bootstrapping
+quickly violates that condition.
+
+**AC-Trap is therefore repositioned in the suite as a "TAB does not
+help here" cell** — explicitly within the §13 honesty norms — and
+serves as a useful negative result for the alignment-condition
+diagnostic: the diagnostic correctly predicts AC-Trap is OUTSIDE
+the +β regime when bootstrap-relative-to-V* is properly accounted
+for (`alignment_rate` drops from 0.55–0.76 in the first 20 episodes
+to ~0.05 over training in every fixed_beta_+1 run). See §13.5 for
+the negative-result reporting requirements.
 
 ### 5.5 Soda / Uncertain Game — `soda_uncertain.py` [TODO M2]
 
@@ -1535,6 +1573,44 @@ bias). Mechanism-level metrics (`alignment_rate`,
 when AUC does not, and that differentiation IS the evidence of TAB
 mechanism on MP cells.
 
+<!-- patch-2026-05-01-v7 -->
+### 13.10 Negative-result honesty: AC-Trap falsifiability cell
+
+The AC-Trap pre-sweep is reported even when it contradicts the
+original payoff-dominance prediction (v2 patch §5.2). A valid
+M6/M7 report on the AC-Trap cell includes:
+
+1. AUC and paired-seed effect sizes for `β ∈ {-1, 0, +1}` (Stage A
+   dev) and the full β grid (Stage 1 main).
+2. Alignment-rate traces (`alignment_rate` from per-episode
+   `metrics.npz`) showing whether fixed `+β` remains in-regime
+   (≥ 0.5) over training. The 2026-05-01 pre-sweep finding is that
+   it does NOT — `alignment_rate` collapses from ~0.55–0.76 in the
+   first 20 episodes to ~0.05 over training, in every condition
+   (5/5 ablations).
+3. `q_abs_max` / `divergence_event` diagnostics when `d_eff` rises
+   above 1. The 2026-05-01 pre-sweep showed `q_abs_max[-1]` reaching
+   1,085,189 on A2 long-horizon fixed_beta_+1 seed 0, with 311
+   divergence events out of 1000 episodes (>30% rate).
+4. A statement that **TAB sign is governed by `β · (r − v_next)`,
+   not by the payoff-dominant equilibrium label**. The
+   alignment-condition diagnostic correctly identifies AC-Trap as
+   outside the +β regime; the original v2 §5.2 over-claim was at
+   the game-theoretic-equilibrium level, not the local-bootstrap
+   level the diagnostic actually measures.
+
+**Success for the broader Phase VIII program does not require AC-Trap
+to be positive.** It requires that AC-Trap's negative result be
+correctly predicted by the alignment diagnostic and not hidden by
+post-hoc cell selection. This is consistent with the §13.9 null-cell
+honesty norm and the §13.8 no-clip-failure-honesty norm.
+
+If wave 2 (Stage A dev) or wave 4 (Stage 1 main) unexpectedly produces
+`+β > 0 > −β` on AC-Trap, that would be a fresh T1+T3 trigger (the
+ablation should have caught any genuine +β-favoring regime); halt
+for review. Until then, AC-Trap's `−β > 0 > +β` ordering is the
+*expected* outcome.
+
 ---
 
 ## 14. Milestones
@@ -1933,6 +2009,27 @@ milestone.
   final R separated by 17 orders of magnitude between β=-1 (3.45e-11,
   contracted) and β=+1 (2.69e+06, divergent). Each fold-in marked
   inline with `<!-- patch-2026-05-01-v5 -->`.
+- **2026-05-01 v7 — HALT 6 resolution: AC-Trap repositioned as
+  falsifiability cell after 5/5 ablation conditions refuted v2 §5.2
+  payoff-dominance prediction.** M6 wave 1.5 baseline (q_init=0,
+  200 ep, regret-matching opponent) showed `AUC(−1) > AUC(0) > AUC(+1)`
+  with `d(+1, vanilla) = −3.04` — the OPPOSITE of the spec-predicted
+  `AUC(+1) > AUC(0) > AUC(−1)`. A 36-run ablation across q_init ∈ {0, 5},
+  episodes ∈ {200, 1000}, opponents ∈ {regret-matching, inertia(0.9),
+  uniform stationary} confirmed the reversal in 5/5 conditions, with
+  the largest effect under optimistic init (`d(+1, 0) = −8.60`) and
+  longest training (`d(+1, 0) = −23.38`). Codex GENUINE-FINDING
+  verdict (memo at
+  `results/adaptive_beta/tab_six_games/codex_reviews/AC_Trap_pre_sweep_review_2026-05-01T16-52-53Z.md`)
+  found no implementation bug across the operator, agent, schedule,
+  game, and three adversaries; mechanism is theoretically sound
+  (operator's `g_{β,γ}(r,v) → (1+γ)·max(r,v)` for `β → +∞` makes
+  `d_eff → 1+γ > 1` whenever `v > r`). Spec §5.4 reframed: AC-Trap
+  is a **falsifiability cell** for the diagnostic's scope; new §13.10
+  documents the negative-result honesty requirements for AC-Trap
+  reporting in M6/M7. Counter-intuitive finding logged at
+  `results/adaptive_beta/tab_six_games/counter_intuitive_findings.md`.
+  Each fold-in marked inline with `<!-- patch-2026-05-01-v7 -->`.
 - **2026-05-01 v6 — HALT 5 resolution: M6 wave 1 OQ1+OQ2+OQ3+OQ4
   closures.** OQ3 (AC-Trap adversary): wired to
   `finite_memory_regret_matching(memory_m=20)` in both

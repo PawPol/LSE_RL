@@ -1,0 +1,52 @@
+# total_runs: 9  (1 cell × 3 methods × 3 seeds)
+#
+# Phase VIII M6 wave 1.5 — AC-Trap β-pre-sweep (spec §10.2 patch §5.2).
+#
+# Scope
+# -----
+# Single cell (asymmetric_coordination + AC-Trap), 3-arm β probe
+# (β ∈ {-1, 0, +1}), 3 seeds × 200 episodes. Designed to surface the
+# payoff-dominance signal cheaply (~3 min wall-clock) BEFORE
+# committing to the full ~378-run Stage A dev pass and ~1820-run Stage 1
+# main pass. If the prediction
+#
+#     AUC(+1) > AUC(0) > AUC(-1)   with Cohen's d > 0.5 vs vanilla
+#
+# does NOT hold, the strongest single-cell paper claim is at risk and
+# we must understand why before continuing.
+#
+# Wiring (HALT 5 OQ3): AC-Trap → finite_memory_regret_matching(memory_m=20).
+# Regret matching tests payoff-dominance directly via counterfactual
+# regret over the (Stag, Hare) payoff structure; single-parameter
+# opponent avoids hyperparameter pilots.
+
+stage: pre_sweep_AC_Trap
+phase: VIII
+
+episodes: 200
+seeds: [0, 1, 2]
+
+methods:
+  - vanilla
+  - fixed_beta_-1
+  - fixed_beta_+1
+
+gamma: 0.95
+learning_rate: 0.1
+q_init: 0.0
+
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 100
+
+subcases:
+  - id: AC-Trap
+    game: asymmetric_coordination
+    game_kwargs:
+      horizon: 20
+    adversary: finite_memory_regret_matching
+    adversary_kwargs:
+      memory_m: 20
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
