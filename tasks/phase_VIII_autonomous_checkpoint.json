@@ -1,5 +1,10 @@
 {
-  "schema_version": "1.1.0",
+  "schema_version": "1.2.0",
+  "schema_changelog_1.2.0": "added spec_patch_2026_05_01_sha256 field for pre-M6 amendment lock (2026-05-01 session 3)",
+  "spec_patch_2026_05_01_path": "tasks/phase_VIII_spec_patches_2026-05-01.md",
+  "spec_patch_2026_05_01_sha256": "d0c3066a7d615051d04dd8374812547e402faa1a5e1b6e58a0af5b8a066cc051",
+  "spec_patch_2026_05_01_applied": true,
+  "spec_patch_2026_05_01_applied_commit": "c08126e0a081c0a5329be99f7f78080b3f582c76",
   "config_path": "tasks/phase_VIII_autonomous_harness.md",
   "config_sha256": "762ecee04b53a353908b3550440a82c22aab131cd78f1a19abee159938c2ecd9",
   "addendum_path": "tasks/phase_VIII_overnight_addendum.md",
@@ -10,7 +15,7 @@
   "session_2_pause_utc": "2026-05-01T01:36:00Z",
   "kickoff_git_head": "5d887df9d7b987c21bf37218816c347149e75854",
   "current_branch": "phase-VIII-tab-six-games-2026-04-30",
-  "current_git_head": "5a9c5b5c1957057c2e72aa6630a040a0eaacb865",
+  "current_git_head": "c08126e0a081c0a5329be99f7f78080b3f582c76",
   "current_milestone": "M6",
   "current_tier": 2,
   "milestone_status": {
@@ -55,7 +60,19 @@
     }
   ],
   "failure_log": [],
-  "halts": [],
+  "halts": [
+    {
+      "halt_utc": "2026-05-01T02:43:53Z",
+      "milestone": "M2 reopen close",
+      "trigger_class": "T11 (patch §11.7) — sign-prediction failure on advance-only delayed_chain",
+      "severity": "paper-critical / BLOCKER semantics per addendum §6 + patch §11.7",
+      "reason": "test_smoke_DC_Long50_AUC_ordering fails by construction: Discrete(1) advance-only chain has zero variance in returns regardless of beta, so AUC(+1)=AUC(0)=AUC(-1)=1000.0; patch §11.3 P-Sign prediction not testable in current implementation form",
+      "memo_path": "results/adaptive_beta/tab_six_games/halts/delayed_chain_smoke_prediction_failure_2026-05-01T02-43-53Z.md",
+      "head_at_halt": "47d5353dd4cf6c3d699fe294489ab4a1b8075f5a",
+      "remediation_options": ["(a) Q-convergence metric replacing AUC ordering", "(b) Discrete(1) → Discrete(2) with no-op", "(c) scope P-Sign to DC-Branching20 only"],
+      "orchestrator_recommendation": "(a) — research-design decision pending user direction"
+    }
+  ],
   "gates_acked": ["G0", "G1", "M1-close", "G2", "M2-close", "G3", "M3-close", "G4b", "M4-close", "M5-close"],
   "gates_pending": [],
   "next_session_resumption_plan": {
@@ -88,7 +105,7 @@
     }
   },
   "next_action": {
-    "type": "phone_home_session_pause",
-    "details": "Session 2 paused at M5 close. M6 (compute-heavy, est. 2-4h) deferred to next session. M0-M5 complete; gates_acked through M5-close; gates_pending empty."
+    "type": "halt",
+    "details": "HALT at M2 reopen close. T11 trigger: smoke prediction failure on DC-Long50 (Discrete(1) advance-only → AUC(+1)=AUC(0)=AUC(-1)=1000.0 by construction). Patch §11.3 P-Sign is not testable in current advance-only Discrete(1) form. Halt memo at results/adaptive_beta/tab_six_games/halts/delayed_chain_smoke_prediction_failure_2026-05-01T02-43-53Z.md enumerates 3 remediation options (a/b/c) for user research-design decision. After user decision, autonomous run can resume from M2 reopen close with the chosen remediation applied."
   }
 }
