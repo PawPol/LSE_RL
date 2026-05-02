@@ -1,0 +1,66 @@
+{
+  "adversary": "passive",
+  "adversary_kwargs": {},
+  "argv": [
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/adaptive_beta/tab_six_games/runners/run_phase_VIII_stage2_baselines.py",
+    "--config",
+    "experiments/adaptive_beta/tab_six_games/configs/stage2_baselines_headline_v2.yaml",
+    "--output-root",
+    "results/adaptive_beta/tab_six_games"
+  ],
+  "baseline_method": true,
+  "config": {
+    "hash": "4ce60df9fc3e6820",
+    "path": "experiments/adaptive_beta/tab_six_games/configs/stage2_baselines_headline_v2.yaml"
+  },
+  "diverged": false,
+  "end_utc": "2026-05-02T21:07:37Z",
+  "env": {
+    "canonical_sign": "+",
+    "n_actions": 1,
+    "n_states": 51
+  },
+  "episodes": 10000,
+  "epsilon_schedule_params": {
+    "decay_episodes": 5000,
+    "end": 0.05,
+    "start": 1.0
+  },
+  "game": "delayed_chain",
+  "game_kwargs": {
+    "subcase": "DC-Long50"
+  },
+  "gamma": 0.9,
+  "git_sha": "5d2e99ec23896c9f57bf595355a85218b087af45",
+  "headline_metric": "bellman_residual_beta_auc",
+  "host": "LIQs-Mac-Mini.local",
+  "learning_rate": 0.1,
+  "method": "restart_Q_learning",
+  "method_kwargs": {},
+  "metrics_arrays": [
+    "bellman_residual",
+    "divergence_event",
+    "epsilon",
+    "gamma",
+    "goal_reaches",
+    "length",
+    "nan_count",
+    "q_abs_max",
+    "return",
+    "trap_entries"
+  ],
+  "metrics_schema_version": "phaseVIII.metrics.v1",
+  "nan_count_total": 0,
+  "phase": "VIII",
+  "python_version": "3.13.5",
+  "q_init": 0.0,
+  "result_dir": "results/adaptive_beta/tab_six_games/raw/VIII/m7_1_stage2_baselines_v2_headline/delayed_chain/DC-Long50/gamma_0.90/restart_Q_learning/seed_8",
+  "run_id": "phaseVIII-delayed_chain-DC-Long50-restart_Q_learning-s0008-5803538f",
+  "schema_version": "phaseVIII.run.v1",
+  "seed": 8,
+  "stage": "m7_1_stage2_baselines_v2_headline",
+  "start_utc": "2026-05-02T21:07:33Z",
+  "subcase": "DC-Long50",
+  "t11_guard": "gap_based",
+  "wallclock_sec": 4.054667949676514
+}

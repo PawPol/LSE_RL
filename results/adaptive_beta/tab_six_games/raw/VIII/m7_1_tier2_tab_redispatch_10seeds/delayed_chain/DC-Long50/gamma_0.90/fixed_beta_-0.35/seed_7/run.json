@@ -1,0 +1,71 @@
+{
+  "adversary": "passive",
+  "adversary_kwargs": {},
+  "argv": [
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/adaptive_beta/tab_six_games/runners/run_phase_VIII_stage1_beta_sweep.py",
+    "--config",
+    "experiments/adaptive_beta/tab_six_games/configs/stage2_tier2_redispatch_10seeds.yaml",
+    "--output-root",
+    "results/adaptive_beta/tab_six_games"
+  ],
+  "config": {
+    "hash": "3125c80cf4f3593d",
+    "path": "experiments/adaptive_beta/tab_six_games/configs/stage2_tier2_redispatch_10seeds.yaml"
+  },
+  "diverged": false,
+  "end_utc": "2026-05-02T18:58:23Z",
+  "env": {
+    "canonical_sign": "+",
+    "n_actions": 1,
+    "n_states": 51
+  },
+  "episodes": 10000,
+  "epsilon_schedule_params": {
+    "decay_episodes": 5000,
+    "end": 0.05,
+    "start": 1.0
+  },
+  "game": "delayed_chain",
+  "game_kwargs": {
+    "subcase": "DC-Long50"
+  },
+  "gamma": 0.9,
+  "git_sha": "5d2e99ec23896c9f57bf595355a85218b087af45",
+  "headline_metric": "bellman_residual_beta_auc",
+  "host": "LIQs-Mac-Mini.local",
+  "learning_rate": 0.1,
+  "method": "fixed_beta_-0.35",
+  "metrics_arrays": [
+    "alignment_rate",
+    "bellman_residual",
+    "beta_raw",
+    "beta_used",
+    "divergence_event",
+    "effective_discount_mean",
+    "gamma",
+    "goal_reaches",
+    "length",
+    "nan_count",
+    "q_abs_max",
+    "return",
+    "trap_entries"
+  ],
+  "metrics_schema_version": "phaseVIII.metrics.v1",
+  "nan_count_total": 0,
+  "phase": "VIII",
+  "python_version": "3.13.5",
+  "q_init": 0.0,
+  "result_dir": "results/adaptive_beta/tab_six_games/raw/VIII/m7_1_tier2_tab_redispatch_10seeds/delayed_chain/DC-Long50/gamma_0.90/fixed_beta_-0.35/seed_7",
+  "run_id": "phaseVIII-delayed_chain-DC-Long50-fixed_beta_-0.35-s0007-2661b9d5",
+  "schedule_hparams": {
+    "beta0": 0.35
+  },
+  "schedule_method": "fixed_negative",
+  "schema_version": "phaseVIII.run.v1",
+  "seed": 7,
+  "stage": "m7_1_tier2_tab_redispatch_10seeds",
+  "start_utc": "2026-05-02T18:58:18Z",
+  "subcase": "DC-Long50",
+  "t11_guard": "gap_based",
+  "wallclock_sec": 4.808225870132446
+}

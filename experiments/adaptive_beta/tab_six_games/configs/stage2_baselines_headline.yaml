@@ -1,0 +1,94 @@
+# total_runs: 480  (4 cells × 3 baselines × 10 seeds × 4 γ)
+#
+# M7.1 Stage 2 — non-stationary Q-learning baselines headline
+# (paired-seed counterpart to stage2_tier2_redispatch_10seeds.yaml).
+#
+# Per user M7 directive (2026-05-02), the Stage 2 baseline suite must
+# be run at the SAME (cells × γ × seeds) grid as the TAB re-dispatch
+# so that every (cell, γ, seed) row of the M7.1 long CSV has TAB ↔
+# baseline pairing intact. Hyperparameters (q_init=0, α=0.1, ε-greedy
+# 1.0→0.05 over 5000 steps, 10k episodes, horizon=20 for matrix games,
+# DC-Long50 with passive adversary, γ ∈ {0.6, 0.8, 0.9, 0.95}) are
+# bit-identical to the TAB re-dispatch config; only the ``methods:``
+# block differs.
+#
+# Pairing contract: seed s in this run uses the same RNG seed as seed
+# s in stage2_tier2_redispatch_10seeds.yaml.
+#
+# Method-specific hyperparameters: each baseline class's documented
+# defaults apply (RestartQLearningAgent: restart_window=200,
+# restart_drop=0.5, divergence_threshold=1.0e6;
+# SlidingWindowQLearningAgent: window_size=10000;
+# TunedEpsilonGreedyQLearningAgent: ε-schedule honours the runner's
+# YAML schedule via the runner-built epsilon_schedule callable).
+#
+# To override per-method: add ``method_kwargs:`` (global) or
+# ``method_kwargs_per_method: {<method>: {...}}`` (per-method block) at
+# the top level. Both default to {} here.
+stage: m7_1_stage2_baselines_headline
+phase: VIII
+episodes: 10000
+seeds:
+- 0
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+- 7
+- 8
+- 9
+methods:
+- restart_Q_learning
+- sliding_window_Q_learning
+- tuned_epsilon_greedy_Q_learning
+gamma_grid:
+- 0.6
+- 0.8
+- 0.9
+- 0.95
+learning_rate: 0.1
+q_init: 0.0
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 5000
+subcases:
+- id: AC-Trap
+  game: asymmetric_coordination
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_regret_matching
+  adversary_kwargs:
+    memory_m: 20
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: RR-StationaryConvention
+  game: rules_of_road
+  game_kwargs:
+    horizon: 20
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.7
+    - 0.3
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: SH-FiniteMemoryRegret
+  game: shapley
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_regret_matching
+  adversary_kwargs:
+    memory_m: 20
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: DC-Long50
+  game: delayed_chain
+  game_kwargs:
+    subcase: DC-Long50
+  adversary: passive
+  adversary_kwargs: {}
+  headline_metric: bellman_residual_beta_auc
+  t11_guard: gap_based

@@ -1,0 +1,71 @@
+{
+  "adversary": "stationary_mixed",
+  "adversary_kwargs": {
+    "probs": [
+      0.7,
+      0.3
+    ]
+  },
+  "argv": [
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/adaptive_beta/tab_six_games/runners/run_phase_VIII_stage2_baselines.py",
+    "--config",
+    "experiments/adaptive_beta/tab_six_games/configs/stage2_baselines_headline.yaml",
+    "--output-root",
+    "results/adaptive_beta/tab_six_games"
+  ],
+  "baseline_method": true,
+  "config": {
+    "hash": "37c177efc75e875b",
+    "path": "experiments/adaptive_beta/tab_six_games/configs/stage2_baselines_headline.yaml"
+  },
+  "diverged": false,
+  "end_utc": "2026-05-02T18:57:42Z",
+  "env": {
+    "canonical_sign": null,
+    "n_actions": 2,
+    "n_states": 60
+  },
+  "episodes": 10000,
+  "epsilon_schedule_params": {
+    "decay_episodes": 5000,
+    "end": 0.05,
+    "start": 1.0
+  },
+  "game": "rules_of_road",
+  "game_kwargs": {
+    "horizon": 20
+  },
+  "gamma": 0.6,
+  "git_sha": "5d2e99ec23896c9f57bf595355a85218b087af45",
+  "headline_metric": "cumulative_return_auc",
+  "host": "LIQs-Mac-Mini.local",
+  "learning_rate": 0.1,
+  "method": "restart_Q_learning",
+  "method_kwargs": {},
+  "metrics_arrays": [
+    "bellman_residual",
+    "divergence_event",
+    "epsilon",
+    "gamma",
+    "goal_reaches",
+    "length",
+    "nan_count",
+    "q_abs_max",
+    "return",
+    "trap_entries"
+  ],
+  "metrics_schema_version": "phaseVIII.metrics.v1",
+  "nan_count_total": 0,
+  "phase": "VIII",
+  "python_version": "3.13.5",
+  "q_init": 0.0,
+  "result_dir": "results/adaptive_beta/tab_six_games/raw/VIII/m7_1_stage2_baselines_headline/rules_of_road/RR-StationaryConvention/gamma_0.60/restart_Q_learning/seed_5",
+  "run_id": "phaseVIII-rules_of_road-RR-StationaryConvention-restart_Q_learning-s0005-fc9e8dc6",
+  "schema_version": "phaseVIII.run.v1",
+  "seed": 5,
+  "stage": "m7_1_stage2_baselines_headline",
+  "start_utc": "2026-05-02T18:57:38Z",
+  "subcase": "RR-StationaryConvention",
+  "t11_guard": "cohens_d",
+  "wallclock_sec": 3.662302017211914
+}

@@ -1,0 +1,73 @@
+{
+  "adversary": "finite_memory_regret_matching",
+  "adversary_kwargs": {
+    "memory_m": 20
+  },
+  "argv": [
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/adaptive_beta/tab_six_games/runners/run_phase_VIII_stage1_beta_sweep.py",
+    "--config",
+    "experiments/adaptive_beta/tab_six_games/configs/stage2_tier2_redispatch_10seeds.yaml",
+    "--output-root",
+    "results/adaptive_beta/tab_six_games"
+  ],
+  "config": {
+    "hash": "3125c80cf4f3593d",
+    "path": "experiments/adaptive_beta/tab_six_games/configs/stage2_tier2_redispatch_10seeds.yaml"
+  },
+  "diverged": false,
+  "end_utc": "2026-05-02T15:57:53Z",
+  "env": {
+    "canonical_sign": null,
+    "n_actions": 3,
+    "n_states": 80
+  },
+  "episodes": 10000,
+  "epsilon_schedule_params": {
+    "decay_episodes": 5000,
+    "end": 0.05,
+    "start": 1.0
+  },
+  "game": "shapley",
+  "game_kwargs": {
+    "horizon": 20
+  },
+  "gamma": 0.6,
+  "git_sha": "5d2e99ec23896c9f57bf595355a85218b087af45",
+  "headline_metric": "cumulative_return_auc",
+  "host": "LIQs-Mac-Mini.local",
+  "learning_rate": 0.1,
+  "method": "fixed_beta_-1.35",
+  "metrics_arrays": [
+    "alignment_rate",
+    "bellman_residual",
+    "beta_raw",
+    "beta_used",
+    "divergence_event",
+    "effective_discount_mean",
+    "gamma",
+    "goal_reaches",
+    "length",
+    "nan_count",
+    "q_abs_max",
+    "return",
+    "trap_entries"
+  ],
+  "metrics_schema_version": "phaseVIII.metrics.v1",
+  "nan_count_total": 0,
+  "phase": "VIII",
+  "python_version": "3.13.5",
+  "q_init": 0.0,
+  "result_dir": "results/adaptive_beta/tab_six_games/raw/VIII/m7_1_tier2_tab_redispatch_10seeds/shapley/SH-FiniteMemoryRegret/gamma_0.60/fixed_beta_-1.35/seed_4",
+  "run_id": "phaseVIII-shapley-SH-FiniteMemoryRegret-fixed_beta_-1.35-s0004-2303aaa3",
+  "schedule_hparams": {
+    "beta0": 1.35
+  },
+  "schedule_method": "fixed_negative",
+  "schema_version": "phaseVIII.run.v1",
+  "seed": 4,
+  "stage": "m7_1_tier2_tab_redispatch_10seeds",
+  "start_utc": "2026-05-02T15:57:46Z",
+  "subcase": "SH-FiniteMemoryRegret",
+  "t11_guard": "cohens_d",
+  "wallclock_sec": 6.6041419506073
+}
