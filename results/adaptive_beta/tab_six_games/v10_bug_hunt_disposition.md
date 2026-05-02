@@ -70,14 +70,25 @@ outside V10.8 verification scope:
    feature pending this mechanism test; G6c explicitly says it
    should NOT be claimed as alignment-condition vindication until
    that follow-up runs.
-2. **V10.4 detector script fix** (G6c MAJOR §1, post-fix):
-   re-write the detector to read `metrics.npz::divergence_event.sum() > 0`
-   instead of `run.json::diverged`. Already applied in plotter
-   `scripts/figures/phase_VIII/v10_aggregate.py` for figure
-   generation; the standalone `experiments/adaptive_beta/tab_six_games/analysis/`
-   detector should be patched in lockstep.
+2. **V10.4 detector fix** (G6c MAJOR §1, post-fix): RESOLVED inline,
+   no standalone script to patch. The V10.4 "0 divergence fires"
+   claim was a one-off detector pass that did not read
+   `metrics.npz::divergence_event` per manifest row. The G6c
+   regeneration corrected the count to 524 fires. Fix lives in:
+   - `v10_summary.md` (amended at V10.5 commit `7e33dba2`)
+   - `scripts/figures/phase_VIII/v10_aggregate.py` line 133
+     (`divergence_event_sum=int(div.sum())` from `metrics.npz`)
+   - `scripts/figures/phase_VIII/v10_fig4_divergence_signature.py`
+     line 31 (`is_div = diverged | divergence_event_sum > 0`)
 
-Both are tracked in the full report's §8 open issues list.
+   `experiments/adaptive_beta/tab_six_games/analysis/aggregate.py`
+   has only a passive `diverged` schema column (default NaN);
+   it is NOT a detector and requires no patch. The runner at
+   `experiments/adaptive_beta/tab_six_games/runners/run_phase_VIII_stage1_beta_sweep.py:790`
+   already correctly emits `diverged: bool(ep_divergence_event.any())`.
+
+Item 1 is tracked in the full report's §8 open issues list.
+Item 2 is closed.
 
 ## Conclusion
 
