@@ -126,6 +126,64 @@ from raw `metrics.npz` artifacts disagrees with summary memos.**
     the v7 finding (q_abs_max grows past finite-horizon discounted-payoff
     bound in those arms) but the original V10.4 detector pass missed it.
 
+11. **M7.1 — TAB never wins matrix games against the right baseline.**
+    Stage 2 (M7.1, commit `722fd275`) re-dispatched Tier II at 10
+    paired seeds and added 3 Q-learning baselines (`restart`,
+    `sliding_window`, `tuned_epsilon_greedy`) on the same envelope
+    (3,360 + 480 = 3,840 runs). Paired-bootstrap CI₉₅ on AC-Trap, RR,
+    SH-FMR shows: **`tuned_epsilon_greedy_Q_learning` strictly beats
+    `best_fixed_*_TAB` at every γ on all three cells**, with Δ ≈
+    +11k–+44k AUC versus TAB's +26 to +320. Two orders of magnitude
+    larger. **`restart_Q_learning` beats TAB on AC-Trap by ~+250k
+    (~50% relative gain)** by escaping the trap via Q-reset. TAB's
+    only matrix-game CI-significant wins are RR all γ (β=−0.5) and
+    SH-FMR γ=0.80 (β=−0.5) — both at modest magnitudes. Source:
+    [`stage2_fixed_tab_vs_baselines.md`](stage2_fixed_tab_vs_baselines.md).
+
+12. **M7.2 — strategic-learning agents dominate Q-learning on
+    payoff-anchored cells; fail catastrophically on cycling cells.**
+    Stage 2 sub-milestone (M7.2, commit `7f411bf6`) added two agent
+    wrappers around the existing opponent classes:
+    `regret_matching_agent` and `smoothed_fictitious_play_agent`
+    (240 runs at 3 cells × 4 γ × 10 seeds, DC-Long50 dropped per
+    Codex P1 #2). On AC-Trap, **`regret_matching_agent` is the
+    strict best method at every γ (Δ ≈ +271k AUC, ~51% relative
+    gain)** — directly plays the payoff-dominant Stag/Stag. On RR,
+    same pattern (Δ ≈ +39k). On SH-FMR (where the env-adversary is
+    itself a regret-matcher), **strategic-learning agents fail
+    catastrophically (Δ ≈ −74k for RM, −56k for FP)** due to
+    Brown-Robinson cycling — exactly the spec §6.2 anticipated
+    pathology. **TAB's contribution is therefore not a matrix-game
+    win** — that goes to RM. Source:
+    [`stage2_strategic_agents_followup.md`](stage2_strategic_agents_followup.md).
+
+13. **M8 — sign-specialisation classifies the lattice cleanly.**
+    Stage 3 analysis (M8, commit `86ed2cf7`) classifies the 16
+    (cell, γ) tuples per spec §10.4 paired-CI definitions:
+    **1 G_+ (AC-Trap γ=0.60), 9 G_- (RR all 4 γ, SH-FMR γ=0.80,
+    DC-Long50 all 4 γ), 6 neither.** The G_+ population is narrow
+    (β=+0.10, exactly the V10.9 §8.4 follow-up cell). The G_-
+    population is structured: matrix games favor moderate β=−0.5;
+    DC-Long50 favors extreme β=−2.0. **AC-Trap γ ∈ {0.80, 0.90,
+    0.95} is vanilla-dominant** — both signs lose to vanilla,
+    explaining V10's narrow H1 confirmation. **M8 → M9 acceptance
+    gate MET** (≥1 G_+ and ≥1 G_-); primary M9 composite
+    candidate is (AC-Trap γ=0.60 + RR γ=0.60) — both at matched γ,
+    both matrix games, similar Δ-magnitude order. Source:
+    [`stage3_sign_specialization.md`](stage3_sign_specialization.md).
+
+14. **TAB's distinctive contribution is concentrated, not
+    universal.** Combining M7.1, M7.2, and M8: TAB's CI-significant
+    wins-vs-best-baseline reduce to **two regimes**: (a) DC-Long50
+    chain task at every γ (β=−2.0; no baseline beats vanilla
+    here — strategic agents have no value bootstrapping, restart
+    triggers don't fire, sliding-window's eviction never triggers
+    state resets); and (b) SH-FMR γ=0.80 with β=−0.5 (where
+    strategic-learning vs strategic-learning cycles
+    catastrophically and TAB's contraction tightening produces a
+    small +97.3 paired-CI gain). **The paper headline must
+    therefore be specialised, not universal.**
+
 ### 1.3 Refined headline narrative (post-V10.5 G6c)
 
 > **Selective Temporal Credit Assignment via TAB is a bootstrap-alignment
@@ -144,6 +202,37 @@ from raw `metrics.npz` artifacts disagrees with summary memos.**
 > directional in 53% of (γ, cell) tuples — far below pre-registered 80%
 > — so it is a **partial scope predictor**, not the universal indicator
 > the v7 narrative had positioned it as.
+
+### 1.3.1 Sharpened headline narrative (post-M7.1 / M7.2 / M8)
+
+The M7 stage adds non-stationary Q-learning baselines (`restart`,
+`sliding_window`, `tuned_epsilon_greedy`) and strategic-learning agent
+baselines (`regret_matching_agent`, `smoothed_fictitious_play_agent`)
+to the same paired-seed envelope. Result:
+
+> **TAB is NOT a universal Bellman-operator improvement.** On
+> stationary or payoff-anchored matrix games (AC-Trap,
+> RR-StationaryConvention) the strict-best baseline is
+> `regret_matching_agent` — directly playing the payoff-dominant
+> equilibrium without value bootstrapping at all (Δ ≈ +271k on
+> AC-Trap; +39k on RR). On Shapley with a regret-matching opponent,
+> RM-agent vs RM-opponent enters Brown-Robinson cycling and
+> catastrophically loses (Δ ≈ −74k); the only safe method there is
+> `tuned_epsilon_greedy_Q_learning`. **TAB's distinctive contribution
+> is concentrated in two regimes**: (a) the DC-Long50 deep-delayed-
+> credit chain, where no baseline ever beats vanilla and only
+> `fixed_beta_-2.0` does (Δ +795 to +2 837 across γ); (b) the
+> SH-FiniteMemoryRegret cycling cell at γ=0.80, where `fixed_beta_-0.5`
+> beats vanilla by +97.3 (CI strictly above 0) while strategic-
+> learning agents fail catastrophically. **The paper claim must be
+> reframed from "TAB selects payoff-dominant equilibria" (the v2
+> §5.4 hypothesis, refuted at v7) and "TAB is a bootstrap-alignment
+> mechanism" (the v10 reframing, partially supported at 53% scope)
+> to:** **TAB is a credit-assignment mechanism for value-
+> bootstrapping-required tasks (delayed reward) and learning-vs-
+> learning cycling regimes — domains where simple non-stationary
+> baselines either cannot fire their mechanism (DC-Long50) or fail
+> catastrophically by structural symmetry (RM-vs-RM)**.
 
 ### 1.4 Diagram-worthy figures (deferred to V10.6 plotter pass)
 
@@ -1366,6 +1455,98 @@ Phase VIII added 6 v3-v10 lessons to [`tasks/lessons.md`](../../tasks/lessons.md
   bifurcation widening / γ-stable diagnostic) |
 | Tier I / II / III | v10 dispatch tiers (canonical γ / γ × β heatmap /
   γ × cell coverage) |
+| M7.1 | Stage 2 fixed-TAB vs Q-learning baselines (3 360 + 480 runs) |
+| M7.2 | Stage 2 strategic-learning agent baselines (RM, FP; 240 runs) |
+| M8 | Stage 3 sign-specialisation analysis (analysis-only) |
+| G_+ / G_− | sign-specialised cells per spec §10.4 paired-CI definitions |
+
+---
+
+## 11. M7 + M8 milestone summary (Stage 2 + 3 close)
+
+This section consolidates the post-V10 milestones (M7.1, M7.2, M8)
+into a single reading. They were dispatched 2026-05-02 in response
+to user's spec-§10.3 directive ("resume the intended pipeline, not
+shortcut it") after V10 had completed only Stage 1.
+
+### 11.1 What was added
+
+| Stage | Milestone | Methods | Cells × γ × seeds | Runs | Commit |
+|---|---|---|---|---:|---|
+| 2 | **M7.1** TAB re-dispatch | 21 fixed-β + vanilla | 4 × 4 × 10 | 3 360 | `722fd275` |
+| 2 | **M7.1** Q-learning baselines v2 | restart, sliding_window, tuned_eps | 4 × 4 × 10 | 480 | `722fd275` |
+| 2 | **M7.2** Strategic-learning agents | regret_matching_agent, smoothed_fictitious_play_agent | 3 × 4 × 10 | 240 | `7f411bf6` |
+| 3 | **M8** Sign-specialisation analysis | (analysis-only) | 16 (cell, γ) | 0 | `86ed2cf7` |
+| — | gitignore + repo hygiene | — | — | 0 | `73795b45` |
+| **Total new compute** | | | | **3 840 + 240 = 4 080** | |
+
+### 11.2 v1 → v2 baseline-config supersession (M7.1)
+
+The first M7.1 baseline pass used the runner's default ε-schedule for
+`tuned_epsilon_greedy_Q_learning`, which neutralised the "tuned"
+mechanism (reduces to vanilla); also `sliding_window` default
+window=10 000 never triggered eviction at the configured horizon.
+Resulting v1 metrics.npz files were bit-identical to vanilla for
+every (cell, γ, seed). The fix: pass `epsilon_schedule=None` to the
+tuned class (uses class default 1.0 → 0.01 over 2000 episodes), and
+override `window_size=2000` for sliding-window via
+`method_kwargs_per_method`. v1 runs are retained on disk for
+traceability and EXCLUDED from the canonical aggregate.
+[Source: `stage2_fixed_tab_vs_baselines.md` §3.](stage2_fixed_tab_vs_baselines.md)
+
+### 11.3 Codex-review disposition across M7.1 + M7.2
+
+Three Codex reviews were run; all findings were addressed:
+
+| Review | Finding | Severity | Disposition |
+|---|---|---|---|
+| M7.2 working-tree | Quadratic history copy in FP wrapper | P1 | **Already fixed at build time** via empirical_opponent_policy fast-path (250× speedup). |
+| M7.2 working-tree | DC-Long50 false-best on bellman_residual | P1 | **Applied pre-dispatch.** DC-Long50 dropped from M7.2 strategic-agents config (3 cells × 4 γ instead of 4). |
+| M7.2 working-tree | payoff_agent ignores game_kwargs | P2 | Deferred — none of the 4 cells uses payoff-modifying kwargs; tracked for M7.3 / M9 expansion. |
+| Repo hygiene | 19 GB untracked artifacts could break push | P1 | **Applied** — `.gitignore` extended (commit `73795b45`). |
+
+### 11.4 Headline G_+ / G_− table (M8 output, with M7.2 baselines)
+
+| cell | γ=0.60 | γ=0.80 | γ=0.90 | γ=0.95 | strict-best baseline (γ=0.95) | TAB beats best baseline? |
+|---|---|---|---|---|---|---|
+| AC-Trap | **G_+** | neither | neither | neither | regret_matching_agent (+271k) | **No** (TAB +132 vs RM +271 019) |
+| RR-StationaryConvention | **G_−** | **G_−** | **G_−** | **G_−** | regret_matching_agent (+39 714) | **No** (TAB +320 vs RM +39 714) |
+| SH-FiniteMemoryRegret | neither | **G_−** | neither | neither | tuned_epsilon_greedy (+11 583) | **No** at γ=0.80 (TAB +97 vs tuned-ε +11 442); strategic agents fail (Δ ≈ −60k) |
+| DC-Long50 | **G_−** | **G_−** | **G_−** | **G_−** | (no baseline beats vanilla) | **Yes — TAB only** (Δ +795 → +2 837) |
+
+**TAB's exclusive wins**: DC-Long50 at every γ (β=−2.0, baselines
+all reduce to vanilla); SH-FMR γ=0.80 (β=−0.5, +97.3 paired-CI).
+
+**TAB never wins on AUC magnitude** vs the right baseline on
+AC-Trap, RR, or SH-FMR at γ ≠ 0.80.
+
+### 11.5 Acceptance status
+
+- M7.1 → M7.2 / M8 promotion: ✓ (per
+  [`stage2_fixed_tab_vs_baselines.md` §9](stage2_fixed_tab_vs_baselines.md))
+- M7.2 → M8 / M9 promotion: ✓ (per
+  [`stage2_strategic_agents_followup.md` §7](stage2_strategic_agents_followup.md))
+- M8 → M9 promotion: ✓ — ≥ 1 G_+ AND ≥ 1 G_− candidate (per
+  [`stage3_sign_specialization.md` §3](stage3_sign_specialization.md))
+- M9 sign-switching composite dispatch: **PENDING USER SIGN-OFF**
+  per spec §2 rule 13.
+
+### 11.6 Open work tracked for M9 / M7.3
+
+1. **M9 dispatch (user-gated)** — primary composite candidate is
+   AC-Trap γ=0.60 (G_+, β=+0.10) ⊕ RR γ=0.60 (G_−, β=−0.5) under
+   exogenous dwell D ∈ {100, 250, 500, 1000} per spec §10.5.
+2. **M7.3 — Codex P2 #3 fix** — patch `_resolve_payoff_agent` to
+   honour `game_kwargs`; needed before any dispatch on
+   `soda_uncertain` or `rules_of_road` with `payoff_bias`.
+3. **M7.3 — 6-game expansion** — 26 V10 Tier I cells lack baseline
+   coverage; spec §10.3 calls for "all six games". Out of M7.1/M7.2
+   scope by design.
+4. **DC-Long50 strategic-agent diagnostic** — confirmed as
+   expected-failure in smoke; not run at scale because the headline
+   metric would falsely rank them best (Codex P1 #2). If the paper
+   wants to document the diagnostic explicitly, run it under a
+   different metric (e.g. mean return = 1.0 always — uninformative).
 
 ---
 
