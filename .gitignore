@@ -108,6 +108,21 @@ mushroom-rl-dev/docs/build/
 # figures/**/*.png
 # figures/**/*.pdf
 
+# ---------- Phase VIII oversize artifacts (Codex P1, 2026-05-02) ----------
+# Pre-M6 stage1 long CSVs are ~3.9 GB each (10k episodes × thousands of
+# runs). They're regeneratable from raw/ via the aggregator. GitHub
+# rejects >100 MB; clone/CI become impractical even at smaller sizes.
+# Ignore them; allow the curated M7/M8 outputs.
+results/adaptive_beta/tab_six_games/processed/stage1_*.csv
+results/adaptive_beta/tab_six_games/processed/figures_only_*.csv
+# Pre-M7 raw run trees that were never committed; safety net so
+# `git add .` doesn't accidentally stage tens of thousands of run.json
+# files (~19 GB total). Already-committed M7.x raw trees stay tracked.
+results/adaptive_beta/tab_six_games/raw/VIII/figures_only_*/
+
+# Reference PDF, not source
+docs/Strategic Learning and Its Limits.pdf
+
 # ---------- Secrets ----------
 .env
 *.pem
