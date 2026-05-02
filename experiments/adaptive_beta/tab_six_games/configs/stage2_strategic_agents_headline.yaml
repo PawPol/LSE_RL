@@ -1,0 +1,104 @@
+# total_runs: 240  (3 cells × 2 strategic-learning agents × 10 seeds × 4 γ)
+# (DC-Long50 dropped post-Codex P1 #2 — see subcases comment below.)
+#
+# M7.2 Stage 2 — strategic-learning agent baselines (spec §6.3
+# patch-2026-05-01 §3, lines 744–770).
+#
+# These two methods wrap the existing regret-matching and smoothed
+# fictitious-play OPPONENT classes as agent-side baselines. They
+# pre-empt the highest-probability reviewer attack ("weak baselines")
+# for the strategic-learning paper: regret matching and smoothed FP are
+# the canonical strategic-learning agents in the literature.
+#
+# Envelope is identical to ``stage2_baselines_headline_v2.yaml``
+# (M7.1 v2): same 4 cells, same 4 γ values, same 10 seeds, same 10k
+# episodes, same ε / α / q_init. Pairing contract: seed s here uses
+# the same RNG seed as seed s in stage2_baselines_headline_v2.yaml AND
+# stage2_tier2_redispatch_10seeds.yaml. ε is fed for interface parity
+# (the wrapper accepts but ignores it; the runner records ε == 0 for
+# these methods, matching spec §6.3 patch §3).
+#
+# DC-Long50 expected-failure note (spec §10.3): these agents have no
+# value bootstrapping and thus cannot solve the long-horizon delayed-
+# reward chain. The wrapper's documented fallback is uniform-random
+# action selection, which yields a non-NaN AUC the aggregator can use
+# (the runner does NOT raise on this cell; the failure mode is the
+# point — it documents necessity of the TAB approach).
+stage: m7_2_stage2_strategic_agents_headline
+phase: VIII
+episodes: 10000
+seeds:
+- 0
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+- 7
+- 8
+- 9
+methods:
+- regret_matching_agent
+- smoothed_fictitious_play_agent
+# Per-method overrides — both wrappers expose a small kwarg surface.
+# Defaults (see strategic_learning_agents.py): RM mode=full_info,
+# value_lr=0.05; FP temperature=0.2, memory_m=None.
+method_kwargs_per_method:
+  regret_matching_agent:
+    mode: full_info
+    value_lr: 0.05
+  smoothed_fictitious_play_agent:
+    temperature: 0.2
+    memory_m: 100
+gamma_grid:
+- 0.6
+- 0.8
+- 0.9
+- 0.95
+learning_rate: 0.1
+q_init: 0.0
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 5000
+subcases:
+- id: AC-Trap
+  game: asymmetric_coordination
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_regret_matching
+  adversary_kwargs:
+    memory_m: 20
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: RR-StationaryConvention
+  game: rules_of_road
+  game_kwargs:
+    horizon: 20
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.7
+    - 0.3
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: SH-FiniteMemoryRegret
+  game: shapley
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_regret_matching
+  adversary_kwargs:
+    memory_m: 20
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+# DC-Long50 is intentionally excluded for strategic-learning agents.
+# Per Codex review (2026-05-02 P1 #2) and spec §10.3:
+#   "Strategic-learning agents on DC-Long50 are expected to fail
+#    (no value bootstrapping); this is a diagnostic feature."
+# These agents emit bellman_residual == 0 by construction, so DC-Long50's
+# headline metric (-log(bellman_residual) AUC) would falsely rank them
+# best. The diagnostic value is documented in spec §10.3; including
+# DC-Long50 in this dispatch would create a misleading measurement
+# artefact. Total runs: 3 cells × 4 γ × 10 seeds × 2 methods = 240
+# (not 320 as initially scoped).

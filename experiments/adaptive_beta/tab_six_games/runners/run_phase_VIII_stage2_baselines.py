@@ -41,9 +41,16 @@ The Phase VIII Stage 2 method names map 1:1 to the baseline classes:
 * ``sliding_window_Q_learning`` → :class:`SlidingWindowQLearningAgent`.
 * ``tuned_epsilon_greedy_Q_learning`` →
   :class:`TunedEpsilonGreedyQLearningAgent`.
+* ``regret_matching_agent`` → :class:`RegretMatchingAgent` (M7.2,
+  spec §6.3 patch §3 — strategic-learning agent baseline).
+* ``smoothed_fictitious_play_agent`` →
+  :class:`SmoothedFictitiousPlayAgent` (M7.2, spec §6.3 patch §3).
 
 The mapping is performed exclusively by :func:`_build_baseline_agent` so
-the rest of the runner is method-agnostic.
+the rest of the runner is method-agnostic. The strategic-learning
+baselines additionally consume two env-derived inputs (``payoff_agent``
+matrix, ``env.history`` provider) which are resolved per-cell in
+:func:`run_one_cell` and forwarded through ``_build_baseline_agent``.
 
 Metrics.npz schema (Stage 2 baselines)
 --------------------------------------
@@ -116,6 +123,10 @@ from experiments.adaptive_beta.baselines import (  # noqa: E402
     SlidingWindowQLearningAgent,
     TunedEpsilonGreedyQLearningAgent,
 )
+from experiments.adaptive_beta.strategic_games.agents import (  # noqa: E402
+    RegretMatchingAgent,
+    SmoothedFictitiousPlayAgent,
+)
 from experiments.adaptive_beta.tab_six_games.manifests import (  # noqa: E402
     Phase8RunRoster,
 )
@@ -168,6 +179,11 @@ SUPPORTED_BASELINE_METHODS: Tuple[str, ...] = (
     "restart_Q_learning",
     "sliding_window_Q_learning",
     "tuned_epsilon_greedy_Q_learning",
+    # M7.2 (spec §6.3 patch-2026-05-01 §3): strategic-learning agent
+    # baselines wrapping the existing regret-matching / smoothed FP
+    # opponent classes in the agent interface.
+    "regret_matching_agent",
+    "smoothed_fictitious_play_agent",
 )
 
 
@@ -209,6 +225,9 @@ def _build_baseline_agent(
     rng: np.random.Generator,
     q_init: float,
     method_kwargs: Mapping[str, Any],
+    payoff_agent: Optional[np.ndarray] = None,
+    env_history_provider: Optional[Any] = None,
+    seed: Optional[int] = None,
 ) -> Any:
     """Construct the baseline agent object for ``method_id``.
 
@@ -232,6 +251,20 @@ def _build_baseline_agent(
       is applied by the class default unless ``epsilon_schedule`` is
       supplied (we always pass the runner's ε-schedule built from the
       YAML so ε is paired across methods at fixed seed).
+    * ``regret_matching_agent`` (M7.2) → :class:`RegretMatchingAgent`.
+      Honours kwargs: ``mode`` (``"full_info"`` / ``"realized_payoff"``),
+      ``value_lr``. Requires the env-derived ``payoff_agent`` matrix
+      (resolved per-cell in :func:`run_one_cell`); ``None`` triggers
+      the documented uniform-random fallback (e.g. ``delayed_chain``).
+    * ``smoothed_fictitious_play_agent`` (M7.2) →
+      :class:`SmoothedFictitiousPlayAgent`. Honours kwargs:
+      ``temperature``, ``memory_m``. Same env-derived inputs as the
+      regret-matching wrapper.
+
+    The ``payoff_agent`` / ``env_history_provider`` / ``seed`` kwargs
+    are consumed only by the M7.2 strategic-learning agent baselines.
+    The three M7.1 Q-learning baselines ignore them and remain
+    bit-identical to their pre-M7.2 dispatch path.
 
     Unknown ``method_id`` raises :class:`ValueError` so config typos
     fail loudly.
@@ -288,6 +321,48 @@ def _build_baseline_agent(
             q_init=q_init,
         )
 
+    # ------------------------------------------------------------------
+    # M7.2 (spec §6.3 patch-2026-05-01 §3): strategic-learning agent
+    # baselines. The wrapper classes consume a payoff_agent matrix and
+    # an env.history accessor (see RegretMatchingAgent /
+    # SmoothedFictitiousPlayAgent docstring). When the cell has no
+    # matrix-game payoff (e.g. delayed_chain), payoff_agent is None
+    # and the wrapper falls back to a uniform-random policy by design
+    # (spec §10.3: "expected to fail; diagnostic feature").
+    # ------------------------------------------------------------------
+    if name == "regret_matching_agent":
+        return RegretMatchingAgent(
+            n_states=n_states,
+            n_actions=n_actions,
+            gamma=gamma,
+            learning_rate=learning_rate,
+            epsilon_schedule=epsilon_schedule,
+            rng=rng,
+            q_init=q_init,
+            payoff_agent=payoff_agent,
+            env_history_provider=env_history_provider,
+            seed=seed,
+            **{k: v for k, v in extra.items() if k in {"mode", "value_lr"}},
+        )
+    if name == "smoothed_fictitious_play_agent":
+        return SmoothedFictitiousPlayAgent(
+            n_states=n_states,
+            n_actions=n_actions,
+            gamma=gamma,
+            learning_rate=learning_rate,
+            epsilon_schedule=epsilon_schedule,
+            rng=rng,
+            q_init=q_init,
+            payoff_agent=payoff_agent,
+            env_history_provider=env_history_provider,
+            seed=seed,
+            **{
+                k: v
+                for k, v in extra.items()
+                if k in {"temperature", "memory_m"}
+            },
+        )
+
     raise ValueError(
         f"unknown Phase VIII Stage-2 baseline method_id={method_id!r}; "
         f"expected one of {sorted(SUPPORTED_BASELINE_METHODS)}"
@@ -334,6 +409,32 @@ def _resolve_payoff_opponent(
     if pa is not None:
         return -np.asarray(pa, dtype=np.float64)
     return None
+
+
+def _resolve_payoff_agent(
+    game_name: str,
+) -> Optional[np.ndarray]:
+    """Best-effort lookup of the AGENT-side payoff matrix.
+
+    Used by the M7.2 strategic-learning agent baselines (spec §6.3
+    patch §3): the wrapper agents need the agent-side payoff (not
+    opponent) because the wrapper plays as the agent and best-responds
+    over its own action space against the env adversary.
+
+    Returns ``None`` for games that do not expose ``payoff_agent``
+    (notably ``delayed_chain``, where the wrapper's documented
+    fallback is uniform-random action selection — see
+    ``RegretMatchingAgent`` / ``SmoothedFictitiousPlayAgent`` module
+    docstring "DC-Long50 (and other non-matrix games) handling").
+    """
+    try:
+        mod = _import_game_module(game_name)
+    except ImportError:
+        return None
+    pa = getattr(mod, "payoff_agent", None)
+    if pa is None:
+        return None
+    return np.asarray(pa, dtype=np.float64)
 
 
 def _build_adversary(
@@ -625,6 +726,17 @@ def run_one_cell(
         )
 
         agent_rng = np.random.default_rng(int(seed))
+
+        # M7.2: env-derived inputs for the strategic-learning agent
+        # baselines (regret_matching_agent /
+        # smoothed_fictitious_play_agent). The Q-learning baselines
+        # ignore these — they keep the same dispatch path as M7.1.
+        payoff_agent_matrix = _resolve_payoff_agent(subcase.game)
+        # ``env.history`` is a property; wrap as a provider so the
+        # wrapper agent does not hold a hard env reference (also
+        # protects against test fixtures that swap envs mid-run).
+        env_history_provider = (lambda env=env: env.history)
+
         agent = _build_baseline_agent(
             method_id=method,
             n_states=n_states,
@@ -635,6 +747,9 @@ def run_one_cell(
             rng=agent_rng,
             q_init=q_init,
             method_kwargs=method_kwargs,
+            payoff_agent=payoff_agent_matrix,
+            env_history_provider=env_history_provider,
+            seed=int(seed),
         )
 
         # Per-episode buffers (subset of Phase VIII columns; spec §6.3).
@@ -698,8 +813,14 @@ def run_one_cell(
             # ε at episode-end mirrors the value the agent acted under
             # for action selection across the episode (the schedule is
             # episode-indexed; per-step value is constant within an
-            # episode).
-            ep_epsilon[e] = float(eps_fn(e))
+            # episode). M7.2: strategic-learning agent baselines do
+            # NOT use ε-greedy (their stochasticity is intrinsic to
+            # the regret-matching / logit-FP policy); spec §6.3 patch
+            # §3 mandates ε == 0 in their per-episode metrics.
+            if getattr(agent, "is_strategic_learning_agent", False):
+                ep_epsilon[e] = 0.0
+            else:
+                ep_epsilon[e] = float(eps_fn(e))
             ep_bellman_residual[e] = (
                 sum_abs_td_error / n_steps_for_residual
                 if n_steps_for_residual > 0

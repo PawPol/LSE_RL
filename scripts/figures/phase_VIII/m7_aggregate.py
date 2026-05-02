@@ -20,6 +20,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[3]
 TAB_ROOT = ROOT / "results/adaptive_beta/tab_six_games/raw/VIII/m7_1_tier2_tab_redispatch_10seeds"
 BL_ROOT = ROOT / "results/adaptive_beta/tab_six_games/raw/VIII/m7_1_stage2_baselines_v2_headline"
+SA_ROOT = ROOT / "results/adaptive_beta/tab_six_games/raw/VIII/m7_2_stage2_strategic_agents_headline"
 OUT_DIR = ROOT / "results/adaptive_beta/tab_six_games/processed"
 OUT_DIR.mkdir(exist_ok=True, parents=True)
 
@@ -103,11 +104,16 @@ def main():
     print("[M7.1] aggregating TAB re-dispatch ...")
     df_tab = aggregate(TAB_ROOT, is_baseline=False)
     print(f"   TAB rows: {len(df_tab)}")
-    print("[M7.1] aggregating baselines ...")
+    print("[M7.1] aggregating Q-learning baselines ...")
     df_bl = aggregate(BL_ROOT, is_baseline=True)
     print(f"   BL  rows: {len(df_bl)}")
+    df_sa = pd.DataFrame()
+    if SA_ROOT.exists():
+        print("[M7.2] aggregating strategic-learning agents ...")
+        df_sa = aggregate(SA_ROOT, is_baseline=True)
+        print(f"   SA  rows: {len(df_sa)}")
 
-    long = pd.concat([df_tab, df_bl], ignore_index=True)
+    long = pd.concat([df_tab, df_bl, df_sa], ignore_index=True)
     long_path = OUT_DIR / "m7_1_long.csv"
     long.to_csv(long_path, index=False)
     print(f"   wrote {long_path}  ({len(long)} rows)")
@@ -125,6 +131,8 @@ def main():
         "restart_Q_learning",
         "sliding_window_Q_learning",
         "tuned_epsilon_greedy_Q_learning",
+        "regret_matching_agent",
+        "smoothed_fictitious_play_agent",
     ]
     for cell in CELLS:
         for gamma in GAMMAS:
