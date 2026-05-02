@@ -1,0 +1,71 @@
+{
+  "adversary": "finite_memory_regret_matching",
+  "adversary_kwargs": {
+    "memory_m": 20
+  },
+  "argv": [
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/adaptive_beta/tab_six_games/runners/run_phase_VIII_stage1_beta_sweep.py",
+    "--config",
+    "experiments/adaptive_beta/tab_six_games/configs/AC_Trap_mechanism_followup.yaml"
+  ],
+  "config": {
+    "hash": "bef1e97e1b9a209b",
+    "path": "experiments/adaptive_beta/tab_six_games/configs/AC_Trap_mechanism_followup.yaml"
+  },
+  "diverged": false,
+  "end_utc": "2026-05-02T14:09:03Z",
+  "env": {
+    "canonical_sign": "+",
+    "n_actions": 2,
+    "n_states": 60
+  },
+  "episodes": 10000,
+  "epsilon_schedule_params": {
+    "decay_episodes": 5000,
+    "end": 0.05,
+    "start": 1.0
+  },
+  "game": "asymmetric_coordination",
+  "game_kwargs": {
+    "horizon": 20
+  },
+  "gamma": 0.6,
+  "git_sha": "5acf7edb67829c5b3e4e00ac0ef63d31ed30acc2",
+  "headline_metric": "cumulative_return_auc",
+  "host": "LIQs-Mac-Mini.local",
+  "learning_rate": 0.1,
+  "method": "fixed_beta_+0.2",
+  "metrics_arrays": [
+    "alignment_rate",
+    "bellman_residual",
+    "beta_raw",
+    "beta_used",
+    "divergence_event",
+    "effective_discount_mean",
+    "gamma",
+    "goal_reaches",
+    "length",
+    "nan_count",
+    "q_abs_max",
+    "return",
+    "trap_entries"
+  ],
+  "metrics_schema_version": "phaseVIII.metrics.v1",
+  "nan_count_total": 0,
+  "phase": "VIII",
+  "python_version": "3.13.5",
+  "q_init": 0.0,
+  "result_dir": "results/adaptive_beta/tab_six_games/raw/VIII/AC_Trap_mechanism_followup/asymmetric_coordination/AC-Trap/fixed_beta_+0.2/seed_2",
+  "run_id": "phaseVIII-asymmetric_coordination-AC-Trap-fixed_beta_+0.2-s0002-3dc1709a",
+  "schedule_hparams": {
+    "beta0": 0.2
+  },
+  "schedule_method": "fixed_positive",
+  "schema_version": "phaseVIII.run.v1",
+  "seed": 2,
+  "stage": "AC_Trap_mechanism_followup",
+  "start_utc": "2026-05-02T14:08:56Z",
+  "subcase": "AC-Trap",
+  "t11_guard": "cohens_d",
+  "wallclock_sec": 6.538562059402466
+}

@@ -1,0 +1,51 @@
+# total_runs: 40  (1 cell × 4 methods × 10 seeds)
+#
+# AC-Trap β=+0.10 mechanism follow-up (G6c §3 / full report §8.4).
+#
+# G6c V10.5 confirmed H1 narrowly: AC-Trap at γ=0.60, β=+0.10 has
+# paired-bootstrap CI strictly above 0 over 5 Tier II seeds (CI =
+# [+45.20, +212.00] AUC advantage over vanilla). However, the
+# winning arm has end-of-training alignment_rate ≈ 0.05, so the
+# sign flip is NOT alignment-mechanism vindication.
+#
+# This follow-up:
+#   * Expands seed count 5 → 10 to test whether the AUC gain
+#     survives.
+#   * Logs full per-episode metrics.npz so per-step trajectories
+#     of return/alignment_rate/effective_discount_mean can be
+#     compared across the four β arms.
+#
+# Cells: AC-Trap at γ=0.60 only.
+# Methods: vanilla, β=+0.05, β=+0.10, β=+0.20.
+
+stage: AC_Trap_mechanism_followup
+phase: VIII
+
+episodes: 10000
+seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+methods:
+  - vanilla
+  - fixed_beta_+0.05
+  - fixed_beta_+0.1
+  - fixed_beta_+0.2
+
+gamma: 0.60
+learning_rate: 0.1
+q_init: 0.0
+
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 5000
+
+subcases:
+  - id: AC-Trap
+    game: asymmetric_coordination
+    game_kwargs:
+      horizon: 20
+    adversary: finite_memory_regret_matching
+    adversary_kwargs:
+      memory_m: 20
+    headline_metric: cumulative_return_auc
+    t11_guard: cohens_d
