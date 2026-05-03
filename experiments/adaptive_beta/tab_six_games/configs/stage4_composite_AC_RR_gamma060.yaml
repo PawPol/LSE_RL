@@ -1,0 +1,70 @@
+# Phase VIII Stage 4 — sign-switching composite (M9 main pass).
+#
+# Spec authority
+# --------------
+# - docs/specs/phase_VIII_tab_six_games.md §10.5 (composite + oracle gate).
+# - tasks/M9_plan.md (canonical scope).
+#
+# Composite design (per M9 plan §1):
+#   G_+ component: AC-Trap × finite_memory_regret_matching at γ=0.60
+#                  (M8 G_+ classification confirmed at γ=0.60; β=+0.10
+#                  beats vanilla there).
+#   G_- component: RR-StationaryConvention × stationary_mixed at γ=0.60
+#                  (M8 G_- classification; β=−0.5 beats vanilla there).
+#   Switching:     exogenous dwell D ∈ {100, 250, 500, 1000} episodes.
+#
+# Total runs: 6 methods × 4 dwell × 10 seeds = 240 runs.
+# (M9 plan said 280 = 7 × 4 × 10; the 7th method `best_fixed_beta_grid`
+# is REPORTING-ONLY — derived offline from M7.1's long CSV — so the
+# dispatch envelope is 6 × 4 × 10 = 240. The reporting-only method is
+# spliced in by the aggregator, not by this runner.)
+
+stage: m9_stage4_composite_AC_RR_gamma060
+phase: VIII
+episodes: 10000
+seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+methods:
+  - vanilla
+  - fixed_positive_TAB
+  - fixed_negative_TAB
+  - oracle_beta
+  - hand_adaptive_beta
+  - contraction_UCB_beta
+
+method_kwargs_per_method:
+  fixed_positive_TAB:
+    beta0: 0.10
+  fixed_negative_TAB:
+    beta0: 0.50
+  oracle_beta:
+    beta_g_plus: 0.10
+    beta_g_minus: -0.50
+
+learning_rate: 0.1
+q_init: 0.0
+
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 5000
+
+composite:
+  type: sign_switching
+  g_plus:
+    game: asymmetric_coordination
+    game_kwargs:
+      horizon: 20
+    adversary: finite_memory_regret_matching
+    adversary_kwargs:
+      memory_m: 20
+    gamma: 0.60
+  g_minus:
+    game: rules_of_road
+    game_kwargs:
+      horizon: 20
+    adversary: stationary
+    adversary_kwargs:
+      probs: [0.7, 0.3]
+    gamma: 0.60
+  dwell_grid: [100, 250, 500, 1000]

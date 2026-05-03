@@ -184,6 +184,23 @@ from raw `metrics.npz` artifacts disagrees with summary memos.**
     small +97.3 paired-CI gain). **The paper headline must
     therefore be specialised, not universal.**
 
+15. **M9 — oracle-validated composite FAILED.** The spec-mandated
+    Stage 4 sign-switching composite (AC-Trap γ=0.60 ⊕ RR γ=0.60,
+    the unique G_+ ⊕ G_− pair in the M8 lattice) does NOT satisfy
+    the oracle-dominance gate at any tested dwell. At dwell=250
+    the oracle β loses to fixed_negative_TAB by Δ=−5 192 AUC
+    (CI [−8 099, −2 421]); at dwell=1000 the gap shrinks but
+    still strictly favours fixed_negative (Δ=−645, CI [−1 177,
+    −60]). Mechanism: shared Q-table contamination across regimes
+    means fixed_negative_TAB beats every alternative on BOTH
+    regimes, including the supposedly G_+ AC-Trap regime where
+    M8's standalone classification said β=+0.10 wins. **Per spec
+    §10.5 this halts adaptive-β experimentation.** The narrow
+    Goldilocks G_+ band identified in V10.9 §8.4 (early-episode
+    alignment transient) does not survive composite parameter
+    transfer. Source:
+    [`oracle_composite_failed.md`](oracle_composite_failed.md).
+
 ### 1.3 Refined headline narrative (post-V10.5 G6c)
 
 > **Selective Temporal Credit Assignment via TAB is a bootstrap-alignment
