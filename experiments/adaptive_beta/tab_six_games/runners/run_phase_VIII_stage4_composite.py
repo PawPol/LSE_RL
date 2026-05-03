@@ -98,6 +98,7 @@ from experiments.adaptive_beta.schedules import (  # noqa: E402
     METHOD_FIXED_POSITIVE,
     METHOD_HAND_ADAPTIVE_BETA,
     METHOD_ORACLE_BETA,
+    METHOD_RETURN_UCB_BETA,
     METHOD_VANILLA,
     build_schedule,
 )
@@ -148,6 +149,8 @@ REQUIRED_METRICS: Tuple[str, ...] = (
 
 #: Phase VIII method ID set understood by this runner. Any method
 #: outside this set raises ``ValueError`` at config-parse time.
+#: ``return_UCB_beta`` was added in M10 build (Phase B / overnight UCB
+#: composite dispatch); existing branches are untouched.
 M9_METHOD_IDS: frozenset = frozenset({
     "vanilla",
     "fixed_positive_TAB",
@@ -155,6 +158,7 @@ M9_METHOD_IDS: frozenset = frozenset({
     "oracle_beta",
     "hand_adaptive_beta",
     "contraction_UCB_beta",
+    "return_UCB_beta",
 })
 
 
@@ -498,7 +502,24 @@ def _resolve_method(
         return METHOD_HAND_ADAPTIVE_BETA, {}
     if name == "contraction_UCB_beta":
         # Defaults from spec §6.5: warm-start over 21 arms, c=1.0.
-        return METHOD_CONTRACTION_UCB_BETA, {}
+        # ``method_kwargs`` may override ``ucb_c``,
+        # ``epsilon_floor``, ``residual_smoothing_window``, or
+        # ``arm_grid`` (see schedules._ALLOWED_KEYS).
+        hp: Dict[str, Any] = {}
+        for k in ("ucb_c", "epsilon_floor", "residual_smoothing_window", "arm_grid"):
+            if k in method_kwargs:
+                hp[k] = method_kwargs[k]
+        return METHOD_CONTRACTION_UCB_BETA, hp
+    if name == "return_UCB_beta":
+        # Defaults from spec §6.5: warm-start over 21 arms, c=√2 (UCB1
+        # canonical against the standardised return). Kwargs mirror
+        # the contraction branch but ReturnUCB ignores
+        # residual_smoothing_window.
+        hp = {}
+        for k in ("ucb_c", "epsilon_floor", "arm_grid"):
+            if k in method_kwargs:
+                hp[k] = method_kwargs[k]
+        return METHOD_RETURN_UCB_BETA, hp
     raise ValueError(f"unhandled method_id={method_id!r}")  # pragma: no cover
 
 

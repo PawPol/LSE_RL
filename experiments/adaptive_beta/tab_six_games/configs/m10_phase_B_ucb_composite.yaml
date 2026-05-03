@@ -1,0 +1,55 @@
+# total_runs: 80  (1 composite × 4 dwells × 10 seeds × 2 UCB methods)
+# Phase B — UCB on M9 composite (falsifiability test).
+# Overrides spec §10.5 halt; tests whether UCB recovers what oracle
+# couldn't on the (AC-Trap γ=0.60, β=+0.10) ⊕ (RR γ=0.60, β=-0.5)
+# composite. M9 oracle FAILED (Δ=-645 to -5192 vs fixed_negative);
+# UCB might find a different arm.
+stage: m10_phase_B_ucb_composite_AC_RR_gamma060
+phase: VIII
+episodes: 10000
+seeds:
+- 0
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+- 7
+- 8
+- 9
+methods:
+- contraction_UCB_beta
+- return_UCB_beta
+method_kwargs_per_method: {}
+learning_rate: 0.1
+q_init: 0.0
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 5000
+composite:
+  type: sign_switching
+  g_plus:
+    game: asymmetric_coordination
+    game_kwargs:
+      horizon: 20
+    adversary: finite_memory_regret_matching
+    adversary_kwargs:
+      memory_m: 20
+    gamma: 0.6
+  g_minus:
+    game: rules_of_road
+    game_kwargs:
+      horizon: 20
+    adversary: stationary
+    adversary_kwargs:
+      probs:
+      - 0.7
+      - 0.3
+    gamma: 0.6
+  dwell_grid:
+  - 100
+  - 250
+  - 500
+  - 1000

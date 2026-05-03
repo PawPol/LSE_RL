@@ -1,0 +1,37 @@
+# M10 Stage 5 smoke — 1 cell × 1 γ × 1 seed × 100 episodes × 5 methods.
+# Validates the standalone adaptive-method runner end-to-end before the
+# overnight UCB dispatch (30 cells × 4 γ × 10 seeds).
+#
+# ``oracle_beta`` is intentionally excluded — it raises on standalone
+# (no regime label). A separate smoke (``--methods oracle_beta``) is
+# expected to fail at config-parse time; documented in the build report.
+stage: m10_smoke
+phase: VIII
+episodes: 100
+seeds:
+- 0
+methods:
+- vanilla
+- contraction_UCB_beta
+- return_UCB_beta
+- adaptive_beta
+- hand_adaptive_beta
+gamma: 0.95
+learning_rate: 0.1
+q_init: 0.0
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 50
+subcases:
+- id: MP-Stationary
+  game: matching_pennies
+  game_kwargs:
+    horizon: 20
+  adversary: stationary_mixed
+  adversary_kwargs:
+    probs:
+    - 0.5
+    - 0.5
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
