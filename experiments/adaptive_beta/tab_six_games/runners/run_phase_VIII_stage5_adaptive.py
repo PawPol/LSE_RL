@@ -122,7 +122,14 @@ from experiments.adaptive_beta.agents import (  # noqa: E402
     AdaptiveBetaQAgent,
     linear_epsilon_schedule,
 )
+from experiments.adaptive_beta.calibration.rolling_box import (  # noqa: E402
+    RollingEnvelope,
+)
 from experiments.adaptive_beta.schedules import (  # noqa: E402
+    METHOD_AC_UCB_EP,
+    METHOD_AC_UCB_EP_BKT,
+    METHOD_AC_UCB_TX,
+    METHOD_AC_UCB_TX_BKT,
     METHOD_ADAPTIVE_BETA,
     METHOD_CONTRACTION_UCB_BETA,
     METHOD_FIXED_NEGATIVE,
@@ -131,6 +138,9 @@ from experiments.adaptive_beta.schedules import (  # noqa: E402
     METHOD_RETURN_UCB_BETA,
     METHOD_VANILLA,
     build_schedule,
+)
+from experiments.adaptive_beta.tab_six_games.bucketize import (  # noqa: E402
+    get_bucketize_fn,
 )
 from experiments.adaptive_beta.tab_six_games.manifests import (  # noqa: E402
     Phase8RunRoster,
@@ -175,12 +185,32 @@ REQUIRED_METRICS: Tuple[str, ...] = (
 
 #: Stage 5 method ID set understood by this runner.
 #: ``oracle_beta`` is intentionally absent — see module docstring.
+#: The four ``ac_ucb_*`` ids are Phase IX additions (spec
+#: ``docs/specs/phase_IX_AC_UCB.md`` §5); they require ``per_cell_kwargs``
+#: in the YAML config to supply ``R_max`` and (for bucketed variants)
+#: ``bucketize``.
 M10_STANDALONE_METHOD_IDS: frozenset = frozenset({
     "vanilla",
     "contraction_UCB_beta",
     "return_UCB_beta",
     "adaptive_beta",
     "hand_adaptive_beta",
+    # Phase IX AC-UCB additions:
+    "ac_ucb_tx",
+    "ac_ucb_ep",
+    "ac_ucb_tx_bkt",
+    "ac_ucb_ep_bkt",
+})
+
+#: Method-id set for the four AC-UCB variants. Used to dispatch the
+#: AC-UCB-specific plumbing in :class:`_M10Agent` and the per-cell
+#: ``R_max`` / ``bucketize`` lookup in :func:`_resolve_method`.
+_AC_UCB_METHOD_IDS: frozenset = frozenset({
+    "ac_ucb_tx", "ac_ucb_ep", "ac_ucb_tx_bkt", "ac_ucb_ep_bkt",
+})
+
+_AC_UCB_BUCKETED_METHOD_IDS: frozenset = frozenset({
+    "ac_ucb_tx_bkt", "ac_ucb_ep_bkt",
 })
 
 #: Sentinel value for "method does not produce a valid arm index".
@@ -263,12 +293,21 @@ def _parse_fixed_beta_method(method_id: str) -> Tuple[str, Dict[str, Any]]:
 def _resolve_method(
     method_id: str,
     method_kwargs: Mapping[str, Any],
+    *,
+    subcase: Optional["SubcaseSpec"] = None,
+    gamma_override: Optional[float] = None,
+    per_cell_kwargs: Optional[Mapping[str, Mapping[str, Any]]] = None,
 ) -> Tuple[str, Dict[str, Any]]:
     """Map an M10 method ID to ``(schedule_method_id, hparams)``.
 
-    The five supported standalone branches are covered. ``oracle_beta``
+    The five legacy standalone branches are covered. ``oracle_beta``
     is rejected here because the standalone envs do not expose a
     ``regime`` label (spec §6.6).
+
+    Phase IX additions (``ac_ucb_*``) require ``subcase``, ``gamma_override``
+    and ``per_cell_kwargs`` to resolve the per-cell ``R_max`` and
+    ``bucketize`` keys; these kwargs are ignored by all non-AC-UCB
+    branches so existing callers stay backwards-compatible.
     """
     name = str(method_id).strip()
 
@@ -325,6 +364,63 @@ def _resolve_method(
             if k in method_kwargs:
                 hp[k] = method_kwargs[k]
         return METHOD_RETURN_UCB_BETA, hp
+
+    # --- ac_ucb_{tx,ep,tx_bkt,ep_bkt} (Phase IX) -------------------------
+    # Spec ``docs/specs/phase_IX_AC_UCB.md`` §6 (algorithm), §5 (bucketing).
+    # Each variant requires ``gamma`` (active γ from the gamma_grid) and
+    # ``R_max`` (env-side bound from ``per_cell_kwargs[subcase.id]``).
+    # Bucketed variants additionally resolve ``bucketize`` via
+    # :func:`get_bucketize_fn` keyed on the per-cell config.
+    if name in _AC_UCB_METHOD_IDS:
+        if subcase is None:
+            raise ValueError(
+                f"_resolve_method({method_id!r}) requires a `subcase` "
+                "argument to look up per-cell R_max and bucketize."
+            )
+        if gamma_override is None:
+            raise ValueError(
+                f"_resolve_method({method_id!r}) requires a `gamma_override` "
+                "argument (active γ from gamma_grid)."
+            )
+        cell_block: Mapping[str, Any] = {}
+        if per_cell_kwargs is not None and subcase.subcase_id in per_cell_kwargs:
+            raw_block = per_cell_kwargs.get(subcase.subcase_id, {}) or {}
+            if isinstance(raw_block, Mapping):
+                cell_block = raw_block
+        if "R_max" not in cell_block:
+            raise ValueError(
+                f"per_cell_kwargs[{subcase.subcase_id!r}] must declare "
+                f"'R_max' for AC-UCB method {method_id!r}."
+            )
+        hp = {
+            "gamma": float(gamma_override),
+            "R_max": float(cell_block["R_max"]),
+        }
+        # Pull through optional schedule knobs from method_kwargs (allow-list
+        # mirrors :data:`_ALLOWED_KEYS["AlignedContractionUCBSchedule"]`).
+        for k in ("ucb_c", "alpha", "beta_arm_grid", "reward_mode", "seed"):
+            if k in method_kwargs:
+                hp[k] = method_kwargs[k]
+        if name in _AC_UCB_BUCKETED_METHOD_IDS:
+            if "bucketize" not in cell_block:
+                raise ValueError(
+                    f"per_cell_kwargs[{subcase.subcase_id!r}] must declare "
+                    f"'bucketize' for bucketed AC-UCB method {method_id!r}."
+                )
+                # The runner is responsible for resolving the string to a
+                # callable here; ``build_schedule`` only accepts callables.
+            hp["bucketize"] = get_bucketize_fn(str(cell_block["bucketize"]))
+            if "max_buckets_logged" in method_kwargs:
+                hp["max_buckets_logged"] = int(method_kwargs["max_buckets_logged"])
+        # Schedule_method id matches the user-facing method id 1:1.
+        if name == "ac_ucb_tx":
+            return METHOD_AC_UCB_TX, hp
+        if name == "ac_ucb_ep":
+            return METHOD_AC_UCB_EP, hp
+        if name == "ac_ucb_tx_bkt":
+            return METHOD_AC_UCB_TX_BKT, hp
+        # name == "ac_ucb_ep_bkt"
+        return METHOD_AC_UCB_EP_BKT, hp
 
     raise ValueError(
         f"unknown M10 standalone method_id={method_id!r}; valid ids: "
@@ -420,6 +516,14 @@ class _M10Agent(AdaptiveBetaQAgent):
     the underlying TD-update path untouched (the β=0 collapse identity
     in ``_step_update`` is preserved verbatim).
 
+    Phase IX (M10c, AC-UCB): the override additionally forwards the
+    AC-UCB plumbing kwargs (``ac_ucb_step_buffer``,
+    ``rolling_envelope``) that the base class's ``end_episode`` would
+    have forwarded. Without this, AC-UCB schedules see neither the
+    per-step bucket-id buffer nor the rolling-envelope object, the
+    safety cap stays pinned at +inf, and per-bucket Welford twins
+    starve.
+
     ``episode_info`` is always ``None`` on standalone cells — the
     runner never builds a regime dict here. (Oracle is rejected at
     config-parse time.)
@@ -457,8 +561,27 @@ class _M10Agent(AdaptiveBetaQAgent):
             float(np.abs(td_errors).mean()) if td_errors.size else 0.0
         )
 
-        # Push to the schedule with the M9/M10 kwarg surface. Schedules
-        # that don't consume the extras silently ignore them.
+        # Phase IX M10c: build the AC-UCB plumbing kwargs only when the
+        # active schedule is an AC-UCB schedule. The cached
+        # ``self._is_ac_ucb`` flag (base class) avoids per-episode
+        # isinstance calls. Non-AC-UCB schedules accept ``None`` /
+        # absent kwargs via the protocol contract.
+        ac_ucb_step_buffer: Optional[Dict[str, Any]] = None
+        rolling_envelope: Optional[Any] = None
+        if self._is_ac_ucb:
+            ac_ucb_step_buffer = {
+                "bucket_ids": list(self._ep_bucket_ids),
+                "q_abs_max": q_abs_max,
+            }
+            # Runner attaches the M4 ``RollingEnvelope`` to the schedule
+            # via the ``_rolling_envelope`` attribute; if absent, the
+            # schedule treats the cap as +inf (no admissibility).
+            rolling_envelope = getattr(
+                self._beta_schedule, "_rolling_envelope", None
+            )
+
+        # Push to the schedule with the M9/M10/M10c kwarg surface.
+        # Schedules that don't consume the extras silently ignore them.
         self._beta_schedule.update_after_episode(
             self._current_episode,
             rewards,
@@ -467,6 +590,8 @@ class _M10Agent(AdaptiveBetaQAgent):
             episode_info=None,  # standalone has no regime
             bellman_residual=bellman_residual,
             episode_return=episode_return,
+            ac_ucb_step_buffer=ac_ucb_step_buffer,
+            rolling_envelope=rolling_envelope,
         )
 
         if rewards.size > 0:
@@ -492,7 +617,7 @@ class _M10Agent(AdaptiveBetaQAgent):
             mean_gamma_minus_d_eff = 0.0
             td_target_abs_max = 0.0
 
-        return {
+        out: Dict[str, Any] = {
             "episode_index": int(self._current_episode),
             "beta_used": float(self._current_beta),
             "beta_raw": float(sched_diag["beta_raw"]),
@@ -515,6 +640,15 @@ class _M10Agent(AdaptiveBetaQAgent):
             "length": int(rewards.size),
             "episode_return": episode_return,
         }
+        # Phase IX M10c §7 fields: only emitted under AC-UCB schedules.
+        # The runner ingests these into ``metrics.npz`` keyed by the
+        # ``ac_ucb_*`` prefix; non-AC-UCB rows leave them absent and the
+        # runner NaN-fills the corresponding aggregate columns.
+        if self._is_ac_ucb:
+            diag = self._beta_schedule.last_episode_diagnostics()  # type: ignore[union-attr]
+            if diag:
+                out["ac_ucb_diag"] = diag
+        return out
 
 
 # ---------------------------------------------------------------------------
@@ -668,7 +802,18 @@ def run_one_cell(
         if isinstance(per_method_extra, Mapping):
             method_kwargs.update(per_method_extra)
 
-    schedule_method, schedule_hparams = _resolve_method(method, method_kwargs)
+    # Phase IX: ``per_cell_kwargs`` carries per-cell ``R_max`` and
+    # ``bucketize`` for AC-UCB methods. Non-AC-UCB resolution ignores it.
+    per_cell_kwargs: Mapping[str, Mapping[str, Any]] = (
+        config.get("per_cell_kwargs", {}) or {}
+    )
+    schedule_method, schedule_hparams = _resolve_method(
+        method,
+        method_kwargs,
+        subcase=subcase,
+        gamma_override=float(gamma),
+        per_cell_kwargs=per_cell_kwargs,
+    )
 
     # Run-dir layout (lessons.md #11). Identical to Stage 1.
     if gamma_in_path:
@@ -763,6 +908,17 @@ def run_one_cell(
             schedule_method, env_canonical_sign, schedule_hparams
         )
 
+        # Phase IX M10c: AC-UCB schedules read the rolling envelope via
+        # ``getattr(schedule, "_rolling_envelope", None)`` (M3c agent
+        # contract). The envelope is shared across episodes (M4
+        # invariant: monotone non-decreasing in episode index). Headroom
+        # ``alpha`` is sourced from the schedule's own constructor kwarg
+        # so envelope and cap formula stay coupled.
+        if str(method).strip() in _AC_UCB_METHOD_IDS:
+            schedule._rolling_envelope = RollingEnvelope(  # type: ignore[attr-defined]
+                alpha=float(schedule_hparams.get("alpha", 0.10))
+            )
+
         agent_rng = np.random.default_rng(int(seed))
         agent = _M10Agent(
             n_states=n_states,
@@ -777,6 +933,9 @@ def run_one_cell(
         )
 
         is_ucb = _is_ucb_method(method)
+        is_ac_ucb = str(method).strip() in _AC_UCB_METHOD_IDS
+        # AC-UCB grid size K (default 21; honoured if user overrides).
+        ac_ucb_K = int(getattr(schedule, "_n_arms", 0)) if is_ac_ucb else 0
 
         # Per-episode buffers — Stage 1 column set, plus ``epsilon`` and
         # the UCB-introspection columns.
@@ -801,6 +960,32 @@ def run_one_cell(
             n_episodes, _UCB_ARM_NA_INT, dtype=np.int64
         )
         ep_ucb_most_pulled_value = np.full(n_episodes, np.nan, dtype=np.float64)
+
+        # Phase IX M10c: AC-UCB per-episode aggregates (spec §7). Allocate
+        # at full size for AC-UCB methods; NaN-fill for non-AC-UCB rows
+        # (the npz omits these arrays entirely on non-AC-UCB runs to keep
+        # the schema diff lean).
+        if is_ac_ucb:
+            ep_ac_ucb_admissible_size = np.full(n_episodes, -1, dtype=np.int64)
+            ep_ac_ucb_arm_pulled = np.full(
+                n_episodes, _UCB_ARM_NA_INT, dtype=np.int64
+            )
+            ep_ac_ucb_beta_cap = np.full(n_episodes, np.nan, dtype=np.float64)
+            ep_ac_ucb_mu_cf_per_arm = np.full(
+                (n_episodes, ac_ucb_K), np.nan, dtype=np.float64
+            )
+            ep_ac_ucb_sigma_cf_per_arm = np.full(
+                (n_episodes, ac_ucb_K), np.nan, dtype=np.float64
+            )
+            ep_ac_ucb_n_cf_per_arm = np.full(
+                (n_episodes, ac_ucb_K), 0, dtype=np.int64
+            )
+            ep_ac_ucb_mu_op_per_arm = np.full(
+                (n_episodes, ac_ucb_K), np.nan, dtype=np.float64
+            )
+            ep_ac_ucb_n_op_per_arm = np.full(
+                (n_episodes, ac_ucb_K), 0, dtype=np.int64
+            )
 
         for e in range(n_episodes):
             agent.begin_episode(e)
@@ -864,6 +1049,58 @@ def run_one_cell(
                 ep_ucb_most_pulled_idx[e] = most_pulled_idx
                 ep_ucb_most_pulled_value[e] = most_pulled_mean
 
+            # Phase IX M10c: ingest the AC-UCB diagnostics dict produced
+            # by the schedule's ``last_episode_diagnostics`` into the
+            # per-episode aggregate arrays. Per-step ragged tensors
+            # (``delta_per_arm`` (H, K), ``delta_deployed`` (H,),
+            # ``bucket_id`` (H,)) are NOT written to the npz here — they
+            # would require allow_pickle=True or a CSR-style ragged
+            # encoding the Stage 1/5 IO contract does not support; this
+            # is the documented gap (spec §7 §"For bucketed runs" allows
+            # truncation; see DISPATCH_NOTES.md for the pilot-aggregator
+            # follow-up).
+            if is_ac_ucb:
+                diag = ep_diag.get("ac_ucb_diag")
+                if diag:
+                    ep_ac_ucb_admissible_size[e] = int(
+                        diag.get("admissible_size", -1)
+                    )
+                    arm_pulled_arr = np.asarray(
+                        diag.get("arm_pulled", [_UCB_ARM_NA_INT]),
+                        dtype=np.int64,
+                    )
+                    ep_ac_ucb_arm_pulled[e] = (
+                        int(arm_pulled_arr[0])
+                        if arm_pulled_arr.size > 0
+                        else _UCB_ARM_NA_INT
+                    )
+                    cap_arr = np.asarray(
+                        diag.get("beta_cap_per_bkt", [np.nan]),
+                        dtype=np.float64,
+                    )
+                    # All buckets share the same cap per audit §3.3, so
+                    # element 0 is the canonical scalar to log.
+                    ep_ac_ucb_beta_cap[e] = (
+                        float(cap_arr[0]) if cap_arr.size > 0 else np.nan
+                    )
+                    mu_cf = np.asarray(diag.get("mu_cf_per_arm"), dtype=np.float64)
+                    if mu_cf.size == ac_ucb_K:
+                        ep_ac_ucb_mu_cf_per_arm[e, :] = mu_cf
+                    sigma_cf = np.asarray(
+                        diag.get("sigma_cf_per_arm"), dtype=np.float64
+                    )
+                    if sigma_cf.size == ac_ucb_K:
+                        ep_ac_ucb_sigma_cf_per_arm[e, :] = sigma_cf
+                    n_cf = np.asarray(diag.get("n_cf_per_arm"), dtype=np.int64)
+                    if n_cf.size == ac_ucb_K:
+                        ep_ac_ucb_n_cf_per_arm[e, :] = n_cf
+                    mu_op = np.asarray(diag.get("mu_op_per_arm"), dtype=np.float64)
+                    if mu_op.size == ac_ucb_K:
+                        ep_ac_ucb_mu_op_per_arm[e, :] = mu_op
+                    n_op = np.asarray(diag.get("n_op_per_arm"), dtype=np.int64)
+                    if n_op.size == ac_ucb_K:
+                        ep_ac_ucb_n_op_per_arm[e, :] = n_op
+
         end_utc = _utc_now_iso()
         wallclock = float(time.time() - start_perf)
 
@@ -881,6 +1118,10 @@ def run_one_cell(
             "epsilon": ep_epsilon,
             "goal_reaches": ep_goal_reaches,
             "trap_entries": ep_trap_entries,
+            # Phase IX M10c: AC-UCB columns are written ONLY for AC-UCB
+            # rows (mirrors Stage 1's optional-column pattern). The
+            # aggregator side NaN-fills missing columns when stacking
+            # AC-UCB and non-AC-UCB rows together.
             # UCB-specific (NaN/-1 for non-UCB methods).
             "ucb_arm_index": ep_ucb_arm_index,
             "ucb_most_pulled_arm_index": ep_ucb_most_pulled_idx,
@@ -888,6 +1129,23 @@ def run_one_cell(
             # γ as a 0-dim scalar (mirrors Stage 1).
             "gamma": np.float64(gamma),
         }
+        if is_ac_ucb:
+            arrays.update({
+                "ac_ucb_admissible_size": ep_ac_ucb_admissible_size,
+                "ac_ucb_arm_pulled": ep_ac_ucb_arm_pulled,
+                "ac_ucb_beta_cap": ep_ac_ucb_beta_cap,
+                "ac_ucb_mu_cf_per_arm": ep_ac_ucb_mu_cf_per_arm,
+                "ac_ucb_sigma_cf_per_arm": ep_ac_ucb_sigma_cf_per_arm,
+                "ac_ucb_n_cf_per_arm": ep_ac_ucb_n_cf_per_arm,
+                "ac_ucb_mu_op_per_arm": ep_ac_ucb_mu_op_per_arm,
+                "ac_ucb_n_op_per_arm": ep_ac_ucb_n_op_per_arm,
+                # Arm grid as a (K,) reference array — fixed across the
+                # whole run so writers can pair (mu_cf_per_arm[e, k]) →
+                # β grid value via index k.
+                "ac_ucb_beta_arm_grid": np.asarray(
+                    schedule.beta_arm_grid, dtype=np.float64
+                ),
+            })
         schema_header = make_npz_schema(
             phase="VIII",
             task=subcase.cell_label(),
@@ -963,8 +1221,24 @@ def run_one_cell(
             "result_dir": str(run_dir),
         }
 
+        # Sanitise non-JSON-serializable fields (e.g. the `bucketize`
+        # callable in AC-UCB-bucketed schedule_hparams). Replace with
+        # qualified name so the run.json remains diagnostic.
+        def _json_safe(obj):
+            if isinstance(obj, dict):
+                return {k: _json_safe(v) for k, v in obj.items()}
+            if isinstance(obj, (list, tuple)):
+                return [_json_safe(v) for v in obj]
+            if callable(obj):
+                return getattr(obj, "__qualname__", repr(obj))
+            try:
+                json.dumps(obj)
+                return obj
+            except TypeError:
+                return repr(obj)
+
         with open(run_dir / "run.json", "w", encoding="utf-8") as f:
-            json.dump(run_json, f, indent=2, sort_keys=True)
+            json.dump(_json_safe(run_json), f, indent=2, sort_keys=True)
             f.write("\n")
 
         roster.update_status(

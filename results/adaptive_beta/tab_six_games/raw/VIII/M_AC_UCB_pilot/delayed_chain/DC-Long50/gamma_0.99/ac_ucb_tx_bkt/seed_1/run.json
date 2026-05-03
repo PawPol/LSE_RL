@@ -1,0 +1,98 @@
+{
+  "adversary": "passive",
+  "adversary_kwargs": {},
+  "argv": [
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/adaptive_beta/tab_six_games/runners/run_phase_VIII_stage5_adaptive.py",
+    "--config",
+    "experiments/adaptive_beta/tab_six_games/configs/M_AC_UCB_pilot.yaml",
+    "--methods",
+    "ac_ucb_tx_bkt,ac_ucb_ep_bkt",
+    "--output-root",
+    "results/adaptive_beta/tab_six_games"
+  ],
+  "config": {
+    "hash": "098dc3b9a17fcf13",
+    "path": "experiments/adaptive_beta/tab_six_games/configs/M_AC_UCB_pilot.yaml"
+  },
+  "diverged": false,
+  "end_utc": "2026-05-03T16:13:46Z",
+  "env": {
+    "canonical_sign": "+",
+    "n_actions": 1,
+    "n_states": 51
+  },
+  "episodes": 10000,
+  "epsilon_schedule_params": {
+    "decay_episodes": 5000,
+    "end": 0.05,
+    "start": 1.0
+  },
+  "game": "delayed_chain",
+  "game_kwargs": {
+    "subcase": "DC-Long50"
+  },
+  "gamma": 0.99,
+  "git_sha": "229fbb99963c41f40c2908e1d2dd61b46560d687",
+  "headline_metric": "bellman_residual_beta_auc",
+  "host": "LIQs-Mac-Mini.local",
+  "is_ucb_method": false,
+  "learning_rate": 0.1,
+  "method": "ac_ucb_tx_bkt",
+  "method_kwargs": {
+    "alpha": 0.1,
+    "max_buckets_logged": 100,
+    "ucb_c": 1.0
+  },
+  "metrics_arrays": [
+    "ac_ucb_admissible_size",
+    "ac_ucb_arm_pulled",
+    "ac_ucb_beta_arm_grid",
+    "ac_ucb_beta_cap",
+    "ac_ucb_mu_cf_per_arm",
+    "ac_ucb_mu_op_per_arm",
+    "ac_ucb_n_cf_per_arm",
+    "ac_ucb_n_op_per_arm",
+    "ac_ucb_sigma_cf_per_arm",
+    "alignment_rate",
+    "bellman_residual",
+    "beta_raw",
+    "beta_used",
+    "divergence_event",
+    "effective_discount_mean",
+    "epsilon",
+    "gamma",
+    "goal_reaches",
+    "length",
+    "nan_count",
+    "q_abs_max",
+    "return",
+    "trap_entries",
+    "ucb_arm_index",
+    "ucb_most_pulled_arm_index",
+    "ucb_most_pulled_arm_value"
+  ],
+  "metrics_schema_version": "phaseVIII.metrics.v1",
+  "nan_count_total": 0,
+  "phase": "VIII",
+  "python_version": "3.13.5",
+  "q_init": 0.0,
+  "result_dir": "results/adaptive_beta/tab_six_games/raw/VIII/M_AC_UCB_pilot/delayed_chain/DC-Long50/gamma_0.99/ac_ucb_tx_bkt/seed_1",
+  "run_id": "phaseVIII-stage5-delayed_chain-DC-Long50-ac_ucb_tx_bkt-s0001-b61d970d",
+  "schedule_hparams": {
+    "R_max": 1.0,
+    "alpha": 0.1,
+    "bucketize": "tabular_state_only",
+    "gamma": 0.99,
+    "max_buckets_logged": 100,
+    "ucb_c": 1.0
+  },
+  "schedule_method": "ac_ucb_tx_bkt",
+  "schema_version": "phaseVIII.run.v1",
+  "seed": 1,
+  "stage": "M_AC_UCB_pilot",
+  "start_utc": "2026-05-03T16:13:31Z",
+  "subcase": "DC-Long50",
+  "t11_guard": "gap_based",
+  "ucb_final_diag": null,
+  "wallclock_sec": 15.421784162521362
+}

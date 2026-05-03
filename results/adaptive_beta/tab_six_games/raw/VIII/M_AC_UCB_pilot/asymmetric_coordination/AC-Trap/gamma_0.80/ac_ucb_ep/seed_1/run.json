@@ -1,0 +1,99 @@
+{
+  "adversary": "finite_memory_regret_matching",
+  "adversary_kwargs": {
+    "memory_m": 20
+  },
+  "argv": [
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/adaptive_beta/tab_six_games/runners/run_phase_VIII_stage5_adaptive.py",
+    "--config",
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/adaptive_beta/tab_six_games/configs/M_AC_UCB_pilot.yaml",
+    "--seed-list",
+    "1",
+    "--subcases",
+    "AC-Trap",
+    "--output-root",
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/results/adaptive_beta/tab_six_games"
+  ],
+  "config": {
+    "hash": "098dc3b9a17fcf13",
+    "path": "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/adaptive_beta/tab_six_games/configs/M_AC_UCB_pilot.yaml"
+  },
+  "diverged": false,
+  "end_utc": "2026-05-03T15:45:04Z",
+  "env": {
+    "canonical_sign": "+",
+    "n_actions": 2,
+    "n_states": 60
+  },
+  "episodes": 10000,
+  "epsilon_schedule_params": {
+    "decay_episodes": 5000,
+    "end": 0.05,
+    "start": 1.0
+  },
+  "game": "asymmetric_coordination",
+  "game_kwargs": {
+    "horizon": 20
+  },
+  "gamma": 0.8,
+  "git_sha": "229fbb99963c41f40c2908e1d2dd61b46560d687",
+  "headline_metric": "cumulative_return_auc",
+  "host": "LIQs-Mac-Mini.local",
+  "is_ucb_method": false,
+  "learning_rate": 0.1,
+  "method": "ac_ucb_ep",
+  "method_kwargs": {
+    "alpha": 0.1,
+    "ucb_c": 1.0
+  },
+  "metrics_arrays": [
+    "ac_ucb_admissible_size",
+    "ac_ucb_arm_pulled",
+    "ac_ucb_beta_arm_grid",
+    "ac_ucb_beta_cap",
+    "ac_ucb_mu_cf_per_arm",
+    "ac_ucb_mu_op_per_arm",
+    "ac_ucb_n_cf_per_arm",
+    "ac_ucb_n_op_per_arm",
+    "ac_ucb_sigma_cf_per_arm",
+    "alignment_rate",
+    "bellman_residual",
+    "beta_raw",
+    "beta_used",
+    "divergence_event",
+    "effective_discount_mean",
+    "epsilon",
+    "gamma",
+    "goal_reaches",
+    "length",
+    "nan_count",
+    "q_abs_max",
+    "return",
+    "trap_entries",
+    "ucb_arm_index",
+    "ucb_most_pulled_arm_index",
+    "ucb_most_pulled_arm_value"
+  ],
+  "metrics_schema_version": "phaseVIII.metrics.v1",
+  "nan_count_total": 0,
+  "phase": "VIII",
+  "python_version": "3.13.5",
+  "q_init": 0.0,
+  "result_dir": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/adaptive_beta/tab_six_games/raw/VIII/M_AC_UCB_pilot/asymmetric_coordination/AC-Trap/gamma_0.80/ac_ucb_ep/seed_1",
+  "run_id": "phaseVIII-stage5-asymmetric_coordination-AC-Trap-ac_ucb_ep-s0001-b3a82324",
+  "schedule_hparams": {
+    "R_max": 5.0,
+    "alpha": 0.1,
+    "gamma": 0.8,
+    "ucb_c": 1.0
+  },
+  "schedule_method": "ac_ucb_ep",
+  "schema_version": "phaseVIII.run.v1",
+  "seed": 1,
+  "stage": "M_AC_UCB_pilot",
+  "start_utc": "2026-05-03T15:44:42Z",
+  "subcase": "AC-Trap",
+  "t11_guard": "cohens_d",
+  "ucb_final_diag": null,
+  "wallclock_sec": 22.030785083770752
+}

@@ -1,0 +1,66 @@
+[
+  {
+    "error": "TypeError: Object of type function is not JSON serializable",
+    "game": "delayed_chain",
+    "gamma": 0.6,
+    "method": "ac_ucb_tx_bkt",
+    "seed": 4,
+    "subcase_id": "DC-Long50"
+  },
+  {
+    "error": "TypeError: Object of type function is not JSON serializable",
+    "game": "delayed_chain",
+    "gamma": 0.6,
+    "method": "ac_ucb_ep_bkt",
+    "seed": 4,
+    "subcase_id": "DC-Long50"
+  },
+  {
+    "error": "TypeError: Object of type function is not JSON serializable",
+    "game": "delayed_chain",
+    "gamma": 0.8,
+    "method": "ac_ucb_tx_bkt",
+    "seed": 4,
+    "subcase_id": "DC-Long50"
+  },
+  {
+    "error": "TypeError: Object of type function is not JSON serializable",
+    "game": "delayed_chain",
+    "gamma": 0.8,
+    "method": "ac_ucb_ep_bkt",
+    "seed": 4,
+    "subcase_id": "DC-Long50"
+  },
+  {
+    "error": "TypeError: Object of type function is not JSON serializable",
+    "game": "delayed_chain",
+    "gamma": 0.95,
+    "method": "ac_ucb_tx_bkt",
+    "seed": 4,
+    "subcase_id": "DC-Long50"
+  },
+  {
+    "error": "TypeError: Object of type function is not JSON serializable",
+    "game": "delayed_chain",
+    "gamma": 0.95,
+    "method": "ac_ucb_ep_bkt",
+    "seed": 4,
+    "subcase_id": "DC-Long50"
+  },
+  {
+    "error": "TypeError: Object of type function is not JSON serializable",
+    "game": "delayed_chain",
+    "gamma": 0.99,
+    "method": "ac_ucb_tx_bkt",
+    "seed": 4,
+    "subcase_id": "DC-Long50"
+  },
+  {
+    "error": "TypeError: Object of type function is not JSON serializable",
+    "game": "delayed_chain",
+    "gamma": 0.99,
+    "method": "ac_ucb_ep_bkt",
+    "seed": 4,
+    "subcase_id": "DC-Long50"
+  }
+]

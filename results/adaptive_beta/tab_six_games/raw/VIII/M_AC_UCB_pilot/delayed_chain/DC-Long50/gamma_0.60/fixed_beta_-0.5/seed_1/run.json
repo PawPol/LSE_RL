@@ -1,0 +1,82 @@
+{
+  "adversary": "passive",
+  "adversary_kwargs": {},
+  "argv": [
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/adaptive_beta/tab_six_games/runners/run_phase_VIII_stage5_adaptive.py",
+    "--config",
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/adaptive_beta/tab_six_games/configs/M_AC_UCB_pilot.yaml",
+    "--seed-list",
+    "1",
+    "--subcases",
+    "DC-Long50",
+    "--output-root",
+    "/Users/liq/Documents/Claude/Projects/LSE_RL/results/adaptive_beta/tab_six_games"
+  ],
+  "config": {
+    "hash": "098dc3b9a17fcf13",
+    "path": "/Users/liq/Documents/Claude/Projects/LSE_RL/experiments/adaptive_beta/tab_six_games/configs/M_AC_UCB_pilot.yaml"
+  },
+  "diverged": false,
+  "end_utc": "2026-05-03T15:40:36Z",
+  "env": {
+    "canonical_sign": "+",
+    "n_actions": 1,
+    "n_states": 51
+  },
+  "episodes": 10000,
+  "epsilon_schedule_params": {
+    "decay_episodes": 5000,
+    "end": 0.05,
+    "start": 1.0
+  },
+  "game": "delayed_chain",
+  "game_kwargs": {
+    "subcase": "DC-Long50"
+  },
+  "gamma": 0.6,
+  "git_sha": "229fbb99963c41f40c2908e1d2dd61b46560d687",
+  "headline_metric": "bellman_residual_beta_auc",
+  "host": "LIQs-Mac-Mini.local",
+  "is_ucb_method": false,
+  "learning_rate": 0.1,
+  "method": "fixed_beta_-0.5",
+  "method_kwargs": {},
+  "metrics_arrays": [
+    "alignment_rate",
+    "bellman_residual",
+    "beta_raw",
+    "beta_used",
+    "divergence_event",
+    "effective_discount_mean",
+    "epsilon",
+    "gamma",
+    "goal_reaches",
+    "length",
+    "nan_count",
+    "q_abs_max",
+    "return",
+    "trap_entries",
+    "ucb_arm_index",
+    "ucb_most_pulled_arm_index",
+    "ucb_most_pulled_arm_value"
+  ],
+  "metrics_schema_version": "phaseVIII.metrics.v1",
+  "nan_count_total": 0,
+  "phase": "VIII",
+  "python_version": "3.13.5",
+  "q_init": 0.0,
+  "result_dir": "/Users/liq/Documents/Claude/Projects/LSE_RL/results/adaptive_beta/tab_six_games/raw/VIII/M_AC_UCB_pilot/delayed_chain/DC-Long50/gamma_0.60/fixed_beta_-0.5/seed_1",
+  "run_id": "phaseVIII-stage5-delayed_chain-DC-Long50-fixed_beta_-0.5-s0001-5a0ba62f",
+  "schedule_hparams": {
+    "beta0": 0.5
+  },
+  "schedule_method": "fixed_negative",
+  "schema_version": "phaseVIII.run.v1",
+  "seed": 1,
+  "stage": "M_AC_UCB_pilot",
+  "start_utc": "2026-05-03T15:40:21Z",
+  "subcase": "DC-Long50",
+  "t11_guard": "gap_based",
+  "ucb_final_diag": null,
+  "wallclock_sec": 15.17844009399414
+}

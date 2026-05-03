@@ -1,0 +1,134 @@
+# total_runs: 480  (3 cells × 4 γ × 5 seeds × 8 methods)
+#
+# Phase IX M6 — Aligned-Contraction UCB pilot.
+# Spec authority: docs/specs/phase_IX_AC_UCB.md §6 (algorithm), §7
+# (logging schema), §8 (pilot scope), §9 (M9 gate).
+#
+# Cell × γ matrix (spec §8):
+#   - DC-Long50     × {0.60, 0.80, 0.95, 0.99}  (alignment-positive, –β should win)
+#   - AC-Trap       × {0.60, 0.80, 0.95, 0.99}  (sign-pathological)
+#   - SH-FMR        × {0.60, 0.80, 0.95, 0.99}  (cyclic non-stationary; tests bucketing)
+#
+# Methods (8): vanilla, fixed_beta_-0.5 (best_fixed_β proxy), return_ucb_beta,
+# contraction_ucb_beta, ac_ucb_tx, ac_ucb_ep, ac_ucb_tx_bkt, ac_ucb_ep_bkt.
+#
+# best_fixed_β resolution (M6 per-cell summary lacks per-γ split):
+#   - DC-Long50, AC-Trap, SH-FMR: cell-canonical sign per Phase VIII spec is
+#     β = -0.5 across all γ (M6_per_cell_summary.csv: fixed_beta_-0.5 is the
+#     best of the published tier). Two known per-(cell, γ) Phase VIII
+#     positives (β=+0.10 for AC-Trap γ=0.60; β=-0.5 for SH-FMR γ=0.80) are
+#     both compatible with this single-knob choice except AC-Trap γ=0.60.
+#     The pilot dispatch notes flag this as a per-(cell, γ) refinement to
+#     re-run after the gate clears.
+#
+# AC-UCB hyperparameters (spec §6 defaults):
+#   - alpha = 0.10, ucb_c = 1.0, beta_arm_grid = DEFAULT_BETA_ARM_GRID (21).
+#   - bucketize: tabular_state_only on DC; matrix_opp_and_step on AC-Trap and SH-FMR.
+#   - R_max: per-cell env-side bound (DC=1, AC=5, SH=1).
+#
+# Wall time: ~5.3 h on 1 CPU @ ~40 s/run (spec §12). On 24 CPUs ≈ 13 min.
+stage: M_AC_UCB_pilot
+phase: VIII
+episodes: 10000
+seeds:
+- 0
+- 1
+- 2
+- 3
+- 4
+methods:
+- vanilla
+- fixed_beta_-0.5
+- return_UCB_beta
+- contraction_UCB_beta
+- ac_ucb_tx
+- ac_ucb_ep
+- ac_ucb_tx_bkt
+- ac_ucb_ep_bkt
+gamma_grid:
+- 0.60
+- 0.80
+- 0.95
+- 0.99
+learning_rate: 0.1
+q_init: 0.0
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_episodes: 5000
+
+# Per-method hyperparameters. ``method_kwargs_per_method`` follows the
+# existing M9/M10 conventions (see run_phase_VIII_stage5_adaptive.py).
+# AC-UCB schedules require ``gamma`` and ``R_max``; the runner is expected
+# to inject the active γ from ``gamma_grid`` and the per-cell ``R_max``
+# value at dispatch time. Per-cell R_max overrides live in
+# ``per_cell_kwargs`` below.
+method_kwargs_per_method:
+  return_UCB_beta:
+    ucb_c: 1.0
+  contraction_UCB_beta:
+    ucb_c: 1.0
+  ac_ucb_tx:
+    alpha: 0.10
+    ucb_c: 1.0
+  ac_ucb_ep:
+    alpha: 0.10
+    ucb_c: 1.0
+  ac_ucb_tx_bkt:
+    alpha: 0.10
+    ucb_c: 1.0
+    max_buckets_logged: 100
+  ac_ucb_ep_bkt:
+    alpha: 0.10
+    ucb_c: 1.0
+    max_buckets_logged: 100
+
+# Per-cell overrides for AC-UCB ``R_max`` and ``bucketize`` (spec §5).
+# The runner consults this block when constructing the AC-UCB schedule
+# per (subcase, method) cell. ``bucketize`` values are looked up against
+# ``experiments.adaptive_beta.tab_six_games.bucketize.BUCKETIZE_REGISTRY``.
+per_cell_kwargs:
+  DC-Long50:
+    R_max: 1.0
+    bucketize: tabular_state_only
+  AC-Trap:
+    R_max: 5.0
+    bucketize: matrix_opp_and_step
+  SH-FiniteMemoryRegret:
+    R_max: 1.0
+    bucketize: matrix_opp_and_step
+
+# Pilot gate parameters (spec §9 row M9). Aggregator consumes these
+# verbatim when emitting M_AC_UCB_pilot_gate_check.json.
+pilot_gate:
+  threshold: 0.5
+  min_cells_required: 2
+  metric: alignment_rate_last_200
+
+subcases:
+- id: DC-Long50
+  game: delayed_chain
+  game_kwargs:
+    subcase: DC-Long50
+  adversary: passive
+  adversary_kwargs: {}
+  headline_metric: bellman_residual_beta_auc
+  t11_guard: gap_based
+- id: AC-Trap
+  game: asymmetric_coordination
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_regret_matching
+  adversary_kwargs:
+    memory_m: 20
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
+- id: SH-FiniteMemoryRegret
+  game: shapley
+  game_kwargs:
+    horizon: 20
+  adversary: finite_memory_regret_matching
+  adversary_kwargs:
+    memory_m: 20
+  headline_metric: cumulative_return_auc
+  t11_guard: cohens_d
